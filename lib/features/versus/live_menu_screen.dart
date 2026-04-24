@@ -72,7 +72,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               const SizedBox(height: 8),
 
               DropdownButtonFormField<String>(
-                value: _selectedCategoryId,
+                initialValue: _selectedCategoryId,
                 items: _fixedCategories
                     .map(
                       (c) => DropdownMenuItem(

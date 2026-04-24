@@ -163,7 +163,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
                   _selectedCategoryId ??= docs.first.id;
 
                   return DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Selecciona un tema fijo',

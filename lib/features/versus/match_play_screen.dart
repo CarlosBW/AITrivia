@@ -187,8 +187,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           }
 
           final data = snap.data!.data();
-          if (data == null)
+          if (data == null) {
             return const Center(child: Text('Match no encontrado'));
+          }
 
           final status = (data['status'] ?? 'waiting').toString();
           if (status != 'playing' && status != 'finished') {
@@ -304,8 +305,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               Color? fillColor;
               if (_locked && !_timedOut) {
                 if (isCorrect) fillColor = Colors.green.withOpacity(0.2);
-                if (isSelected && !isCorrect)
+                if (isSelected && !isCorrect) {
                   fillColor = Colors.red.withOpacity(0.2);
+                }
               } else if (!_locked && isSelected) {
                 fillColor = Colors.black12;
               }

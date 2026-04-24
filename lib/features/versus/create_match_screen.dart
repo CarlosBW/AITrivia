@@ -108,7 +108,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             const SizedBox(height: 12),
 
             DropdownButtonFormField<String>(
-              value: _categoryId,
+              initialValue: _categoryId,
               items: categories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
@@ -124,7 +124,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _difficulty,
+                    initialValue: _difficulty,
                     items: const [
                       DropdownMenuItem(value: 1, child: Text('1 (Fácil)')),
                       DropdownMenuItem(value: 2, child: Text('2 (Medio)')),
@@ -140,7 +140,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _timePerQuestionSec,
+                    initialValue: _timePerQuestionSec,
                     items: const [
                       DropdownMenuItem(value: 8, child: Text('8s')),
                       DropdownMenuItem(value: 10, child: Text('10s')),
@@ -162,7 +162,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _totalQuestions,
+                    initialValue: _totalQuestions,
                     items: const [
                       DropdownMenuItem(value: 5, child: Text('5')),
                       DropdownMenuItem(value: 10, child: Text('10')),
@@ -178,7 +178,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _winReward,
+                    initialValue: _winReward,
                     items: const [
                       DropdownMenuItem(value: 1, child: Text('1 moneda')),
                       DropdownMenuItem(value: 2, child: Text('2 monedas')),

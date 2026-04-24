@@ -924,7 +924,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     if (existing.exists) return;
 
     final preferredDifficulty = _difficultyForLevel(widget.levelNumber);
-    final difficulties = [preferredDifficulty, 1, 2, 3].toSet().toList();
+    final difficulties = {preferredDifficulty, 1, 2, 3}.toList();
 
     QuerySnapshot<Map<String, dynamic>>? poolSnap;
     int? usedDifficulty;

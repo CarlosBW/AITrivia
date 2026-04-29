@@ -60,6 +60,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _lifeLoading = false;
   String? _lifeGateError;
 
+  bool _endedByNoLives = false;
+
   int _lifeUnits = 10;
   int _maxLifeUnits = 10;
   int? _secondsToNextHalfLife;
@@ -117,6 +119,30 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
+  Future<void> _refreshLivesAndStopIfEmpty() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final state = await LifeService.instance.refreshLives(uid);
+
+    if (!mounted) return;
+
+    final lifeUnits = (state['lifeUnits'] ?? 0) as int;
+
+    setState(() {
+      _lifeUnits = lifeUnits;
+      _maxLifeUnits = (state['maxLifeUnits'] ?? _maxLifeUnits) as int;
+      _secondsToNextHalfLife = state['secondsToNextHalfLife'] as int?;
+
+      if (lifeUnits <= 0) {
+        _endedByNoLives = true;
+        _locked = true;
+        _answerSubmitting = false;
+        _timer?.cancel();
+      }
+    });
+  }
+
   Future<void> _buyLifeAndRetryEntry(String uid) async {
     if (_buyingLife) return;
 
@@ -150,6 +176,50 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       setState(() {
         _lifeChecked = false;
         _lifeGateError = null;
+        _endedByNoLives = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _buyingLife = false);
+      }
+    }
+  }
+
+  Future<void> _buyLifeMidLevel(String uid) async {
+    if (_buyingLife) return;
+
+    setState(() => _buyingLife = true);
+
+    try {
+      final success = await LifeService.instance.buyFullLife(
+        uid: uid,
+        cost: _buyLifeCost,
+      );
+
+      await _refreshLivesUi();
+
+      if (!mounted) return;
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ No tienes suficientes monedas'),
+          ),
+        );
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❤️ Vida recuperada'),
+        ),
+      );
+
+      setState(() {
+        _endedByNoLives = false;
+        _locked = false;
+        _answerSubmitting = false;
+        _timerForIndex = -1;
       });
     } finally {
       if (mounted) {
@@ -186,7 +256,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       if (!mounted) return;
 
       setState(() {
-        if (_locked) {
+        if (_locked || _endedByNoLives) {
           t.cancel();
           return;
         }
@@ -208,12 +278,17 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
           Future.microtask(() async {
             await LifeService.instance.tryConsumeWrongAnswer(uid);
-            await _refreshLivesUi();
+            await _refreshLivesAndStopIfEmpty();
 
             if (!mounted) return;
+
             setState(() {
-              _statusMsg = '⏰ Se acabó el tiempo - perdiste media vida';
+              _statusMsg = _endedByNoLives
+                  ? '⏰ Se acabó el tiempo - te quedaste sin vidas'
+                  : '⏰ Se acabó el tiempo - perdiste media vida';
             });
+
+            if (_endedByNoLives) return;
 
             if (!_autoNextScheduled) {
               _autoNextScheduled = true;
@@ -231,7 +306,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   void _goNextQuestion() {
-    if (!mounted) return;
+    if (!mounted || _endedByNoLives) return;
     setState(() {
       _index++;
       _timerForIndex = -1;
@@ -244,6 +319,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     required int tappedIndex,
     required int answerIndex,
   }) async {
+    if (_endedByNoLives) return;
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
@@ -269,14 +345,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
       await LifeService.instance.tryConsumeWrongAnswer(uid);
-      await _refreshLivesUi();
+      await _refreshLivesAndStopIfEmpty();
 
       if (mounted) {
         setState(() {
-          _statusMsg = '❌ Incorrecto - perdiste media vida';
+          _statusMsg = _endedByNoLives
+              ? '❌ Incorrecto - te quedaste sin vidas'
+              : '❌ Incorrecto - perdiste media vida';
         });
       }
     }
+
+    if (_endedByNoLives) return;
 
     if (!_autoNextScheduled) {
       _autoNextScheduled = true;
@@ -448,7 +528,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       final data = snap.data!.data();
                       if (data == null) {
-                        return const Center(child: Text('Sesión no encontrada.'));
+                        return const Center(
+                          child: Text('Sesión no encontrada.'),
+                        );
                       }
 
                       final questions =
@@ -457,6 +539,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         return const Center(
                           child: Text('Esta sesión no tiene preguntas.'),
                         );
+                      }
+
+                      if (_endedByNoLives) {
+                        _timer?.cancel();
+                        return _buildNoLivesMidLevel(context, uid);
                       }
 
                       if (_index >= questions.length) {
@@ -575,110 +662,57 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     final nextFullLifeSeconds = _lifeUnits == 1
         ? _secondsToNextHalfLife
-        : (_secondsToNextHalfLife == null ? null : _secondsToNextHalfLife! + 150);
+        : (_secondsToNextHalfLife == null
+            ? null
+            : _secondsToNextHalfLife! + 150);
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.black12,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 78,
-                height: 78,
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.favorite_border,
-                  size: 40,
-                  color: Colors.red,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Sin vidas suficientes',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _lifeGateError ?? 'Necesitas 1 vida completa para entrar.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.45),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _InfoRow(
-                      icon: Icons.favorite,
-                      label: 'Tus vidas',
-                      value: lifeText,
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoRow(
-                      icon: Icons.timer,
-                      label: 'Próx. media vida',
-                      value: _lifeUnits >= _maxLifeUnits
-                          ? 'MAX'
-                          : _formatSeconds(_secondsToNextHalfLife),
-                    ),
-                    const SizedBox(height: 10),
-                    _InfoRow(
-                      icon: Icons.hourglass_bottom,
-                      label: 'Para 1 vida completa',
-                      value: _formatSeconds(nextFullLifeSeconds),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _buyingLife
-                      ? null
-                      : () => _buyLifeAndRetryEntry(uid),
-                  icon: const Icon(Icons.favorite),
-                  label: const Text('Recuperar 1 vida (10 monedas)'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _isNavigating || _buyingLife
-                      ? null
-                      : () {
-                          _safeNavigate(() async {
-                            Navigator.pop(context);
-                          });
-                        },
-                  child: const Text('Volver'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _NoLivesCard(
+      title: 'Sin vidas suficientes',
+      message: _lifeGateError ?? 'Necesitas 1 vida completa para entrar.',
+      lifeText: lifeText,
+      nextHalfLifeText: _lifeUnits >= _maxLifeUnits
+          ? 'MAX'
+          : _formatSeconds(_secondsToNextHalfLife),
+      nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
+      buyLabel: 'Recuperar 1 vida ($_buyLifeCost monedas)',
+      onBuyLife: _buyingLife ? null : () => _buyLifeAndRetryEntry(uid),
+      onBack: _isNavigating || _buyingLife
+          ? null
+          : () {
+              _safeNavigate(() async {
+                Navigator.pop(context);
+              });
+            },
+    );
+  }
+
+  Widget _buildNoLivesMidLevel(BuildContext context, String uid) {
+    final lifeText =
+        '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
+
+    final nextFullLifeSeconds = _lifeUnits == 1
+        ? _secondsToNextHalfLife
+        : (_secondsToNextHalfLife == null
+            ? null
+            : _secondsToNextHalfLife! + 150);
+
+    return _NoLivesCard(
+      title: 'Te quedaste sin vidas',
+      message: 'No puedes continuar este nivel hasta recuperar vidas.',
+      lifeText: lifeText,
+      nextHalfLifeText: _lifeUnits >= _maxLifeUnits
+          ? 'MAX'
+          : _formatSeconds(_secondsToNextHalfLife),
+      nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
+      buyLabel: 'Recuperar 1 vida ($_buyLifeCost monedas)',
+      onBuyLife: _buyingLife ? null : () => _buyLifeMidLevel(uid),
+      onBack: _isNavigating || _buyingLife
+          ? null
+          : () {
+              _safeNavigate(() async {
+                Navigator.pop(context);
+              });
+            },
     );
   }
 
@@ -753,7 +787,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     required int answerIndex,
     required int total,
   }) {
-    final absorbing = _locked || _answerSubmitting || _isNavigating;
+    final absorbing =
+        _locked || _answerSubmitting || _isNavigating || _endedByNoLives;
 
     return AbsorbPointer(
       key: key,
@@ -1164,127 +1199,84 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.85, end: 1),
-              duration: const Duration(milliseconds: 450),
-              curve: Curves.easeOutBack,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: child,
-                );
-              },
-              child: Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  if (starCount == 3)
-                    const Positioned.fill(
-                      child: IgnorePointer(
-                        child: _ThreeStarsCelebration(),
-                      ),
-                    ),
-                  Column(
-                    children: [
-                      const Text(
-                        '¡Nivel completado!',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 10),
-                      _BigStarsRow(count: starCount),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Puntaje: $_correct / $total ($pctText)',
-                        style: const TextStyle(fontSize: 18),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Rango: $label',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ],
+            const Text(
+              '¡Nivel completado!',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            _BigStarsRow(count: starCount),
+            const SizedBox(height: 14),
+            Text(
+              'Puntaje: $_correct / $total ($pctText)',
+              style: const TextStyle(fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Rango: $label',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 22),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: const Duration(milliseconds: 550),
-              curve: Curves.easeOut,
-              builder: (context, value, child) {
-                return Opacity(
-                  opacity: value,
-                  child: Transform.translate(
-                    offset: Offset(0, 16 * (1 - value)),
-                    child: child,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.black12),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Recompensas',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black12),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Recompensas',
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _RewardCard(
+                          icon: Icons.auto_awesome,
+                          label: 'XP',
+                          child: _AnimatedRewardNumber(
+                            value: _earnedXp,
+                            prefix: '+',
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _RewardCard(
-                            icon: Icons.auto_awesome,
-                            label: 'XP',
-                            child: _AnimatedRewardNumber(
-                              value: _earnedXp,
-                              prefix: '+',
-                            ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _RewardCard(
+                          icon: Icons.monetization_on,
+                          label: 'Monedas',
+                          child: _AnimatedRewardNumber(
+                            value: _earnedCoins,
+                            prefix: '+',
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _RewardCard(
-                            icon: Icons.monetization_on,
-                            label: 'Monedas',
-                            child: _AnimatedRewardNumber(
-                              value: _earnedCoins,
-                              prefix: '+',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!_rewardGrantedForLevel) ...[
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Este nivel ya había sido completado antes.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
+                  ),
+                  if (!_rewardGrantedForLevel) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Este nivel ya había sido completado antes.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
             const SizedBox(height: 18),
@@ -1294,11 +1286,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             ),
             if (_saving) ...[
               const SizedBox(height: 18),
-              const SizedBox(
-                height: 28,
-                width: 28,
-                child: CircularProgressIndicator(strokeWidth: 3),
-              ),
+              const CircularProgressIndicator(strokeWidth: 3),
               const SizedBox(height: 8),
               const Text('Guardando progreso...'),
             ],
@@ -1348,7 +1336,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           : () {
                               _safeNavigate(() async {
                                 _timer?.cancel();
-
                                 if (!context.mounted) return;
 
                                 await Navigator.pushReplacement(
@@ -1369,6 +1356,125 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoLivesCard extends StatelessWidget {
+  final String title;
+  final String message;
+  final String lifeText;
+  final String nextHalfLifeText;
+  final String nextFullLifeText;
+  final String buyLabel;
+  final VoidCallback? onBuyLife;
+  final VoidCallback? onBack;
+
+  const _NoLivesCard({
+    required this.title,
+    required this.message,
+    required this.lifeText,
+    required this.nextHalfLifeText,
+    required this.nextFullLifeText,
+    required this.buyLabel,
+    required this.onBuyLife,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black12,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.favorite_border,
+                  size: 40,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.45),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.favorite,
+                      label: 'Tus vidas',
+                      value: lifeText,
+                    ),
+                    const SizedBox(height: 10),
+                    _InfoRow(
+                      icon: Icons.timer,
+                      label: 'Próx. media vida',
+                      value: nextHalfLifeText,
+                    ),
+                    const SizedBox(height: 10),
+                    _InfoRow(
+                      icon: Icons.hourglass_bottom,
+                      label: 'Para 1 vida completa',
+                      value: nextFullLifeText,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onBuyLife,
+                  icon: const Icon(Icons.favorite),
+                  label: Text(buyLabel),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: onBack,
+                  child: const Text('Volver'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1438,9 +1544,7 @@ class _RewardCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           child,

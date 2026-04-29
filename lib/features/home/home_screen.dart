@@ -21,6 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loadingLives = true;
   Timer? _lifeTimer;
   bool _isNavigating = false;
+  bool _buyingLife = false;
+
+  static const int _buyLifeCost = 10;
 
   late final String uid;
 
@@ -68,6 +71,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _buyLifeFromDialog(BuildContext dialogContext) async {
+    if (_buyingLife) return;
+
+    Navigator.pop(dialogContext);
+
+    setState(() => _buyingLife = true);
+
+    try {
+      final success = await LifeService.instance.buyFullLife(
+        uid: uid,
+        cost: _buyLifeCost,
+      );
+
+      await _refreshLives();
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❤️ Vida recuperada')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ No tienes suficientes monedas')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _buyingLife = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _lifeTimer?.cancel();
@@ -108,10 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
     await showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (_) => _NoLivesDialog(
+      builder: (dialogContext) => _NoLivesDialog(
         currentLivesText: currentLivesText,
         nextHalfLifeText: nextHalfLifeText,
         nextFullLifeText: nextFullLifeText,
+        cost: _buyLifeCost,
+        onBuyLife: _buyingLife
+            ? null
+            : () => _buyLifeFromDialog(dialogContext),
       ),
     );
   }
@@ -252,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: _isNavigating
+                        onPressed: _isNavigating || _buyingLife
                             ? null
                             : () {
                                 _safeNavigate(() async {
@@ -272,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _isNavigating
+                        onPressed: _isNavigating || _buyingLife
                             ? null
                             : () {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -352,7 +392,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               DocumentSnapshot<Map<String, dynamic>>>(
                             stream: progressRef.snapshots(),
                             builder: (context, progressSnap) {
-                              final progressData = progressSnap.data?.data() ?? {};
+                              final progressData =
+                                  progressSnap.data?.data() ?? {};
 
                               final completedLevels =
                                   (progressData['completedLevels']
@@ -364,7 +405,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               final completedCount = completedLevels.length;
                               final progress = levelCount == 0
                                   ? 0.0
-                                  : (completedCount / levelCount).clamp(0.0, 1.0);
+                                  : (completedCount / levelCount)
+                                      .clamp(0.0, 1.0);
 
                               int nextLevel = 1;
                               if (completedLevels.isNotEmpty) {
@@ -403,20 +445,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(14),
-                                  onTap: _isNavigating
+                                  onTap: _isNavigating || _buyingLife
                                       ? null
                                       : () {
                                           _safeNavigate(() async {
                                             final canPlay =
                                                 await _ensureHasLives(
-                                                    context, uid);
+                                              context,
+                                              uid,
+                                            );
                                             if (!canPlay) return;
 
                                             if (!context.mounted) return;
                                             await Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                builder: (_) => LevelSelectScreen(
+                                                builder: (_) =>
+                                                    LevelSelectScreen(
                                                   categoryId: categoryId,
                                                   categoryName: name,
                                                 ),
@@ -483,34 +528,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                           children: [
                                             Expanded(
                                               child: OutlinedButton.icon(
-                                                onPressed: _isNavigating
+                                                onPressed: _isNavigating ||
+                                                        _buyingLife
                                                     ? null
                                                     : () {
-                                                        _safeNavigate(() async {
-                                                          final canPlay =
-                                                              await _ensureHasLives(
-                                                                  context, uid);
-                                                          if (!canPlay) return;
+                                                        _safeNavigate(
+                                                          () async {
+                                                            final canPlay =
+                                                                await _ensureHasLives(
+                                                              context,
+                                                              uid,
+                                                            );
+                                                            if (!canPlay) {
+                                                              return;
+                                                            }
 
-                                                          if (!context.mounted) {
-                                                            return;
-                                                          }
-                                                          await Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                              builder: (_) =>
-                                                                  LevelSelectScreen(
-                                                                categoryId:
-                                                                    categoryId,
-                                                                categoryName:
-                                                                    name,
+                                                            if (!context
+                                                                .mounted) {
+                                                              return;
+                                                            }
+
+                                                            await Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder: (_) =>
+                                                                    LevelSelectScreen(
+                                                                  categoryId:
+                                                                      categoryId,
+                                                                  categoryName:
+                                                                      name,
+                                                                ),
                                                               ),
-                                                            ),
-                                                          );
-                                                        });
+                                                            );
+                                                          },
+                                                        );
                                                       },
                                                 icon: const Icon(
-                                                    Icons.map_outlined),
+                                                  Icons.map_outlined,
+                                                ),
                                                 label:
                                                     const Text('Ver niveles'),
                                               ),
@@ -518,68 +573,75 @@ class _HomeScreenState extends State<HomeScreen> {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: FilledButton.icon(
-                                                onPressed: _isNavigating
+                                                onPressed: _isNavigating ||
+                                                        _buyingLife
                                                     ? null
                                                     : completedAll
                                                         ? () {
                                                             _safeNavigate(
-                                                                () async {
-                                                              final canPlay =
-                                                                  await _ensureHasLives(
-                                                                      context,
-                                                                      uid);
-                                                              if (!canPlay) {
-                                                                return;
-                                                              }
+                                                              () async {
+                                                                final canPlay =
+                                                                    await _ensureHasLives(
+                                                                  context,
+                                                                  uid,
+                                                                );
+                                                                if (!canPlay) {
+                                                                  return;
+                                                                }
 
-                                                              if (!context
-                                                                  .mounted) {
-                                                                return;
-                                                              }
-                                                              await Navigator
-                                                                  .push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder: (_) =>
-                                                                      LevelSelectScreen(
-                                                                    categoryId:
-                                                                        categoryId,
-                                                                    categoryName:
-                                                                        name,
+                                                                if (!context
+                                                                    .mounted) {
+                                                                  return;
+                                                                }
+
+                                                                await Navigator
+                                                                    .push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        LevelSelectScreen(
+                                                                      categoryId:
+                                                                          categoryId,
+                                                                      categoryName:
+                                                                          name,
+                                                                    ),
                                                                   ),
-                                                                ),
-                                                              );
-                                                            });
+                                                                );
+                                                              },
+                                                            );
                                                           }
                                                         : () {
                                                             _safeNavigate(
-                                                                () async {
-                                                              final canPlay =
-                                                                  await _ensureHasLives(
-                                                                      context,
-                                                                      uid);
-                                                              if (!canPlay) {
-                                                                return;
-                                                              }
+                                                              () async {
+                                                                final canPlay =
+                                                                    await _ensureHasLives(
+                                                                  context,
+                                                                  uid,
+                                                                );
+                                                                if (!canPlay) {
+                                                                  return;
+                                                                }
 
-                                                              if (!context
-                                                                  .mounted) {
-                                                                return;
-                                                              }
-                                                              await Navigator
-                                                                  .push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder: (_) =>
-                                                                      LevelPlayScreen(
-                                                                    categoryId:
-                                                                        categoryId,
-                                                                    levelNumber:
-                                                                        nextLevel,
+                                                                if (!context
+                                                                    .mounted) {
+                                                                  return;
+                                                                }
+
+                                                                await Navigator
+                                                                    .push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        LevelPlayScreen(
+                                                                      categoryId:
+                                                                          categoryId,
+                                                                      levelNumber:
+                                                                          nextLevel,
+                                                                    ),
                                                                   ),
-                                                                ),
-                                                              );
-                                                            });
+                                                                );
+                                                              },
+                                                            );
                                                           },
                                                 icon: Icon(
                                                   completedAll
@@ -610,7 +672,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          if (_isNavigating)
+          if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withOpacity(0.4),
               child: const Center(
@@ -681,11 +743,15 @@ class _NoLivesDialog extends StatelessWidget {
   final String currentLivesText;
   final String nextHalfLifeText;
   final String nextFullLifeText;
+  final VoidCallback? onBuyLife;
+  final int cost;
 
   const _NoLivesDialog({
     required this.currentLivesText,
     required this.nextHalfLifeText,
     required this.nextFullLifeText,
+    this.onBuyLife,
+    this.cost = 10,
   });
 
   @override
@@ -720,7 +786,7 @@ class _NoLivesDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               'Necesitas al menos 1 vida completa para entrar a un nivel.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -775,6 +841,15 @@ class _NoLivesDialog extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onBuyLife,
+                icon: const Icon(Icons.favorite),
+                label: Text('Recuperar 1 vida ($cost monedas)'),
+              ),
             ),
           ],
         ),

@@ -33,6 +33,8 @@ class DailyChallengeSaveResult {
   final int correct;
   final int totalAnswered;
   final int coinsEarned;
+  final int streak;
+  final int streakBonusCoins;
 
   const DailyChallengeSaveResult({
     required this.saved,
@@ -40,7 +42,11 @@ class DailyChallengeSaveResult {
     required this.correct,
     required this.totalAnswered,
     required this.coinsEarned,
+    required this.streak,
+    required this.streakBonusCoins,
   });
+
+  int get totalCoinsEarned => coinsEarned + streakBonusCoins;
 }
 
 class DailyChallengeService {
@@ -75,6 +81,30 @@ class DailyChallengeService {
 
   int calculateCoinsEarned(int correct) {
     return (correct ~/ correctPerCoinBlock) * coinsPerBlock;
+  }
+
+  int calculateStreakBonusCoins(int streak) {
+    if (streak > 0 && streak % 14 == 0) return 30;
+    if (streak > 0 && streak % 7 == 0) return 15;
+    if (streak > 0 && streak % 3 == 0) return 5;
+    return 0;
+  }
+
+  DateTime _dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  bool _isYesterday(String? dateId) {
+    if (dateId == null || dateId.isEmpty) return false;
+
+    final lastDate = DateTime.tryParse(dateId);
+    if (lastDate == null) return false;
+
+    final today = _dateOnly(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    final normalizedLast = _dateOnly(lastDate);
+    return normalizedLast == yesterday;
   }
 
   Future<bool> hasPlayedToday(String uid) async {
@@ -235,10 +265,14 @@ class DailyChallengeService {
 
     return _db.runTransaction((tx) async {
       final dailySnap = await tx.get(dailyRef);
+      final userSnap = await tx.get(userRef);
+
       final alreadyPlayed = dailySnap.data()?['played'] == true;
 
       if (alreadyPlayed) {
         final data = dailySnap.data() ?? {};
+        final userData = userSnap.data() ?? {};
+
         return DailyChallengeSaveResult(
           saved: false,
           alreadyPlayed: true,
@@ -246,8 +280,23 @@ class DailyChallengeService {
           totalAnswered:
               ((data['totalAnswered'] ?? totalAnswered) as num).toInt(),
           coinsEarned: ((data['coinsEarned'] ?? 0) as num).toInt(),
+          streak:
+              ((data['streak'] ?? userData['dailyStreak'] ?? 0) as num).toInt(),
+          streakBonusCoins:
+              ((data['streakBonusCoins'] ?? 0) as num).toInt(),
         );
       }
+
+      final userData = userSnap.data() ?? {};
+      final previousStreak = ((userData['dailyStreak'] ?? 0) as num).toInt();
+      final lastDailyPlayed = userData['lastDailyPlayed']?.toString();
+
+      final newStreak = _isYesterday(lastDailyPlayed)
+          ? previousStreak + 1
+          : 1;
+
+      final streakBonusCoins = calculateStreakBonusCoins(newStreak);
+      final totalCoinsToAdd = coinsEarned + streakBonusCoins;
 
       tx.set(dailyRef, {
         'dateId': dateId,
@@ -255,14 +304,18 @@ class DailyChallengeService {
         'correct': correct,
         'totalAnswered': totalAnswered,
         'coinsEarned': coinsEarned,
+        'streak': newStreak,
+        'streakBonusCoins': streakBonusCoins,
+        'totalCoinsEarned': totalCoinsToAdd,
         'finishedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      if (coinsEarned > 0) {
-        tx.set(userRef, {
-          'coins': FieldValue.increment(coinsEarned),
-        }, SetOptions(merge: true));
-      }
+      tx.set(userRef, {
+        'dailyStreak': newStreak,
+        'lastDailyPlayed': dateId,
+        if (totalCoinsToAdd > 0)
+          'coins': FieldValue.increment(totalCoinsToAdd),
+      }, SetOptions(merge: true));
 
       return DailyChallengeSaveResult(
         saved: true,
@@ -270,6 +323,8 @@ class DailyChallengeService {
         correct: correct,
         totalAnswered: totalAnswered,
         coinsEarned: coinsEarned,
+        streak: newStreak,
+        streakBonusCoins: streakBonusCoins,
       );
     });
   }

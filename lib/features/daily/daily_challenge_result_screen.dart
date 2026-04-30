@@ -51,8 +51,19 @@ class DailyChallengeResultScreen extends StatelessWidget {
 
             _ResultRow(
               label: 'Coins earned',
-              value: '+${result.coinsEarned}',
+              value: '+${result.totalCoinsEarned}',
             ),
+
+            _ResultRow(
+              label: 'Daily streak',
+              value: '${result.streak} days',
+            ),
+
+            if (result.streakBonusCoins > 0)
+              _ResultRow(
+                label: 'Streak bonus',
+                value: '+${result.streakBonusCoins}',
+              ),
 
             if (result.alreadyPlayed) ...[
               const SizedBox(height: 16),

@@ -32,9 +32,55 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   int? _selectedIndex;
   bool? _lastCorrect;
+  Color _flashColor = Colors.transparent;
+
+  String? _coinPopupText;
+  int _lastCoinMilestone = 0;
 
   int get _liveCoinsEarned {
     return _service.calculateCoinsEarned(_correct);
+  }
+
+  int _getTargetDifficulty() {
+    if (_correct >= 16) return 3;
+    if (_correct >= 6) return 2;
+    return 1;
+  }
+
+  Map<String, dynamic> _currentQuestion() {
+    final targetDifficulty = _getTargetDifficulty();
+
+    final filtered = _questions.where((q) {
+      final rawDifficulty = q['sourceDifficulty'] ?? 1;
+      final difficulty = rawDifficulty is num
+          ? rawDifficulty.toInt()
+          : int.tryParse(rawDifficulty.toString()) ?? 1;
+
+      return difficulty == targetDifficulty;
+    }).toList();
+
+    final pool = filtered.isNotEmpty ? filtered : _questions;
+    return pool[_currentIndex % pool.length];
+  }
+
+  void _checkCoinMilestone() {
+    final milestone = _correct ~/ 10;
+
+    if (milestone > _lastCoinMilestone) {
+      _lastCoinMilestone = milestone;
+
+      setState(() {
+        _coinPopupText = '+5 Coins 🎉';
+      });
+
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (!mounted) return;
+
+        setState(() {
+          _coinPopupText = null;
+        });
+      });
+    }
   }
 
   @override
@@ -85,11 +131,21 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     }
 
     setState(() {
+      _flashColor = isCorrect
+          ? Colors.green.withOpacity(0.18)
+          : Colors.red.withOpacity(0.18);
       _selectedIndex = index;
       _lastCorrect = isCorrect;
       _totalAnswered++;
-      if (isCorrect) _correct++;
+
+      if (isCorrect) {
+        _correct++;
+      }
     });
+
+    if (isCorrect) {
+      _checkCoinMilestone();
+    }
 
     await Future.delayed(const Duration(milliseconds: 800));
 
@@ -99,6 +155,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       _currentIndex++;
       _selectedIndex = null;
       _lastCorrect = null;
+      _flashColor = Colors.transparent;
     });
   }
 
@@ -162,6 +219,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  String _difficultyLabel() {
+    final difficulty = _getTargetDifficulty();
+
+    if (difficulty == 3) return 'Hard';
+    if (difficulty == 2) return 'Medium';
+    return 'Easy';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -176,7 +241,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       );
     }
 
-    final q = _questions[_currentIndex % _questions.length];
+    final q = _currentQuestion();
     final options = _options(q);
     final correctIndex = _answerIndex(q);
 
@@ -184,83 +249,133 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       appBar: AppBar(
         title: const Text('Daily Challenge'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        color: _flashColor,
+        child: Stack(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _HeaderCard(
-                    icon: Icons.timer,
-                    label: 'Time',
-                    value: _formatTime(_timeLeft),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _HeaderCard(
+                          icon: Icons.timer,
+                          label: 'Time',
+                          value: _formatTime(_timeLeft),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _HeaderCard(
+                          icon: Icons.star,
+                          label: 'Score',
+                          value: '$_correct',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _HeaderCard(
+                          icon: Icons.monetization_on,
+                          label: 'Coins',
+                          value: '+$_liveCoinsEarned',
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _HeaderCard(
-                    icon: Icons.star,
-                    label: 'Score',
-                    value: '$_correct',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _HeaderCard(
-                    icon: Icons.monetization_on,
-                    label: 'Coins',
-                    value: '+$_liveCoinsEarned',
-                  ),
-                ),
-              ],
-            ),
 
-            const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
-            Text(
-              _questionText(q),
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
+                  Text(
+                    'Difficulty: ${_difficultyLabel()}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  Text(
+                    _questionText(q),
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  ...List.generate(options.length, (i) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _buttonColor(i, correctIndex),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 16,
+                            ),
+                          ),
+                          onPressed: _selectedIndex != null
+                              ? null
+                              : () => _answer(i, correctIndex),
+                          child: Text(
+                            options[i],
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+
+                  const Spacer(),
+
+                  Text(
+                    'Answered: $_totalAnswered',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
 
-            const SizedBox(height: 24),
-
-            ...List.generate(options.length, (i) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _buttonColor(i, correctIndex),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: 16,
+            if (_coinPopupText != null)
+              Center(
+                child: AnimatedOpacity(
+                  opacity: _coinPopupText == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      _coinPopupText!,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
-                    onPressed: _selectedIndex != null
-                        ? null
-                        : () => _answer(i, correctIndex),
-                    child: Text(
-                      options[i],
-                      textAlign: TextAlign.center,
-                    ),
                   ),
                 ),
-              );
-            }),
-
-            const Spacer(),
-
-            Text(
-              'Answered: $_totalAnswered',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+              ),
           ],
         ),
       ),

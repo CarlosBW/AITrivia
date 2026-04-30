@@ -7,13 +7,24 @@ class DailyChallengeSession {
   final int durationSeconds;
   final List<Map<String, dynamic>> questions;
   final bool played;
+  final DateTime? startedAt;
 
   const DailyChallengeSession({
     required this.dateId,
     required this.durationSeconds,
     required this.questions,
     required this.played,
+    this.startedAt,
   });
+
+  int get remainingSeconds {
+    if (startedAt == null) return durationSeconds;
+
+    final elapsed = DateTime.now().difference(startedAt!).inSeconds;
+    final remaining = durationSeconds - elapsed;
+
+    return remaining < 0 ? 0 : remaining;
+  }
 }
 
 class DailyChallengeSaveResult {
@@ -85,12 +96,16 @@ class DailyChallengeService {
         .map((q) => Map<String, dynamic>.from(q))
         .toList();
 
+    final startedAtRaw = data['startedAt'];
+    final startedAt = startedAtRaw is Timestamp ? startedAtRaw.toDate() : null;
+
     return DailyChallengeSession(
       dateId: dateId,
       durationSeconds:
           ((data['durationSeconds'] ?? defaultDurationSeconds) as num).toInt(),
       questions: questions,
       played: data['played'] == true,
+      startedAt: startedAt,
     );
   }
 
@@ -111,6 +126,10 @@ class DailyChallengeService {
           .map((q) => Map<String, dynamic>.from(q))
           .toList();
 
+      final startedAtRaw = existingData['startedAt'];
+      final startedAt =
+          startedAtRaw is Timestamp ? startedAtRaw.toDate() : null;
+
       return DailyChallengeSession(
         dateId: dateId,
         durationSeconds:
@@ -118,10 +137,12 @@ class DailyChallengeService {
                 .toInt(),
         questions: questions,
         played: existingData['played'] == true,
+        startedAt: startedAt,
       );
     }
 
     final questions = await loadRandomQuestions(limit: questionLimit);
+    final startedAt = DateTime.now();
 
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
@@ -135,7 +156,7 @@ class DailyChallengeService {
         'correct': 0,
         'totalAnswered': 0,
         'coinsEarned': 0,
-        'startedAt': FieldValue.serverTimestamp(),
+        'startedAt': Timestamp.fromDate(startedAt),
       }, SetOptions(merge: true));
     });
 
@@ -147,6 +168,7 @@ class DailyChallengeService {
       durationSeconds: durationSeconds,
       questions: questions,
       played: false,
+      startedAt: startedAt,
     );
   }
 

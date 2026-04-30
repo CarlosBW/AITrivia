@@ -4,9 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../daily/daily_challenge_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../versus/versus_menu_screen.dart';
+import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -287,7 +289,49 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
+
                 const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isNavigating || _buyingLife
+                        ? null
+                        : () {
+                            _safeNavigate(() async {
+                              final alreadyPlayed =
+                                  await DailyChallengeService.instance
+                                      .hasPlayedToday(uid);
+
+                              if (!context.mounted) return;
+
+                              if (alreadyPlayed) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Ya jugaste el Daily Challenge de hoy.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DailyChallengeScreen(uid: uid),
+                                ),
+                              );
+                            });
+                          },
+                    icon: const Icon(Icons.calendar_today),
+                    label: const Text('Daily Challenge'),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
                 Row(
                   children: [
                     Expanded(
@@ -329,7 +373,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 20),
+
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -340,7 +386,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                     stream: categoriesQuery.snapshots(),

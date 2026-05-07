@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
-import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
-import '../versus/versus_menu_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 
@@ -22,10 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _lifeState;
   bool _loadingLives = true;
   Timer? _lifeTimer;
-  bool _isNavigating = false;
-  bool _buyingLife = false;
 
-  static const int _buyLifeCost = 10;
+  int? _lastSeenStreak;
+  bool _showStreakPopup = false;
+  bool _streakGlow = false;
 
   late final String uid;
 
@@ -59,17 +58,31 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _safeNavigate(Future<void> Function() action) async {
-    if (_isNavigating) return;
+  void _handleStreakChange(int streak) {
+    if (_lastSeenStreak == null) {
+      _lastSeenStreak = streak;
+      return;
+    }
 
-    setState(() => _isNavigating = true);
+    if (streak > _lastSeenStreak!) {
+      _lastSeenStreak = streak;
 
-    try {
-      await action();
-    } finally {
-      if (mounted) {
-        setState(() => _isNavigating = false);
-      }
+      HapticFeedback.mediumImpact();
+
+      setState(() {
+        _showStreakPopup = true;
+        _streakGlow = true;
+      });
+
+      Future.delayed(const Duration(milliseconds: 1300), () {
+        if (!mounted) return;
+        setState(() {
+          _showStreakPopup = false;
+          _streakGlow = false;
+        });
+      });
+    } else {
+      _lastSeenStreak = streak;
     }
   }
 
@@ -116,7 +129,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     final coins = data['coins'] ?? 0;
                     final xp = data['xp'] ?? 0;
                     final passes = data['freeTopicPasses'] ?? 0;
-                    final streak = data['dailyStreak'] ?? 0;
+                    final streak = ((data['dailyStreak'] ?? 0) as num).toInt();
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _handleStreakChange(streak);
+                    });
 
                     return Container(
                       width: double.infinity,
@@ -181,9 +198,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             fullWidth: true,
                           ),
                           const SizedBox(height: 14),
-
-                          /// 🔥 STREAK PRO
-                          _StreakCard(streak: streak),
+                          _StreakCard(
+                            streak: streak,
+                            glow: _streakGlow,
+                          ),
                         ],
                       ),
                     );
@@ -196,6 +214,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () async {
                     final alreadyPlayed =
                         await DailyChallengeService.instance.hasPlayedToday(uid);
+
+                    if (!context.mounted) return;
 
                     if (alreadyPlayed) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context, snap) {
                       if (!snap.hasData) {
                         return const Center(
-                            child: CircularProgressIndicator());
+                          child: CircularProgressIndicator(),
+                        );
                       }
 
                       final docs = snap.data!.docs;
@@ -234,7 +255,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemCount: docs.length,
                         itemBuilder: (_, i) {
                           final doc = docs[i];
-                          final name = doc['name'];
+                          final data = doc.data();
+                          final name = (data['name'] ?? doc.id).toString();
 
                           return ListTile(
                             title: Text(name),
@@ -258,6 +280,57 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+
+          if (_showStreakPopup)
+            Center(
+              child: AnimatedScale(
+                scale: _showStreakPopup ? 1.0 : 0.7,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                child: AnimatedOpacity(
+                  opacity: _showStreakPopup ? 1 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 26,
+                      vertical: 18,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.deepOrange.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '🔥 STREAK UP!',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Keep coming back daily',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -299,8 +372,12 @@ class _StatCard extends StatelessWidget {
 
 class _StreakCard extends StatelessWidget {
   final int streak;
+  final bool glow;
 
-  const _StreakCard({required this.streak});
+  const _StreakCard({
+    required this.streak,
+    required this.glow,
+  });
 
   Color _color() {
     if (streak >= 7) return Colors.red;
@@ -308,32 +385,89 @@ class _StreakCard extends StatelessWidget {
     return Colors.grey;
   }
 
+  String _subtitle() {
+    if (streak >= 14) return 'Legendary streak!';
+    if (streak >= 7) return 'On fire!';
+    if (streak >= 3) return 'Keep it going!';
+    return 'Start your streak today';
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _color();
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withOpacity(glow ? 0.30 : 0.15),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(glow ? 0.9 : 0.35),
+          width: glow ? 2 : 1,
+        ),
+        boxShadow: glow
+            ? [
+                BoxShadow(
+                  color: color.withOpacity(0.45),
+                  blurRadius: 18,
+                  spreadRadius: 2,
+                ),
+              ]
+            : [],
       ),
       child: Row(
         children: [
-          Icon(Icons.local_fire_department, color: color),
+          AnimatedScale(
+            scale: glow ? 1.25 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: Icon(
+              Icons.local_fire_department,
+              color: color,
+              size: 30,
+            ),
+          ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Streak: $streak días',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Streak: $streak días',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _subtitle(),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
             ),
           ),
           if (streak > 0 && streak % 3 == 0)
-            const Text('🎁', style: TextStyle(fontSize: 20)),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Reward!',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
+              ),
+            ),
         ],
       ),
     );

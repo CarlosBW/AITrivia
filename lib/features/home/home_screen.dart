@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
+import '../daily/daily_leaderboard_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../versus/versus_menu_screen.dart';
@@ -172,9 +173,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ? secondsToNextHalfLife
             : secondsToNextHalfLife + 150;
 
-    final nextFullLifeText = secondsToFullLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToFullLife);
+    final nextFullLifeText =
+        secondsToFullLife == null ? '--:--' : _formatCountdown(secondsToFullLife);
 
     await showDialog(
       context: context,
@@ -184,8 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
         nextHalfLifeText: nextHalfLifeText,
         nextFullLifeText: nextFullLifeText,
         cost: _buyLifeCost,
-        onBuyLife:
-            _buyingLife ? null : () => _buyLifeFromDialog(dialogContext),
+        onBuyLife: _buyingLife ? null : () => _buyLifeFromDialog(dialogContext),
       ),
     );
   }
@@ -196,8 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
     final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
-    final secondsToNextHalfLife =
-        lifeState['secondsToNextHalfLife'] as int?;
+    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
 
     if (lifeUnits < 2) {
       if (!context.mounted) return false;
@@ -341,9 +339,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? null
                         : () {
                             _safeNavigate(() async {
-                              final alreadyPlayed =
-                                  await DailyChallengeService.instance
-                                      .hasPlayedToday(uid);
+                              final alreadyPlayed = await DailyChallengeService
+                                  .instance
+                                  .hasPlayedToday(uid);
 
                               if (!context.mounted) return;
 
@@ -369,6 +367,30 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                     icon: const Icon(Icons.calendar_today),
                     label: const Text('Daily Challenge'),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isNavigating || _buyingLife
+                        ? null
+                        : () {
+                            _safeNavigate(() async {
+                              if (!context.mounted) return;
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const DailyLeaderboardScreen(),
+                                ),
+                              );
+                            });
+                          },
+                    icon: const Icon(Icons.emoji_events),
+                    label: const Text('Leaderboard'),
                   ),
                 ),
 
@@ -639,7 +661,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               return;
                                                             }
 
-                                                            await Navigator.push(
+                                                            await Navigator
+                                                                .push(
                                                               context,
                                                               MaterialPageRoute(
                                                                 builder: (_) =>

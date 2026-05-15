@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
+import '../../services/league_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -231,6 +232,11 @@ class ProfileScreen extends StatelessWidget {
 
           final levelInfo = PlayerLevelService.instance.getLevelInfo(xp);
           final level = levelInfo.level;
+          final leagueScore = ((data['leagueScore'] ?? 0) as num).toInt();
+
+          final league = LeagueService.instance.getLeagueFromScore(
+            leagueScore,
+          );
           final levelXp = levelInfo.currentLevelXp;
           final xpRequired = levelInfo.xpRequired;
           final progress = levelInfo.progress;
@@ -297,6 +303,34 @@ class ProfileScreen extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(league.colorValue).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Color(league.colorValue),
+                        ),
+                      ),
+                      child: Text(
+                        '${league.emoji} ${league.name} League',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(league.colorValue),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'League Score: $leagueScore',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 10),

@@ -7,6 +7,21 @@ import '../../services/daily_challenge_service.dart';
 class DailyLeaderboardScreen extends StatelessWidget {
   const DailyLeaderboardScreen({super.key});
 
+  String _avatarEmoji(String avatarId) {
+    const avatars = {
+      'avatar_1': '🧠',
+      'avatar_2': '🚀',
+      'avatar_3': '🎮',
+      'avatar_4': '🔥',
+      'avatar_5': '⭐',
+      'avatar_6': '🐱',
+      'avatar_7': '🤖',
+      'avatar_8': '🏆',
+    };
+
+    return avatars[avatarId] ?? '🙂';
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -50,35 +65,62 @@ class DailyLeaderboardScreen extends StatelessWidget {
             );
           }
 
-          return ListView.separated(
+          final topThree = docs.take(3).toList();
+
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = doc.data();
+            children: [
+              if (topThree.isNotEmpty)
+                _TopThreePodium(
+                  players: topThree,
+                  currentUid: uid,
+                  avatarBuilder: _avatarEmoji,
+                ),
 
-              final isMe = doc.id == uid;
-              final rank = index + 1;
+              const SizedBox(height: 16),
 
-              final displayName =
-                  (data['displayName'] ?? 'Player').toString();
-              final score = (data['score'] ?? 0).toString();
-              final correct = (data['correct'] ?? 0).toString();
-              final totalAnswered =
-                  (data['totalAnswered'] ?? 0).toString();
-              final streak = (data['streak'] ?? 0).toString();
+              const Text(
+                'Ranking',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
 
-              return _LeaderboardTile(
-                rank: rank,
-                displayName: displayName,
-                score: score,
-                correct: correct,
-                totalAnswered: totalAnswered,
-                streak: streak,
-                isMe: isMe,
-              );
-            },
+              const SizedBox(height: 10),
+
+              ...List.generate(docs.length, (index) {
+                final doc = docs[index];
+                final data = doc.data();
+
+                final isMe = doc.id == uid;
+                final rank = index + 1;
+
+                final displayName =
+                    (data['username'] ?? data['displayName'] ?? 'Player')
+                        .toString();
+                final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
+                final score = ((data['score'] ?? 0) as num).toInt();
+                final correct = ((data['correct'] ?? 0) as num).toInt();
+                final totalAnswered =
+                    ((data['totalAnswered'] ?? 0) as num).toInt();
+                final streak = ((data['streak'] ?? 0) as num).toInt();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _LeaderboardTile(
+                    rank: rank,
+                    avatar: _avatarEmoji(avatarId),
+                    displayName: displayName,
+                    score: score,
+                    correct: correct,
+                    totalAnswered: totalAnswered,
+                    streak: streak,
+                    isMe: isMe,
+                  ),
+                );
+              }),
+            ],
           );
         },
       ),
@@ -86,17 +128,167 @@ class DailyLeaderboardScreen extends StatelessWidget {
   }
 }
 
+class _TopThreePodium extends StatelessWidget {
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> players;
+  final String currentUid;
+  final String Function(String avatarId) avatarBuilder;
+
+  const _TopThreePodium({
+    required this.players,
+    required this.currentUid,
+    required this.avatarBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.deepPurple.withOpacity(0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (players.length > 1)
+            Expanded(
+              child: _PodiumPlayer(
+                rank: 2,
+                doc: players[1],
+                isMe: players[1].id == currentUid,
+                avatarBuilder: avatarBuilder,
+              ),
+            )
+          else
+            const Spacer(),
+
+          const SizedBox(width: 8),
+
+          Expanded(
+            child: _PodiumPlayer(
+              rank: 1,
+              doc: players[0],
+              isMe: players[0].id == currentUid,
+              avatarBuilder: avatarBuilder,
+              large: true,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          if (players.length > 2)
+            Expanded(
+              child: _PodiumPlayer(
+                rank: 3,
+                doc: players[2],
+                isMe: players[2].id == currentUid,
+                avatarBuilder: avatarBuilder,
+              ),
+            )
+          else
+            const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+class _PodiumPlayer extends StatelessWidget {
+  final int rank;
+  final QueryDocumentSnapshot<Map<String, dynamic>> doc;
+  final bool isMe;
+  final bool large;
+  final String Function(String avatarId) avatarBuilder;
+
+  const _PodiumPlayer({
+    required this.rank,
+    required this.doc,
+    required this.isMe,
+    required this.avatarBuilder,
+    this.large = false,
+  });
+
+  String _medal() {
+    if (rank == 1) return '🥇';
+    if (rank == 2) return '🥈';
+    return '🥉';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = doc.data();
+    final name = (data['username'] ?? data['displayName'] ?? 'Player')
+        .toString();
+    final avatar = avatarBuilder((data['avatarId'] ?? 'avatar_1').toString());
+    final score = ((data['score'] ?? 0) as num).toInt();
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 240),
+      padding: EdgeInsets.all(large ? 14 : 10),
+      decoration: BoxDecoration(
+        color: isMe ? Colors.deepPurple.withOpacity(0.20) : Colors.white70,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isMe ? Colors.deepPurple : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            _medal(),
+            style: TextStyle(fontSize: large ? 30 : 24),
+          ),
+          const SizedBox(height: 6),
+          CircleAvatar(
+            radius: large ? 32 : 25,
+            backgroundColor: Colors.black12,
+            child: Text(
+              avatar,
+              style: TextStyle(fontSize: large ? 30 : 24),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: large ? 15 : 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$score pts',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: Colors.deepPurple,
+              fontSize: large ? 14 : 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LeaderboardTile extends StatelessWidget {
   final int rank;
+  final String avatar;
   final String displayName;
-  final String score;
-  final String correct;
-  final String totalAnswered;
-  final String streak;
+  final int score;
+  final int correct;
+  final int totalAnswered;
+  final int streak;
   final bool isMe;
 
   const _LeaderboardTile({
     required this.rank,
+    required this.avatar,
     required this.displayName,
     required this.score,
     required this.correct,
@@ -137,9 +329,24 @@ class _LeaderboardTile extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor: rankColor.withOpacity(0.18),
-            child: Icon(
-              _rankIcon(),
-              color: rankColor,
+            child: rank <= 3
+                ? Icon(
+                    _rankIcon(),
+                    color: rankColor,
+                  )
+                : Text(
+                    '$rank',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+          ),
+
+          const SizedBox(width: 10),
+
+          CircleAvatar(
+            backgroundColor: Colors.white.withOpacity(0.80),
+            child: Text(
+              avatar,
+              style: const TextStyle(fontSize: 20),
             ),
           ),
 
@@ -150,7 +357,7 @@ class _LeaderboardTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '#$rank $displayName${isMe ? '  (You)' : ''}',
+                  '$displayName${isMe ? '  (You)' : ''}',
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -176,7 +383,7 @@ class _LeaderboardTile extends StatelessWidget {
                 style: TextStyle(fontSize: 12),
               ),
               Text(
-                score,
+                '$score',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

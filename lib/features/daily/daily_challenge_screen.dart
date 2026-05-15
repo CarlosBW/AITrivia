@@ -29,6 +29,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   Timer? _timer;
   bool _loading = true;
   bool _finishing = false;
+  bool _savingResults = false;
 
   int? _selectedIndex;
   bool? _lastCorrect;
@@ -113,14 +114,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       if (_timeLeft <= 0) {
         _finish();
       } else {
-        if (!mounted) return;
+        if (!mounted || _finishing) return;
         setState(() => _timeLeft--);
       }
     });
   }
 
   Future<void> _answer(int index, int correctIndex) async {
-    if (_finishing || _selectedIndex != null) return;
+    if (_finishing || _savingResults || _selectedIndex != null) return;
 
     final isCorrect = index == correctIndex;
 
@@ -149,7 +150,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     await Future.delayed(const Duration(milliseconds: 800));
 
-    if (!mounted) return;
+    if (!mounted || _finishing) return;
 
     setState(() {
       _currentIndex++;
@@ -165,20 +166,44 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     _finishing = true;
     _timer?.cancel();
 
-    final result = await _service.saveResult(
-      uid: widget.uid,
-      correct: _correct,
-      totalAnswered: _totalAnswered,
-    );
+    if (mounted) {
+      setState(() {
+        _savingResults = true;
+        _selectedIndex = null;
+        _coinPopupText = null;
+        _flashColor = Colors.transparent;
+      });
+    }
 
-    if (!mounted) return;
+    try {
+      final result = await _service.saveResult(
+        uid: widget.uid,
+        correct: _correct,
+        totalAnswered: _totalAnswered,
+      );
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DailyChallengeResultScreen(result: result),
-      ),
-    );
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DailyChallengeResultScreen(result: result),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _savingResults = false;
+        _finishing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving results: $e'),
+        ),
+      );
+    }
   }
 
   @override
@@ -227,6 +252,56 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     return 'Easy';
   }
 
+  Widget _savingOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.45),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.emoji_events,
+                size: 54,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Daily completed!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Saving your results...',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              CircularProgressIndicator(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -248,103 +323,98 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daily Challenge'),
+        automaticallyImplyLeading: !_savingResults,
       ),
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         color: _flashColor,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _HeaderCard(
-                          icon: Icons.timer,
-                          label: 'Time',
-                          value: _formatTime(_timeLeft),
+            AbsorbPointer(
+              absorbing: _savingResults,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _HeaderCard(
+                            icon: Icons.timer,
+                            label: 'Time',
+                            value: _formatTime(_timeLeft),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _HeaderCard(
-                          icon: Icons.star,
-                          label: 'Score',
-                          value: '$_correct',
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _HeaderCard(
+                            icon: Icons.star,
+                            label: 'Score',
+                            value: '$_correct',
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _HeaderCard(
-                          icon: Icons.monetization_on,
-                          label: 'Coins',
-                          value: '+$_liveCoinsEarned',
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _HeaderCard(
+                            icon: Icons.monetization_on,
+                            label: 'Coins',
+                            value: '+$_liveCoinsEarned',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    'Difficulty: ${_difficultyLabel()}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
+                      ],
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Text(
-                    _questionText(q),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 12),
+                    Text(
+                      'Difficulty: ${_difficultyLabel()}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  ...List.generate(options.length, (i) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _buttonColor(i, correctIndex),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                              horizontal: 16,
+                    const SizedBox(height: 20),
+                    Text(
+                      _questionText(q),
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ...List.generate(options.length, (i) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _buttonColor(i, correctIndex),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 16,
+                              ),
+                            ),
+                            onPressed: _selectedIndex != null || _savingResults
+                                ? null
+                                : () => _answer(i, correctIndex),
+                            child: Text(
+                              options[i],
+                              textAlign: TextAlign.center,
                             ),
                           ),
-                          onPressed: _selectedIndex != null
-                              ? null
-                              : () => _answer(i, correctIndex),
-                          child: Text(
-                            options[i],
-                            textAlign: TextAlign.center,
-                          ),
                         ),
-                      ),
-                    );
-                  }),
-
-                  const Spacer(),
-
-                  Text(
-                    'Answered: $_totalAnswered',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
+                      );
+                    }),
+                    const Spacer(),
+                    Text(
+                      'Answered: $_totalAnswered',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            if (_coinPopupText != null)
+            if (_coinPopupText != null && !_savingResults)
               Center(
                 child: AnimatedOpacity(
                   opacity: _coinPopupText == null ? 0 : 1,
@@ -376,6 +446,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                   ),
                 ),
               ),
+            if (_savingResults) _savingOverlay(),
           ],
         ),
       ),

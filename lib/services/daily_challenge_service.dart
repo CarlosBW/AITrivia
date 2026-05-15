@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'player_level_service.dart';
+
 class DailyChallengeSession {
   final String dateId;
   final int durationSeconds;
@@ -35,7 +37,12 @@ class DailyChallengeSaveResult {
   final int coinsEarned;
   final int streak;
   final int streakBonusCoins;
+  final int levelUpBonusCoins;
   final int score;
+  final bool leveledUp;
+  final int oldLevel;
+  final int newLevel;
+  final int xpEarned;
 
   const DailyChallengeSaveResult({
     required this.saved,
@@ -45,10 +52,16 @@ class DailyChallengeSaveResult {
     required this.coinsEarned,
     required this.streak,
     required this.streakBonusCoins,
+    required this.levelUpBonusCoins,
     required this.score,
+    required this.leveledUp,
+    required this.oldLevel,
+    required this.newLevel,
+    required this.xpEarned,
   });
 
-  int get totalCoinsEarned => coinsEarned + streakBonusCoins;
+  int get totalCoinsEarned =>
+      coinsEarned + streakBonusCoins + levelUpBonusCoins;
 }
 
 class DailyChallengeService {
@@ -96,14 +109,25 @@ class DailyChallengeService {
     return (correct ~/ correctPerCoinBlock) * coinsPerBlock;
   }
 
+  int calculateXpEarned({
+    required int correct,
+    required int totalAnswered,
+  }) {
+    final wrong = max(totalAnswered - correct, 0);
+    final baseXp = correct * 2;
+    final participationXp = totalAnswered > 0 ? 5 : 0;
+    final accuracyBonus = totalAnswered > 0 && wrong == 0 ? 5 : 0;
+
+    return baseXp + participationXp + accuracyBonus;
+  }
+
   int calculateScore({
     required int correct,
     required int totalAnswered,
     required int streak,
   }) {
-    final accuracyBonus = totalAnswered <= 0
-        ? 0
-        : ((correct / totalAnswered) * 100).round();
+    final accuracyBonus =
+        totalAnswered <= 0 ? 0 : ((correct / totalAnswered) * 100).round();
 
     final streakBonus = min(streak, 30) * 2;
 
@@ -115,6 +139,14 @@ class DailyChallengeService {
     if (streak > 0 && streak % 7 == 0) return 15;
     if (streak > 0 && streak % 3 == 0) return 5;
     return 0;
+  }
+
+  int calculateLevelUpBonusCoins({
+    required int oldLevel,
+    required int newLevel,
+  }) {
+    if (newLevel <= oldLevel) return 0;
+    return (newLevel - oldLevel) * 15;
   }
 
   DateTime _dateOnly(DateTime date) {
@@ -301,9 +333,8 @@ class DailyChallengeService {
       if (alreadyPlayed) {
         final data = dailySnap.data() ?? {};
         final userData = userSnap.data() ?? {};
-        final streak =
-            ((data['streak'] ?? userData['dailyStreak'] ?? 0) as num).toInt();
-        final score = ((data['score'] ?? 0) as num).toInt();
+        final userXp = ((userData['xp'] ?? 0) as num).toInt();
+        final level = PlayerLevelService.instance.getLevelInfo(userXp).level;
 
         return DailyChallengeSaveResult(
           saved: false,
@@ -312,30 +343,62 @@ class DailyChallengeService {
           totalAnswered:
               ((data['totalAnswered'] ?? totalAnswered) as num).toInt(),
           coinsEarned: ((data['coinsEarned'] ?? 0) as num).toInt(),
-          streak: streak,
+          streak:
+              ((data['streak'] ?? userData['dailyStreak'] ?? 0) as num).toInt(),
           streakBonusCoins:
               ((data['streakBonusCoins'] ?? 0) as num).toInt(),
-          score: score,
+          levelUpBonusCoins:
+              ((data['levelUpBonusCoins'] ?? 0) as num).toInt(),
+          score: ((data['score'] ?? 0) as num).toInt(),
+          leveledUp: false,
+          oldLevel: level,
+          newLevel: level,
+          xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
         );
       }
 
       final userData = userSnap.data() ?? {};
+
       final previousStreak = ((userData['dailyStreak'] ?? 0) as num).toInt();
       final lastDailyPlayed = userData['lastDailyPlayed']?.toString();
-      final displayName =
-          (userData['displayName'] ?? userData['name'] ?? 'Player').toString();
 
-      final newStreak = _isYesterday(lastDailyPlayed)
-          ? previousStreak + 1
-          : 1;
+      final username =
+          (userData['username'] ?? userData['displayName'] ?? 'Player')
+              .toString();
+      final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
+
+      final currentXp = ((userData['xp'] ?? 0) as num).toInt();
+      final oldLevel =
+          PlayerLevelService.instance.getLevelInfo(currentXp).level;
+
+      final xpEarned = calculateXpEarned(
+        correct: correct,
+        totalAnswered: totalAnswered,
+      );
+
+      final newXp = currentXp + xpEarned;
+      final newLevel = PlayerLevelService.instance.getLevelInfo(newXp).level;
+      final leveledUp = newLevel > oldLevel;
+
+      final levelUpBonusCoins = calculateLevelUpBonusCoins(
+        oldLevel: oldLevel,
+        newLevel: newLevel,
+      );
+
+      final newStreak =
+          _isYesterday(lastDailyPlayed) ? previousStreak + 1 : 1;
 
       final streakBonusCoins = calculateStreakBonusCoins(newStreak);
-      final totalCoinsToAdd = coinsEarned + streakBonusCoins;
+      final totalCoinsToAdd =
+          coinsEarned + streakBonusCoins + levelUpBonusCoins;
+
       final score = calculateScore(
         correct: correct,
         totalAnswered: totalAnswered,
         streak: newStreak,
       );
+
+      final wrongAnswers = max(totalAnswered - correct, 0);
 
       tx.set(dailyRef, {
         'dateId': dateId,
@@ -345,21 +408,39 @@ class DailyChallengeService {
         'coinsEarned': coinsEarned,
         'streak': newStreak,
         'streakBonusCoins': streakBonusCoins,
+        'levelUpBonusCoins': levelUpBonusCoins,
         'totalCoinsEarned': totalCoinsToAdd,
         'score': score,
+        'xpEarned': xpEarned,
+        'oldLevel': oldLevel,
+        'newLevel': newLevel,
+        'leveledUp': leveledUp,
         'finishedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       tx.set(userRef, {
+        'username': username,
+        'displayName': username,
+        'avatarId': avatarId,
         'dailyStreak': newStreak,
+        'maxDailyStreak': max(previousStreak, newStreak),
         'lastDailyPlayed': dateId,
+        'bestDailyScore': FieldValue.increment(0),
+        'gamesPlayed': FieldValue.increment(1),
+        'correctAnswers': FieldValue.increment(correct),
+        'wrongAnswers': FieldValue.increment(wrongAnswers),
+        'xp': FieldValue.increment(xpEarned),
+        'level': newLevel,
         if (totalCoinsToAdd > 0)
           'coins': FieldValue.increment(totalCoinsToAdd),
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       tx.set(leaderboardRef, {
         'uid': uid,
-        'displayName': displayName,
+        'username': username,
+        'displayName': username,
+        'avatarId': avatarId,
         'dateId': dateId,
         'correct': correct,
         'totalAnswered': totalAnswered,
@@ -367,8 +448,20 @@ class DailyChallengeService {
         'streak': newStreak,
         'coinsEarned': coinsEarned,
         'streakBonusCoins': streakBonusCoins,
+        'levelUpBonusCoins': levelUpBonusCoins,
+        'xpEarned': xpEarned,
+        'level': newLevel,
         'finishedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      final userBestDailyScore =
+          ((userData['bestDailyScore'] ?? 0) as num).toInt();
+
+      if (score > userBestDailyScore) {
+        tx.set(userRef, {
+          'bestDailyScore': score,
+        }, SetOptions(merge: true));
+      }
 
       return DailyChallengeSaveResult(
         saved: true,
@@ -378,7 +471,12 @@ class DailyChallengeService {
         coinsEarned: coinsEarned,
         streak: newStreak,
         streakBonusCoins: streakBonusCoins,
+        levelUpBonusCoins: levelUpBonusCoins,
         score: score,
+        leveledUp: leveledUp,
+        oldLevel: oldLevel,
+        newLevel: newLevel,
+        xpEarned: xpEarned,
       );
     });
   }

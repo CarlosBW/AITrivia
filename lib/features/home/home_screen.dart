@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
 import '../daily/daily_leaderboard_screen.dart';
+import '../profile/profile_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../versus/versus_menu_screen.dart';
@@ -224,6 +225,39 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('TriviaIA'),
         centerTitle: true,
+        actions: [
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: userRef.snapshots(),
+            builder: (context, snap) {
+              final data = snap.data?.data() ?? {};
+              final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
+              final username = (data['username'] ?? 'Player').toString();
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProfileScreen(),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 19,
+                    backgroundColor: Colors.deepPurple.withOpacity(0.15),
+                    child: Text(
+                      _avatarEmoji(avatarId, fallbackName: username),
+                      style: const TextStyle(fontSize: 19),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -855,6 +889,26 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+
+String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
+  const avatars = {
+    'avatar_1': '🧠',
+    'avatar_2': '🚀',
+    'avatar_3': '🎮',
+    'avatar_4': '🔥',
+    'avatar_5': '⭐',
+    'avatar_6': '🐱',
+    'avatar_7': '🤖',
+    'avatar_8': '🏆',
+  };
+
+  if (avatars.containsKey(avatarId)) return avatars[avatarId]!;
+
+  final trimmed = fallbackName.trim();
+  if (trimmed.isEmpty) return '🙂';
+  return trimmed.characters.first.toUpperCase();
 }
 
 class _StatCard extends StatelessWidget {

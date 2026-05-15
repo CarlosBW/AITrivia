@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'player_level_service.dart';
 import 'league_service.dart';
+import 'weekly_league_service.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -326,6 +327,7 @@ class DailyChallengeService {
     final dailyRef = _dailyRef(uid: uid, dateId: dateId);
     final userRef = _db.collection('users').doc(uid);
     final leaderboardRef = _leaderboardPlayerRef(uid: uid, dateId: dateId);
+    final weekId = WeeklyLeagueService.instance.currentWeekId();
     final coinsEarned = calculateCoinsEarned(correct);
 
     return _db.runTransaction((tx) async {
@@ -404,6 +406,12 @@ class DailyChallengeService {
       final league =
           LeagueService.instance.getLeagueFromScore(totalLeagueScore);
 
+      final weeklyRef = WeeklyLeagueService.instance.weeklyPlayerRef(
+        uid: uid,
+        weekId: weekId,
+        leagueId: league.id,
+      );
+
       final wrongAnswers = max(totalAnswered - correct, 0);
 
       tx.set(
@@ -473,6 +481,24 @@ class DailyChallengeService {
             'leagueName': league.name,
           },
           SetOptions(merge: true));
+
+      tx.set(
+        weeklyRef,
+        {
+          'uid': uid,
+          'username': username,
+          'displayName': username,
+          'avatarId': avatarId,
+          'weekId': weekId,
+          'leagueId': league.id,
+          'leagueName': league.name,
+          'weeklyScore': FieldValue.increment(score),
+          'level': newLevel,
+          'streak': newStreak,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
       final userBestDailyScore =
           ((userData['bestDailyScore'] ?? 0) as num).toInt();

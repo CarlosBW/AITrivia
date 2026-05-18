@@ -7,12 +7,14 @@ import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
 import '../daily/daily_leaderboard_screen.dart';
+import '../leagues/weekly_league_screen.dart';
 import '../profile/profile_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../versus/versus_menu_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
+import '../../services/season_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _lifeTimer;
   bool _isNavigating = false;
   bool _buyingLife = false;
+  bool _hasPendingSeasonRewards = false;
+  bool _checkingPendingSeasonRewards = false;
 
   int? _lastSeenStreak;
   bool _showStreakPopup = false;
@@ -41,21 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     uid = FirebaseAuth.instance.currentUser!.uid;
     _initLives();
+    _checkPendingSeasonRewards();
     _startLifeTimer();
   }
 
   Future<void> _initLives() async {
     await LifeService.instance.ensureUserLifeDoc(uid);
-    await _refreshLives();
-  }
 
-  void _startLifeTimer() {
-    _lifeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _refreshLives();
-    });
-  }
-
-  Future<void> _refreshLives() async {
+    // One Firestore sync when Home opens. After this, the countdown is local.
     final state = await LifeService.instance.refreshLives(uid);
 
     if (!mounted) return;
@@ -64,6 +61,57 @@ class _HomeScreenState extends State<HomeScreen> {
       _lifeState = state;
       _loadingLives = false;
     });
+  }
+
+  void _startLifeTimer() {
+    _lifeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _tickLivesLocally();
+    });
+  }
+
+  void _tickLivesLocally() {
+    if (_lifeState == null || !mounted) return;
+
+    setState(() {
+      _lifeState = LifeService.instance.calculateLocalLifeState(_lifeState!);
+      _loadingLives = false;
+    });
+  }
+
+  Future<void> _syncLivesFromFirestore() async {
+    final state = await LifeService.instance.refreshLives(uid);
+
+    if (!mounted) return;
+
+    setState(() {
+      _lifeState = state;
+      _loadingLives = false;
+    });
+  }
+
+
+  Future<void> _checkPendingSeasonRewards() async {
+    if (_checkingPendingSeasonRewards) return;
+
+    setState(() => _checkingPendingSeasonRewards = true);
+
+    try {
+      final hasPending = await SeasonService.instance.hasPendingSeasonRewards(
+        uid: uid,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _hasPendingSeasonRewards = hasPending;
+      });
+    } catch (_) {
+      // Do not block Home if reward check fails.
+    } finally {
+      if (mounted) {
+        setState(() => _checkingPendingSeasonRewards = false);
+      }
+    }
   }
 
   Future<void> _safeNavigate(Future<void> Function() action) async {
@@ -121,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
         cost: _buyLifeCost,
       );
 
-      await _refreshLives();
+      await _syncLivesFromFirestore();
 
       if (!mounted) return;
 
@@ -174,8 +222,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ? secondsToNextHalfLife
             : secondsToNextHalfLife + 150;
 
-    final nextFullLifeText =
-        secondsToFullLife == null ? '--:--' : _formatCountdown(secondsToFullLife);
+    final nextFullLifeText = secondsToFullLife == null
+        ? '--:--'
+        : _formatCountdown(secondsToFullLife);
 
     await showDialog(
       context: context,
@@ -193,6 +242,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<bool> _ensureHasLives(BuildContext context, String uid) async {
     await LifeService.instance.ensureUserLifeDoc(uid);
     final lifeState = await LifeService.instance.refreshLives(uid);
+
+    if (mounted) {
+      setState(() {
+        _lifeState = lifeState;
+        _loadingLives = false;
+      });
+    }
 
     final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
     final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
@@ -363,9 +419,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -403,9 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: const Text('Daily Challenge'),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -427,9 +479,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: const Text('Leaderboard'),
                   ),
                 ),
-
                 const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isNavigating || _buyingLife
+                        ? null
+                        : () {
+                            _safeNavigate(() async {
+                              if (!context.mounted) return;
 
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const WeeklyLeagueScreen(),
+                                ),
+                              );
+
+                              await _checkPendingSeasonRewards();
+                            });
+                          },
+                    icon: _WeeklyButtonIcon(
+                      hasPendingRewards: _hasPendingSeasonRewards,
+                      checking: _checkingPendingSeasonRewards,
+                    ),
+                    label: Text(
+                      _hasPendingSeasonRewards
+                          ? 'Weekly League • Reward!'
+                          : 'Weekly League',
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -471,9 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -484,9 +563,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                     stream: categoriesQuery.snapshots(),
@@ -675,42 +752,42 @@ class _HomeScreenState extends State<HomeScreen> {
                                           children: [
                                             Expanded(
                                               child: OutlinedButton.icon(
-                                                onPressed: _isNavigating ||
-                                                        _buyingLife
-                                                    ? null
-                                                    : () {
-                                                        _safeNavigate(
-                                                          () async {
-                                                            final canPlay =
-                                                                await _ensureHasLives(
-                                                              context,
-                                                              uid,
-                                                            );
-                                                            if (!canPlay) {
-                                                              return;
-                                                            }
+                                                onPressed:
+                                                    _isNavigating || _buyingLife
+                                                        ? null
+                                                        : () {
+                                                            _safeNavigate(
+                                                              () async {
+                                                                final canPlay =
+                                                                    await _ensureHasLives(
+                                                                  context,
+                                                                  uid,
+                                                                );
+                                                                if (!canPlay) {
+                                                                  return;
+                                                                }
 
-                                                            if (!context
-                                                                .mounted) {
-                                                              return;
-                                                            }
+                                                                if (!context
+                                                                    .mounted) {
+                                                                  return;
+                                                                }
 
-                                                            await Navigator
-                                                                .push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                builder: (_) =>
-                                                                    LevelSelectScreen(
-                                                                  categoryId:
-                                                                      categoryId,
-                                                                  categoryName:
-                                                                      name,
-                                                                ),
-                                                              ),
+                                                                await Navigator
+                                                                    .push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder: (_) =>
+                                                                        LevelSelectScreen(
+                                                                      categoryId:
+                                                                          categoryId,
+                                                                      categoryName:
+                                                                          name,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              },
                                                             );
                                                           },
-                                                        );
-                                                      },
                                                 icon: const Icon(
                                                   Icons.map_outlined,
                                                 ),
@@ -820,7 +897,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
           if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withOpacity(0.4),
@@ -838,7 +914,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
           if (_showStreakPopup)
             Center(
               child: AnimatedScale(
@@ -891,7 +966,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
 String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
   const avatars = {
     'avatar_1': '🧠',
@@ -909,6 +983,50 @@ String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
   final trimmed = fallbackName.trim();
   if (trimmed.isEmpty) return '🙂';
   return trimmed.characters.first.toUpperCase();
+}
+
+
+class _WeeklyButtonIcon extends StatelessWidget {
+  final bool hasPendingRewards;
+  final bool checking;
+
+  const _WeeklyButtonIcon({
+    required this.hasPendingRewards,
+    required this.checking,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const Icon(Icons.workspace_premium),
+        if (checking)
+          const Positioned(
+            right: -5,
+            top: -5,
+            child: SizedBox(
+              width: 9,
+              height: 9,
+              child: CircularProgressIndicator(strokeWidth: 1.5),
+            ),
+          )
+        else if (hasPendingRewards)
+          Positioned(
+            right: -5,
+            top: -5,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _StatCard extends StatelessWidget {

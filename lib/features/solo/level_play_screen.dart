@@ -64,7 +64,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   int _lifeUnits = 10;
   int _maxLifeUnits = 10;
+  int _lifeRegenSeconds = LifeService.defaultRegenSeconds;
   int? _secondsToNextHalfLife;
+  Timestamp? _lastLifeTickAt;
   Timer? _lifeUiTimer;
 
   bool _isNavigating = false;
@@ -104,7 +106,27 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     }
   }
 
-  Future<void> _refreshLivesUi() async {
+  void _refreshLivesUi() {
+    if (!mounted) return;
+
+    final localState = LifeService.instance.calculateLocalLifeState({
+      'lifeUnits': _lifeUnits,
+      'maxLifeUnits': _maxLifeUnits,
+      'lifeRegenSeconds': _lifeRegenSeconds,
+      'lastLifeTickAt': _lastLifeTickAt,
+    });
+
+    setState(() {
+      _lifeUnits = (localState['lifeUnits'] ?? _lifeUnits) as int;
+      _maxLifeUnits = (localState['maxLifeUnits'] ?? _maxLifeUnits) as int;
+      _lifeRegenSeconds =
+          (localState['lifeRegenSeconds'] ?? _lifeRegenSeconds) as int;
+      _secondsToNextHalfLife = localState['secondsToNextHalfLife'] as int?;
+      _lastLifeTickAt = localState['lastLifeTickAt'] as Timestamp?;
+    });
+  }
+
+  Future<void> _syncLivesUiFromFirestore() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -115,7 +137,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     setState(() {
       _lifeUnits = (state['lifeUnits'] ?? _lifeUnits) as int;
       _maxLifeUnits = (state['maxLifeUnits'] ?? _maxLifeUnits) as int;
+      _lifeRegenSeconds =
+          (state['lifeRegenSeconds'] ?? _lifeRegenSeconds) as int;
       _secondsToNextHalfLife = state['secondsToNextHalfLife'] as int?;
+      _lastLifeTickAt = state['lastLifeTickAt'] as Timestamp?;
     });
   }
 
@@ -132,7 +157,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     setState(() {
       _lifeUnits = lifeUnits;
       _maxLifeUnits = (state['maxLifeUnits'] ?? _maxLifeUnits) as int;
+      _lifeRegenSeconds =
+          (state['lifeRegenSeconds'] ?? _lifeRegenSeconds) as int;
       _secondsToNextHalfLife = state['secondsToNextHalfLife'] as int?;
+      _lastLifeTickAt = state['lastLifeTickAt'] as Timestamp?;
 
       if (lifeUnits <= 0) {
         _endedByNoLives = true;
@@ -154,7 +182,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         cost: _buyLifeCost,
       );
 
-      await _refreshLivesUi();
+      await _syncLivesUiFromFirestore();
 
       if (!mounted) return;
 
@@ -196,7 +224,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         cost: _buyLifeCost,
       );
 
-      await _refreshLivesUi();
+      await _syncLivesUiFromFirestore();
 
       if (!mounted) return;
 
@@ -379,7 +407,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       await LifeService.instance.ensureUserLifeDoc(uid);
       final ok = await LifeService.instance.tryConsumeLevelEntry(uid);
 
-      await _refreshLivesUi();
+      await _syncLivesUiFromFirestore();
 
       if (!ok) {
         _lifeGateError =

@@ -48,8 +48,8 @@ class DailyLeaderboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Daily Leaderboard'),
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: leaderboardQuery.snapshots(),
+      body: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        future: leaderboardQuery.get(),
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(
@@ -60,8 +60,17 @@ class DailyLeaderboardScreen extends StatelessWidget {
             );
           }
 
-          if (!snap.hasData) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snap.hasData) {
+            return const Center(
+              child: Text(
+                'No leaderboard data available.',
+                textAlign: TextAlign.center,
+              ),
+            );
           }
 
           final docs = snap.data!.docs;

@@ -328,6 +328,11 @@ class DailyChallengeService {
     final userRef = _db.collection('users').doc(uid);
     final leaderboardRef = _leaderboardPlayerRef(uid: uid, dateId: dateId);
     final weekId = WeeklyLeagueService.instance.currentWeekId();
+    final weeklyParticipationRef = _db
+        .collection('users')
+        .doc(uid)
+        .collection('weekly_participation')
+        .doc(weekId);
     final coinsEarned = calculateCoinsEarned(correct);
 
     return _db.runTransaction((tx) async {
@@ -493,6 +498,21 @@ class DailyChallengeService {
           'leagueId': league.id,
           'leagueName': league.name,
           'weeklyScore': FieldValue.increment(score),
+          'level': newLevel,
+          'streak': newStreak,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        weeklyParticipationRef,
+        {
+          'weekId': weekId,
+          'leagueId': league.id,
+          'leagueName': league.name,
+          'weeklyScore': FieldValue.increment(score),
+          'lastDailyScore': score,
           'level': newLevel,
           'streak': newStreak,
           'updatedAt': FieldValue.serverTimestamp(),

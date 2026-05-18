@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
 import '../../services/league_service.dart';
+import '../../services/weekly_league_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,42 +21,60 @@ class ProfileScreen extends StatelessWidget {
     'avatar_8': '🏆',
   };
 
-  Future<void> _syncTodayLeaderboardProfile({
+  Future<void> _syncLeaderboardProfile({
     required String uid,
-    String? username,
-    String? avatarId,
+    required String username,
+    required String avatarId,
   }) async {
-    final dateId = DailyChallengeService.instance.todayDateId();
-
-    final leaderboardRef = FirebaseFirestore.instance
-        .collection('daily_leaderboards')
-        .doc(dateId)
-        .collection('players')
-        .doc(uid);
-
-    final leaderboardSnap = await leaderboardRef.get();
-    if (!leaderboardSnap.exists) return;
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
 
     final update = <String, dynamic>{
+      'username': username,
+      'displayName': username,
+      'avatarId': avatarId,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
-    if (username != null) {
-      update['username'] = username;
-      update['displayName'] = username;
+    // Daily leaderboard de hoy.
+    final todayDateId = DailyChallengeService.instance.todayDateId();
+    final dailyRef = db
+        .collection('daily_leaderboards')
+        .doc(todayDateId)
+        .collection('players')
+        .doc(uid);
+
+    final dailySnap = await dailyRef.get();
+    if (dailySnap.exists) {
+      batch.set(dailyRef, update, SetOptions(merge: true));
     }
 
-    if (avatarId != null) {
-      update['avatarId'] = avatarId;
+    // Weekly leaderboard actual. El usuario puede estar en cualquier liga
+    // dependiendo de cuándo generó su score, así que revisamos las pocas ligas
+    // existentes y actualizamos solo el documento que ya exista.
+    final weekId = WeeklyLeagueService.instance.currentWeekId();
+
+    for (final league in LeagueService.leagues) {
+      final weeklyRef = db
+          .collection('weekly_leagues')
+          .doc(weekId)
+          .collection(league.id)
+          .doc(uid);
+
+      final weeklySnap = await weeklyRef.get();
+      if (weeklySnap.exists) {
+        batch.set(weeklyRef, update, SetOptions(merge: true));
+      }
     }
 
-    await leaderboardRef.set(update, SetOptions(merge: true));
+    await batch.commit();
   }
 
   Future<void> _editUsername({
     required BuildContext context,
     required DocumentReference<Map<String, dynamic>> userRef,
     required String currentUsername,
+    required String currentAvatarId,
   }) async {
     final controller = TextEditingController(text: currentUsername);
 
@@ -99,9 +118,10 @@ class ProfileScreen extends StatelessWidget {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _syncTodayLeaderboardProfile(
+    await _syncLeaderboardProfile(
       uid: uid,
       username: username,
+      avatarId: currentAvatarId,
     );
   }
 
@@ -109,6 +129,7 @@ class ProfileScreen extends StatelessWidget {
     required BuildContext context,
     required DocumentReference<Map<String, dynamic>> userRef,
     required String currentAvatarId,
+    required String currentUsername,
   }) async {
     final selectedAvatarId = await showModalBottomSheet<String>(
       context: context,
@@ -177,8 +198,9 @@ class ProfileScreen extends StatelessWidget {
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    await _syncTodayLeaderboardProfile(
+    await _syncLeaderboardProfile(
       uid: uid,
+      username: currentUsername,
       avatarId: selectedAvatarId,
     );
   }
@@ -262,6 +284,7 @@ class ProfileScreen extends StatelessWidget {
                         context: context,
                         userRef: userRef,
                         currentAvatarId: avatarId,
+                        currentUsername: username,
                       ),
                       child: CircleAvatar(
                         radius: 48,
@@ -292,6 +315,7 @@ class ProfileScreen extends StatelessWidget {
                             context: context,
                             userRef: userRef,
                             currentUsername: username,
+                            currentAvatarId: avatarId,
                           ),
                           icon: const Icon(Icons.edit),
                         ),

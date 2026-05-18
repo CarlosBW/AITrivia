@@ -43,77 +43,126 @@ class LifeService {
     }
 
     final data = snap.data() ?? {};
+    final patch = <String, dynamic>{};
 
     final oldLives = data['lives'];
     final inferredUnits = oldLives is num
         ? (oldLives.toDouble() * unitsPerLife).round()
         : defaultMaxLifeUnits;
 
-    await ref.set({
-      'lifeUnits': data['lifeUnits'] ?? inferredUnits,
-      'maxLifeUnits': data['maxLifeUnits'] ?? defaultMaxLifeUnits,
-      'lifeRegenSeconds': data['lifeRegenSeconds'] ?? defaultRegenSeconds,
-      'lastLifeTickAt': data['lastLifeTickAt'] ?? now,
-    }, SetOptions(merge: true));
+    if (data['lifeUnits'] == null) patch['lifeUnits'] = inferredUnits;
+    if (data['maxLifeUnits'] == null) {
+      patch['maxLifeUnits'] = defaultMaxLifeUnits;
+    }
+    if (data['lifeRegenSeconds'] == null) {
+      patch['lifeRegenSeconds'] = defaultRegenSeconds;
+    }
+    if (data['lastLifeTickAt'] == null) patch['lastLifeTickAt'] = now;
+
+    if (patch.isNotEmpty) {
+      await ref.set(patch, SetOptions(merge: true));
+    }
   }
 
+  Map<String, dynamic> _stateFromData(
+    Map<String, dynamic> data, {
+    Timestamp? now,
+  }) {
+    final currentTime = now ?? Timestamp.now();
+
+    int lifeUnits = ((data['lifeUnits'] ?? defaultMaxLifeUnits) as num).toInt();
+    final int maxLifeUnits =
+        ((data['maxLifeUnits'] ?? defaultMaxLifeUnits) as num).toInt();
+    final int lifeRegenSeconds =
+        ((data['lifeRegenSeconds'] ?? defaultRegenSeconds) as num).toInt();
+
+    Timestamp lastTick =
+        (data['lastLifeTickAt'] as Timestamp?) ?? currentTime;
+
+    if (lifeUnits < maxLifeUnits) {
+      final elapsedSeconds =
+          (currentTime.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
+              1000;
+
+      if (elapsedSeconds >= lifeRegenSeconds) {
+        final recoveredUnits = elapsedSeconds ~/ lifeRegenSeconds;
+        lifeUnits = (lifeUnits + recoveredUnits).clamp(0, maxLifeUnits);
+
+        final consumedSeconds = recoveredUnits * lifeRegenSeconds;
+        lastTick = Timestamp.fromMillisecondsSinceEpoch(
+          lastTick.millisecondsSinceEpoch + (consumedSeconds * 1000),
+        );
+
+        if (lifeUnits >= maxLifeUnits) {
+          lastTick = currentTime;
+        }
+      }
+    } else {
+      lifeUnits = maxLifeUnits;
+      lastTick = currentTime;
+    }
+
+    int? secondsToNextHalfLife;
+    if (lifeUnits < maxLifeUnits) {
+      final elapsedSeconds =
+          (currentTime.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
+              1000;
+      final remainder = elapsedSeconds % lifeRegenSeconds;
+      secondsToNextHalfLife = lifeRegenSeconds - remainder;
+      if (secondsToNextHalfLife <= 0) {
+        secondsToNextHalfLife = lifeRegenSeconds;
+      }
+    }
+
+    return {
+      'lifeUnits': lifeUnits,
+      'maxLifeUnits': maxLifeUnits,
+      'lifeRegenSeconds': lifeRegenSeconds,
+      'lastLifeTickAt': lastTick,
+      'secondsToNextHalfLife': secondsToNextHalfLife,
+    };
+  }
+
+  /// Calculates the life countdown in memory. No Firestore read/write.
+  Map<String, dynamic> calculateLocalLifeState(Map<String, dynamic> state) {
+    return _stateFromData(state);
+  }
+
+  /// Single read. Useful for screens that only need to paint the current state.
+  Future<Map<String, dynamic>> readLives(String uid) async {
+    final ref = _db.collection('users').doc(uid);
+    final snap = await ref.get();
+    return _stateFromData(snap.data() ?? {});
+  }
+
+  /// Reads Firestore and writes only when at least one life unit has really regenerated.
   Future<Map<String, dynamic>> refreshLives(String uid) async {
     final ref = _db.collection('users').doc(uid);
 
     return _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
+      final beforeUnits =
+          ((data['lifeUnits'] ?? defaultMaxLifeUnits) as num).toInt();
+      final beforeTick = data['lastLifeTickAt'] as Timestamp?;
 
-      int lifeUnits = (data['lifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int maxLifeUnits =
-          (data['maxLifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int lifeRegenSeconds =
-          (data['lifeRegenSeconds'] ?? defaultRegenSeconds) as int;
+      final state = _stateFromData(data);
+      final afterUnits = state['lifeUnits'] as int;
+      final afterTick = state['lastLifeTickAt'] as Timestamp;
 
-      Timestamp lastTick =
-          (data['lastLifeTickAt'] as Timestamp?) ?? Timestamp.now();
-      final now = Timestamp.now();
+      final didRecover = afterUnits > beforeUnits;
+      final missingTick = beforeTick == null;
 
-      if (lifeUnits < maxLifeUnits) {
-        final elapsedSeconds =
-            (now.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
-                1000;
-
-        if (elapsedSeconds >= lifeRegenSeconds) {
-          final recoveredUnits = elapsedSeconds ~/ lifeRegenSeconds;
-          lifeUnits = (lifeUnits + recoveredUnits).clamp(0, maxLifeUnits);
-
-          final consumedSeconds = recoveredUnits * lifeRegenSeconds;
-          lastTick = Timestamp.fromMillisecondsSinceEpoch(
-            lastTick.millisecondsSinceEpoch + (consumedSeconds * 1000),
-          );
-
-          tx.set(ref, {
-            'lifeUnits': lifeUnits,
-            'lastLifeTickAt': lifeUnits >= maxLifeUnits ? now : lastTick,
-          }, SetOptions(merge: true));
-        }
-      } else {
+      if (didRecover || missingTick) {
         tx.set(ref, {
-          'lastLifeTickAt': now,
+          'lifeUnits': afterUnits,
+          'lastLifeTickAt': afterTick,
+          'maxLifeUnits': state['maxLifeUnits'],
+          'lifeRegenSeconds': state['lifeRegenSeconds'],
         }, SetOptions(merge: true));
       }
 
-      int? secondsToNextHalfLife;
-      if (lifeUnits < maxLifeUnits) {
-        final elapsedSeconds =
-            (now.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
-                1000;
-        final remainder = elapsedSeconds % lifeRegenSeconds;
-        secondsToNextHalfLife = lifeRegenSeconds - remainder;
-      }
-
-      return {
-        'lifeUnits': lifeUnits,
-        'maxLifeUnits': maxLifeUnits,
-        'lifeRegenSeconds': lifeRegenSeconds,
-        'secondsToNextHalfLife': secondsToNextHalfLife,
-      };
+      return state;
     });
   }
 
@@ -129,36 +178,20 @@ class LifeService {
     return _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
+      final state = _stateFromData(data);
 
-      int lifeUnits = (data['lifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int maxLifeUnits =
-          (data['maxLifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int lifeRegenSeconds =
-          (data['lifeRegenSeconds'] ?? defaultRegenSeconds) as int;
-
-      Timestamp lastTick =
-          (data['lastLifeTickAt'] as Timestamp?) ?? Timestamp.now();
+      int lifeUnits = state['lifeUnits'] as int;
+      final int maxLifeUnits = state['maxLifeUnits'] as int;
+      Timestamp lastTick = state['lastLifeTickAt'] as Timestamp;
       final now = Timestamp.now();
-
-      if (lifeUnits < maxLifeUnits) {
-        final elapsedSeconds =
-            (now.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
-                1000;
-
-        if (elapsedSeconds >= lifeRegenSeconds) {
-          final recoveredUnits = elapsedSeconds ~/ lifeRegenSeconds;
-          lifeUnits = (lifeUnits + recoveredUnits).clamp(0, maxLifeUnits);
-
-          final consumedSeconds = recoveredUnits * lifeRegenSeconds;
-          lastTick = Timestamp.fromMillisecondsSinceEpoch(
-            lastTick.millisecondsSinceEpoch + (consumedSeconds * 1000),
-          );
-        }
-      }
 
       if (lifeUnits < levelEntryCostUnits) return false;
 
+      final wasFull = lifeUnits >= maxLifeUnits;
       lifeUnits -= levelEntryCostUnits;
+      if (wasFull && lifeUnits < maxLifeUnits) {
+        lastTick = now;
+      }
 
       tx.set(ref, {
         'lifeUnits': lifeUnits,
@@ -175,37 +208,21 @@ class LifeService {
     return _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
+      final state = _stateFromData(data);
 
-      int lifeUnits = (data['lifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int maxLifeUnits =
-          (data['maxLifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int lifeRegenSeconds =
-          (data['lifeRegenSeconds'] ?? defaultRegenSeconds) as int;
-
-      Timestamp lastTick =
-          (data['lastLifeTickAt'] as Timestamp?) ?? Timestamp.now();
+      int lifeUnits = state['lifeUnits'] as int;
+      final int maxLifeUnits = state['maxLifeUnits'] as int;
+      Timestamp lastTick = state['lastLifeTickAt'] as Timestamp;
       final now = Timestamp.now();
 
-      if (lifeUnits < maxLifeUnits) {
-        final elapsedSeconds =
-            (now.millisecondsSinceEpoch - lastTick.millisecondsSinceEpoch) ~/
-                1000;
-
-        if (elapsedSeconds >= lifeRegenSeconds) {
-          final recoveredUnits = elapsedSeconds ~/ lifeRegenSeconds;
-          lifeUnits = (lifeUnits + recoveredUnits).clamp(0, maxLifeUnits);
-
-          final consumedSeconds = recoveredUnits * lifeRegenSeconds;
-          lastTick = Timestamp.fromMillisecondsSinceEpoch(
-            lastTick.millisecondsSinceEpoch + (consumedSeconds * 1000),
-          );
-        }
-      }
-
+      final wasFull = lifeUnits >= maxLifeUnits;
       if (lifeUnits < wrongAnswerCostUnits) {
         lifeUnits = 0;
       } else {
         lifeUnits -= wrongAnswerCostUnits;
+      }
+      if (wasFull && lifeUnits < maxLifeUnits) {
+        lastTick = now;
       }
 
       tx.set(ref, {
@@ -226,15 +243,16 @@ class LifeService {
     return _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
+      final state = _stateFromData(data);
 
-      int coins = (data['coins'] ?? 0) as int;
-      int lifeUnits = (data['lifeUnits'] ?? defaultMaxLifeUnits) as int;
-      final int maxLifeUnits =
-          (data['maxLifeUnits'] ?? defaultMaxLifeUnits) as int;
+      int coins = ((data['coins'] ?? 0) as num).toInt();
+      int lifeUnits = state['lifeUnits'] as int;
+      final int maxLifeUnits = state['maxLifeUnits'] as int;
 
       if (coins < cost) return false;
+      if (lifeUnits >= maxLifeUnits) return false;
 
-      lifeUnits = (lifeUnits + 2).clamp(0, maxLifeUnits);
+      lifeUnits = (lifeUnits + unitsPerLife).clamp(0, maxLifeUnits);
 
       tx.set(ref, {
         'coins': coins - cost,

@@ -221,6 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       await userRef.set({
         'username': username,
+        'usernameLower': username.toLowerCase(),
         'displayName': username,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

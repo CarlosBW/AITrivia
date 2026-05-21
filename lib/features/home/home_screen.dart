@@ -11,6 +11,7 @@ import '../leagues/weekly_league_screen.dart';
 import '../profile/profile_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../solo/level_select_screen.dart';
+import '../social/friends_screen.dart';
 import '../versus/versus_menu_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
@@ -58,8 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initLives() async {
     await LifeService.instance.ensureUserLifeDoc(uid);
-
-    // One Firestore sync when Home opens. After this, the countdown is local.
     final state = await LifeService.instance.refreshLives(uid);
 
     if (!mounted) return;
@@ -112,7 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _hasPendingSeasonRewards = hasPending;
       });
     } catch (_) {
-      // Do not block Home if reward check fails.
     } finally {
       if (mounted) {
         setState(() => _checkingPendingSeasonRewards = false);
@@ -176,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             nextLevel = highestCompleted + 1;
           }
+
           if (nextLevel > levelCount) {
             nextLevel = levelCount;
           }
@@ -387,6 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       return false;
     }
+
     return true;
   }
 
@@ -395,6 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!canPlay) return;
 
     if (!context.mounted) return;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -633,26 +634,50 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isNavigating || _buyingLife
-                        ? null
-                        : () {
-                            _safeNavigate(() async {
-                              if (!context.mounted) return;
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const DailyLeaderboardScreen(),
-                                ),
-                              );
-                            });
-                          },
-                    icon: const Icon(Icons.emoji_events),
-                    label: const Text('Leaderboard'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _isNavigating || _buyingLife
+                            ? null
+                            : () {
+                                _safeNavigate(() async {
+                                  if (!context.mounted) return;
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const DailyLeaderboardScreen(),
+                                    ),
+                                  );
+                                });
+                              },
+                        icon: const Icon(Icons.emoji_events),
+                        label: const Text('Leaderboard'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _isNavigating || _buyingLife
+                            ? null
+                            : () {
+                                _safeNavigate(() async {
+                                  if (!context.mounted) return;
+
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const FriendsScreen(),
+                                    ),
+                                  );
+                                });
+                              },
+                        icon: const Icon(Icons.group),
+                        label: const Text('Friends'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -979,7 +1004,9 @@ class _CategoryCard extends StatelessWidget {
                     child: FilledButton.icon(
                       onPressed: disabled ? null : onContinue,
                       icon: Icon(
-                        item.completedAll ? Icons.check_circle : Icons.play_arrow,
+                        item.completedAll
+                            ? Icons.check_circle
+                            : Icons.play_arrow,
                       ),
                       label: Text(
                         item.completedAll

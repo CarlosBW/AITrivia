@@ -21,14 +21,17 @@ class MatchService {
     return _liveSearchRef(uid).snapshots();
   }
 
-  /// Limpieza suave después de matchear/navegar (no borra doc; solo lo “resetea”)
+  /// Limpieza suave después de matchear/navegar.
+  ///
+  /// Solo deja la cola en un estado inactivo para que la UI no siga pensando
+  /// que el usuario está buscando. No borra el documento para evitar errores
+  /// si alguna pantalla todavía lo escucha.
   Future<void> cleanupMyLiveQueueAfterMatch() async {
     final ref = _liveSearchRef(uid);
     await ref.set({
       'status': 'stopped',
       'matchId': null,
       'opponentUid': null,
-      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
@@ -41,6 +44,7 @@ class MatchService {
     String displayName = 'Player',
   }) async {
     final ref = _liveSearchRef(uid);
+    final now = FieldValue.serverTimestamp();
 
     await ref.set({
       'uid': uid,
@@ -53,13 +57,24 @@ class MatchService {
       'status': 'searching', // searching | matched | stopped
       'matchId': null,
       'opponentUid': null,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': now,
+      'updatedAt': now,
     }, SetOptions(merge: true));
   }
 
   Future<void> stopLiveSearch() async {
     final ref = _liveSearchRef(uid);
+
+    final snap = await ref.get();
+    final data = snap.data();
+
+    // Evita writes duplicados si ya está detenido.
+    if (data != null &&
+        (data['status'] ?? '') == 'stopped' &&
+        data['matchId'] == null &&
+        data['opponentUid'] == null) {
+      return;
+    }
 
     await ref.set({
       'status': 'stopped',
@@ -70,9 +85,9 @@ class MatchService {
   }
 
   /// Busca candidatos con query normal (FUERA del transaction),
-  /// y luego intenta "reclamar" a uno con transaction (solo docs).
+  /// y luego intenta reclamar a uno con transaction.
   ///
-  /// Retorna matchId si logró crear o reclamar match, o null si no.
+  /// Retorna matchId si logró crear/reclamar match, o null si no.
   Future<String?> tryFindLiveOpponent({
     required String categoryId,
     int difficulty = 1,
@@ -83,31 +98,27 @@ class MatchService {
   }) async {
     final meRef = _liveSearchRef(uid);
 
-    // 0) asegurar que YO sigo en searching
     final meSnap = await meRef.get();
     final meData = meSnap.data();
     if (meData == null || (meData['status'] ?? '') != 'searching') {
       return null;
     }
 
-    // Si mi doc tiene settings, úsalo como fuente (no dependas solo de UI)
     final myTotal = (meData['totalQuestions'] as int?) ?? totalQuestions;
     final myTime = (meData['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
     final myWinReward = (meData['winReward'] as int?) ?? winReward;
 
-    // 1) Query FUERA del transaction
     final qs = await _db
         .collection('live_search')
         .where('status', isEqualTo: 'searching')
         .where('categoryId', isEqualTo: categoryId)
         .where('difficulty', isEqualTo: difficulty)
-        .limit(10)
+        .limit(8)
         .get();
 
     final candidates = qs.docs.where((d) => d.id != uid).toList();
     if (candidates.isEmpty) return null;
 
-    // 2) intenta reclamar en orden (si uno falla, prueba el siguiente)
     for (final oppDoc in candidates) {
       final oppUid = oppDoc.id;
       final oppRef = _liveSearchRef(oppUid);
@@ -122,7 +133,6 @@ class MatchService {
 
         if (meTx == null || oppTx == null) return false;
 
-        // Ambos deben seguir searching y sin matchId asignado
         final meOk =
             (meTx['status'] == 'searching') && (meTx['matchId'] == null);
         final oppOk =
@@ -149,11 +159,7 @@ class MatchService {
 
       if (!claimed) continue;
 
-      // 3) crear match (una sola vez)
       final matchRef = _db.collection('matches').doc(matchId);
-      final existing = await matchRef.get();
-      if (existing.exists) return matchId;
-
       final oppName = (oppDoc.data()['displayName'] ?? 'Guest').toString();
 
       final questions = await _generateFixedQuestions(

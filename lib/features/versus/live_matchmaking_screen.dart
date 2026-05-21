@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/match_service.dart';
 import 'match_lobby_screen.dart';
 
@@ -26,79 +28,97 @@ class LiveMatchmakingScreen extends StatefulWidget {
   State<LiveMatchmakingScreen> createState() => _LiveMatchmakingScreenState();
 }
 
-class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen> {
+class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
+    with WidgetsBindingObserver {
   final _service = MatchService();
 
+  static const Duration _pollInterval = Duration(seconds: 5);
+  static const Duration _searchTimeout = Duration(seconds: 90);
+
   bool _searching = false;
+  bool _starting = false;
+  bool _matchAttemptRunning = false;
+  bool _navigatingToLobby = false;
+
   Timer? _pollTimer;
+  Timer? _timeoutTimer;
   String? _error;
 
-  bool _starting = false; // evita doble tap en "Buscar"
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _cancel(silent: true);
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
+    _timeoutTimer?.cancel();
+
+    // No se espera el Future para evitar bloquear dispose.
+    // Si ya navegamos al lobby, cleanupMyLiveQueueAfterMatch se encarga del reset.
+    if (_searching && !_navigatingToLobby) {
+      _service.stopLiveSearch();
+    }
+
     super.dispose();
   }
 
   Future<void> _start() async {
-    if (_starting) return;
+    if (_starting || _searching) return;
 
     setState(() {
       _starting = true;
-      _error = null;
       _searching = true;
+      _error = null;
     });
 
     try {
-      // 1) entra a cola (usa el nombre correcto: myDisplayName)
       await _service.startLiveSearch(
         categoryId: widget.categoryId,
         difficulty: widget.difficulty,
         totalQuestions: widget.totalQuestions,
         timePerQuestionSec: widget.timePerQuestionSec,
         winReward: widget.winReward,
-        displayName: widget.displayName, // ✅ antes: displayName
+        displayName: widget.displayName,
       );
 
-      // 2) intenta emparejar de inmediato (si encuentra crea match y setea matchId en cola)
-      await _service.tryFindLiveOpponent(
-        categoryId: widget.categoryId,
-        difficulty: widget.difficulty,
-        totalQuestions: widget.totalQuestions,
-        timePerQuestionSec: widget.timePerQuestionSec,
-        winReward: widget.winReward,
-        myDisplayName: widget.displayName,
-      );
+      await _tryFindOpponentOnce();
 
-      // 3) Poll suave: cada 1.2s intento emparejar
       _pollTimer?.cancel();
-      _pollTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) async {
-        if (!mounted) return;
-        if (!_searching) return;
+      _pollTimer = Timer.periodic(_pollInterval, (_) {
+        _tryFindOpponentOnce();
+      });
 
-        try {
-          await _service.tryFindLiveOpponent(
-            categoryId: widget.categoryId,
-            difficulty: widget.difficulty,
-            totalQuestions: widget.totalQuestions,
-            timePerQuestionSec: widget.timePerQuestionSec,
-            winReward: widget.winReward,
-            myDisplayName: widget.displayName,
-          );
-        } catch (e) {
-          // no spamear, solo guardar el último
-          if (mounted) setState(() => _error = e.toString());
-        }
+      _timeoutTimer?.cancel();
+      _timeoutTimer = Timer(_searchTimeout, () async {
+        if (!mounted || !_searching || _navigatingToLobby) return;
+
+        await _cancel(silent: true);
+
+        if (!mounted) return;
+        setState(() {
+          _error = 'No se encontró rival por ahora. Intenta nuevamente.';
+        });
       });
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
         _error = e.toString();
         _searching = false;
       });
 
-      // si falla al entrar a cola / match, intenta limpiar
       try {
         await _service.stopLiveSearch();
       } catch (_) {}
@@ -107,10 +127,75 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen> {
     }
   }
 
-  Future<void> _cancel() async {
+  Future<void> _tryFindOpponentOnce() async {
+    if (!mounted) return;
+    if (!_searching) return;
+    if (_matchAttemptRunning) return;
+    if (_navigatingToLobby) return;
+
+    _matchAttemptRunning = true;
+
+    try {
+      await _service.tryFindLiveOpponent(
+        categoryId: widget.categoryId,
+        difficulty: widget.difficulty,
+        totalQuestions: widget.totalQuestions,
+        timePerQuestionSec: widget.timePerQuestionSec,
+        winReward: widget.winReward,
+        myDisplayName: widget.displayName,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      _matchAttemptRunning = false;
+    }
+  }
+
+  Future<void> _cancel({bool silent = false}) async {
     _pollTimer?.cancel();
-    if (mounted) setState(() => _searching = false);
-    await _service.stopLiveSearch();
+    _timeoutTimer?.cancel();
+
+    if (mounted) {
+      setState(() {
+        _searching = false;
+        _starting = false;
+      });
+    }
+
+    try {
+      await _service.stopLiveSearch();
+    } catch (e) {
+      if (!silent && mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+  }
+
+  Future<void> _goToLobby(String matchId) async {
+    if (_navigatingToLobby) return;
+
+    _navigatingToLobby = true;
+    _pollTimer?.cancel();
+    _timeoutTimer?.cancel();
+
+    if (mounted) {
+      setState(() => _searching = false);
+    }
+
+    try {
+      await _service.cleanupMyLiveQueueAfterMatch();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MatchLobbyScreen(matchId: matchId),
+      ),
+    );
   }
 
   @override
@@ -126,23 +211,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen> {
           final status = (data?['status'] ?? '').toString();
           final matchId = data?['matchId'] as String?;
 
-          // si ya tenemos matchId -> navegar
-          if (matchId != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (matchId != null && !_navigatingToLobby) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
-
-              _pollTimer?.cancel();
-              setState(() => _searching = false);
-
-              // opcional: limpiar cola
-              await _service.cleanupMyLiveQueueAfterMatch();
-
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MatchLobbyScreen(matchId: matchId),
-                ),
-              );
+              _goToLobby(matchId);
             });
           }
 
@@ -156,19 +228,26 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen> {
                 Text('Preguntas: ${widget.totalQuestions}'),
                 Text('Tiempo/Pregunta: ${widget.timePerQuestionSec}s'),
                 const SizedBox(height: 16),
-
-                if (_error != null)
+                if (_error != null) ...[
                   Text(
                     _error!,
                     style: const TextStyle(color: Colors.red),
                   ),
-
-                const SizedBox(height: 16),
-
+                  const SizedBox(height: 16),
+                ],
                 if (!_searching) ...[
-                  FilledButton(
-                    onPressed: _starting ? null : _start,
-                    child: const Text('Buscar'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _starting ? null : _start,
+                      child: _starting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Buscar'),
+                    ),
                   ),
                 ] else ...[
                   Row(
@@ -181,15 +260,27 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          status.isEmpty ? 'Buscando...' : 'Estado cola: $status',
+                          status.isEmpty
+                              ? 'Buscando...'
+                              : status == 'searching'
+                                  ? 'Buscando rival...'
+                                  : 'Estado cola: $status',
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Esto puede tardar unos segundos.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
                   const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: _cancel,
-                    child: const Text('Cancelar búsqueda'),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => _cancel(),
+                      child: const Text('Cancelar búsqueda'),
+                    ),
                   ),
                 ],
               ],

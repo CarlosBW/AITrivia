@@ -27,10 +27,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _lifeState;
   bool _loadingLives = true;
   Timer? _lifeTimer;
+
   bool _isNavigating = false;
   bool _buyingLife = false;
+
   bool _hasPendingSeasonRewards = false;
   bool _checkingPendingSeasonRewards = false;
+
+  bool _loadingCategories = true;
+  String? _categoriesError;
+  List<_HomeCategoryItem> _categories = [];
 
   int? _lastSeenStreak;
   bool _showStreakPopup = false;
@@ -46,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     uid = FirebaseAuth.instance.currentUser!.uid;
     _initLives();
     _checkPendingSeasonRewards();
+    _loadCategoriesAndProgress();
     _startLifeTimer();
   }
 
@@ -89,7 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   Future<void> _checkPendingSeasonRewards() async {
     if (_checkingPendingSeasonRewards) return;
 
@@ -112,6 +118,121 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => _checkingPendingSeasonRewards = false);
       }
     }
+  }
+
+  Future<void> _loadCategoriesAndProgress() async {
+    if (!mounted) return;
+
+    setState(() {
+      _loadingCategories = true;
+      _categoriesError = null;
+    });
+
+    try {
+      final db = FirebaseFirestore.instance;
+
+      final categoriesSnap = await db
+          .collection('fixed_categories')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      final docs = categoriesSnap.docs.toList()
+        ..sort((a, b) {
+          final ao = ((a.data()['order'] ?? 999) as num).toInt();
+          final bo = ((b.data()['order'] ?? 999) as num).toInt();
+          return ao.compareTo(bo);
+        });
+
+      final items = await Future.wait(
+        docs.map((doc) async {
+          final data = doc.data();
+          final categoryId = doc.id;
+          final name = (data['name'] ?? categoryId).toString();
+          final levelCount = ((data['levelCount'] ?? 10) as num).toInt();
+
+          final progressSnap = await db
+              .collection('users')
+              .doc(uid)
+              .collection('progress_fixed')
+              .doc(categoryId)
+              .get();
+
+          final progressData = progressSnap.data() ?? {};
+
+          final completedLevels =
+              (progressData['completedLevels'] as List<dynamic>? ?? [])
+                  .map((e) => (e as num).toInt())
+                  .toSet();
+
+          final completedCount = completedLevels.length;
+          final progress = levelCount == 0
+              ? 0.0
+              : (completedCount / levelCount).clamp(0.0, 1.0);
+
+          int nextLevel = 1;
+          if (completedLevels.isNotEmpty) {
+            final highestCompleted = completedLevels.reduce(
+              (a, b) => a > b ? a : b,
+            );
+            nextLevel = highestCompleted + 1;
+          }
+          if (nextLevel > levelCount) {
+            nextLevel = levelCount;
+          }
+
+          final completedAll = progressData['completedAllLevels'] == true ||
+              completedCount >= levelCount;
+
+          String statusText;
+          Color statusColor;
+
+          if (completedAll) {
+            statusText = 'Completado';
+            statusColor = Colors.green;
+          } else if (completedCount > 0) {
+            statusText = 'En curso';
+            statusColor = Colors.orange;
+          } else {
+            statusText = 'Nuevo';
+            statusColor = Colors.blue;
+          }
+
+          return _HomeCategoryItem(
+            categoryId: categoryId,
+            name: name,
+            levelCount: levelCount,
+            completedCount: completedCount,
+            progress: progress,
+            nextLevel: nextLevel,
+            completedAll: completedAll,
+            statusText: statusText,
+            statusColor: statusColor,
+          );
+        }),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _categories = items;
+        _loadingCategories = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _categoriesError = e.toString();
+        _loadingCategories = false;
+      });
+    }
+  }
+
+  Future<void> _refreshHomeAfterGameplay() async {
+    await Future.wait([
+      _syncLivesFromFirestore(),
+      _checkPendingSeasonRewards(),
+      _loadCategoriesAndProgress(),
+    ]);
   }
 
   Future<void> _safeNavigate(Future<void> Function() action) async {
@@ -269,13 +390,61 @@ class _HomeScreenState extends State<HomeScreen> {
     return true;
   }
 
+  Future<void> _openLevelSelect(_HomeCategoryItem item) async {
+    final canPlay = await _ensureHasLives(context, uid);
+    if (!canPlay) return;
+
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LevelSelectScreen(
+          categoryId: item.categoryId,
+          categoryName: item.name,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    await _refreshHomeAfterGameplay();
+  }
+
+  Future<void> _continueLevel(_HomeCategoryItem item) async {
+    final canPlay = await _ensureHasLives(context, uid);
+    if (!canPlay) return;
+
+    if (!context.mounted) return;
+
+    if (item.completedAll) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LevelSelectScreen(
+            categoryId: item.categoryId,
+            categoryName: item.name,
+          ),
+        ),
+      );
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LevelPlayScreen(
+            categoryId: item.categoryId,
+            levelNumber: item.nextLevel,
+          ),
+        ),
+      );
+    }
+
+    if (!mounted) return;
+    await _refreshHomeAfterGameplay();
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = FirebaseFirestore.instance;
     final userRef = db.collection('users').doc(uid);
-
-    final categoriesQuery =
-        db.collection('fixed_categories').where('isActive', isEqualTo: true);
 
     return Scaffold(
       appBar: AppBar(
@@ -293,13 +462,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(right: 10),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(999),
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => const ProfileScreen(),
                       ),
                     );
+
+                    if (!mounted) return;
+                    await _checkPendingSeasonRewards();
                   },
                   child: CircleAvatar(
                     radius: 19,
@@ -451,6 +623,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       DailyChallengeScreen(uid: uid),
                                 ),
                               );
+
+                              if (!mounted) return;
+                              await _refreshHomeAfterGameplay();
                             });
                           },
                     icon: const Icon(Icons.calendar_today),
@@ -565,334 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: categoriesQuery.snapshots(),
-                    builder: (context, snap) {
-                      if (snap.hasError) {
-                        return Center(
-                          child: Text(
-                            'Error al cargar categorías:\n${snap.error}',
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
-
-                      if (!snap.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final docs = snap.data!.docs;
-                      docs.sort((a, b) {
-                        final ao = (a.data()['order'] ?? 999) as int;
-                        final bo = (b.data()['order'] ?? 999) as int;
-                        return ao.compareTo(bo);
-                      });
-
-                      if (docs.isEmpty) {
-                        return const Center(
-                          child:
-                              Text('No hay categorías activas en Firestore.'),
-                        );
-                      }
-
-                      return ListView.separated(
-                        itemCount: docs.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (context, i) {
-                          final doc = docs[i];
-                          final data = doc.data();
-
-                          final categoryId = doc.id;
-                          final name = (data['name'] ?? categoryId).toString();
-                          final levelCount = (data['levelCount'] ?? 10) as int;
-
-                          final progressRef = db
-                              .collection('users')
-                              .doc(uid)
-                              .collection('progress_fixed')
-                              .doc(categoryId);
-
-                          return StreamBuilder<
-                              DocumentSnapshot<Map<String, dynamic>>>(
-                            stream: progressRef.snapshots(),
-                            builder: (context, progressSnap) {
-                              final progressData =
-                                  progressSnap.data?.data() ?? {};
-
-                              final completedLevels =
-                                  (progressData['completedLevels']
-                                              as List<dynamic>? ??
-                                          [])
-                                      .map((e) => (e as num).toInt())
-                                      .toSet();
-
-                              final completedCount = completedLevels.length;
-                              final progress = levelCount == 0
-                                  ? 0.0
-                                  : (completedCount / levelCount)
-                                      .clamp(0.0, 1.0);
-
-                              int nextLevel = 1;
-                              if (completedLevels.isNotEmpty) {
-                                final highestCompleted = completedLevels.reduce(
-                                  (a, b) => a > b ? a : b,
-                                );
-                                nextLevel = highestCompleted + 1;
-                              }
-                              if (nextLevel > levelCount) {
-                                nextLevel = levelCount;
-                              }
-
-                              final completedAll =
-                                  progressData['completedAllLevels'] == true ||
-                                      completedCount >= levelCount;
-
-                              String statusText;
-                              Color statusColor;
-
-                              if (completedAll) {
-                                statusText = 'Completado';
-                                statusColor = Colors.green;
-                              } else if (completedCount > 0) {
-                                statusText = 'En curso';
-                                statusColor = Colors.orange;
-                              } else {
-                                statusText = 'Nuevo';
-                                statusColor = Colors.blue;
-                              }
-
-                              return Card(
-                                elevation: 0,
-                                color: Colors.black12,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: _isNavigating || _buyingLife
-                                      ? null
-                                      : () {
-                                          _safeNavigate(() async {
-                                            final canPlay =
-                                                await _ensureHasLives(
-                                              context,
-                                              uid,
-                                            );
-                                            if (!canPlay) return;
-
-                                            if (!context.mounted) return;
-                                            await Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    LevelSelectScreen(
-                                                  categoryId: categoryId,
-                                                  categoryName: name,
-                                                ),
-                                              ),
-                                            );
-                                          });
-                                        },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                name,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: statusColor
-                                                    .withOpacity(0.12),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Text(
-                                                statusText,
-                                                style: TextStyle(
-                                                  color: statusColor,
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          'Progreso: $completedCount / $levelCount niveles',
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: LinearProgressIndicator(
-                                            value: progress,
-                                            minHeight: 10,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: OutlinedButton.icon(
-                                                onPressed:
-                                                    _isNavigating || _buyingLife
-                                                        ? null
-                                                        : () {
-                                                            _safeNavigate(
-                                                              () async {
-                                                                final canPlay =
-                                                                    await _ensureHasLives(
-                                                                  context,
-                                                                  uid,
-                                                                );
-                                                                if (!canPlay) {
-                                                                  return;
-                                                                }
-
-                                                                if (!context
-                                                                    .mounted) {
-                                                                  return;
-                                                                }
-
-                                                                await Navigator
-                                                                    .push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder: (_) =>
-                                                                        LevelSelectScreen(
-                                                                      categoryId:
-                                                                          categoryId,
-                                                                      categoryName:
-                                                                          name,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                            );
-                                                          },
-                                                icon: const Icon(
-                                                  Icons.map_outlined,
-                                                ),
-                                                label:
-                                                    const Text('Ver niveles'),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: FilledButton.icon(
-                                                onPressed: _isNavigating ||
-                                                        _buyingLife
-                                                    ? null
-                                                    : completedAll
-                                                        ? () {
-                                                            _safeNavigate(
-                                                              () async {
-                                                                final canPlay =
-                                                                    await _ensureHasLives(
-                                                                  context,
-                                                                  uid,
-                                                                );
-                                                                if (!canPlay) {
-                                                                  return;
-                                                                }
-
-                                                                if (!context
-                                                                    .mounted) {
-                                                                  return;
-                                                                }
-
-                                                                await Navigator
-                                                                    .push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder: (_) =>
-                                                                        LevelSelectScreen(
-                                                                      categoryId:
-                                                                          categoryId,
-                                                                      categoryName:
-                                                                          name,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                            );
-                                                          }
-                                                        : () {
-                                                            _safeNavigate(
-                                                              () async {
-                                                                final canPlay =
-                                                                    await _ensureHasLives(
-                                                                  context,
-                                                                  uid,
-                                                                );
-                                                                if (!canPlay) {
-                                                                  return;
-                                                                }
-
-                                                                if (!context
-                                                                    .mounted) {
-                                                                  return;
-                                                                }
-
-                                                                await Navigator
-                                                                    .push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder: (_) =>
-                                                                        LevelPlayScreen(
-                                                                      categoryId:
-                                                                          categoryId,
-                                                                      levelNumber:
-                                                                          nextLevel,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                            );
-                                                          },
-                                                icon: Icon(
-                                                  completedAll
-                                                      ? Icons.check_circle
-                                                      : Icons.play_arrow,
-                                                ),
-                                                label: Text(
-                                                  completedAll
-                                                      ? 'Completado'
-                                                      : 'Continuar N$nextLevel',
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  child: _buildCategoriesList(),
                 ),
               ],
             ),
@@ -964,6 +812,190 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Widget _buildCategoriesList() {
+    if (_loadingCategories) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_categoriesError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Error al cargar categorías:\n$_categoriesError',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _loadCategoriesAndProgress,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Text('No hay categorías activas en Firestore.'),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: _categories.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final item = _categories[i];
+        return _CategoryCard(
+          item: item,
+          disabled: _isNavigating || _buyingLife,
+          onOpenLevels: () {
+            _safeNavigate(() => _openLevelSelect(item));
+          },
+          onContinue: () {
+            _safeNavigate(() => _continueLevel(item));
+          },
+        );
+      },
+    );
+  }
+}
+
+class _HomeCategoryItem {
+  final String categoryId;
+  final String name;
+  final int levelCount;
+  final int completedCount;
+  final double progress;
+  final int nextLevel;
+  final bool completedAll;
+  final String statusText;
+  final Color statusColor;
+
+  const _HomeCategoryItem({
+    required this.categoryId,
+    required this.name,
+    required this.levelCount,
+    required this.completedCount,
+    required this.progress,
+    required this.nextLevel,
+    required this.completedAll,
+    required this.statusText,
+    required this.statusColor,
+  });
+}
+
+class _CategoryCard extends StatelessWidget {
+  final _HomeCategoryItem item;
+  final bool disabled;
+  final VoidCallback onOpenLevels;
+  final VoidCallback onContinue;
+
+  const _CategoryCard({
+    required this.item,
+    required this.disabled,
+    required this.onOpenLevels,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Colors.black12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: disabled ? null : onOpenLevels,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: item.statusColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      item.statusText,
+                      style: TextStyle(
+                        color: item.statusColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Progreso: ${item.completedCount} / ${item.levelCount} niveles',
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: item.progress,
+                  minHeight: 10,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: disabled ? null : onOpenLevels,
+                      icon: const Icon(Icons.map_outlined),
+                      label: const Text('Ver niveles'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: disabled ? null : onContinue,
+                      icon: Icon(
+                        item.completedAll ? Icons.check_circle : Icons.play_arrow,
+                      ),
+                      label: Text(
+                        item.completedAll
+                            ? 'Completado'
+                            : 'Continuar N${item.nextLevel}',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
@@ -984,7 +1016,6 @@ String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
   if (trimmed.isEmpty) return '🙂';
   return trimmed.characters.first.toUpperCase();
 }
-
 
 class _WeeklyButtonIcon extends StatelessWidget {
   final bool hasPendingRewards;

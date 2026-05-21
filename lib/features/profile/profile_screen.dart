@@ -7,9 +7,15 @@ import '../../services/player_level_service.dart';
 import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
   static const Map<String, String> avatars = {
     'avatar_1': '🧠',
     'avatar_2': '🚀',
@@ -21,61 +27,157 @@ class ProfileScreen extends StatelessWidget {
     'avatar_8': '🏆',
   };
 
-  Future<void> _syncLeaderboardProfile({
+  late final String uid;
+  late final DocumentReference<Map<String, dynamic>> userRef;
+
+  Map<String, dynamic>? _userData;
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    uid = FirebaseAuth.instance.currentUser!.uid;
+    userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadProfile(showLoading: false);
+    }
+  }
+
+  Future<void> _loadProfile({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+
+    try {
+      final snap = await userRef.get();
+      if (!mounted) return;
+
+      setState(() {
+        _userData = snap.data() ?? {};
+        _loading = false;
+        _error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  Future<void> _syncTodayLeaderboardProfile({
     required String uid,
-    required String username,
-    required String avatarId,
+    String? username,
+    String? avatarId,
   }) async {
-    final db = FirebaseFirestore.instance;
-    final batch = db.batch();
+    final dateId = DailyChallengeService.instance.todayDateId();
 
-    final update = <String, dynamic>{
-      'username': username,
-      'displayName': username,
-      'avatarId': avatarId,
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-
-    // Daily leaderboard de hoy.
-    final todayDateId = DailyChallengeService.instance.todayDateId();
-    final dailyRef = db
+    final leaderboardRef = FirebaseFirestore.instance
         .collection('daily_leaderboards')
-        .doc(todayDateId)
+        .doc(dateId)
         .collection('players')
         .doc(uid);
 
-    final dailySnap = await dailyRef.get();
-    if (dailySnap.exists) {
-      batch.set(dailyRef, update, SetOptions(merge: true));
+    final leaderboardSnap = await leaderboardRef.get();
+    if (!leaderboardSnap.exists) return;
+
+    final update = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (username != null) {
+      update['username'] = username;
+      update['displayName'] = username;
     }
 
-    // Weekly leaderboard actual. El usuario puede estar en cualquier liga
-    // dependiendo de cuándo generó su score, así que revisamos las pocas ligas
-    // existentes y actualizamos solo el documento que ya exista.
+    if (avatarId != null) {
+      update['avatarId'] = avatarId;
+    }
+
+    await leaderboardRef.set(update, SetOptions(merge: true));
+  }
+
+  Future<void> _syncCurrentWeeklyLeaderboardProfile({
+    required String uid,
+    required Map<String, dynamic> latestUserData,
+    String? username,
+    String? avatarId,
+  }) async {
+    final leagueScore = ((latestUserData['leagueScore'] ?? 0) as num).toInt();
+    final league = LeagueService.instance.getLeagueFromScore(leagueScore);
     final weekId = WeeklyLeagueService.instance.currentWeekId();
 
-    for (final league in LeagueService.leagues) {
-      final weeklyRef = db
-          .collection('weekly_leagues')
-          .doc(weekId)
-          .collection(league.id)
-          .doc(uid);
+    final weeklyRef = WeeklyLeagueService.instance.weeklyPlayerRef(
+      uid: uid,
+      weekId: weekId,
+      leagueId: league.id,
+    );
 
-      final weeklySnap = await weeklyRef.get();
-      if (weeklySnap.exists) {
-        batch.set(weeklyRef, update, SetOptions(merge: true));
-      }
+    final weeklySnap = await weeklyRef.get();
+    if (!weeklySnap.exists) return;
+
+    final update = <String, dynamic>{
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (username != null) {
+      update['username'] = username;
+      update['displayName'] = username;
     }
 
-    await batch.commit();
+    if (avatarId != null) {
+      update['avatarId'] = avatarId;
+    }
+
+    await weeklyRef.set(update, SetOptions(merge: true));
+  }
+
+  Future<void> _syncLeaderboardProfiles({
+    String? username,
+    String? avatarId,
+  }) async {
+    final latestUserSnap = await userRef.get();
+    final latestUserData = latestUserSnap.data() ?? {};
+
+    await Future.wait([
+      _syncTodayLeaderboardProfile(
+        uid: uid,
+        username: username,
+        avatarId: avatarId,
+      ),
+      _syncCurrentWeeklyLeaderboardProfile(
+        uid: uid,
+        latestUserData: latestUserData,
+        username: username,
+        avatarId: avatarId,
+      ),
+    ]);
   }
 
   Future<void> _editUsername({
     required BuildContext context,
-    required DocumentReference<Map<String, dynamic>> userRef,
     required String currentUsername,
-    required String currentAvatarId,
   }) async {
+    if (_saving) return;
+
     final controller = TextEditingController(text: currentUsername);
 
     final newUsername = await showDialog<String>(
@@ -107,30 +209,45 @@ class ProfileScreen extends StatelessWidget {
       },
     );
 
+    controller.dispose();
+
     if (newUsername == null || newUsername.trim().isEmpty) return;
 
     final username = newUsername.trim();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    if (username == currentUsername) return;
 
-    await userRef.set({
-      'username': username,
-      'displayName': username,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    setState(() => _saving = true);
 
-    await _syncLeaderboardProfile(
-      uid: uid,
-      username: username,
-      avatarId: currentAvatarId,
-    );
+    try {
+      await userRef.set({
+        'username': username,
+        'displayName': username,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await _syncLeaderboardProfiles(username: username);
+      await _loadProfile(showLoading: false);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil actualizado')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error actualizando perfil: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _chooseAvatar({
     required BuildContext context,
-    required DocumentReference<Map<String, dynamic>> userRef,
     required String currentAvatarId,
-    required String currentUsername,
   }) async {
+    if (_saving) return;
+
     final selectedAvatarId = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -189,81 +306,116 @@ class ProfileScreen extends StatelessWidget {
       },
     );
 
-    if (selectedAvatarId == null) return;
+    if (selectedAvatarId == null || selectedAvatarId == currentAvatarId) return;
 
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    setState(() => _saving = true);
 
-    await userRef.set({
-      'avatarId': selectedAvatarId,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    try {
+      await userRef.set({
+        'avatarId': selectedAvatarId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    await _syncLeaderboardProfile(
-      uid: uid,
-      username: currentUsername,
-      avatarId: selectedAvatarId,
-    );
+      await _syncLeaderboardProfiles(avatarId: selectedAvatarId);
+      await _loadProfile(showLoading: false);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Avatar actualizado')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error actualizando avatar: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    if (_loading) {
+      return const Scaffold(
+        appBar: _ProfileAppBar(),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: const _ProfileAppBar(),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 42),
+                const SizedBox(height: 12),
+                Text(
+                  'Error loading profile:\n$_error',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => _loadProfile(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final data = _userData ?? {};
+
+    final username = (data['username'] ??
+            data['displayName'] ??
+            'Player${uid.substring(0, 4)}')
+        .toString();
+
+    final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
+    final avatar = avatars[avatarId] ?? '🙂';
+
+    final xp = ((data['xp'] ?? 0) as num).toInt();
+    final coins = ((data['coins'] ?? 0) as num).toInt();
+    final freeTopicPasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
+
+    final gamesPlayed = ((data['gamesPlayed'] ?? 0) as num).toInt();
+    final correctAnswers = ((data['correctAnswers'] ?? 0) as num).toInt();
+    final wrongAnswers = ((data['wrongAnswers'] ?? 0) as num).toInt();
+
+    final totalAnswers = correctAnswers + wrongAnswers;
+    final accuracy = totalAnswers == 0
+        ? 0
+        : ((correctAnswers / totalAnswers) * 100).round();
+
+    final dailyStreak = ((data['dailyStreak'] ?? 0) as num).toInt();
+    final maxDailyStreak =
+        ((data['maxDailyStreak'] ?? dailyStreak) as num).toInt();
+    final bestDailyScore = ((data['bestDailyScore'] ?? 0) as num).toInt();
+    final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
+    final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();
+
+    final levelInfo = PlayerLevelService.instance.getLevelInfo(xp);
+    final level = levelInfo.level;
+    final leagueScore = ((data['leagueScore'] ?? 0) as num).toInt();
+
+    final league = LeagueService.instance.getLeagueFromScore(
+      leagueScore,
+    );
+    final levelXp = levelInfo.currentLevelXp;
+    final xpRequired = levelInfo.xpRequired;
+    final progress = levelInfo.progress;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Player Profile'),
-      ),
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: userRef.snapshots(),
-        builder: (context, snap) {
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final data = snap.data!.data() ?? {};
-
-          final username = (data['username'] ??
-                  data['displayName'] ??
-                  'Player${uid.substring(0, 4)}')
-              .toString();
-
-          final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
-          final avatar = avatars[avatarId] ?? '🙂';
-
-          final xp = ((data['xp'] ?? 0) as num).toInt();
-          final coins = ((data['coins'] ?? 0) as num).toInt();
-          final freeTopicPasses =
-              ((data['freeTopicPasses'] ?? 0) as num).toInt();
-
-          final gamesPlayed = ((data['gamesPlayed'] ?? 0) as num).toInt();
-          final correctAnswers = ((data['correctAnswers'] ?? 0) as num).toInt();
-          final wrongAnswers = ((data['wrongAnswers'] ?? 0) as num).toInt();
-
-          final totalAnswers = correctAnswers + wrongAnswers;
-          final accuracy = totalAnswers == 0
-              ? 0
-              : ((correctAnswers / totalAnswers) * 100).round();
-
-          final dailyStreak = ((data['dailyStreak'] ?? 0) as num).toInt();
-          final maxDailyStreak =
-              ((data['maxDailyStreak'] ?? dailyStreak) as num).toInt();
-          final bestDailyScore = ((data['bestDailyScore'] ?? 0) as num).toInt();
-          final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
-          final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();
-
-          final levelInfo = PlayerLevelService.instance.getLevelInfo(xp);
-          final level = levelInfo.level;
-          final leagueScore = ((data['leagueScore'] ?? 0) as num).toInt();
-
-          final league = LeagueService.instance.getLeagueFromScore(
-            leagueScore,
-          );
-          final levelXp = levelInfo.currentLevelXp;
-          final xpRequired = levelInfo.xpRequired;
-          final progress = levelInfo.progress;
-
-          return ListView(
+      appBar: const _ProfileAppBar(),
+      body: Stack(
+        children: [
+          ListView(
             padding: const EdgeInsets.all(18),
             children: [
               Container(
@@ -280,12 +432,12 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     InkWell(
                       borderRadius: BorderRadius.circular(999),
-                      onTap: () => _chooseAvatar(
-                        context: context,
-                        userRef: userRef,
-                        currentAvatarId: avatarId,
-                        currentUsername: username,
-                      ),
+                      onTap: _saving
+                          ? null
+                          : () => _chooseAvatar(
+                                context: context,
+                                currentAvatarId: avatarId,
+                              ),
                       child: CircleAvatar(
                         radius: 48,
                         backgroundColor: Colors.white.withOpacity(0.75),
@@ -311,12 +463,12 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         IconButton(
                           tooltip: 'Edit username',
-                          onPressed: () => _editUsername(
-                            context: context,
-                            userRef: userRef,
-                            currentUsername: username,
-                            currentAvatarId: avatarId,
-                          ),
+                          onPressed: _saving
+                              ? null
+                              : () => _editUsername(
+                                    context: context,
+                                    currentUsername: username,
+                                  ),
                           icon: const Icon(Icons.edit),
                         ),
                       ],
@@ -462,11 +614,42 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ],
-          );
-        },
+          ),
+          if (_saving)
+            Container(
+              color: Colors.black.withOpacity(0.35),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text(
+                      'Guardando...',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+}
+
+class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ProfileAppBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: const Text('Player Profile'),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
 class _ProfileStatCard extends StatelessWidget {

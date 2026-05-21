@@ -509,70 +509,202 @@ class MatchService {
   }
 
   // ============================================================
+  // REMATCH SYSTEM
+  // ============================================================
+
+  Future<void> requestRematch(String matchId) async {
+    final ref = _db.collection('matches').doc(matchId);
+
+    await ref.set({
+      'rematchRequests': {
+        uid: true,
+      },
+    }, SetOptions(merge: true));
+
+    await createRematchIfReady(matchId);
+  }
+
+  Future<String?> createRematchIfReady(String matchId) async {
+    final oldRef = _db.collection('matches').doc(matchId);
+
+    return _db.runTransaction<String?>((tx) async {
+      final snap = await tx.get(oldRef);
+
+      final data = snap.data();
+      if (data == null) return null;
+
+      final status = (data['status'] ?? '').toString();
+      if (status != 'finished') return null;
+
+      // ✅ evita crear revancha duplicada
+      final existingRematchId = (data['rematchMatchId'] ?? '').toString();
+
+      if (existingRematchId.isNotEmpty) {
+        return existingRematchId;
+      }
+
+      final hostUid = (data['hostUid'] ?? '').toString();
+      final guestUid = (data['guestUid'] ?? '').toString();
+
+      if (hostUid.isEmpty || guestUid.isEmpty) {
+        return null;
+      }
+
+      final rematchRequests =
+          Map<String, dynamic>.from(data['rematchRequests'] ?? {});
+
+      final hostAccepted = rematchRequests[hostUid] == true;
+      final guestAccepted = rematchRequests[guestUid] == true;
+
+      // ❌ todavía falta uno
+      if (!hostAccepted || !guestAccepted) {
+        return null;
+      }
+
+      final categoryId = (data['categoryId'] ?? '').toString();
+      final difficulty = ((data['difficulty'] ?? 1) as num).toInt();
+      final totalQuestions = ((data['totalQuestions'] ?? 10) as num).toInt();
+
+      final timePerQuestionSec =
+          ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+
+      final winReward = ((data['winReward'] ?? 0) as num).toInt();
+
+      final players = Map<String, dynamic>.from(data['players'] ?? {});
+
+      final hostPlayer = Map<String, dynamic>.from(players[hostUid] ?? {});
+
+      final guestPlayer = Map<String, dynamic>.from(players[guestUid] ?? {});
+
+      final hostName = (hostPlayer['displayName'] ?? 'Host').toString();
+
+      final guestName = (guestPlayer['displayName'] ?? 'Guest').toString();
+
+      final questions = await _generateFixedQuestions(
+        categoryId: categoryId,
+        difficulty: difficulty,
+        total: totalQuestions,
+      );
+
+      final newRef = _db.collection('matches').doc();
+
+      final code = _randomCode(5);
+
+      tx.set(newRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'waiting',
+        'mode': 'fixed',
+        'categoryId': categoryId,
+        'difficulty': difficulty,
+        'aiTopic': null,
+        'entryFee': 0,
+        'winReward': winReward,
+        'loseReward': 0,
+        'totalQuestions': totalQuestions,
+        'timePerQuestionSec': timePerQuestionSec,
+        'questions': questions,
+
+        'hostUid': hostUid,
+        'guestUid': guestUid,
+
+        'players': {
+          hostUid: {
+            'displayName': hostName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+          guestUid: {
+            'displayName': guestName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+        },
+
+        'startAt': null,
+        'endedAt': null,
+        'winnerUid': null,
+        'rewarded': false,
+        'matchCode': code,
+
+        // referencia al match anterior
+        'previousMatchId': matchId,
+      });
+
+      // ✅ marca el match viejo
+      tx.update(oldRef, {
+        'rematchMatchId': newRef.id,
+      });
+
+      return newRef.id;
+    });
+  }
+
+  // ============================================================
   // ASYNC (diferido) 1 vs 1 (async_matches) - existente
   // ============================================================
 
- Future<String> createAsyncFixedMatch({
-  required String challengedUid,
-  required String categoryId,
-  int difficulty = 1,
-  int totalQuestions = 10,
-  int timePerQuestionSec = 10,
-  int winReward = 2,
-  String challengerDisplayName = 'Player',
-  String challengedDisplayName = 'Player',
-}) async {
-  if (challengedUid.trim().isEmpty) throw Exception('challengedUid vacío');
-  if (challengedUid == uid) throw Exception('No puedes retarte a ti mismo');
+  Future<String> createAsyncFixedMatch({
+    required String challengedUid,
+    required String categoryId,
+    int difficulty = 1,
+    int totalQuestions = 10,
+    int timePerQuestionSec = 10,
+    int winReward = 2,
+    String challengerDisplayName = 'Player',
+    String challengedDisplayName = 'Player',
+  }) async {
+    if (challengedUid.trim().isEmpty) throw Exception('challengedUid vacío');
+    if (challengedUid == uid) throw Exception('No puedes retarte a ti mismo');
 
-  final matchRef = _db.collection('async_matches').doc();
+    final matchRef = _db.collection('async_matches').doc();
 
-  final questions = await _generateFixedQuestions(
-    categoryId: categoryId,
-    difficulty: difficulty,
-    total: totalQuestions,
-  );
+    final questions = await _generateFixedQuestions(
+      categoryId: categoryId,
+      difficulty: difficulty,
+      total: totalQuestions,
+    );
 
-  final now = FieldValue.serverTimestamp();
+    final now = FieldValue.serverTimestamp();
 
-  await matchRef.set({
-    'createdAt': now,
-    'lastUpdatedAt': now, // ✅ nuevo: para ordenar Inbox/Outbox
+    await matchRef.set({
+      'createdAt': now,
+      'lastUpdatedAt': now, // ✅ nuevo: para ordenar Inbox/Outbox
 
-    'status': 'waiting_challenged', // waiting_challenged | completed
-    'mode': 'fixed',
-    'categoryId': categoryId,
-    'difficulty': difficulty,
-    'totalQuestions': totalQuestions,
-    'timePerQuestionSec': timePerQuestionSec,
-    'questions': questions,
+      'status': 'waiting_challenged', // waiting_challenged | completed
+      'mode': 'fixed',
+      'categoryId': categoryId,
+      'difficulty': difficulty,
+      'totalQuestions': totalQuestions,
+      'timePerQuestionSec': timePerQuestionSec,
+      'questions': questions,
 
-    'challengerUid': uid,
-    'challengedUid': challengedUid,
+      'challengerUid': uid,
+      'challengedUid': challengedUid,
 
-    'challengerDisplayName': challengerDisplayName,
-    'challengedDisplayName': challengedDisplayName,
+      'challengerDisplayName': challengerDisplayName,
+      'challengedDisplayName': challengedDisplayName,
 
-    'challengerStatus': 'pending', // pending | finished
-    'challengedStatus': 'pending',
+      'challengerStatus': 'pending', // pending | finished
+      'challengedStatus': 'pending',
 
-    // scores (map)
-    'challenger': {'score': 0, 'finishedAt': null},
-    'challenged': {'score': 0, 'finishedAt': null},
+      // scores (map)
+      'challenger': {'score': 0, 'finishedAt': null},
+      'challenged': {'score': 0, 'finishedAt': null},
 
-    // ✅ opcional recomendado: scores planos (más fácil para listas)
-    'challengerScore': 0,
-    'challengedScore': 0,
+      // ✅ opcional recomendado: scores planos (más fácil para listas)
+      'challengerScore': 0,
+      'challengedScore': 0,
 
-    'winnerUid': null,
-    'rewarded': false,
-    'winReward': winReward,
-    'endedAt': null,
-  });
+      'winnerUid': null,
+      'rewarded': false,
+      'winReward': winReward,
+      'endedAt': null,
+    });
 
-  return matchRef.id;
-}
-
+    return matchRef.id;
+  }
 
   Future<void> submitAsyncResult({
     required String matchId,

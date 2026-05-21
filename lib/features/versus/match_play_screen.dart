@@ -43,6 +43,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   bool _answerSubmitting = false;
 
+  bool _requestingRematch = false;
+  bool _navigatedToRematch = false;
+
   static const int _defaultTimePerQ = 10;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -175,13 +178,61 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     }
   }
 
+  Future<void> _requestRematch(Map<String, dynamic> match) async {
+    if (_requestingRematch) return;
+
+    final existingRematchId = (match['rematchMatchId'] ?? '').toString();
+
+    // ✅ Si ya existe revancha, navegar directamente
+    if (existingRematchId.isNotEmpty) {
+      _goToRematch(existingRematchId);
+      return;
+    }
+
+    setState(() {
+      _requestingRematch = true;
+    });
+
+    try {
+      await _service.requestRematch(widget.matchId);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _requestingRematch = false;
+        });
+      }
+    }
+  }
+
+  void _goToRematch(String rematchMatchId) {
+    if (_navigatedToRematch) return;
+
+    _navigatedToRematch = true;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MatchPlayScreen(
+          matchId: rematchMatchId,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    final ref = FirebaseFirestore.instance
-        .collection('matches')
-        .doc(widget.matchId);
+    final ref =
+        FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(
@@ -207,8 +258,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           }
 
           final timePerQ =
-              ((data['timePerQuestionSec'] ?? _defaultTimePerQ) as num)
-                  .toInt();
+              ((data['timePerQuestionSec'] ?? _defaultTimePerQ) as num).toInt();
 
           final questions = data['questions'] as List<dynamic>? ?? [];
 
@@ -312,21 +362,16 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           children: [
             Text('Pregunta ${_index + 1} / $total'),
             const SizedBox(height: 8),
-
             Text(
               'Tiempo: $_secondsLeft s',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Tu puntaje: $myScore',
               style: const TextStyle(fontSize: 16),
             ),
-
             const SizedBox(height: 12),
-
             Text(
               qText,
               style: const TextStyle(
@@ -334,9 +379,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 16),
-
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
@@ -415,7 +458,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 ),
               );
             }),
-
             SizedBox(
               height: 22,
               child: _statusMsg == null
@@ -430,7 +472,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       ),
                     ),
             ),
-
             const Spacer(),
           ],
         ),
@@ -498,6 +539,21 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final winnerUid = match['winnerUid'] as String?;
     final winReward = ((match['winReward'] ?? 0) as num).toInt();
 
+    final rematchRequests =
+        Map<String, dynamic>.from(match['rematchRequests'] ?? {});
+
+    final myRematchAccepted = rematchRequests[uid] == true;
+    final opponentRematchAccepted = rematchRequests[opponentUid] == true;
+
+    final rematchMatchId = (match['rematchMatchId'] ?? '').toString();
+
+    // ✅ Navegación automática
+    if (rematchMatchId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _goToRematch(rematchMatchId);
+      });
+    }
+
     late final PvpResultState state;
     late final String title;
     late final String subtitle;
@@ -519,6 +575,16 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       subtitle = 'Estuviste cerca. Intenta una revancha.';
     }
 
+    String secondaryText = 'Revancha';
+
+    if (_requestingRematch) {
+      secondaryText = 'Enviando...';
+    } else if (myRematchAccepted && !opponentRematchAccepted) {
+      secondaryText = 'Esperando rival...';
+    } else if (myRematchAccepted && opponentRematchAccepted) {
+      secondaryText = 'Creando revancha...';
+    }
+
     return PvpResultCard(
       state: state,
       title: title,
@@ -530,14 +596,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       coinsEarned: coinsEarned > 0 ? coinsEarned : null,
       primaryButtonText: 'Volver',
       onPrimaryPressed: () => Navigator.pop(context),
-      secondaryButtonText: 'Revancha',
-      onSecondaryPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('La revancha será el siguiente paso.'),
-          ),
-        );
-      },
+      secondaryButtonText: secondaryText,
+      onSecondaryPressed: myRematchAccepted || _requestingRematch
+          ? null
+          : () => _requestRematch(match),
     );
   }
 }

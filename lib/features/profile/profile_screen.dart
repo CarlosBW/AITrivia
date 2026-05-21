@@ -389,9 +389,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     final wrongAnswers = ((data['wrongAnswers'] ?? 0) as num).toInt();
 
     final totalAnswers = correctAnswers + wrongAnswers;
-    final accuracy = totalAnswers == 0
-        ? 0
-        : ((correctAnswers / totalAnswers) * 100).round();
+    final accuracy =
+        totalAnswers == 0 ? 0 : ((correctAnswers / totalAnswers) * 100).round();
 
     final dailyStreak = ((data['dailyStreak'] ?? 0) as num).toInt();
     final maxDailyStreak =
@@ -399,6 +398,16 @@ class _ProfileScreenState extends State<ProfileScreen>
     final bestDailyScore = ((data['bestDailyScore'] ?? 0) as num).toInt();
     final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
     final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();
+    final draws1v1 = ((data['draws1v1'] ?? 0) as num).toInt();
+    final matches1v1 = ((data['matches1v1'] ?? 0) as num).toInt();
+
+    final currentWinStreak1v1 =
+        ((data['currentWinStreak1v1'] ?? 0) as num).toInt();
+
+    final bestWinStreak1v1 = ((data['bestWinStreak1v1'] ?? 0) as num).toInt();
+
+    final winrate1v1 =
+        matches1v1 == 0 ? 0 : ((wins1v1 / matches1v1) * 100).round();
 
     final levelInfo = PlayerLevelService.instance.getLevelInfo(xp);
     final level = levelInfo.level;
@@ -596,10 +605,49 @@ class _ProfileScreenState extends State<ProfileScreen>
                 label: 'Best Daily score',
                 value: '$bestDailyScore',
               ),
+              const SizedBox(height: 20),
+              const Text(
+                '1 vs 1 Stats',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
               _WideStatTile(
-                icon: Icons.groups,
-                label: '1v1 record',
-                value: '$wins1v1 W / $losses1v1 L',
+                icon: Icons.emoji_events,
+                label: 'Victories',
+                value: '$wins1v1',
+              ),
+              _WideStatTile(
+                icon: Icons.close,
+                label: 'Defeats',
+                value: '$losses1v1',
+              ),
+              _WideStatTile(
+                icon: Icons.handshake,
+                label: 'Draws',
+                value: '$draws1v1',
+              ),
+              _WideStatTile(
+                icon: Icons.sports_martial_arts,
+                label: 'Matches played',
+                value: '$matches1v1',
+              ),
+              _WideStatTile(
+                icon: Icons.percent,
+                label: 'Winrate',
+                value: '$winrate1v1%',
+              ),
+              _WideStatTile(
+                icon: Icons.local_fire_department,
+                label: 'Current streak',
+                value: '$currentWinStreak1v1',
+              ),
+              _WideStatTile(
+                icon: Icons.whatshot,
+                label: 'Best streak',
+                value: '$bestWinStreak1v1',
               ),
               const SizedBox(height: 18),
               Container(

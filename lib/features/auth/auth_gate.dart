@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'user_bootstrap.dart';
-import '../home/home_screen.dart';
+import '../navigation/main_navigation_screen.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -52,6 +52,6 @@ class _AuthGateState extends State<AuthGate> {
       return Scaffold(body: Center(child: Text('Error: $_error')));
     }
 
-    return const HomeScreen();
+    return const MainNavigationScreen();
   }
 }

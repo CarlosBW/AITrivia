@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'achievement_service.dart';
 
 class FriendService {
   FriendService._();
@@ -8,6 +9,7 @@ class FriendService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final _achievementService = AchievementService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -168,11 +170,10 @@ class FriendService {
               'Player${uid.substring(0, 4)}')
           .toString();
 
-      final requesterDisplayName =
-          (requesterData['displayName'] ??
-                  requesterData['username'] ??
-                  'Player${requesterUid.substring(0, 4)}')
-              .toString();
+      final requesterDisplayName = (requesterData['displayName'] ??
+              requesterData['username'] ??
+              'Player${requesterUid.substring(0, 4)}')
+          .toString();
 
       tx.set(
         myFriendRef,
@@ -202,6 +203,29 @@ class FriendService {
       tx.update(requestRef, {
         'status': 'accepted',
         'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+// =========================================================
+// ACHIEVEMENTS
+// =========================================================
+
+      Future.microtask(() async {
+        try {
+          final myFriendsSnap = await _friendsCol(uid).get();
+
+          final requesterFriendsSnap = await _friendsCol(requesterUid).get();
+
+          await Future.wait([
+            _achievementService.syncFriendsAchievements(
+              uid: uid,
+              friendCount: myFriendsSnap.docs.length,
+            ),
+            _achievementService.syncFriendsAchievements(
+              uid: requesterUid,
+              friendCount: requesterFriendsSnap.docs.length,
+            ),
+          ]);
+        } catch (_) {}
       });
     });
   }

@@ -212,6 +212,83 @@ class MatchService {
     return null;
   }
 
+  Future<void> _queuePvpStatsUpdates({
+    required Transaction tx,
+    required String playerAUid,
+    required String playerBUid,
+    required int playerAScore,
+    required int playerBScore,
+    required String? winnerUid,
+  }) async {
+    final playerARef = _db.collection('users').doc(playerAUid);
+    final playerBRef = _db.collection('users').doc(playerBUid);
+
+    if (winnerUid == null) {
+      tx.set(
+        playerARef,
+        {
+          'matches1v1': FieldValue.increment(1),
+          'draws1v1': FieldValue.increment(1),
+          'currentWinStreak1v1': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        playerBRef,
+        {
+          'matches1v1': FieldValue.increment(1),
+          'draws1v1': FieldValue.increment(1),
+          'currentWinStreak1v1': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      return;
+    }
+
+    final loserUid = winnerUid == playerAUid ? playerBUid : playerAUid;
+    final winnerRef = _db.collection('users').doc(winnerUid);
+    final loserRef = _db.collection('users').doc(loserUid);
+
+    final winnerSnap = await tx.get(winnerRef);
+    final winnerData = winnerSnap.data() ?? {};
+
+    final currentStreak =
+        ((winnerData['currentWinStreak1v1'] ?? 0) as num).toInt();
+
+    final bestStreak = ((winnerData['bestWinStreak1v1'] ?? 0) as num).toInt();
+
+    final newCurrentStreak = currentStreak + 1;
+    final newBestStreak =
+        newCurrentStreak > bestStreak ? newCurrentStreak : bestStreak;
+
+    tx.set(
+      winnerRef,
+      {
+        'matches1v1': FieldValue.increment(1),
+        'wins1v1': FieldValue.increment(1),
+        'currentWinStreak1v1': newCurrentStreak,
+        'bestWinStreak1v1': newBestStreak,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+
+    tx.set(
+      loserRef,
+      {
+        'matches1v1': FieldValue.increment(1),
+        'losses1v1': FieldValue.increment(1),
+        'currentWinStreak1v1': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   // ============================================================
   // LIVE 1 vs 1 (matches) - lo que ya tenías
   // ============================================================
@@ -481,14 +558,14 @@ class MatchService {
 
       if (host['finished'] != true || guest['finished'] != true) return;
 
-      final hostScore = (host['score'] ?? 0) as int;
-      final guestScore = (guest['score'] ?? 0) as int;
+      final hostScore = ((host['score'] ?? 0) as num).toInt();
+      final guestScore = ((guest['score'] ?? 0) as num).toInt();
 
       String? winnerUid;
       if (hostScore > guestScore) winnerUid = hostUid;
       if (guestScore > hostScore) winnerUid = guestUid;
 
-      final winReward = (data['winReward'] ?? 0) as int;
+      final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
       tx.update(ref, {
         'status': 'finished',
@@ -497,11 +574,22 @@ class MatchService {
         'rewarded': true,
       });
 
+      await _queuePvpStatsUpdates(
+        tx: tx,
+        playerAUid: hostUid,
+        playerBUid: guestUid,
+        playerAScore: hostScore,
+        playerBScore: guestScore,
+        winnerUid: winnerUid,
+      );
+
       if (winnerUid != null && winReward > 0) {
         final winnerRef = _db.collection('users').doc(winnerUid);
         tx.set(
           winnerRef,
-          {'coins': FieldValue.increment(winReward)},
+          {
+            'coins': FieldValue.increment(winReward),
+          },
           SetOptions(merge: true),
         );
       }
@@ -781,20 +869,33 @@ class MatchService {
       if (challengerScore > challengedScore) winnerUid = challengerUid;
       if (challengedScore > challengerScore) winnerUid = challengedUid;
 
-      final winReward = (data['winReward'] ?? 0) as int;
+      final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
       tx.update(ref, {
         'status': 'completed',
         'endedAt': FieldValue.serverTimestamp(),
         'winnerUid': winnerUid,
         'rewarded': true,
+        'challengerScore': challengerScore,
+        'challengedScore': challengedScore,
       });
+
+      await _queuePvpStatsUpdates(
+        tx: tx,
+        playerAUid: challengerUid,
+        playerBUid: challengedUid,
+        playerAScore: challengerScore,
+        playerBScore: challengedScore,
+        winnerUid: winnerUid,
+      );
 
       if (winnerUid != null && winReward > 0) {
         final winnerRef = _db.collection('users').doc(winnerUid);
         tx.set(
           winnerRef,
-          {'coins': FieldValue.increment(winReward)},
+          {
+            'coins': FieldValue.increment(winReward),
+          },
           SetOptions(merge: true),
         );
       }

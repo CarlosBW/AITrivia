@@ -1,10 +1,12 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'achievement_service.dart';
 
 class MatchService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
+  final _achievementService = AchievementService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -250,28 +252,39 @@ class MatchService {
     }
 
     final loserUid = winnerUid == playerAUid ? playerBUid : playerAUid;
+
     final winnerRef = _db.collection('users').doc(winnerUid);
     final loserRef = _db.collection('users').doc(loserUid);
 
     final winnerSnap = await tx.get(winnerRef);
-    final winnerData = winnerSnap.data() ?? {};
+    final loserSnap = await tx.get(loserRef);
 
-    final currentStreak =
+    final winnerData = winnerSnap.data() ?? {};
+    final loserData = loserSnap.data() ?? {};
+
+    final currentWinnerStreak =
         ((winnerData['currentWinStreak1v1'] ?? 0) as num).toInt();
 
-    final bestStreak = ((winnerData['bestWinStreak1v1'] ?? 0) as num).toInt();
+    final bestWinnerStreak =
+        ((winnerData['bestWinStreak1v1'] ?? 0) as num).toInt();
 
-    final newCurrentStreak = currentStreak + 1;
-    final newBestStreak =
-        newCurrentStreak > bestStreak ? newCurrentStreak : bestStreak;
+    final winnerWins = ((winnerData['wins1v1'] ?? 0) as num).toInt() + 1;
+
+    final loserWins = ((loserData['wins1v1'] ?? 0) as num).toInt();
+
+    final newCurrentWinnerStreak = currentWinnerStreak + 1;
+
+    final newBestWinnerStreak = newCurrentWinnerStreak > bestWinnerStreak
+        ? newCurrentWinnerStreak
+        : bestWinnerStreak;
 
     tx.set(
       winnerRef,
       {
         'matches1v1': FieldValue.increment(1),
         'wins1v1': FieldValue.increment(1),
-        'currentWinStreak1v1': newCurrentStreak,
-        'bestWinStreak1v1': newBestStreak,
+        'currentWinStreak1v1': newCurrentWinnerStreak,
+        'bestWinStreak1v1': newBestWinnerStreak,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -287,6 +300,26 @@ class MatchService {
       },
       SetOptions(merge: true),
     );
+
+    // =========================================================
+    // ACHIEVEMENTS
+    // =========================================================
+
+    Future.microtask(() async {
+      try {
+        await _achievementService.syncPvpAchievements(
+          uid: winnerUid,
+          wins: winnerWins,
+          currentWinStreak: newCurrentWinnerStreak,
+        );
+
+        await _achievementService.syncPvpAchievements(
+          uid: loserUid,
+          wins: loserWins,
+          currentWinStreak: 0,
+        );
+      } catch (_) {}
+    });
   }
 
   // ============================================================

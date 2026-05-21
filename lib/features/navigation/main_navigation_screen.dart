@@ -4,6 +4,7 @@ import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import '../social/friends_screen.dart';
 import '../versus/versus_menu_screen.dart';
+import '../solo/solo_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -49,7 +50,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           _lazyTab(
             tabIndex: 1,
-            child: const _SoloPlaceholderScreen(),
+            child: const SoloScreen(),
           ),
           _lazyTab(
             tabIndex: 2,
@@ -95,29 +96,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SoloPlaceholderScreen extends StatelessWidget {
-  const _SoloPlaceholderScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Solo'),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'En el siguiente paso moveremos aquí los temas fijos y el progreso del modo SOLO.',
-            textAlign: TextAlign.center,
-          ),
-        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/friend_service.dart';
+import '../../services/match_service.dart';
+import '../versus/async_match_play_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -12,6 +14,7 @@ class FriendsScreen extends StatefulWidget {
 
 class _FriendsScreenState extends State<FriendsScreen> {
   final _service = FriendService.instance;
+  final _matchService = MatchService();
   final _searchCtrl = TextEditingController();
 
   bool _searching = false;
@@ -112,15 +115,52 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
-  void _challengeFriend({
+  Future<void> _challengeFriend({
     required String friendUid,
     required String displayName,
-  }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Retar a $displayName será el siguiente paso.'),
-      ),
-    );
+  }) async {
+    if (_actionLoading) return;
+
+    setState(() {
+      _actionLoading = true;
+      _error = null;
+    });
+
+    try {
+      final myName = await _matchService.getMyDisplayNameFallback('Player');
+
+      final matchId = await _matchService.createAsyncFixedMatch(
+        challengedUid: friendUid,
+        categoryId: 'random',
+        difficulty: 1,
+        totalQuestions: 10,
+        timePerQuestionSec: 10,
+        winReward: 2,
+        challengerDisplayName: myName,
+        challengedDisplayName: displayName,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AsyncMatchPlayScreen(asyncMatchId: matchId),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _actionLoading = false);
+      }
+    }
   }
 
   @override
@@ -325,18 +365,20 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       final displayName =
                           (data['displayName'] ?? data['username'] ?? 'Player')
                               .toString();
-                      final avatarId = (data['avatarId'] ?? 'avatar_1')
-                          .toString();
+                      final avatarId =
+                          (data['avatarId'] ?? 'avatar_1').toString();
 
                       return _UserTile(
                         avatar: _avatarEmoji(avatarId),
                         title: displayName,
                         subtitle: 'Amigo',
                         trailing: FilledButton(
-                          onPressed: () => _challengeFriend(
-                            friendUid: friendUid,
-                            displayName: displayName,
-                          ),
+                          onPressed: _actionLoading
+                              ? null
+                              : () => _challengeFriend(
+                                    friendUid: friendUid,
+                                    displayName: displayName,
+                                  ),
                           child: const Text('Retar'),
                         ),
                       );

@@ -1,14 +1,20 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
+import 'pvp_result_card.dart';
 
 class AsyncMatchPlayScreen extends StatefulWidget {
   final String asyncMatchId;
-  const AsyncMatchPlayScreen({super.key, required this.asyncMatchId});
+
+  const AsyncMatchPlayScreen({
+    super.key,
+    required this.asyncMatchId,
+  });
 
   @override
   State<AsyncMatchPlayScreen> createState() => _AsyncMatchPlayScreenState();
@@ -36,6 +42,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _submittedFinal = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
+  static const Duration _switchDuration = Duration(milliseconds: 250);
 
   @override
   void dispose() {
@@ -55,8 +62,10 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   void _startTimerForQuestion(int seconds, int questionIndex, int answerIndex) {
     _timer?.cancel();
+
     _timerForIndex = questionIndex;
     _secondsLeft = seconds;
+
     _resetPerQuestion();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -69,6 +78,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         }
 
         final next = _secondsLeft - 1;
+
         if (next <= 0) {
           _secondsLeft = 0;
           t.cancel();
@@ -96,6 +106,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   void _goNextQuestion() {
     if (!mounted) return;
+
     setState(() {
       _index++;
       _timerForIndex = -1;
@@ -124,6 +135,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     _timer?.cancel();
 
     final correct = tappedIndex == answerIndex;
+
     if (correct) {
       SfxService.instance.playCorrect();
       setState(() => _correct++);
@@ -142,85 +154,113 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   Future<void> _submitFinalScoreIfNeeded() async {
     if (_submittedFinal) return;
+
     _submittedFinal = true;
+
     try {
       await _service.submitAsyncResult(
         matchId: widget.asyncMatchId,
         score: _correct,
       );
     } catch (_) {
-      // Silencioso para no romper UX
+      // Silencioso para no romper UX.
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+
     final ref = FirebaseFirestore.instance
         .collection('async_matches')
         .doc(widget.asyncMatchId);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reto asíncrono')),
+      appBar: AppBar(
+        title: const Text('Reto asíncrono'),
+      ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
+
           final data = snap.data!.data();
+
           if (data == null) {
             return const Center(child: Text('Reto no encontrado'));
           }
 
-          final timePerQ = (data['timePerQuestionSec'] ?? 10) as int;
-          final questions = (data['questions'] as List<dynamic>? ?? []);
+          final timePerQ =
+              ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+
+          final questions = data['questions'] as List<dynamic>? ?? [];
+
           if (questions.isEmpty) {
-            return const Center(child: Text('Este reto no tiene preguntas.'));
+            return const Center(
+              child: Text('Este reto no tiene preguntas.'),
+            );
           }
 
           final challengerUid = (data['challengerUid'] ?? '').toString();
           final challengedUid = (data['challengedUid'] ?? '').toString();
 
           final myRole = uid == challengerUid ? 'challenger' : 'challenged';
+          final opponentRole =
+              myRole == 'challenger' ? 'challenged' : 'challenger';
+
           final myStatusKey =
               myRole == 'challenger' ? 'challengerStatus' : 'challengedStatus';
+
+          final opponentStatusKey =
+              opponentRole == 'challenger' ? 'challengerStatus' : 'challengedStatus';
+
           final myStatus = (data[myStatusKey] ?? 'pending').toString();
+          final opponentStatus = (data[opponentStatusKey] ?? 'pending').toString();
 
-          // Scores guardados (para cuando reabres la pantalla)
-          final challengerScore = ((data['challenger']?['score']) ?? 0) as int;
-          final challengedScore = ((data['challenged']?['score']) ?? 0) as int;
+          final challengerScore =
+              ((data['challenger']?['score']) ?? 0) as int;
+          final challengedScore =
+              ((data['challenged']?['score']) ?? 0) as int;
 
-          final status = (data['status'] ?? '').toString(); // waiting_challenged | completed | ...
+          final mySavedScore =
+              myRole == 'challenger' ? challengerScore : challengedScore;
+
+          final opponentSavedScore =
+              myRole == 'challenger' ? challengedScore : challengerScore;
+
+          final status = (data['status'] ?? '').toString();
           final winnerUid = data['winnerUid'] as String?;
 
-          // Si ya jugué: mostrar resultado desde Firestore (no desde _correct)
+          final myName = _nameForRole(
+            data: data,
+            role: myRole,
+            fallback: 'Tú',
+          );
+
+          final opponentName = _nameForRole(
+            data: data,
+            role: opponentRole,
+            fallback: 'Rival',
+          );
+
           if (myStatus == 'finished') {
             _timer?.cancel();
 
-            final mySavedScore = myRole == 'challenger'
-                ? challengerScore
-                : challengedScore;
-
-            final oppSavedScore = myRole == 'challenger'
-                ? challengedScore
-                : challengerScore;
-
-            return _buildAlreadyPlayed(
+            return _buildResultCard(
               context,
+              uid: uid,
               status: status,
               winnerUid: winnerUid,
+              myName: myName,
+              opponentName: opponentName,
               myScore: mySavedScore,
-              oppScore: oppSavedScore,
-              opponentFinished: (myRole == 'challenger'
-                      ? (data['challengedStatus'] ?? 'pending')
-                      : (data['challengerStatus'] ?? 'pending'))
-                  .toString() ==
-              'finished',
+              opponentScore: opponentSavedScore,
+              opponentFinished: opponentStatus == 'finished',
             );
           }
 
-          // Fin de preguntas: enviar score una sola vez y mostrar “en espera”
           if (_index >= questions.length) {
             _timer?.cancel();
 
@@ -230,127 +270,55 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               });
             }
 
-            // Mientras Firestore se actualiza, mostramos tu score local.
-            // Luego cuando termine, Inbox/Outbox reflejarán completed.
-            return _buildDone(
+            return _buildWaitingSubmitCard(
               context,
-              status: status,
-              winnerUid: winnerUid,
+              myName: myName,
+              opponentName: opponentName,
               myScore: _correct,
             );
           }
 
-          // Pregunta actual
-          final qMap = questions[_index] as Map<String, dynamic>;
+          final qMap = Map<String, dynamic>.from(questions[_index] as Map);
           final qText = (qMap['q'] ?? '').toString();
+
           final options = (qMap['options'] as List<dynamic>? ?? [])
               .map((e) => e.toString())
               .toList();
-          final answerIndex = (qMap['answerIndex'] ?? 0) as int;
+
+          final answerIndex = ((qMap['answerIndex'] ?? 0) as num).toInt();
 
           if (_timerForIndex != _index) {
-            _startTimerForQuestion(timePerQ, _index, answerIndex);
+            _startTimerForQuestion(
+              timePerQ,
+              _index,
+              answerIndex,
+            );
           }
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Pregunta ${_index + 1} / ${questions.length}'),
-                const SizedBox(height: 8),
-                Text(
-                  'Tiempo: $_secondsLeft s',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+          return AnimatedSwitcher(
+            duration: _switchDuration,
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, anim) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0.03, 0),
+                end: Offset.zero,
+              ).animate(anim);
+
+              return FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: slide,
+                  child: child,
                 ),
-                const SizedBox(height: 8),
-                Text('Aciertos: $_correct', style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 12),
-
-                Text(
-                  qText,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-
-                ...List.generate(options.length, (i) {
-                  final isSelected = _selected == i;
-                  final isCorrect = i == answerIndex;
-
-                  Color? fillColor;
-                  if (_locked && !_timedOut) {
-                    if (isCorrect) fillColor = Colors.green.withOpacity(0.2);
-                    if (isSelected && !isCorrect) {
-                      fillColor = Colors.red.withOpacity(0.2);
-                    }
-                  } else if (!_locked && isSelected) {
-                    fillColor = Colors.black12;
-                  }
-
-                  Color borderColor = Colors.black26;
-                  double borderWidth = 1;
-
-                  if (_timedOut && _timeoutAnswerIndex != null) {
-                    if (i == _timeoutAnswerIndex) {
-                      borderColor = Colors.amber;
-                      borderWidth = 3;
-                    }
-                  } else if (_locked) {
-                    if (isCorrect) {
-                      borderColor = Colors.green;
-                      borderWidth = 2;
-                    }
-                    if (isSelected && !isCorrect) {
-                      borderColor = Colors.red;
-                      borderWidth = 2;
-                    }
-                  } else if (isSelected) {
-                    borderColor = Colors.black54;
-                    borderWidth = 2;
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
-                      onTap: _locked
-                          ? null
-                          : () => _onTapAnswer(
-                                tappedIndex: i,
-                                answerIndex: answerIndex,
-                              ),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: fillColor ?? Colors.black12,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderColor, width: borderWidth),
-                        ),
-                        child: Text(options[i], style: const TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                  );
-                }),
-
-                const SizedBox(height: 6),
-
-                // Mensaje debajo (no mueve layout)
-                SizedBox(
-                  height: 22,
-                  child: _statusMsg == null
-                      ? const SizedBox.shrink()
-                      : Center(
-                          child: Text(
-                            _statusMsg!,
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                ),
-
-                const Spacer(),
-              ],
+              );
+            },
+            child: _buildQuestionView(
+              key: ValueKey('async_q_$_index'),
+              qText: qText,
+              options: options,
+              answerIndex: answerIndex,
+              total: questions.length,
             ),
           );
         },
@@ -358,93 +326,247 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     );
   }
 
-  Widget _buildAlreadyPlayed(
-    BuildContext context, {
-    required String status,
-    required String? winnerUid,
-    required int myScore,
-    required int oppScore,
-    required bool opponentFinished,
+  String _nameForRole({
+    required Map<String, dynamic> data,
+    required String role,
+    required String fallback,
   }) {
-    String resultLine = 'Tu score: $myScore';
-    if (status == 'completed') {
-      if (winnerUid == null) {
-        resultLine = 'Empate — $myScore vs $oppScore';
-      } else if (winnerUid == FirebaseAuth.instance.currentUser!.uid) {
-        resultLine = 'Ganaste ✅ — $myScore vs $oppScore';
-      } else {
-        resultLine = 'Perdiste ❌ — $myScore vs $oppScore';
-      }
-    } else {
-      resultLine = opponentFinished
-          ? 'Tu score: $myScore — esperando resultado...'
-          : 'Tu score: $myScore — esperando que tu rival juegue...';
+    if (role == 'challenger') {
+      final name = (data['challengerDisplayName'] ?? '').toString().trim();
+      return name.isEmpty ? fallback : name;
     }
 
-    return Center(
+    final name = (data['challengedDisplayName'] ?? '').toString().trim();
+    return name.isEmpty ? fallback : name;
+  }
+
+  Widget _buildQuestionView({
+    required Key key,
+    required String qText,
+    required List<String> options,
+    required int answerIndex,
+    required int total,
+  }) {
+    final absorbing = _locked || _answerSubmitting;
+
+    return AbsorbPointer(
+      key: key,
+      absorbing: absorbing,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Ya jugaste este reto ✅',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Text('Pregunta ${_index + 1} / $total'),
+            const SizedBox(height: 8),
+
+            Text(
+              'Tiempo: $_secondsLeft s',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Aciertos: $_correct',
+              style: const TextStyle(fontSize: 16),
+            ),
+
             const SizedBox(height: 12),
-            Text(resultLine, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Volver'),
+
+            Text(
+              qText,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+
+            const SizedBox(height: 16),
+
+            ...List.generate(options.length, (i) {
+              final isSelected = _selected == i;
+              final isCorrect = i == answerIndex;
+
+              Color? fillColor;
+
+              if (_locked && !_timedOut) {
+                if (isCorrect) {
+                  fillColor = Colors.green.withOpacity(0.2);
+                }
+
+                if (isSelected && !isCorrect) {
+                  fillColor = Colors.red.withOpacity(0.2);
+                }
+              } else if (!_locked && isSelected) {
+                fillColor = Colors.black12;
+              }
+
+              Color borderColor = Colors.black26;
+              double borderWidth = 1;
+
+              if (_timedOut && _timeoutAnswerIndex != null) {
+                if (i == _timeoutAnswerIndex) {
+                  borderColor = Colors.amber;
+                  borderWidth = 3;
+                }
+              } else if (_locked) {
+                if (isCorrect) {
+                  borderColor = Colors.green;
+                  borderWidth = 2;
+                }
+
+                if (isSelected && !isCorrect) {
+                  borderColor = Colors.red;
+                  borderWidth = 2;
+                }
+              } else if (isSelected) {
+                borderColor = Colors.black54;
+                borderWidth = 2;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _onTapAnswer(
+                    tappedIndex: i,
+                    answerIndex: answerIndex,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: fillColor ?? Colors.black12,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: borderColor,
+                        width: borderWidth,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Text(
+                      options[i],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            SizedBox(
+              height: 22,
+              child: _statusMsg == null
+                  ? const SizedBox.shrink()
+                  : Center(
+                      child: Text(
+                        _statusMsg!,
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+            ),
+
+            const Spacer(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDone(
+  Widget _buildWaitingSubmitCard(
     BuildContext context, {
-    required String status,
-    required String? winnerUid,
+    required String myName,
+    required String opponentName,
     required int myScore,
   }) {
-    String msg = 'Enviando tu resultado...';
-    if (status == 'completed') {
-      if (winnerUid == null) {
-        msg = 'Empate';
-      } else if (winnerUid == FirebaseAuth.instance.currentUser!.uid) {
-        msg = 'Ganaste ✅';
-      } else {
-        msg = 'Perdiste ❌';
-      }
-    } else {
-      msg = 'Listo. Esperando a tu rival...';
+    return PvpResultCard(
+      state: PvpResultState.waiting,
+      title: 'Reto completado',
+      subtitle: 'Enviando tu resultado. Luego esperaremos a tu rival.',
+      myName: myName,
+      opponentName: opponentName,
+      myScore: myScore,
+      opponentScore: null,
+      primaryButtonText: 'Volver',
+      onPrimaryPressed: () => Navigator.pop(context),
+    );
+  }
+
+  Widget _buildResultCard(
+    BuildContext context, {
+    required String uid,
+    required String status,
+    required String? winnerUid,
+    required String myName,
+    required String opponentName,
+    required int myScore,
+    required int opponentScore,
+    required bool opponentFinished,
+  }) {
+    if (status != 'completed') {
+      return PvpResultCard(
+        state: PvpResultState.waiting,
+        title: 'Ya jugaste este reto',
+        subtitle: opponentFinished
+            ? 'Tu resultado fue enviado. Calculando resultado final.'
+            : 'Tu resultado fue enviado. Esperando que tu rival juegue.',
+        myName: myName,
+        opponentName: opponentName,
+        myScore: myScore,
+        opponentScore: opponentFinished ? opponentScore : null,
+        primaryButtonText: 'Volver',
+        onPrimaryPressed: () => Navigator.pop(context),
+      );
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Reto completado ✅',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text('Tu score: $myScore'),
-            const SizedBox(height: 12),
-            Text(msg),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Volver'),
-            ),
-          ],
-        ),
-      ),
+    late final PvpResultState state;
+    late final String title;
+    late final String subtitle;
+
+    if (winnerUid == null) {
+      state = PvpResultState.draw;
+      title = 'Empate';
+      subtitle = 'Ambos terminaron con el mismo puntaje.';
+    } else if (winnerUid == uid) {
+      state = PvpResultState.victory;
+      title = '¡Ganaste!';
+      subtitle = 'Buen duelo. Sumaste una victoria 1 vs 1.';
+    } else {
+      state = PvpResultState.defeat;
+      title = 'Perdiste';
+      subtitle = 'Estuviste cerca. Intenta una revancha.';
+    }
+
+    return PvpResultCard(
+      state: state,
+      title: title,
+      subtitle: subtitle,
+      myName: myName,
+      opponentName: opponentName,
+      myScore: myScore,
+      opponentScore: opponentScore,
+      primaryButtonText: 'Volver',
+      onPrimaryPressed: () => Navigator.pop(context),
+      secondaryButtonText: 'Revancha',
+      onSecondaryPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La revancha será el siguiente paso.'),
+          ),
+        );
+      },
     );
   }
 }

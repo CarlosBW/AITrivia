@@ -1,13 +1,20 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
+import 'pvp_result_card.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
-  const MatchPlayScreen({super.key, required this.matchId});
+
+  const MatchPlayScreen({
+    super.key,
+    required this.matchId,
+  });
 
   @override
   State<MatchPlayScreen> createState() => _MatchPlayScreenState();
@@ -28,21 +35,17 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _finishedSent = false;
   bool _finishing = false;
 
-  // Timeout UX
   bool _timedOut = false;
   int? _timeoutAnswerIndex;
   bool _autoNextScheduled = false;
 
   String? _statusMsg;
 
-  // ✅ Guard extra anti doble-tap
   bool _answerSubmitting = false;
 
   static const int _defaultTimePerQ = 10;
-  static const Duration _revealDelay = Duration(seconds: 1); // ✅ 1 segundo
-  static const Duration _switchDuration = Duration(
-    milliseconds: 250,
-  ); // animación
+  static const Duration _revealDelay = Duration(seconds: 1);
+  static const Duration _switchDuration = Duration(milliseconds: 250);
 
   @override
   void dispose() {
@@ -53,12 +56,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   void _resetPerQuestion() {
     _locked = false;
     _selected = null;
-
     _timedOut = false;
     _timeoutAnswerIndex = null;
     _autoNextScheduled = false;
     _statusMsg = null;
-
     _answerSubmitting = false;
   }
 
@@ -80,15 +81,16 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
         }
 
         final next = _secondsLeft - 1;
+
         if (next <= 0) {
-          _secondsLeft = 0; // clamp
+          _secondsLeft = 0;
           t.cancel();
 
-          // Timeout
           _locked = true;
           _timedOut = true;
           _timeoutAnswerIndex = answerIndex;
           _statusMsg = '⏰ Se acabó el tiempo';
+
           SfxService.instance.playTimeout();
 
           if (!_autoNextScheduled) {
@@ -107,9 +109,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   void _goNextQuestion() {
     if (!mounted) return;
+
     setState(() {
       _index++;
-      _timerForIndex = -1; // fuerza reinicio
+      _timerForIndex = -1;
       _timer = null;
       _resetPerQuestion();
     });
@@ -119,7 +122,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     required int tappedIndex,
     required int answerIndex,
   }) async {
-    // ✅ anti doble-tap
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
@@ -139,13 +141,15 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final correct = tappedIndex == answerIndex;
 
     if (correct) {
-      SfxService.instance.playCorrect(); // sin await
-      await _service.submitAnswer(matchId: widget.matchId, deltaScore: 1);
+      SfxService.instance.playCorrect();
+      await _service.submitAnswer(
+        matchId: widget.matchId,
+        deltaScore: 1,
+      );
     } else {
-      SfxService.instance.playWrong(); // sin await
+      SfxService.instance.playWrong();
     }
 
-    // auto-next
     if (!_autoNextScheduled) {
       _autoNextScheduled = true;
       Future.delayed(_revealDelay, () {
@@ -165,7 +169,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     try {
       await _service.setFinished(widget.matchId);
     } catch (_) {
-      // no crashear
+      // No romper UX si falla momentáneamente.
     } finally {
       _finishing = false;
     }
@@ -174,11 +178,15 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final ref =
-        FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
+
+    final ref = FirebaseFirestore.instance
+        .collection('matches')
+        .doc(widget.matchId);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('1 vs 1')),
+      appBar: AppBar(
+        title: const Text('1 vs 1'),
+      ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
         builder: (context, snap) {
@@ -187,52 +195,71 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           }
 
           final data = snap.data!.data();
+
           if (data == null) {
             return const Center(child: Text('Match no encontrado'));
           }
 
           final status = (data['status'] ?? 'waiting').toString();
+
           if (status != 'playing' && status != 'finished') {
             return const Center(child: Text('Esperando que inicie...'));
           }
 
           final timePerQ =
-              (data['timePerQuestionSec'] ?? _defaultTimePerQ) as int;
-          final questions = (data['questions'] as List<dynamic>? ?? []);
+              ((data['timePerQuestionSec'] ?? _defaultTimePerQ) as num)
+                  .toInt();
+
+          final questions = data['questions'] as List<dynamic>? ?? [];
+
           if (questions.isEmpty) {
-            return const Center(child: Text('Este match no tiene preguntas.'));
+            return const Center(
+              child: Text('Este match no tiene preguntas.'),
+            );
           }
 
           final players = Map<String, dynamic>.from(data['players'] ?? {});
           final me = Map<String, dynamic>.from(players[uid] ?? {});
-          final myScore = (me['score'] ?? 0) as int;
+          final myScore = ((me['score'] ?? 0) as num).toInt();
 
-          // terminado global
           if (status == 'finished') {
             _timer?.cancel();
             return _buildEnd(context, data, uid);
           }
 
-          // fin local
           if (_index >= questions.length) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _finishMatch());
-            return _buildWaitingFinish(context, data, myScore);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _finishMatch();
+            });
+
+            return _buildWaitingFinish(
+              context,
+              data,
+              uid,
+              myScore,
+            );
           }
 
-          // pregunta actual
-          final qMap = questions[_index] as Map<String, dynamic>;
+          final qMap = Map<String, dynamic>.from(
+            questions[_index] as Map,
+          );
+
           final qText = (qMap['q'] ?? '').toString();
+
           final options = (qMap['options'] as List<dynamic>? ?? [])
               .map((e) => e.toString())
               .toList();
-          final answerIndex = (qMap['answerIndex'] ?? 0) as int;
 
-          // timer 1 vez por pregunta
+          final answerIndex = ((qMap['answerIndex'] ?? 0) as num).toInt();
+
           if (_timerForIndex != _index) {
-            _startTimerForQuestion(timePerQ, _index, answerIndex);
+            _startTimerForQuestion(
+              timePerQ,
+              _index,
+              answerIndex,
+            );
           }
 
-          // ✅ Animación + anti-tap global
           return AnimatedSwitcher(
             duration: _switchDuration,
             switchInCurve: Curves.easeOut,
@@ -242,9 +269,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 begin: const Offset(0.03, 0),
                 end: Offset.zero,
               ).animate(anim);
+
               return FadeTransition(
                 opacity: anim,
-                child: SlideTransition(position: slide, child: child),
+                child: SlideTransition(
+                  position: slide,
+                  child: child,
+                ),
               );
             },
             child: _buildQuestionView(
@@ -281,30 +312,42 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           children: [
             Text('Pregunta ${_index + 1} / $total'),
             const SizedBox(height: 8),
+
             Text(
               'Tiempo: $_secondsLeft s',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 8),
-            Text('Tu puntaje: $myScore', style: const TextStyle(fontSize: 16)),
+
+            Text(
+              'Tu puntaje: $myScore',
+              style: const TextStyle(fontSize: 16),
+            ),
+
             const SizedBox(height: 12),
 
             Text(
               qText,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+
             const SizedBox(height: 16),
 
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
 
-              // Fondo:
-              // - timeout: NO pintamos verde (solo borde amarillo)
-              // - respondió: verde correcta + rojo seleccionada incorrecta
               Color? fillColor;
+
               if (_locked && !_timedOut) {
-                if (isCorrect) fillColor = Colors.green.withOpacity(0.2);
+                if (isCorrect) {
+                  fillColor = Colors.green.withOpacity(0.2);
+                }
+
                 if (isSelected && !isCorrect) {
                   fillColor = Colors.red.withOpacity(0.2);
                 }
@@ -312,7 +355,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 fillColor = Colors.black12;
               }
 
-              // Borde:
               Color borderColor = Colors.black26;
               double borderWidth = 1;
 
@@ -326,6 +368,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                   borderColor = Colors.green;
                   borderWidth = 2;
                 }
+
                 if (isSelected && !isCorrect) {
                   borderColor = Colors.red;
                   borderWidth = 2;
@@ -338,9 +381,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: InkWell(
-                  onTap: () =>
-                      _onTapAnswer(tappedIndex: i, answerIndex: answerIndex),
-                  child: Container(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _onTapAnswer(
+                    tappedIndex: i,
+                    answerIndex: answerIndex,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOut,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: fillColor ?? Colors.black12,
@@ -349,6 +397,15 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                         color: borderColor,
                         width: borderWidth,
                       ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
                     ),
                     child: Text(
                       options[i],
@@ -359,7 +416,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               );
             }),
 
-            // 👇 MENSAJE (layout fijo, sin duplicar)
             SizedBox(
               height: 22,
               child: _statusMsg == null
@@ -374,8 +430,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       ),
                     ),
             ),
+
             const Spacer(),
-            // ✅ Sin botón "Siguiente" (auto-next siempre)
           ],
         ),
       ),
@@ -385,56 +441,34 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   Widget _buildWaitingFinish(
     BuildContext context,
     Map<String, dynamic> match,
+    String uid,
     int myScore,
   ) {
     final players = Map<String, dynamic>.from(match['players'] ?? {});
+
     final hostUid = (match['hostUid'] ?? '').toString();
     final guestUid = (match['guestUid'] ?? '').toString();
 
-    final hostScore = (players[hostUid]?['score'] ?? 0) as int;
-    final guestScore = (players[guestUid]?['score'] ?? 0) as int;
+    final opponentUid = uid == hostUid ? guestUid : hostUid;
 
-    final winnerUid = match['winnerUid'] as String?;
+    final myData = Map<String, dynamic>.from(players[uid] ?? {});
+    final opponentData = Map<String, dynamic>.from(
+      players[opponentUid] ?? {},
+    );
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Terminaste tus preguntas ✅',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text('Tu puntaje: $myScore'),
-            const SizedBox(height: 12),
-            Text('Host: $hostScore'),
-            Text('Guest: $guestScore'),
-            const SizedBox(height: 16),
-            if (winnerUid == null)
-              const Column(
-                children: [
-                  SizedBox(
-                    height: 28,
-                    width: 28,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  ),
-                  SizedBox(height: 10),
-                  Text('Esperando que el otro jugador termine...'),
-                ],
-              )
-            else
-              const Text('Calculando resultado...'),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Salir'),
-            ),
-          ],
-        ),
-      ),
+    final myName = (myData['displayName'] ?? 'Tú').toString();
+    final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
+
+    return PvpResultCard(
+      state: PvpResultState.waiting,
+      title: 'Reto completado',
+      subtitle: 'Terminaste tus preguntas. Esperando que tu rival finalice.',
+      myName: myName,
+      opponentName: opponentName,
+      myScore: myScore,
+      opponentScore: null,
+      primaryButtonText: 'Salir',
+      onPrimaryPressed: () => Navigator.pop(context),
     );
   }
 
@@ -444,44 +478,66 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     String uid,
   ) {
     final players = Map<String, dynamic>.from(match['players'] ?? {});
+
     final hostUid = (match['hostUid'] ?? '').toString();
     final guestUid = (match['guestUid'] ?? '').toString();
 
-    final hostScore = (players[hostUid]?['score'] ?? 0) as int;
-    final guestScore = (players[guestUid]?['score'] ?? 0) as int;
+    final opponentUid = uid == hostUid ? guestUid : hostUid;
+
+    final myData = Map<String, dynamic>.from(players[uid] ?? {});
+    final opponentData = Map<String, dynamic>.from(
+      players[opponentUid] ?? {},
+    );
+
+    final myScore = ((myData['score'] ?? 0) as num).toInt();
+    final opponentScore = ((opponentData['score'] ?? 0) as num).toInt();
+
+    final myName = (myData['displayName'] ?? 'Tú').toString();
+    final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
 
     final winnerUid = match['winnerUid'] as String?;
+    final winReward = ((match['winReward'] ?? 0) as num).toInt();
 
-    String result;
+    late final PvpResultState state;
+    late final String title;
+    late final String subtitle;
+
+    int coinsEarned = 0;
+
     if (winnerUid == null) {
-      result = 'Empate';
+      state = PvpResultState.draw;
+      title = 'Empate';
+      subtitle = 'Ambos terminaron con el mismo puntaje.';
     } else if (winnerUid == uid) {
-      result = '¡Ganaste!';
+      state = PvpResultState.victory;
+      title = '¡Ganaste!';
+      subtitle = 'Buen duelo. Sumaste una victoria 1 vs 1.';
+      coinsEarned = winReward;
     } else {
-      result = 'Perdiste';
+      state = PvpResultState.defeat;
+      title = 'Perdiste';
+      subtitle = 'Estuviste cerca. Intenta una revancha.';
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              result,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text('Host: $hostScore'),
-            Text('Guest: $guestScore'),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Salir'),
-            ),
-          ],
-        ),
-      ),
+    return PvpResultCard(
+      state: state,
+      title: title,
+      subtitle: subtitle,
+      myName: myName,
+      opponentName: opponentName,
+      myScore: myScore,
+      opponentScore: opponentScore,
+      coinsEarned: coinsEarned > 0 ? coinsEarned : null,
+      primaryButtonText: 'Volver',
+      onPrimaryPressed: () => Navigator.pop(context),
+      secondaryButtonText: 'Revancha',
+      onSecondaryPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('La revancha será el siguiente paso.'),
+          ),
+        );
+      },
     );
   }
 }

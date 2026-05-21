@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/life_service.dart';
+import '../../services/achievement_service.dart';
 import '../../services/sfx_service.dart';
 
 class LevelPlayScreen extends StatefulWidget {
@@ -71,6 +72,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   bool _isNavigating = false;
   bool _buyingLife = false;
+
+  final _achievementService = AchievementService.instance;
 
   static const int _defaultTimePerQ = 10;
   static const int _buyLifeCost = 10;
@@ -410,8 +413,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       await _syncLivesUiFromFirestore();
 
       if (!ok) {
-        _lifeGateError =
-            'Necesitas 1 vida completa para entrar a este nivel.';
+        _lifeGateError = 'Necesitas 1 vida completa para entrar a este nivel.';
       }
 
       _lifeChecked = true;
@@ -1146,6 +1148,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             },
             SetOptions(merge: true),
           );
+        }
+
+        // =========================================================
+        // ACHIEVEMENTS
+        // =========================================================
+
+        if (!wasAlreadyCompleted) {
+          Future.microtask(() async {
+            try {
+              await _achievementService.incrementSoloLevelCompleted(
+                uid: uid,
+              );
+            } catch (_) {}
+          });
         }
 
         final completedAll =

@@ -2,11 +2,13 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'achievement_service.dart';
+import 'notification_service.dart';
 
 class MatchService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final _achievementService = AchievementService.instance;
+  final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -823,6 +825,23 @@ class MatchService {
       'winReward': winReward,
       'endedAt': null,
     });
+
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
+
+    try {
+      await _notificationService.createNotification(
+        targetUid: challengedUid,
+        type: 'match_invite',
+        title: 'New async challenge',
+        body: '$challengerDisplayName challenged you to a 1 vs 1 match.',
+        data: {
+          'matchId': matchRef.id,
+          'challengerUid': uid,
+        },
+      );
+    } catch (_) {}
 
     return matchRef.id;
   }

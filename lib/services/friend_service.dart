@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'achievement_service.dart';
+import 'notification_service.dart';
 
 class FriendService {
   FriendService._();
@@ -10,6 +11,7 @@ class FriendService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _achievementService = AchievementService.instance;
+  final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -124,6 +126,22 @@ class FriendService {
         },
         SetOptions(merge: true),
       );
+      
+      // =========================================================
+      // NOTIFICATIONS
+      // =========================================================
+
+      try {
+        await _notificationService.createNotification(
+          targetUid: targetUid,
+          type: 'friend_request',
+          title: 'New friend request',
+          body: '$displayName wants to add you as a friend.',
+          data: {
+            'requesterUid': uid,
+          },
+        );
+      } catch (_) {}
     });
   }
 

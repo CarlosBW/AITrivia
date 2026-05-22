@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
+import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
 
 class AsyncMatchPlayScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class AsyncMatchPlayScreen extends StatefulWidget {
 
 class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   final _service = MatchService();
+  final _presenceService = PresenceService.instance;
 
   int _index = 0;
   int _correct = 0;
@@ -40,13 +42,35 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   bool _answerSubmitting = false;
   bool _submittedFinal = false;
+  bool _presenceInitialized = false;
+  bool _leavingScreen = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
   @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      if (_presenceInitialized) return;
+
+      _presenceInitialized = true;
+
+      try {
+        await _presenceService.setInMatch();
+      } catch (_) {}
+    });
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
+
+    if (!_leavingScreen) {
+      _presenceService.setAvailable();
+    }
+
     super.dispose();
   }
 
@@ -162,6 +186,9 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         matchId: widget.asyncMatchId,
         score: _correct,
       );
+      try {
+        await _presenceService.setAvailable();
+      } catch (_) {}
     } catch (_) {
       // Silencioso para no romper UX.
     }
@@ -192,8 +219,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
             return const Center(child: Text('Reto no encontrado'));
           }
 
-          final timePerQ =
-              ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+          final timePerQ = ((data['timePerQuestionSec'] ?? 10) as num).toInt();
 
           final questions = data['questions'] as List<dynamic>? ?? [];
 
@@ -213,16 +239,16 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           final myStatusKey =
               myRole == 'challenger' ? 'challengerStatus' : 'challengedStatus';
 
-          final opponentStatusKey =
-              opponentRole == 'challenger' ? 'challengerStatus' : 'challengedStatus';
+          final opponentStatusKey = opponentRole == 'challenger'
+              ? 'challengerStatus'
+              : 'challengedStatus';
 
           final myStatus = (data[myStatusKey] ?? 'pending').toString();
-          final opponentStatus = (data[opponentStatusKey] ?? 'pending').toString();
+          final opponentStatus =
+              (data[opponentStatusKey] ?? 'pending').toString();
 
-          final challengerScore =
-              ((data['challenger']?['score']) ?? 0) as int;
-          final challengedScore =
-              ((data['challenged']?['score']) ?? 0) as int;
+          final challengerScore = ((data['challenger']?['score']) ?? 0) as int;
+          final challengedScore = ((data['challenged']?['score']) ?? 0) as int;
 
           final mySavedScore =
               myRole == 'challenger' ? challengerScore : challengedScore;
@@ -359,21 +385,16 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           children: [
             Text('Pregunta ${_index + 1} / $total'),
             const SizedBox(height: 8),
-
             Text(
               'Tiempo: $_secondsLeft s',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Aciertos: $_correct',
               style: const TextStyle(fontSize: 16),
             ),
-
             const SizedBox(height: 12),
-
             Text(
               qText,
               style: const TextStyle(
@@ -381,9 +402,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 16),
-
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
@@ -462,7 +481,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                 ),
               );
             }),
-
             SizedBox(
               height: 22,
               child: _statusMsg == null
@@ -477,7 +495,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                       ),
                     ),
             ),
-
             const Spacer(),
           ],
         ),
@@ -500,7 +517,17 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       myScore: myScore,
       opponentScore: null,
       primaryButtonText: 'Volver',
-      onPrimaryPressed: () => Navigator.pop(context),
+      onPrimaryPressed: () async {
+        _leavingScreen = true;
+
+        try {
+          await _presenceService.setAvailable();
+        } catch (_) {}
+
+        if (!context.mounted) return;
+
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -527,7 +554,17 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         myScore: myScore,
         opponentScore: opponentFinished ? opponentScore : null,
         primaryButtonText: 'Volver',
-        onPrimaryPressed: () => Navigator.pop(context),
+        onPrimaryPressed: () async {
+          _leavingScreen = true;
+
+          try {
+            await _presenceService.setAvailable();
+          } catch (_) {}
+
+          if (!context.mounted) return;
+
+          Navigator.pop(context);
+        },
       );
     }
 
@@ -558,7 +595,17 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       myScore: myScore,
       opponentScore: opponentScore,
       primaryButtonText: 'Volver',
-      onPrimaryPressed: () => Navigator.pop(context),
+      onPrimaryPressed: () async {
+        _leavingScreen = true;
+
+        try {
+          await _presenceService.setAvailable();
+        } catch (_) {}
+
+        if (!context.mounted) return;
+
+        Navigator.pop(context);
+      },
       secondaryButtonText: 'Revancha',
       onSecondaryPressed: () {
         ScaffoldMessenger.of(context).showSnackBar(

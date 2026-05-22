@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
+import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
 
 class MatchPlayScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class MatchPlayScreen extends StatefulWidget {
 
 class _MatchPlayScreenState extends State<MatchPlayScreen> {
   final _service = MatchService();
+  final _presenceService = PresenceService.instance;
 
   int _index = 0;
 
@@ -45,14 +47,36 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   bool _requestingRematch = false;
   bool _navigatedToRematch = false;
+  bool _presenceInitialized = false;
+  bool _leavingMatch = false;
 
   static const int _defaultTimePerQ = 10;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
   @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      if (_presenceInitialized) return;
+
+      _presenceInitialized = true;
+
+      try {
+        await _presenceService.setInMatch();
+      } catch (_) {}
+    });
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
+
+    if (!_navigatedToRematch && !_leavingMatch) {
+      _presenceService.setAvailable();
+    }
+
     super.dispose();
   }
 
@@ -509,7 +533,17 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       myScore: myScore,
       opponentScore: null,
       primaryButtonText: 'Salir',
-      onPrimaryPressed: () => Navigator.pop(context),
+      onPrimaryPressed: () async {
+        _leavingMatch = true;
+
+        try {
+          await _presenceService.setAvailable();
+        } catch (_) {}
+
+        if (!context.mounted) return;
+
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -595,7 +629,17 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       opponentScore: opponentScore,
       coinsEarned: coinsEarned > 0 ? coinsEarned : null,
       primaryButtonText: 'Volver',
-      onPrimaryPressed: () => Navigator.pop(context),
+      onPrimaryPressed: () async {
+        _leavingMatch = true;
+
+        try {
+          await _presenceService.setAvailable();
+        } catch (_) {}
+
+        if (!context.mounted) return;
+
+        Navigator.pop(context);
+      },
       secondaryButtonText: secondaryText,
       onSecondaryPressed: myRematchAccepted || _requestingRematch
           ? null

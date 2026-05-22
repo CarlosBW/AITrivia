@@ -2,17 +2,52 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
+import '../../services/presence_service.dart';
 import 'match_play_screen.dart';
 
-class MatchLobbyScreen extends StatelessWidget {
+class MatchLobbyScreen extends StatefulWidget {
   final String matchId;
-  const MatchLobbyScreen({super.key, required this.matchId});
+
+  const MatchLobbyScreen({
+    super.key,
+    required this.matchId,
+  });
+
+  @override
+  State<MatchLobbyScreen> createState() => _MatchLobbyScreenState();
+}
+
+class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
+  final _presenceService = PresenceService.instance;
+
+  bool _navigatingToMatch = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      try {
+        await _presenceService.setInMatch();
+      } catch (_) {}
+    });
+  }
+
+  @override
+  void dispose() {
+    if (!_navigatingToMatch) {
+      _presenceService.setAvailable();
+    }
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final service = MatchService();
-    final ref = FirebaseFirestore.instance.collection('matches').doc(matchId);
+    final ref =
+        FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sala 1 vs 1')),
@@ -32,7 +67,7 @@ class MatchLobbyScreen extends StatelessWidget {
           final mode = (data['mode'] ?? 'fixed').toString();
           final categoryId = (data['categoryId'] ?? 'cine').toString();
 
-          final code = (data['matchCode'] ?? matchId).toString();
+          final code = (data['matchCode'] ?? widget.matchId).toString();
 
           final hostUid = data['hostUid'] as String?;
           final guestUid = data['guestUid'] as String?;
@@ -44,13 +79,18 @@ class MatchLobbyScreen extends StatelessWidget {
           final hasGuest = guestUid != null;
 
           // Evita navegar múltiples veces por rebuilds
-          if (status == 'playing') {
+          if (status == 'playing' && !_navigatingToMatch) {
+            _navigatingToMatch = true;
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
+
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => MatchPlayScreen(matchId: matchId),
+                  builder: (_) => MatchPlayScreen(
+                    matchId: widget.matchId,
+                  ),
                 ),
               );
             });
@@ -63,40 +103,37 @@ class MatchLobbyScreen extends StatelessWidget {
               children: [
                 SelectableText(
                   'Código: $code',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 SelectableText(
-                  'ID: $matchId',
+                  'ID: $widget.matchId',
                   style: const TextStyle(fontSize: 12, color: Colors.black54),
                 ),
                 const SizedBox(height: 12),
-
                 Text('Modo: ${mode == 'fixed' ? 'Sin IA' : 'Con IA'}'),
-                Text('Categoría: ${categoryId == 'random' ? 'Random' : categoryId}'),
+                Text(
+                    'Categoría: ${categoryId == 'random' ? 'Random' : categoryId}'),
                 const SizedBox(height: 16),
-
                 Text('Estado: $status'),
                 const SizedBox(height: 16),
-
                 Text('Jugador 1 (Host): ${hostUid ?? '(desconocido)'}'),
-                Text('Jugador 2 (Guest): ${hasGuest ? guestUid : '(esperando...)'}'),
-
+                Text(
+                    'Jugador 2 (Guest): ${hasGuest ? guestUid : '(esperando...)'}'),
                 const SizedBox(height: 16),
-
                 if (mode == 'ai') ...[
                   Text('Tema IA: ${(data['aiTopic'] ?? '').toString()}'),
                   Text('Costo: ${(data['entryFee'] ?? 0)} monedas por jugador'),
-                  Text('Recompensa ganador: ${(data['winReward'] ?? 0)} monedas'),
+                  Text(
+                      'Recompensa ganador: ${(data['winReward'] ?? 0)} monedas'),
                   const SizedBox(height: 12),
                   const Text(
                     'Nota: por ahora esta sala AI no inicia hasta que implementemos Cloud Functions.',
                     style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
                 ],
-
                 const Spacer(),
-
                 if (status == 'waiting') ...[
                   SizedBox(
                     width: double.infinity,
@@ -104,7 +141,7 @@ class MatchLobbyScreen extends StatelessWidget {
                       onPressed: !hasGuest
                           ? null
                           : () async {
-                              await service.setReady(matchId, !myReady);
+                              await service.setReady(widget.matchId, !myReady);
                               // IMPORTANTE: si tu setReady no llama tryStartMatchIfReady,
                               // lo agregaremos ahí (mejor lugar). Por ahora no lo duplico aquí.
                             },

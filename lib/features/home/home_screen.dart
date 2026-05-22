@@ -7,10 +7,11 @@ import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
 import '../leagues/weekly_league_screen.dart';
-import '../profile/profile_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
+import '../notifications/notifications_screen.dart';
+import '../../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -179,9 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success
-                ? '❤️ Vida recuperada'
-                : '❌ No tienes suficientes monedas',
+            success ? '❤️ Vida recuperada' : '❌ No tienes suficientes monedas',
           ),
         ),
       );
@@ -253,43 +252,64 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('TriviaIA'),
         centerTitle: true,
         actions: [
-          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: userRef.snapshots(),
-            builder: (context, snap) {
-              final data = snap.data?.data() ?? {};
-              final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
-              final username = (data['username'] ?? 'Player').toString();
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: NotificationService.instance
+                  .watchMyUnreadNotifications(limit: 1),
+              builder: (context, snap) {
+                final hasUnread = (snap.data?.docs.isNotEmpty ?? false);
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: _isNavigating || _buyingLife
+                return IconButton(
+                  tooltip: 'Notifications',
+                  onPressed: _isNavigating || _buyingLife
                       ? null
                       : () {
                           _safeNavigate(() async {
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const ProfileScreen(),
+                                builder: (_) => const NotificationsScreen(),
                               ),
                             );
-
-                            if (!mounted) return;
-                            await _checkPendingSeasonRewards();
                           });
                         },
-                  child: CircleAvatar(
-                    radius: 19,
-                    backgroundColor: Colors.deepPurple.withOpacity(0.15),
-                    child: Text(
-                      _avatarEmoji(avatarId, fallbackName: username),
-                      style: const TextStyle(fontSize: 19),
-                    ),
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          Icons.notifications_rounded,
+                          size: 30,
+                          color: hasUnread
+                              ? Colors.amber
+                              : Colors.white.withOpacity(0.82),
+                        ),
+                      ),
+                      if (hasUnread)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 11,
+                            height: 11,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    Theme.of(context).scaffoldBackgroundColor,
+                                width: 1.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),

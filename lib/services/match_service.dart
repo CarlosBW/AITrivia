@@ -885,6 +885,47 @@ class MatchService {
       }
     });
 
+    // =========================================================
+// TURN / RESULT NOTIFICATIONS
+// =========================================================
+
+    try {
+      final snap = await ref.get();
+      final data = snap.data();
+
+      if (data != null) {
+        final challengerUid = (data['challengerUid'] ?? '').toString();
+        final challengedUid = (data['challengedUid'] ?? '').toString();
+
+        final challengerName =
+            (data['challengerDisplayName'] ?? 'Player').toString();
+        final challengedName =
+            (data['challengedDisplayName'] ?? 'Player').toString();
+
+        final challengerStatus =
+            (data['challengerStatus'] ?? 'pending').toString();
+        final challengedStatus =
+            (data['challengedStatus'] ?? 'pending').toString();
+
+        final opponentUid =
+            uid == challengerUid ? challengedUid : challengerUid;
+        final myName = uid == challengerUid ? challengerName : challengedName;
+
+        if (challengerStatus != 'finished' || challengedStatus != 'finished') {
+          await _notificationService.createNotification(
+            targetUid: opponentUid,
+            type: 'match_turn',
+            title: 'Your turn',
+            body: '$myName finished their async match. Now it is your turn.',
+            data: {
+              'matchId': matchId,
+              'opponentUid': uid,
+            },
+          );
+        }
+      }
+    } catch (_) {}
+
     await finalizeAsyncMatchIfReady(matchId);
   }
 
@@ -930,6 +971,7 @@ class MatchService {
         'rewarded': true,
         'challengerScore': challengerScore,
         'challengedScore': challengedScore,
+        'resultNotificationsSent': false,
       });
 
       await _queuePvpStatsUpdates(
@@ -952,6 +994,78 @@ class MatchService {
         );
       }
     });
+
+    // =========================================================
+    // FINAL RESULT NOTIFICATIONS
+    // =========================================================
+
+    try {
+      final snap = await ref.get();
+      final data = snap.data();
+
+      if (data != null &&
+          (data['status'] ?? '') == 'completed' &&
+          data['resultNotificationsSent'] != true) {
+        final challengerUid = (data['challengerUid'] ?? '').toString();
+        final challengedUid = (data['challengedUid'] ?? '').toString();
+        final winnerUid = data['winnerUid'] as String?;
+
+        final challengerName =
+            (data['challengerDisplayName'] ?? 'Player').toString();
+        final challengedName =
+            (data['challengedDisplayName'] ?? 'Player').toString();
+
+        await ref.set({
+          'resultNotificationsSent': true,
+          'resultNotificationsSentAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        if (winnerUid == null) {
+          await Future.wait([
+            _notificationService.createNotification(
+              targetUid: challengerUid,
+              type: 'match_result',
+              title: 'Async match finished',
+              body: 'Your match against $challengedName ended in a draw.',
+              data: {'matchId': matchId},
+            ),
+            _notificationService.createNotification(
+              targetUid: challengedUid,
+              type: 'match_result',
+              title: 'Async match finished',
+              body: 'Your match against $challengerName ended in a draw.',
+              data: {'matchId': matchId},
+            ),
+          ]);
+        } else {
+          final loserUid =
+              winnerUid == challengerUid ? challengedUid : challengerUid;
+
+          final winnerOpponentName =
+              winnerUid == challengerUid ? challengedName : challengerName;
+
+          final loserOpponentName =
+              loserUid == challengerUid ? challengedName : challengerName;
+
+          await Future.wait([
+            _notificationService.createNotification(
+              targetUid: winnerUid,
+              type: 'match_result',
+              title: 'You won!',
+              body: 'You won your async match against $winnerOpponentName.',
+              data: {'matchId': matchId},
+            ),
+            _notificationService.createNotification(
+              targetUid: loserUid,
+              type: 'match_result',
+              title: 'Match finished',
+              body: 'You lost your async match against $loserOpponentName.',
+              data: {'matchId': matchId},
+            ),
+          ]);
+        }
+      }
+    } catch (_) {}
   }
 
   // ============================================================

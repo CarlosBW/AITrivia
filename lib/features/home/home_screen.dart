@@ -6,13 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
-import '../daily/daily_leaderboard_screen.dart';
 import '../leagues/weekly_league_screen.dart';
 import '../profile/profile_screen.dart';
-import '../solo/level_play_screen.dart';
-import '../solo/level_select_screen.dart';
-import '../social/friends_screen.dart';
-import '../versus/versus_menu_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
@@ -35,10 +30,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasPendingSeasonRewards = false;
   bool _checkingPendingSeasonRewards = false;
 
-  bool _loadingCategories = true;
-  String? _categoriesError;
-  List<_HomeCategoryItem> _categories = [];
-
   int? _lastSeenStreak;
   bool _showStreakPopup = false;
   bool _streakGlow = false;
@@ -53,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
     uid = FirebaseAuth.instance.currentUser!.uid;
     _initLives();
     _checkPendingSeasonRewards();
-    _loadCategoriesAndProgress();
     _startLifeTimer();
   }
 
@@ -111,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _hasPendingSeasonRewards = hasPending;
       });
     } catch (_) {
+      // No bloquear Home si falla la revisión.
     } finally {
       if (mounted) {
         setState(() => _checkingPendingSeasonRewards = false);
@@ -118,119 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadCategoriesAndProgress() async {
-    if (!mounted) return;
-
-    setState(() {
-      _loadingCategories = true;
-      _categoriesError = null;
-    });
-
-    try {
-      final db = FirebaseFirestore.instance;
-
-      final categoriesSnap = await db
-          .collection('fixed_categories')
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      final docs = categoriesSnap.docs.toList()
-        ..sort((a, b) {
-          final ao = ((a.data()['order'] ?? 999) as num).toInt();
-          final bo = ((b.data()['order'] ?? 999) as num).toInt();
-          return ao.compareTo(bo);
-        });
-
-      final items = await Future.wait(
-        docs.map((doc) async {
-          final data = doc.data();
-          final categoryId = doc.id;
-          final name = (data['name'] ?? categoryId).toString();
-          final levelCount = ((data['levelCount'] ?? 10) as num).toInt();
-
-          final progressSnap = await db
-              .collection('users')
-              .doc(uid)
-              .collection('progress_fixed')
-              .doc(categoryId)
-              .get();
-
-          final progressData = progressSnap.data() ?? {};
-
-          final completedLevels =
-              (progressData['completedLevels'] as List<dynamic>? ?? [])
-                  .map((e) => (e as num).toInt())
-                  .toSet();
-
-          final completedCount = completedLevels.length;
-          final progress = levelCount == 0
-              ? 0.0
-              : (completedCount / levelCount).clamp(0.0, 1.0);
-
-          int nextLevel = 1;
-          if (completedLevels.isNotEmpty) {
-            final highestCompleted = completedLevels.reduce(
-              (a, b) => a > b ? a : b,
-            );
-            nextLevel = highestCompleted + 1;
-          }
-
-          if (nextLevel > levelCount) {
-            nextLevel = levelCount;
-          }
-
-          final completedAll = progressData['completedAllLevels'] == true ||
-              completedCount >= levelCount;
-
-          String statusText;
-          Color statusColor;
-
-          if (completedAll) {
-            statusText = 'Completado';
-            statusColor = Colors.green;
-          } else if (completedCount > 0) {
-            statusText = 'En curso';
-            statusColor = Colors.orange;
-          } else {
-            statusText = 'Nuevo';
-            statusColor = Colors.blue;
-          }
-
-          return _HomeCategoryItem(
-            categoryId: categoryId,
-            name: name,
-            levelCount: levelCount,
-            completedCount: completedCount,
-            progress: progress,
-            nextLevel: nextLevel,
-            completedAll: completedAll,
-            statusText: statusText,
-            statusColor: statusColor,
-          );
-        }),
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _categories = items;
-        _loadingCategories = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _categoriesError = e.toString();
-        _loadingCategories = false;
-      });
-    }
-  }
-
-  Future<void> _refreshHomeAfterGameplay() async {
+  Future<void> _refreshHome() async {
     await Future.wait([
       _syncLivesFromFirestore(),
       _checkPendingSeasonRewards(),
-      _loadCategoriesAndProgress(),
     ]);
   }
 
@@ -266,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       Future.delayed(const Duration(milliseconds: 1300), () {
         if (!mounted) return;
+
         setState(() {
           _showStreakPopup = false;
           _streakGlow = false;
@@ -293,15 +176,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (!mounted) return;
 
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❤️ Vida recuperada')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ No tienes suficientes monedas')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? '❤️ Vida recuperada'
+                : '❌ No tienes suficientes monedas',
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _buyingLife = false);
@@ -317,8 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatCountdown(int? totalSeconds) {
     if (totalSeconds == null) return '--:--';
+
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
+
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
@@ -359,93 +244,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<bool> _ensureHasLives(BuildContext context, String uid) async {
-    await LifeService.instance.ensureUserLifeDoc(uid);
-    final lifeState = await LifeService.instance.refreshLives(uid);
-
-    if (mounted) {
-      setState(() {
-        _lifeState = lifeState;
-        _loadingLives = false;
-      });
-    }
-
-    final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
-    final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
-    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
-
-    if (lifeUnits < 2) {
-      if (!context.mounted) return false;
-
-      await _showNoLivesDialog(
-        context: context,
-        lifeUnits: lifeUnits,
-        maxLifeUnits: maxLifeUnits,
-        secondsToNextHalfLife: secondsToNextHalfLife,
-      );
-
-      return false;
-    }
-
-    return true;
-  }
-
-  Future<void> _openLevelSelect(_HomeCategoryItem item) async {
-    final canPlay = await _ensureHasLives(context, uid);
-    if (!canPlay) return;
-
-    if (!context.mounted) return;
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LevelSelectScreen(
-          categoryId: item.categoryId,
-          categoryName: item.name,
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-    await _refreshHomeAfterGameplay();
-  }
-
-  Future<void> _continueLevel(_HomeCategoryItem item) async {
-    final canPlay = await _ensureHasLives(context, uid);
-    if (!canPlay) return;
-
-    if (!context.mounted) return;
-
-    if (item.completedAll) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LevelSelectScreen(
-            categoryId: item.categoryId,
-            categoryName: item.name,
-          ),
-        ),
-      );
-    } else {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LevelPlayScreen(
-            categoryId: item.categoryId,
-            levelNumber: item.nextLevel,
-          ),
-        ),
-      );
-    }
-
-    if (!mounted) return;
-    await _refreshHomeAfterGameplay();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final db = FirebaseFirestore.instance;
-    final userRef = db.collection('users').doc(uid);
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
     return Scaffold(
       appBar: AppBar(
@@ -463,17 +264,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(right: 10),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(999),
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ProfileScreen(),
-                      ),
-                    );
+                  onTap: _isNavigating || _buyingLife
+                      ? null
+                      : () {
+                          _safeNavigate(() async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ProfileScreen(),
+                              ),
+                            );
 
-                    if (!mounted) return;
-                    await _checkPendingSeasonRewards();
-                  },
+                            if (!mounted) return;
+                            await _checkPendingSeasonRewards();
+                          });
+                        },
                   child: CircleAvatar(
                     radius: 19,
                     backgroundColor: Colors.deepPurple.withOpacity(0.15),
@@ -490,9 +295,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          RefreshIndicator(
+            onRefresh: _refreshHome,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
               children: [
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: userRef.snapshots(),
@@ -592,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
@@ -626,58 +433,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
 
                               if (!mounted) return;
-                              await _refreshHomeAfterGameplay();
+                              await _refreshHome();
                             });
                           },
                     icon: const Icon(Icons.calendar_today),
                     label: const Text('Daily Challenge'),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isNavigating || _buyingLife
-                            ? null
-                            : () {
-                                _safeNavigate(() async {
-                                  if (!context.mounted) return;
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const DailyLeaderboardScreen(),
-                                    ),
-                                  );
-                                });
-                              },
-                        icon: const Icon(Icons.emoji_events),
-                        label: const Text('Leaderboard'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isNavigating || _buyingLife
-                            ? null
-                            : () {
-                                _safeNavigate(() async {
-                                  if (!context.mounted) return;
-
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const FriendsScreen(),
-                                    ),
-                                  );
-                                });
-                              },
-                        icon: const Icon(Icons.group),
-                        label: const Text('Friends'),
-                      ),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -696,6 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
 
+                              if (!mounted) return;
                               await _checkPendingSeasonRewards();
                             });
                           },
@@ -711,61 +473,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _isNavigating || _buyingLife
-                            ? null
-                            : () {
-                                _safeNavigate(() async {
-                                  if (!context.mounted) return;
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const VersusMenuScreen(),
-                                    ),
-                                  );
-                                });
-                              },
-                        icon: const Icon(Icons.sports_esports),
-                        label: const Text('1 vs 1'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isNavigating || _buyingLife
-                            ? null
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Próximamente: Tema libre con IA (consumirá pases o monedas).',
-                                    ),
-                                  ),
-                                );
-                              },
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Tema libre (IA)'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Temas fijos',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _isNavigating || _buyingLife
+                        ? null
+                        : () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Próximamente: Tema libre con IA (consumirá pases o monedas).',
+                                ),
+                              ),
+                            );
+                          },
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Tema libre (IA)'),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: _buildCategoriesList(),
+                const SizedBox(height: 18),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.deepPurple.withOpacity(0.18),
+                    ),
+                  ),
+                  child: const Text(
+                    'Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
@@ -834,192 +575,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoriesList() {
-    if (_loadingCategories) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_categoriesError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Error al cargar categorías:\n$_categoriesError',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _loadCategoriesAndProgress,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_categories.isEmpty) {
-      return const Center(
-        child: Text('No hay categorías activas en Firestore.'),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: _categories.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        final item = _categories[i];
-        return _CategoryCard(
-          item: item,
-          disabled: _isNavigating || _buyingLife,
-          onOpenLevels: () {
-            _safeNavigate(() => _openLevelSelect(item));
-          },
-          onContinue: () {
-            _safeNavigate(() => _continueLevel(item));
-          },
-        );
-      },
-    );
-  }
-}
-
-class _HomeCategoryItem {
-  final String categoryId;
-  final String name;
-  final int levelCount;
-  final int completedCount;
-  final double progress;
-  final int nextLevel;
-  final bool completedAll;
-  final String statusText;
-  final Color statusColor;
-
-  const _HomeCategoryItem({
-    required this.categoryId,
-    required this.name,
-    required this.levelCount,
-    required this.completedCount,
-    required this.progress,
-    required this.nextLevel,
-    required this.completedAll,
-    required this.statusText,
-    required this.statusColor,
-  });
-}
-
-class _CategoryCard extends StatelessWidget {
-  final _HomeCategoryItem item;
-  final bool disabled;
-  final VoidCallback onOpenLevels;
-  final VoidCallback onContinue;
-
-  const _CategoryCard({
-    required this.item,
-    required this.disabled,
-    required this.onOpenLevels,
-    required this.onContinue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.black12,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: disabled ? null : onOpenLevels,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: item.statusColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      item.statusText,
-                      style: TextStyle(
-                        color: item.statusColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Progreso: ${item.completedCount} / ${item.levelCount} niveles',
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: item.progress,
-                  minHeight: 10,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: disabled ? null : onOpenLevels,
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Ver niveles'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: disabled ? null : onContinue,
-                      icon: Icon(
-                        item.completedAll
-                            ? Icons.check_circle
-                            : Icons.play_arrow,
-                      ),
-                      label: Text(
-                        item.completedAll
-                            ? 'Completado'
-                            : 'Continuar N${item.nextLevel}',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

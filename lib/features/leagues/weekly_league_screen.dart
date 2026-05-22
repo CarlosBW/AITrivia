@@ -16,9 +16,12 @@ class WeeklyLeagueScreen extends StatefulWidget {
   State<WeeklyLeagueScreen> createState() => _WeeklyLeagueScreenState();
 }
 
-class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
+class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
+    with SingleTickerProviderStateMixin {
   final _weeklyService = WeeklyLeagueService.instance;
   final _seasonService = SeasonService.instance;
+
+  late final TabController _tabController;
 
   Timer? _timer;
   Duration _timeLeft = Duration.zero;
@@ -27,16 +30,18 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
   Future<DocumentSnapshot<Map<String, dynamic>>>? _userFuture;
   Future<bool>? _hasPendingRewardsFuture;
   Future<QuerySnapshot<Map<String, dynamic>>>? _leaderboardFuture;
+
   String? _leaderboardKey;
 
   @override
   void initState() {
     super.initState();
+
+    _tabController = TabController(length: 2, vsync: this);
+
     _loadInitialData();
     _updateTimeLeft();
 
-    // This timer only updates the local reset countdown text.
-    // It does not read or write Firestore.
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       _updateTimeLeft();
     });
@@ -44,12 +49,17 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
 
   void _loadInitialData() {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    _userFuture = FirebaseFirestore.instance.collection('users').doc(uid).get();
-    _hasPendingRewardsFuture = _seasonService.hasPendingSeasonRewards(uid: uid);
+
+    _userFuture =
+        FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+    _hasPendingRewardsFuture =
+        _seasonService.hasPendingSeasonRewards(uid: uid);
   }
 
   void _updateTimeLeft() {
     if (!mounted) return;
+
     setState(() {
       _timeLeft = _weeklyService.timeUntilReset();
     });
@@ -61,11 +71,13 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
     setState(() => _claiming = true);
 
     try {
-      final result = await _seasonService.claimAllPendingRewards(uid: uid);
+      final result =
+          await _seasonService.claimAllPendingRewards(uid: uid);
 
       if (!mounted) return;
 
-      _hasPendingRewardsFuture = _seasonService.hasPendingSeasonRewards(uid: uid);
+      _hasPendingRewardsFuture =
+          _seasonService.hasPendingSeasonRewards(uid: uid);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -93,6 +105,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
 
     if (_leaderboardFuture == null || _leaderboardKey != key) {
       _leaderboardKey = key;
+
       _leaderboardFuture = _weeklyService
           .weeklyLeaderboardQuery(
             weekId: weekId,
@@ -107,6 +120,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -114,6 +128,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
     final days = duration.inDays;
     final hours = duration.inHours % 24;
     final minutes = duration.inMinutes % 60;
+
     return '${days}d ${hours}h ${minutes}m';
   }
 
@@ -139,12 +154,27 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Weekly League'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.leaderboard),
+              text: 'Ranking',
+            ),
+            Tab(
+              icon: Icon(Icons.card_giftcard),
+              text: 'Rewards',
+            ),
+          ],
+        ),
       ),
       body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         future: _userFuture,
         builder: (context, userSnap) {
           if (userSnap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
           if (userSnap.hasError) {
@@ -157,172 +187,240 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
           }
 
           final userData = userSnap.data?.data() ?? {};
-          final leagueScore = ((userData['leagueScore'] ?? 0) as num).toInt();
-          final league = LeagueService.instance.getLeagueFromScore(leagueScore);
+
+          final leagueScore =
+              ((userData['leagueScore'] ?? 0) as num).toInt();
+
+          final league =
+              LeagueService.instance.getLeagueFromScore(leagueScore);
+
           final weekId = _weeklyService.currentWeekId();
 
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                 child: _LeagueHeader(
                   league: league,
                   leagueScore: leagueScore,
                   resetText: _formatDuration(_timeLeft),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FutureBuilder<bool>(
-                  future: _hasPendingRewardsFuture,
-                  builder: (context, rewardsSnap) {
-                    if (rewardsSnap.connectionState ==
-                        ConnectionState.waiting) {
-                      return const _PendingRewardsLoadingCard();
-                    }
 
-                    final hasPending = rewardsSnap.data == true;
-
-                    if (!hasPending) {
-                      return _RewardsCard(league: league);
-                    }
-
-                    return _PendingRewardsCard(
-                      claiming: _claiming,
-                      onClaim: () => _claimRewards(uid),
-                      onOpenRewards: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SeasonRewardsScreen(),
-                          ),
-                        );
-
-                        if (!context.mounted) return;
-                        setState(() {
-                          _hasPendingRewardsFuture = _seasonService
-                              .hasPendingSeasonRewards(uid: uid);
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SeasonRewardsScreen(),
-                        ),
-                      );
-
-                      if (!context.mounted) return;
-                      setState(() {
-                        _hasPendingRewardsFuture =
-                            _seasonService.hasPendingSeasonRewards(uid: uid);
-                      });
-                    },
-                    icon: const Icon(Icons.card_giftcard),
-                    label: const Text('Season Rewards'),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
               Expanded(
-                child: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  future: _leaderboardFor(weekId: weekId, league: league),
-                  builder: (context, snap) {
-                    if (snap.hasError) {
-                      return Center(
-                        child: Text(
-                          'Error loading weekly league:\n${snap.error}',
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // =====================================================
+                    // RANKING TAB
+                    // =====================================================
 
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final docs = snap.data?.docs ?? [];
-
-                    if (docs.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No weekly scores yet.\nPlay a Daily Challenge to enter this league.',
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      children: [
-                        const Text(
-                          'Weekly Ranking',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...List.generate(docs.length, (index) {
-                          final doc = docs[index];
-                          final data = doc.data();
-
-                          final isMe = doc.id == uid;
-                          final rank = index + 1;
-                          // The weekly leaderboard stores a denormalized
-                          // copy of username/avatarId at the time the score was
-                          // written. For the current user, prefer the fresh
-                          // profile data already loaded from users/{uid}, so
-                          // profile edits are reflected immediately when
-                          // entering Weekly.
-                          final username = isMe
-                              ? (userData['username'] ??
-                                      userData['displayName'] ??
-                                      data['username'] ??
-                                      data['displayName'] ??
-                                      'Player')
-                                  .toString()
-                              : (data['username'] ??
-                                      data['displayName'] ??
-                                      'Player')
-                                  .toString();
-
-                          final avatarId = isMe
-                              ? (userData['avatarId'] ??
-                                      data['avatarId'] ??
-                                      'avatar_1')
-                                  .toString()
-                              : (data['avatarId'] ?? 'avatar_1').toString();
-                          final weeklyScore =
-                              ((data['weeklyScore'] ?? 0) as num).toInt();
-                          final level = ((data['level'] ?? 1) as num).toInt();
-                          final streak = ((data['streak'] ?? 0) as num).toInt();
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _WeeklyLeagueTile(
-                              rank: rank,
-                              avatar: _avatarEmoji(avatarId),
-                              username: username,
-                              weeklyScore: weeklyScore,
-                              level: level,
-                              streak: streak,
-                              isMe: isMe,
+                    FutureBuilder<
+                        QuerySnapshot<Map<String, dynamic>>>(
+                      future: _leaderboardFor(
+                        weekId: weekId,
+                        league: league,
+                      ),
+                      builder: (context, snap) {
+                        if (snap.hasError) {
+                          return Center(
+                            child: Text(
+                              'Error loading weekly league:\n${snap.error}',
+                              textAlign: TextAlign.center,
                             ),
                           );
-                        }),
+                        }
+
+                        if (snap.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        final docs = snap.data?.docs ?? [];
+
+                        if (docs.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'No weekly scores yet.\nPlay a Daily Challenge to enter this league.',
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+
+                        return ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            16,
+                          ),
+                          children: [
+                            const Text(
+                              'Weekly Ranking',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            ...List.generate(docs.length, (index) {
+                              final doc = docs[index];
+                              final data = doc.data();
+
+                              final isMe = doc.id == uid;
+                              final rank = index + 1;
+
+                              final username = isMe
+                                  ? (userData['username'] ??
+                                          userData['displayName'] ??
+                                          data['username'] ??
+                                          data['displayName'] ??
+                                          'Player')
+                                      .toString()
+                                  : (data['username'] ??
+                                          data['displayName'] ??
+                                          'Player')
+                                      .toString();
+
+                              final avatarId = isMe
+                                  ? (userData['avatarId'] ??
+                                          data['avatarId'] ??
+                                          'avatar_1')
+                                      .toString()
+                                  : (data['avatarId'] ?? 'avatar_1')
+                                      .toString();
+
+                              final weeklyScore =
+                                  ((data['weeklyScore'] ?? 0)
+                                          as num)
+                                      .toInt();
+
+                              final level =
+                                  ((data['level'] ?? 1) as num)
+                                      .toInt();
+
+                              final streak =
+                                  ((data['streak'] ?? 0) as num)
+                                      .toInt();
+
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: 10),
+                                child: _WeeklyLeagueTile(
+                                  rank: rank,
+                                  avatar:
+                                      _avatarEmoji(avatarId),
+                                  username: username,
+                                  weeklyScore: weeklyScore,
+                                  level: level,
+                                  streak: streak,
+                                  isMe: isMe,
+                                ),
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
+
+                    // =====================================================
+                    // REWARDS TAB
+                    // =====================================================
+
+                    ListView(
+                      padding: const EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        16,
+                      ),
+                      children: [
+                        FutureBuilder<bool>(
+                          future: _hasPendingRewardsFuture,
+                          builder: (context, rewardsSnap) {
+                            if (rewardsSnap.connectionState ==
+                                ConnectionState.waiting) {
+                              return const _PendingRewardsLoadingCard();
+                            }
+
+                            final hasPending =
+                                rewardsSnap.data == true;
+
+                            if (!hasPending) {
+                              return _RewardsCard(
+                                league: league,
+                              );
+                            }
+
+                            return _PendingRewardsCard(
+                              claiming: _claiming,
+                              onClaim: () => _claimRewards(uid),
+                              onOpenRewards: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SeasonRewardsScreen(),
+                                  ),
+                                );
+
+                                if (!context.mounted) return;
+
+                                setState(() {
+                                  _hasPendingRewardsFuture =
+                                      _seasonService
+                                          .hasPendingSeasonRewards(
+                                    uid: uid,
+                                  );
+                                });
+                              },
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const SeasonRewardsScreen(),
+                                ),
+                              );
+
+                              if (!context.mounted) return;
+
+                              setState(() {
+                                _hasPendingRewardsFuture =
+                                    _seasonService
+                                        .hasPendingSeasonRewards(
+                                  uid: uid,
+                                );
+                              });
+                            },
+                            icon:
+                                const Icon(Icons.workspace_premium),
+                            label:
+                                const Text('Season Rewards'),
+                          ),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        _RewardsCard(
+                          league: league,
+                        ),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -332,6 +430,10 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen> {
     );
   }
 }
+
+// ============================================================
+// COMPONENTS
+// ============================================================
 
 class _LeagueHeader extends StatelessWidget {
   final LeagueInfo league;
@@ -354,7 +456,9 @@ class _LeagueHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.14),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color.withOpacity(0.55)),
+        border: Border.all(
+          color: color.withOpacity(0.55),
+        ),
       ),
       child: Column(
         children: [
@@ -369,7 +473,9 @@ class _LeagueHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'League Score: $leagueScore',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -399,7 +505,9 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
           SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+            ),
           ),
           SizedBox(width: 12),
           Text('Checking pending rewards...'),
@@ -432,7 +540,10 @@ class _PendingRewardsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.card_giftcard, size: 36),
+          const Icon(
+            Icons.card_giftcard,
+            size: 36,
+          ),
           const SizedBox(height: 8),
           const Text(
             'Pending season rewards',
@@ -445,30 +556,42 @@ class _PendingRewardsCard extends StatelessWidget {
           const Text(
             'Open Season Rewards to see exact rank and coins.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
+
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: claiming ? null : onOpenRewards,
+                  onPressed: claiming
+                      ? null
+                      : onOpenRewards,
                   icon: const Icon(Icons.visibility),
                   label: const Text('View details'),
                 ),
               ),
+
               const SizedBox(width: 10),
+
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: claiming ? null : onClaim,
+                  onPressed:
+                      claiming ? null : onClaim,
                   icon: claiming
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child:
+                              CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
                         )
                       : const Icon(Icons.redeem),
-                  label: Text(claiming ? 'Claiming...' : 'Claim'),
+                  label: Text(
+                    claiming
+                        ? 'Claiming...'
+                        : 'Claim',
+                  ),
                 ),
               ),
             ],
@@ -498,7 +621,8 @@ class _RewardsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
@@ -508,30 +632,42 @@ class _RewardsCard extends StatelessWidget {
                 'Weekly Rewards',
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
             ],
           ),
+
           const SizedBox(height: 14),
+
           _RewardRow(
             medal: '🥇',
-            text: 'Top 1: ${league.top1Reward} coins + promotion bonus',
+            text:
+                'Top 1: ${league.top1Reward} coins + promotion bonus',
             color: color,
           ),
+
           const SizedBox(height: 8),
+
           _RewardRow(
             medal: '🥈',
-            text: 'Top 2-3: ${league.top3Reward} coins',
+            text:
+                'Top 2-3: ${league.top3Reward} coins',
             color: color,
           ),
+
           const SizedBox(height: 8),
+
           _RewardRow(
             medal: '🥉',
-            text: 'Top 10: ${league.top10Reward} coins',
+            text:
+                'Top 10: ${league.top10Reward} coins',
             color: color,
           ),
+
           const SizedBox(height: 12),
+
           const Text(
             'At the end of the week, rankings reset and rewards become claimable.',
             style: TextStyle(fontSize: 12),
@@ -557,13 +693,17 @@ class _RewardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(medal, style: const TextStyle(fontSize: 22)),
+        Text(
+          medal,
+          style: const TextStyle(fontSize: 22),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
+              fontWeight:
+                  FontWeight.w600,
               color: color,
             ),
           ),
@@ -606,65 +746,92 @@ class _WeeklyLeagueTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isMe ? Colors.deepPurple.withOpacity(0.14) : Colors.black12,
-        borderRadius: BorderRadius.circular(16),
+        color: isMe
+            ? Colors.deepPurple.withOpacity(0.14)
+            : Colors.black12,
+        borderRadius:
+            BorderRadius.circular(16),
         border: Border.all(
-          color: isMe ? Colors.deepPurple : Colors.transparent,
+          color: isMe
+              ? Colors.deepPurple
+              : Colors.transparent,
           width: isMe ? 2 : 1,
         ),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: rankColor.withOpacity(0.18),
+            backgroundColor:
+                rankColor.withOpacity(0.18),
             child: Text(
               '#$rank',
               style: TextStyle(
                 color: rankColor,
-                fontWeight: FontWeight.bold,
-                fontSize: rank <= 9 ? 13 : 11,
+                fontWeight:
+                    FontWeight.bold,
+                fontSize:
+                    rank <= 9 ? 13 : 11,
               ),
             ),
           ),
+
           const SizedBox(width: 10),
+
           CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.8),
+            backgroundColor:
+                Colors.white.withOpacity(0.8),
             child: Text(
               avatar,
-              style: const TextStyle(fontSize: 20),
+              style:
+                  const TextStyle(fontSize: 20),
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
               children: [
                 Text(
                   '$username${isMe ? '  (You)' : ''}',
-                  overflow: TextOverflow.ellipsis,
+                  overflow:
+                      TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                    fontWeight:
+                        FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   'Level $level  •  Streak $streak',
-                  style: const TextStyle(fontSize: 13),
+                  style:
+                      const TextStyle(fontSize: 13),
                 ),
               ],
             ),
           ),
+
           const SizedBox(width: 10),
+
           Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment:
+                CrossAxisAlignment.end,
             children: [
-              const Text('Weekly', style: TextStyle(fontSize: 12)),
+              const Text(
+                'Weekly',
+                style: TextStyle(fontSize: 12),
+              ),
               Text(
                 '$weeklyScore',
                 style: const TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
             ],

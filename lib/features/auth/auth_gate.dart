@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'user_bootstrap.dart';
 import '../navigation/main_navigation_screen.dart';
+import '../../services/presence_service.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -30,6 +31,7 @@ class _AuthGateState extends State<AuthGate> {
       }
 
       await bootstrapUserDoc(auth.currentUser!.uid);
+      await PresenceService.instance.setOnline();
 
       if (mounted) setState(() => _loading = false);
     } catch (e) {

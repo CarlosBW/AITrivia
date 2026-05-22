@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/friend_service.dart';
 import '../../services/match_service.dart';
+import '../../services/presence_service.dart';
 import '../versus/async_match_play_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class FriendsScreen extends StatefulWidget {
 class _FriendsScreenState extends State<FriendsScreen> {
   final _service = FriendService.instance;
   final _matchService = MatchService();
+  final _presenceService = PresenceService.instance;
   final _searchCtrl = TextEditingController();
 
   bool _searching = false;
@@ -179,7 +181,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               Row(
                 children: [
                   Expanded(
@@ -207,7 +208,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   ),
                 ],
               ),
-
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -215,7 +215,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ],
-
               if (_searchResults.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 ..._searchResults.map((doc) {
@@ -242,15 +241,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 }),
               ],
-
               const SizedBox(height: 24),
-
               const Text(
                 'Solicitudes recibidas',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchIncomingRequests(),
                 builder: (context, snap) {
@@ -325,15 +321,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 24),
-
               const Text(
                 'Tus amigos',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchFriends(),
                 builder: (context, snap) {
@@ -362,25 +355,55 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       final data = doc.data();
 
                       final friendUid = (data['uid'] ?? doc.id).toString();
+
                       final displayName =
                           (data['displayName'] ?? data['username'] ?? 'Player')
                               .toString();
+
                       final avatarId =
                           (data['avatarId'] ?? 'avatar_1').toString();
 
-                      return _UserTile(
-                        avatar: _avatarEmoji(avatarId),
-                        title: displayName,
-                        subtitle: 'Amigo',
-                        trailing: FilledButton(
-                          onPressed: _actionLoading
-                              ? null
-                              : () => _challengeFriend(
-                                    friendUid: friendUid,
-                                    displayName: displayName,
-                                  ),
-                          child: const Text('Retar'),
+                      return StreamBuilder<
+                          DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: _presenceService.watchUserPresence(
+                          userId: friendUid,
                         ),
+                        builder: (context, presenceSnap) {
+                          final presenceData = presenceSnap.data?.data();
+
+                          final presence = presenceData?['presence']
+                              as Map<String, dynamic>?;
+
+                          final online = _presenceService.isProbablyOnline(
+                            presence,
+                          );
+
+                          final statusText = _presenceService.presenceLabel(
+                            presence,
+                          );
+
+                          return _UserTile(
+                            avatar: _avatarEmoji(avatarId),
+                            title: displayName,
+                            subtitle: online ? statusText : 'Offline',
+                            statusColor: online
+                                ? (statusText == 'In match'
+                                    ? Colors.orange
+                                    : statusText == 'Searching match'
+                                        ? Colors.blue
+                                        : Colors.green)
+                                : Colors.grey,
+                            trailing: FilledButton(
+                              onPressed: _actionLoading
+                                  ? null
+                                  : () => _challengeFriend(
+                                        friendUid: friendUid,
+                                        displayName: displayName,
+                                      ),
+                              child: const Text('Retar'),
+                            ),
+                          );
+                        },
                       );
                     }).toList(),
                   );
@@ -388,7 +411,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
               ),
             ],
           ),
-
           if (_actionLoading)
             Container(
               color: Colors.black.withOpacity(0.25),
@@ -405,12 +427,14 @@ class _UserTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget trailing;
+  final Color statusColor;
 
   const _UserTile({
     required this.avatar,
     required this.title,
     required this.subtitle,
     required this.trailing,
+    required this.statusColor,
   });
 
   @override
@@ -431,7 +455,25 @@ class _UserTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(subtitle),
+        subtitle: Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                subtitle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         trailing: trailing,
       ),
     );

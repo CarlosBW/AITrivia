@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
+import '../../services/presence_service.dart';
 import 'match_lobby_screen.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class LiveMatchmakingScreen extends StatefulWidget {
 class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     with WidgetsBindingObserver {
   final _service = MatchService();
+  final _presenceService = PresenceService.instance;
 
   static const Duration _pollInterval = Duration(seconds: 5);
   static const Duration _searchTimeout = Duration(seconds: 90);
@@ -69,6 +71,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     // Si ya navegamos al lobby, cleanupMyLiveQueueAfterMatch se encarga del reset.
     if (_searching && !_navigatingToLobby) {
       _service.stopLiveSearch();
+      _presenceService.setAvailable();
     }
 
     super.dispose();
@@ -84,6 +87,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     });
 
     try {
+      await _presenceService.setSearchingMatch();
       await _service.startLiveSearch(
         categoryId: widget.categoryId,
         difficulty: widget.difficulty,
@@ -166,6 +170,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
     try {
       await _service.stopLiveSearch();
+      await _presenceService.setAvailable();
     } catch (e) {
       if (!silent && mounted) {
         setState(() => _error = e.toString());
@@ -186,6 +191,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
     try {
       await _service.cleanupMyLiveQueueAfterMatch();
+      await _presenceService.setInMatch();
     } catch (_) {}
 
     if (!mounted) return;

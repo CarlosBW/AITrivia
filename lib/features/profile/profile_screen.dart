@@ -178,29 +178,35 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) async {
     if (_saving) return;
 
-    final controller = TextEditingController(text: currentUsername);
-
     final newUsername = await showDialog<String>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
+        String draftUsername = currentUsername;
+
         return AlertDialog(
           title: const Text('Edit username'),
-          content: TextField(
-            controller: controller,
+          content: TextFormField(
+            initialValue: currentUsername,
             autofocus: true,
             maxLength: 20,
             decoration: const InputDecoration(
               hintText: 'Enter username',
             ),
+            onChanged: (value) {
+              draftUsername = value.trim();
+            },
+            onFieldSubmitted: (_) {
+              Navigator.pop(dialogContext, draftUsername);
+            },
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
-                Navigator.pop(context, controller.text.trim());
+                Navigator.pop(dialogContext, draftUsername);
               },
               child: const Text('Save'),
             ),
@@ -209,8 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     );
 
-    controller.dispose();
-
+    if (!mounted) return;
     if (newUsername == null || newUsername.trim().isEmpty) return;
 
     final username = newUsername.trim();

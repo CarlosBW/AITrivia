@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -48,63 +51,12 @@ tz.TZDateTime _nextDailyReminderTime({
 }
 
 Future<void> _scheduleDailyChallengeReminder() async {
-  await localNotifications.zonedSchedule(
-    1001,
-    '🔥 Daily Challenge ready!',
-    'Play today and keep your streak alive.',
-    _nextDailyReminderTime(hour: 19, minute: 0),
-    NotificationDetails(
-      android: AndroidNotificationDetails(
-        triviaChannel.id,
-        triviaChannel.name,
-        channelDescription: triviaChannel.description,
-        importance: Importance.high,
-        priority: Priority.high,
-      ),
-      iOS: const DarwinNotificationDetails(),
-    ),
-    uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime,
-    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-    matchDateTimeComponents: DateTimeComponents.time,
-  );
-}
-
-Future<void> _setupNotifications() async {
-  tzdata.initializeTimeZones();
-
-  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const iosInit = DarwinInitializationSettings();
-
-  const settings = InitializationSettings(
-    android: androidInit,
-    iOS: iosInit,
-  );
-
-  await localNotifications.initialize(settings);
-
-  await localNotifications
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(triviaChannel);
-
-  final messaging = FirebaseMessaging.instance;
-
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-    final notification = message.notification;
-
-    if (notification == null) return;
-
-    await localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
+  try {
+    await localNotifications.zonedSchedule(
+      1001,
+      '🔥 Daily Challenge ready!',
+      'Play today and keep your streak alive.',
+      _nextDailyReminderTime(hour: 19, minute: 0),
       NotificationDetails(
         android: AndroidNotificationDetails(
           triviaChannel.id,
@@ -115,11 +67,90 @@ Future<void> _setupNotifications() async {
         ),
         iOS: const DarwinNotificationDetails(),
       ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
-  });
+  } catch (e) {
+    debugPrint('Local daily reminder unavailable: $e');
+  }
+}
 
-  final token = await messaging.getToken();
-  debugPrint('🔥 FCM TOKEN: $token');
+Future<void> _setupNotifications() async {
+  try {
+    tzdata.initializeTimeZones();
+  } catch (e) {
+    debugPrint('Timezone init failed: $e');
+  }
+
+  try {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+
+    const settings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
+
+    await localNotifications.initialize(settings);
+
+    await localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(triviaChannel);
+  } catch (e) {
+    debugPrint('Local notifications init unavailable: $e');
+  }
+
+  try {
+    final messaging = FirebaseMessaging.instance;
+
+    await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      try {
+        final notification = message.notification;
+
+        if (notification == null) return;
+
+        await localNotifications.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              triviaChannel.id,
+              triviaChannel.name,
+              channelDescription: triviaChannel.description,
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+            iOS: const DarwinNotificationDetails(),
+          ),
+        );
+      } catch (e) {
+        debugPrint('Foreground notification display failed: $e');
+      }
+    });
+
+    try {
+      final token = await messaging.getToken();
+      debugPrint('🔥 FCM TOKEN: $token');
+
+      if (token != null) {
+        // Más adelante aquí guardaremos el token en Firestore.
+      }
+    } catch (e) {
+      debugPrint('FCM token unavailable: $e');
+    }
+  } catch (e) {
+    debugPrint('Firebase Messaging unavailable: $e');
+  }
 
   await _scheduleDailyChallengeReminder();
 }
@@ -131,13 +162,23 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
+  if (!kIsWeb) {
+    try {
+      FirebaseMessaging.onBackgroundMessage(
+        firebaseMessagingBackgroundHandler,
+      );
+    } catch (e) {
+      debugPrint('Background messaging registration failed: $e');
+    }
+  }
 
-  await _setupNotifications();
+  unawaited(_setupNotifications());
 
-  await SfxService.instance.init();
+  try {
+    await SfxService.instance.init();
+  } catch (e) {
+    debugPrint('SFX init failed: $e');
+  }
 
   runApp(const TriviaIAApp());
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'achievement_service.dart';
 import 'notification_service.dart';
 
@@ -80,8 +81,9 @@ class FriendService {
 
     final myFriendRef = _friendsCol(uid).doc(targetUid);
     final targetFriendRef = _friendsCol(targetUid).doc(uid);
-
     final requestRef = _requestsCol(targetUid).doc(uid);
+
+    String notificationDisplayName = 'Player${uid.substring(0, 4)}';
 
     await _db.runTransaction((tx) async {
       final mySnap = await tx.get(myRef);
@@ -110,6 +112,8 @@ class FriendService {
               'Player${uid.substring(0, 4)}')
           .toString();
 
+      notificationDisplayName = displayName;
+
       final username = (myData['username'] ?? displayName).toString();
       final avatarId = (myData['avatarId'] ?? 'avatar_1').toString();
 
@@ -126,23 +130,19 @@ class FriendService {
         },
         SetOptions(merge: true),
       );
-      
-      // =========================================================
-      // NOTIFICATIONS
-      // =========================================================
-
-      try {
-        await _notificationService.createNotification(
-          targetUid: targetUid,
-          type: 'friend_request',
-          title: 'New friend request',
-          body: '$displayName wants to add you as a friend.',
-          data: {
-            'requesterUid': uid,
-          },
-        );
-      } catch (_) {}
     });
+
+    try {
+      await _notificationService.createNotification(
+        targetUid: targetUid,
+        type: 'friend_request',
+        title: 'New friend request',
+        body: '$notificationDisplayName wants to add you as a friend.',
+        data: {
+          'requesterUid': uid,
+        },
+      );
+    } catch (_) {}
   }
 
   Future<void> acceptFriendRequest({
@@ -222,29 +222,24 @@ class FriendService {
         'status': 'accepted',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    });
 
-// =========================================================
-// ACHIEVEMENTS
-// =========================================================
+    Future.microtask(() async {
+      try {
+        final myFriendsSnap = await _friendsCol(uid).get();
+        final requesterFriendsSnap = await _friendsCol(requesterUid).get();
 
-      Future.microtask(() async {
-        try {
-          final myFriendsSnap = await _friendsCol(uid).get();
-
-          final requesterFriendsSnap = await _friendsCol(requesterUid).get();
-
-          await Future.wait([
-            _achievementService.syncFriendsAchievements(
-              uid: uid,
-              friendCount: myFriendsSnap.docs.length,
-            ),
-            _achievementService.syncFriendsAchievements(
-              uid: requesterUid,
-              friendCount: requesterFriendsSnap.docs.length,
-            ),
-          ]);
-        } catch (_) {}
-      });
+        await Future.wait([
+          _achievementService.syncFriendsAchievements(
+            uid: uid,
+            friendCount: myFriendsSnap.docs.length,
+          ),
+          _achievementService.syncFriendsAchievements(
+            uid: requesterUid,
+            friendCount: requesterFriendsSnap.docs.length,
+          ),
+        ]);
+      } catch (_) {}
     });
   }
 

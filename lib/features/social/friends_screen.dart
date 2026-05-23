@@ -228,6 +228,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     avatar: _avatarEmoji(avatarId),
                     title: username,
                     subtitle: 'Jugador',
+                    statusColor: Colors.grey,
                     trailing: FilledButton.tonal(
                       onPressed: _actionLoading
                           ? null
@@ -289,6 +290,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         avatar: _avatarEmoji(avatarId),
                         title: name,
                         subtitle: 'Quiere agregarte',
+                        statusColor: Colors.orange,
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

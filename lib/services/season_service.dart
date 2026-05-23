@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'league_service.dart';
 import 'weekly_league_service.dart';
+import 'notification_service.dart';
 
 class SeasonReward {
   final int coins;
@@ -49,6 +50,7 @@ class SeasonService {
   static final instance = SeasonService._();
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
+  final _notificationService = NotificationService.instance;
 
   String currentSeasonId([DateTime? now]) {
     return WeeklyLeagueService.instance.currentWeekId(now);
@@ -355,5 +357,48 @@ class SeasonService {
       claimedCount: pendingRewards.length,
       totalCoins: totalCoins,
     );
+  }
+
+  Future<void> ensureSeasonRewardNotification({
+    required String uid,
+  }) async {
+    try {
+      final pending = await getPendingSeasonRewards(
+        uid: uid,
+      );
+
+      if (pending.isEmpty) return;
+
+      final userRef = _db.collection('users').doc(uid);
+
+      final userSnap = await userRef.get();
+
+      final data = userSnap.data() ?? {};
+
+      final alreadyNotifiedSeason =
+          (data['lastSeasonRewardNotification'] ?? '').toString();
+
+      final latestSeason = pending.last.seasonId;
+
+      // Ya notificamos esta season
+      if (alreadyNotifiedSeason == latestSeason) {
+        return;
+      }
+
+      await userRef.set({
+        'lastSeasonRewardNotification': latestSeason,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await _notificationService.createNotification(
+        targetUid: uid,
+        type: 'season_reward',
+        title: 'Weekly reward available',
+        body: 'Your weekly league reward is ready to claim.',
+        data: {
+          'seasonId': latestSeason,
+        },
+      );
+    } catch (_) {}
   }
 }

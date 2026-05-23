@@ -92,9 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _checkingPendingSeasonRewards = true);
 
     try {
-      final hasPending = await SeasonService.instance.hasPendingSeasonRewards(
+      final seasonService = SeasonService.instance;
+
+      final hasPending = await seasonService.hasPendingSeasonRewards(
         uid: uid,
       );
+
+      if (hasPending) {
+        await seasonService.ensureSeasonRewardNotification(
+          uid: uid,
+        );
+      }
 
       if (!mounted) return;
 

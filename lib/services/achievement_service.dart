@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_service.dart';
 
 class AchievementInfo {
   final String id;
@@ -26,6 +27,7 @@ class AchievementService {
   static final AchievementService instance = AchievementService._();
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
+  final _notificationService = NotificationService.instance;
 
   static const List<AchievementInfo> achievements = [
     AchievementInfo(
@@ -151,6 +153,34 @@ class AchievementService {
         SetOptions(merge: true),
       );
     });
+
+    // =========================================================
+    // ACHIEVEMENT NOTIFICATION
+    // =========================================================
+
+    try {
+      final snap = await ref.get();
+      final data = snap.data();
+
+      if (data != null &&
+          data['completed'] == true &&
+          data['notificationSent'] != true) {
+        await ref.set({
+          'notificationSent': true,
+          'notificationSentAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        await _notificationService.createNotification(
+          targetUid: uid,
+          type: 'achievement_completed',
+          title: 'Achievement completed',
+          body: 'You completed "${achievement.title}". Claim your reward.',
+          data: {
+            'achievementId': achievement.id,
+          },
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> incrementProgress({
@@ -195,6 +225,30 @@ class AchievementService {
         SetOptions(merge: true),
       );
     });
+
+    try {
+      final snap = await ref.get();
+      final data = snap.data();
+
+      if (data != null &&
+          data['completed'] == true &&
+          data['notificationSent'] != true) {
+        await ref.set({
+          'notificationSent': true,
+          'notificationSentAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        await _notificationService.createNotification(
+          targetUid: uid,
+          type: 'achievement_completed',
+          title: 'Achievement completed',
+          body: 'You completed "${achievement.title}". Claim your reward.',
+          data: {
+            'achievementId': achievement.id,
+          },
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> claimAchievement({

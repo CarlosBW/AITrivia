@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/notification_service.dart';
+import '../social/friends_screen.dart';
+import '../versus/async_match_play_screen.dart';
+import '../leagues/season_rewards_screen.dart';
+import '../achievements/achievements_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -52,6 +56,85 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _delete(String notificationId) async {
     await _service.deleteNotification(notificationId: notificationId);
+  }
+
+  Future<void> _handleNotificationTap({
+    required String notificationId,
+    required String type,
+    required Map<String, dynamic> data,
+  }) async {
+    await _markAsRead(notificationId);
+
+    if (!mounted) return;
+
+    switch (type) {
+      // =====================================================
+      // FRIEND REQUEST
+      // =====================================================
+
+      case 'friend_request':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const FriendsScreen(),
+          ),
+        );
+        return;
+
+      // =====================================================
+      // ASYNC MATCH
+      // =====================================================
+
+      case 'match_invite':
+      case 'match_turn':
+      case 'match_result':
+        final matchId = (data['matchId'] ?? '').toString();
+
+        if (matchId.isEmpty) return;
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AsyncMatchPlayScreen(
+              asyncMatchId: matchId,
+            ),
+          ),
+        );
+        return;
+
+      // =====================================================
+      // SEASON REWARDS
+      // =====================================================
+
+      case 'season_reward':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SeasonRewardsScreen(),
+          ),
+        );
+        return;
+
+      // =====================================================
+      // ACHIEVEMENT COMPLETED
+      // =====================================================
+
+      case 'achievement_completed':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AchievementsScreen(),
+          ),
+        );
+        break;
+
+      // =====================================================
+      // DEFAULT
+      // =====================================================
+
+      default:
+        return;
+    }
   }
 
   @override
@@ -110,6 +193,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               final title = (data['title'] ?? 'Notification').toString();
               final body = (data['body'] ?? '').toString();
               final read = data['read'] == true;
+              final payload = Map<String, dynamic>.from(
+                data['data'] ?? {},
+              );
 
               return Dismissible(
                 key: ValueKey(doc.id),
@@ -132,7 +218,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   title: title,
                   body: body,
                   read: read,
-                  onTap: read ? null : () => _markAsRead(doc.id),
+                  onTap: () => _handleNotificationTap(
+                    notificationId: doc.id,
+                    type: type,
+                    data: payload,
+                  ),
                 ),
               );
             },

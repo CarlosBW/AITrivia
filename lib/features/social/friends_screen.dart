@@ -22,6 +22,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
   bool _searching = false;
   bool _actionLoading = false;
   String? _error;
+
+  String _activeSearchQuery = '';
+  bool _hasSearched = false;
+
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _searchResults = [];
 
   @override
@@ -45,15 +49,60 @@ class _FriendsScreenState extends State<FriendsScreen> {
     return avatars[avatarId] ?? '🙂';
   }
 
+  bool _matchesActiveSearch(String value) {
+    if (_activeSearchQuery.isEmpty) return true;
+    return value.toLowerCase().contains(_activeSearchQuery);
+  }
+
+  Future<Set<String>> _blockedSearchUserIds() async {
+    final db = FirebaseFirestore.instance;
+    final uid = _service.uid;
+    final userRef = db.collection('users').doc(uid);
+
+    final friendsSnap = await userRef.collection('friends').get();
+
+    final sentSnap = await userRef
+        .collection('sent_friend_requests')
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final incomingSnap = await userRef
+        .collection('friend_requests')
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final ids = <String>{uid};
+
+    for (final doc in friendsSnap.docs) {
+      final data = doc.data();
+      ids.add((data['uid'] ?? doc.id).toString());
+    }
+
+    for (final doc in sentSnap.docs) {
+      final data = doc.data();
+      ids.add((data['targetUid'] ?? doc.id).toString());
+    }
+
+    for (final doc in incomingSnap.docs) {
+      final data = doc.data();
+      ids.add((data['requesterUid'] ?? doc.id).toString());
+    }
+
+    return ids;
+  }
+
   Future<void> _search() async {
     if (_searching) return;
 
     final query = _searchCtrl.text.trim();
+    final normalizedQuery = query.toLowerCase();
 
     if (query.isEmpty) {
       setState(() {
         _error = 'Escribe un username para buscar.';
         _searchResults = [];
+        _activeSearchQuery = '';
+        _hasSearched = false;
       });
       return;
     }
@@ -61,16 +110,24 @@ class _FriendsScreenState extends State<FriendsScreen> {
     setState(() {
       _searching = true;
       _error = null;
+      _searchResults = [];
+      _activeSearchQuery = normalizedQuery;
+      _hasSearched = true;
     });
 
     try {
+      final blockedIds = await _blockedSearchUserIds();
       final snap = await _service.searchUsersByUsername(query: query);
 
       if (!mounted) return;
 
+      _searchCtrl.clear();
+      FocusScope.of(context).unfocus();
+
       setState(() {
-        _searchResults =
-            snap.docs.where((doc) => doc.id != _service.uid).toList();
+        _searchResults = snap.docs
+            .where((doc) => !blockedIds.contains(doc.id))
+            .toList();
       });
     } catch (e) {
       if (!mounted) return;
@@ -82,6 +139,41 @@ class _FriendsScreenState extends State<FriendsScreen> {
     } finally {
       if (mounted) {
         setState(() => _searching = false);
+      }
+    }
+  }
+
+  Future<void> _sendFriendRequest(String targetUid) async {
+    if (_actionLoading) return;
+
+    setState(() {
+      _actionLoading = true;
+      _error = null;
+    });
+
+    try {
+      await _service.sendFriendRequest(targetUid: targetUid);
+
+      if (!mounted) return;
+
+      setState(() {
+        _searchResults.removeWhere((doc) => doc.id == targetUid);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Solicitud enviada')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _actionLoading = false);
       }
     }
   }
@@ -167,6 +259,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final filterText = _activeSearchQuery.isEmpty
+        ? null
+        : 'Filtrando por "$_activeSearchQuery"';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Friends'),
@@ -181,6 +277,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
+
               Row(
                 children: [
                   Expanded(
@@ -208,6 +305,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   ),
                 ],
               ),
+
+              if (filterText != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  filterText,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -215,39 +325,128 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ],
-              if (_searchResults.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                ..._searchResults.map((doc) {
-                  final data = doc.data();
-                  final username =
-                      (data['username'] ?? data['displayName'] ?? 'Player')
-                          .toString();
-                  final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
 
-                  return _UserTile(
-                    avatar: _avatarEmoji(avatarId),
-                    title: username,
-                    subtitle: 'Jugador',
-                    statusColor: Colors.grey,
-                    trailing: FilledButton.tonal(
-                      onPressed: _actionLoading
-                          ? null
-                          : () => _runAction(
-                                () => _service.sendFriendRequest(
-                                  targetUid: doc.id,
-                                ),
-                              ),
-                      child: const Text('Agregar'),
-                    ),
-                  );
-                }),
+              if (_hasSearched) ...[
+                const SizedBox(height: 14),
+                const Text(
+                  'Resultados nuevos',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (_searchResults.isEmpty)
+                  const _EmptyCard(
+                    icon: Icons.person_search,
+                    text:
+                        'No hay nuevos jugadores para agregar con esa búsqueda.',
+                  )
+                else
+                  ..._searchResults.map((doc) {
+                    final data = doc.data();
+                    final username =
+                        (data['username'] ?? data['displayName'] ?? 'Player')
+                            .toString();
+                    final avatarId =
+                        (data['avatarId'] ?? 'avatar_1').toString();
+
+                    return _UserTile(
+                      avatar: _avatarEmoji(avatarId),
+                      title: username,
+                      subtitle: 'Jugador encontrado',
+                      statusColor: Colors.grey,
+                      trailing: FilledButton.tonalIcon(
+                        onPressed: _actionLoading
+                            ? null
+                            : () => _sendFriendRequest(doc.id),
+                        icon: const Icon(Icons.person_add),
+                        label: const Text('Agregar'),
+                      ),
+                    );
+                  }),
               ],
+
+              const SizedBox(height: 24),
+              const Text(
+                'Solicitudes enviadas',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: _service.watchOutgoingRequests(),
+                builder: (context, snap) {
+                  if (snap.hasError) {
+                    return Text(
+                      'Error cargando solicitudes enviadas:\n${snap.error}',
+                      textAlign: TextAlign.center,
+                    );
+                  }
+
+                  if (!snap.hasData) {
+                    return const _LoadingCard(
+                      text: 'Cargando solicitudes enviadas...',
+                    );
+                  }
+
+                  final docs = snap.data!.docs.where((doc) {
+                    final data = doc.data();
+
+                    final targetName = (data['targetDisplayName'] ??
+                            data['targetUsername'] ??
+                            'Player')
+                        .toString();
+
+                    return _matchesActiveSearch(targetName);
+                  }).toList();
+
+                  if (docs.isEmpty) {
+                    return _EmptyCard(
+                      icon: Icons.outbox_outlined,
+                      text: _activeSearchQuery.isEmpty
+                          ? 'No tienes solicitudes pendientes por responder.'
+                          : 'No hay solicitudes enviadas que coincidan.',
+                    );
+                  }
+
+                  return Column(
+                    children: docs.map((doc) {
+                      final data = doc.data();
+
+                      final targetName = (data['targetDisplayName'] ??
+                              data['targetUsername'] ??
+                              'Player')
+                          .toString();
+
+                      final avatarId =
+                          (data['targetAvatarId'] ?? 'avatar_1').toString();
+
+                      return _UserTile(
+                        avatar: _avatarEmoji(avatarId),
+                        title: targetName,
+                        subtitle: 'Pendiente',
+                        statusColor: Colors.orange,
+                        trailing: const FilledButton(
+                          onPressed: null,
+                          child: Text('Enviado'),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
               const SizedBox(height: 24),
               const Text(
                 'Solicitudes recibidas',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
+
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchIncomingRequests(),
                 builder: (context, snap) {
@@ -262,12 +461,23 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     return const _LoadingCard(text: 'Cargando solicitudes...');
                   }
 
-                  final docs = snap.data!.docs;
+                  final docs = snap.data!.docs.where((doc) {
+                    final data = doc.data();
+
+                    final name = (data['requesterDisplayName'] ??
+                            data['requesterUsername'] ??
+                            'Player')
+                        .toString();
+
+                    return _matchesActiveSearch(name);
+                  }).toList();
 
                   if (docs.isEmpty) {
-                    return const _EmptyCard(
+                    return _EmptyCard(
                       icon: Icons.inbox_outlined,
-                      text: 'No tienes solicitudes pendientes.',
+                      text: _activeSearchQuery.isEmpty
+                          ? 'No tienes solicitudes pendientes.'
+                          : 'No hay solicitudes recibidas que coincidan.',
                     );
                   }
 
@@ -323,12 +533,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 },
               ),
+
               const SizedBox(height: 24),
               const Text(
                 'Tus amigos',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
+
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchFriends(),
                 builder: (context, snap) {
@@ -343,12 +555,22 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     return const _LoadingCard(text: 'Cargando amigos...');
                   }
 
-                  final docs = snap.data!.docs;
+                  final docs = snap.data!.docs.where((doc) {
+                    final data = doc.data();
+
+                    final displayName =
+                        (data['displayName'] ?? data['username'] ?? 'Player')
+                            .toString();
+
+                    return _matchesActiveSearch(displayName);
+                  }).toList();
 
                   if (docs.isEmpty) {
-                    return const _EmptyCard(
+                    return _EmptyCard(
                       icon: Icons.group_outlined,
-                      text: 'Todavía no tienes amigos agregados.',
+                      text: _activeSearchQuery.isEmpty
+                          ? 'Todavía no tienes amigos agregados.'
+                          : 'No hay amigos que coincidan.',
                     );
                   }
 

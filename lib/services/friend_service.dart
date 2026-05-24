@@ -28,6 +28,10 @@ class FriendService {
     return _userRef(userId).collection('friend_requests');
   }
 
+  CollectionReference<Map<String, dynamic>> _sentRequestsCol(String userId) {
+    return _userRef(userId).collection('sent_friend_requests');
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriends({
     int limit = 100,
   }) {
@@ -41,6 +45,16 @@ class FriendService {
     int limit = 50,
   }) {
     return _requestsCol(uid)
+        .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchOutgoingRequests({
+    int limit = 50,
+  }) {
+    return _sentRequestsCol(uid)
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .limit(limit)
@@ -81,7 +95,9 @@ class FriendService {
 
     final myFriendRef = _friendsCol(uid).doc(targetUid);
     final targetFriendRef = _friendsCol(targetUid).doc(uid);
+
     final requestRef = _requestsCol(targetUid).doc(uid);
+    final sentRequestRef = _sentRequestsCol(uid).doc(targetUid);
 
     String notificationDisplayName = 'Player${uid.substring(0, 4)}';
 
@@ -106,6 +122,7 @@ class FriendService {
       }
 
       final myData = mySnap.data() ?? {};
+      final targetData = targetSnap.data() ?? {};
 
       final displayName = (myData['displayName'] ??
               myData['username'] ??
@@ -117,6 +134,19 @@ class FriendService {
       final username = (myData['username'] ?? displayName).toString();
       final avatarId = (myData['avatarId'] ?? 'avatar_1').toString();
 
+      final targetDisplayName = (targetData['displayName'] ??
+              targetData['username'] ??
+              'Player${targetUid.substring(0, 4)}')
+          .toString();
+
+      final targetUsername =
+          (targetData['username'] ?? targetDisplayName).toString();
+
+      final targetAvatarId =
+          (targetData['avatarId'] ?? 'avatar_1').toString();
+
+      final now = FieldValue.serverTimestamp();
+
       tx.set(
         requestRef,
         {
@@ -125,8 +155,22 @@ class FriendService {
           'requesterUsername': username,
           'requesterAvatarId': avatarId,
           'status': 'pending',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
+          'createdAt': now,
+          'updatedAt': now,
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        sentRequestRef,
+        {
+          'targetUid': targetUid,
+          'targetDisplayName': targetDisplayName,
+          'targetUsername': targetUsername,
+          'targetAvatarId': targetAvatarId,
+          'status': 'pending',
+          'createdAt': now,
+          'updatedAt': now,
         },
         SetOptions(merge: true),
       );
@@ -164,6 +208,9 @@ class FriendService {
     final myFriendRef = _friendsCol(uid).doc(requesterUid);
     final requesterFriendRef = _friendsCol(requesterUid).doc(uid);
 
+    final requesterSentRequestRef =
+        _sentRequestsCol(requesterUid).doc(uid);
+
     await _db.runTransaction((tx) async {
       final mySnap = await tx.get(myRef);
       final requesterSnap = await tx.get(requesterRef);
@@ -193,6 +240,8 @@ class FriendService {
               'Player${requesterUid.substring(0, 4)}')
           .toString();
 
+      final now = FieldValue.serverTimestamp();
+
       tx.set(
         myFriendRef,
         {
@@ -201,7 +250,7 @@ class FriendService {
           'username':
               (requesterData['username'] ?? requesterDisplayName).toString(),
           'avatarId': (requesterData['avatarId'] ?? 'avatar_1').toString(),
-          'createdAt': FieldValue.serverTimestamp(),
+          'createdAt': now,
         },
         SetOptions(merge: true),
       );
@@ -213,15 +262,24 @@ class FriendService {
           'displayName': myDisplayName,
           'username': (myData['username'] ?? myDisplayName).toString(),
           'avatarId': (myData['avatarId'] ?? 'avatar_1').toString(),
-          'createdAt': FieldValue.serverTimestamp(),
+          'createdAt': now,
         },
         SetOptions(merge: true),
       );
 
       tx.update(requestRef, {
         'status': 'accepted',
-        'updatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': now,
       });
+
+      tx.set(
+        requesterSentRequestRef,
+        {
+          'status': 'accepted',
+          'updatedAt': now,
+        },
+        SetOptions(merge: true),
+      );
     });
 
     Future.microtask(() async {
@@ -251,14 +309,30 @@ class FriendService {
     }
 
     final requestRef = _requestsCol(uid).doc(requesterUid);
+    final requesterSentRequestRef =
+        _sentRequestsCol(requesterUid).doc(uid);
 
-    await requestRef.set(
-      {
-        'status': 'rejected',
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await _db.runTransaction((tx) async {
+      final now = FieldValue.serverTimestamp();
+
+      tx.set(
+        requestRef,
+        {
+          'status': 'rejected',
+          'updatedAt': now,
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        requesterSentRequestRef,
+        {
+          'status': 'rejected',
+          'updatedAt': now,
+        },
+        SetOptions(merge: true),
+      );
+    });
   }
 
   Future<void> removeFriend({

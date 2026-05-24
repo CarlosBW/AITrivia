@@ -7,11 +7,11 @@ import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
 import '../leagues/weekly_league_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
-import '../../services/season_service.dart';
-import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
+import '../../services/season_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,15 +49,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initLives() async {
-    await LifeService.instance.ensureUserLifeDoc(uid);
-    final state = await LifeService.instance.refreshLives(uid);
+    try {
+      await LifeService.instance.ensureUserLifeDoc(uid);
+      final state = await LifeService.instance.refreshLives(uid);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _lifeState = state;
-      _loadingLives = false;
-    });
+      setState(() {
+        _lifeState = state;
+        _loadingLives = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingLives = false);
+    }
   }
 
   void _startLifeTimer() {
@@ -131,7 +136,22 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isNavigating = true);
 
     try {
-      await action();
+      await action().timeout(
+        const Duration(seconds: 12),
+        onTimeout: () {
+          throw TimeoutException('La acción tardó demasiado.');
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isNavigating = false);
@@ -189,6 +209,16 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(
           content: Text(
             success ? '❤️ Vida recuperada' : '❌ No tienes suficientes monedas',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
           ),
         ),
       );

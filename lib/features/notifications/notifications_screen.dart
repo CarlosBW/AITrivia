@@ -25,6 +25,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.person_add;
       case 'match_invite':
         return Icons.sports_esports;
+      case 'match_turn':
+        return Icons.play_circle;
+      case 'match_result':
+        return Icons.emoji_events;
       case 'achievement_completed':
         return Icons.emoji_events;
       case 'season_reward':
@@ -33,6 +37,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.calendar_today;
       default:
         return Icons.notifications;
+    }
+  }
+
+  Color _colorForType(String type, bool read) {
+    if (read) return Colors.black54;
+
+    switch (type) {
+      case 'match_invite':
+        return Colors.deepPurple;
+      case 'match_turn':
+        return Colors.green;
+      case 'match_result':
+        return Colors.amber.shade700;
+      case 'friend_request':
+        return Colors.blue;
+      case 'season_reward':
+        return Colors.orange;
+      case 'achievement_completed':
+        return Colors.teal;
+      default:
+        return Colors.deepPurple;
+    }
+  }
+
+  String _ctaForType(String type) {
+    switch (type) {
+      case 'match_invite':
+        return 'Play now';
+      case 'match_turn':
+        return 'Continue';
+      case 'match_result':
+        return 'View result';
+      case 'friend_request':
+        return 'Review';
+      case 'season_reward':
+        return 'Claim';
+      case 'achievement_completed':
+        return 'View';
+      default:
+        return 'Open';
     }
   }
 
@@ -68,10 +112,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!mounted) return;
 
     switch (type) {
-      // =====================================================
-      // FRIEND REQUEST
-      // =====================================================
-
       case 'friend_request':
         await Navigator.push(
           context,
@@ -80,10 +120,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         );
         return;
-
-      // =====================================================
-      // ASYNC MATCH
-      // =====================================================
 
       case 'match_invite':
       case 'match_turn':
@@ -102,10 +138,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
         return;
 
-      // =====================================================
-      // SEASON REWARDS
-      // =====================================================
-
       case 'season_reward':
         await Navigator.push(
           context,
@@ -115,10 +147,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         );
         return;
 
-      // =====================================================
-      // ACHIEVEMENT COMPLETED
-      // =====================================================
-
       case 'achievement_completed':
         await Navigator.push(
           context,
@@ -126,11 +154,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             builder: (_) => const AchievementsScreen(),
           ),
         );
-        break;
-
-      // =====================================================
-      // DEFAULT
-      // =====================================================
+        return;
 
       default:
         return;
@@ -215,9 +239,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 onDismissed: (_) => _delete(doc.id),
                 child: _NotificationTile(
                   icon: _iconForType(type),
+                  accentColor: _colorForType(type, read),
                   title: title,
                   body: body,
+                  cta: _ctaForType(type),
                   read: read,
+                  isPvp: type == 'match_invite' ||
+                      type == 'match_turn' ||
+                      type == 'match_result',
                   onTap: () => _handleNotificationTap(
                     notificationId: doc.id,
                     type: type,
@@ -235,28 +264,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
 class _NotificationTile extends StatelessWidget {
   final IconData icon;
+  final Color accentColor;
   final String title;
   final String body;
+  final String cta;
   final bool read;
+  final bool isPvp;
   final VoidCallback? onTap;
 
   const _NotificationTile({
     required this.icon,
+    required this.accentColor,
     required this.title,
     required this.body,
+    required this.cta,
     required this.read,
+    required this.isPvp,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = read
+        ? Colors.black12
+        : isPvp
+            ? accentColor.withOpacity(0.14)
+            : Colors.deepPurple.withOpacity(0.14);
+
     return Card(
       elevation: 0,
-      color: read ? Colors.black12 : Colors.deepPurple.withOpacity(0.14),
+      color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: read ? Colors.transparent : Colors.deepPurple,
+          color: read ? Colors.transparent : accentColor,
           width: read ? 0 : 1.5,
         ),
       ),
@@ -264,7 +305,7 @@ class _NotificationTile extends StatelessWidget {
         onTap: onTap,
         leading: CircleAvatar(
           backgroundColor:
-              read ? Colors.white.withOpacity(0.8) : Colors.deepPurple,
+              read ? Colors.white.withOpacity(0.8) : accentColor,
           child: Icon(
             icon,
             color: read ? Colors.black87 : Colors.white,
@@ -276,7 +317,23 @@ class _NotificationTile extends StatelessWidget {
             fontWeight: read ? FontWeight.w600 : FontWeight.bold,
           ),
         ),
-        subtitle: body.isEmpty ? null : Text(body),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (body.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(body),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              cta,
+              style: TextStyle(
+                color: read ? Colors.black54 : accentColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         trailing: read
             ? null
             : Container(

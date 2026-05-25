@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'play_with_friends_screen.dart';
 import 'find_opponent_screen.dart';
+import 'active_matches_screen.dart';
 
 class PvPScreen extends StatelessWidget {
   const PvPScreen({super.key});
@@ -26,20 +27,19 @@ class PvPScreen extends StatelessWidget {
             style: TextStyle(color: Colors.black54),
           ),
           const SizedBox(height: 18),
-
           _PvpCard(
             icon: Icons.flash_on,
             title: 'Active Matches',
             subtitle: 'Pending turns, live games, and recent results.',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Active Matches coming next.'),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ActiveMatchesScreen(),
                 ),
               );
             },
           ),
-
           _PvpCard(
             icon: Icons.group,
             title: 'Play with Friends',
@@ -53,7 +53,6 @@ class PvPScreen extends StatelessWidget {
               );
             },
           ),
-
           _PvpCard(
             icon: Icons.public,
             title: 'Find Opponent',

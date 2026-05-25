@@ -2,9 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/friend_service.dart';
-import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
-import '../versus/async_match_play_screen.dart';
+import '../versus/friend_challenge_setup_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -15,7 +14,6 @@ class FriendsScreen extends StatefulWidget {
 
 class _FriendsScreenState extends State<FriendsScreen> {
   final _service = FriendService.instance;
-  final _matchService = MatchService();
   final _presenceService = PresenceService.instance;
   final _searchCtrl = TextEditingController();
 
@@ -125,9 +123,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
       FocusScope.of(context).unfocus();
 
       setState(() {
-        _searchResults = snap.docs
-            .where((doc) => !blockedIds.contains(doc.id))
-            .toList();
+        _searchResults =
+            snap.docs.where((doc) => !blockedIds.contains(doc.id)).toList();
       });
     } catch (e) {
       if (!mounted) return;
@@ -209,52 +206,23 @@ class _FriendsScreenState extends State<FriendsScreen> {
     }
   }
 
-  Future<void> _challengeFriend({
+  void _challengeFriend({
     required String friendUid,
     required String displayName,
-  }) async {
+    required bool isOnline,
+  }) {
     if (_actionLoading) return;
 
-    setState(() {
-      _actionLoading = true;
-      _error = null;
-    });
-
-    try {
-      final myName = await _matchService.getMyDisplayNameFallback('Player');
-
-      final matchId = await _matchService.createAsyncFixedMatch(
-        challengedUid: friendUid,
-        categoryId: 'random',
-        difficulty: 1,
-        totalQuestions: 10,
-        timePerQuestionSec: 10,
-        winReward: 2,
-        challengerDisplayName: myName,
-        challengedDisplayName: displayName,
-      );
-
-      if (!mounted) return;
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AsyncMatchPlayScreen(asyncMatchId: matchId),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FriendChallengeSetupScreen(
+          friendUid: friendUid,
+          friendName: displayName,
+          isOnline: isOnline,
         ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _actionLoading = false);
-      }
-    }
+      ),
+    );
   }
 
   @override
@@ -277,7 +245,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               Row(
                 children: [
                   Expanded(
@@ -305,7 +272,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   ),
                 ],
               ),
-
               if (filterText != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -317,7 +283,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   ),
                 ),
               ],
-
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -325,7 +290,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ],
-
               if (_hasSearched) ...[
                 const SizedBox(height: 14),
                 const Text(
@@ -366,7 +330,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     );
                   }),
               ],
-
               const SizedBox(height: 24),
               const Text(
                 'Solicitudes enviadas',
@@ -376,7 +339,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchOutgoingRequests(),
                 builder: (context, snap) {
@@ -395,7 +357,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
                   final docs = snap.data!.docs.where((doc) {
                     final data = doc.data();
-
                     final targetName = (data['targetDisplayName'] ??
                             data['targetUsername'] ??
                             'Player')
@@ -439,14 +400,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 24),
               const Text(
                 'Solicitudes recibidas',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchIncomingRequests(),
                 builder: (context, snap) {
@@ -533,14 +492,12 @@ class _FriendsScreenState extends State<FriendsScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 24),
               const Text(
                 'Tus amigos',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: _service.watchFriends(),
                 builder: (context, snap) {
@@ -595,8 +552,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         builder: (context, presenceSnap) {
                           final presenceData = presenceSnap.data?.data();
 
-                          final presence = presenceData?['presence']
-                              as Map<String, dynamic>?;
+                          final presence =
+                              presenceData?['presence'] as Map<String, dynamic>?;
 
                           final online = _presenceService.isProbablyOnline(
                             presence,
@@ -623,6 +580,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                   : () => _challengeFriend(
                                         friendUid: friendUid,
                                         displayName: displayName,
+                                        isOnline: online,
                                       ),
                               child: const Text('Retar'),
                             ),

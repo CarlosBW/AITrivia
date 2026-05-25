@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import '../social/friends_screen.dart';
-import '../versus/versus_menu_screen.dart';
+import '../versus/pvp_screen.dart';
 import '../solo/solo_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -54,7 +54,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           _lazyTab(
             tabIndex: 2,
-            child: const VersusMenuScreen(),
+            child: const PvPScreen(),
           ),
           _lazyTab(
             tabIndex: 3,

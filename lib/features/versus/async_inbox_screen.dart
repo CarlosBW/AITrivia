@@ -12,7 +12,6 @@ class AsyncInboxScreen extends StatelessWidget {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final ref = FirebaseFirestore.instance.collection('async_matches');
 
-    // Inbox = retos donde yo soy el challenged
     final query = ref
         .where('challengedUid', isEqualTo: uid)
         .orderBy('createdAt', descending: true);
@@ -22,18 +21,33 @@ class AsyncInboxScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: query.snapshots(),
         builder: (context, snap) {
+          if (snap.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Error cargando retos recibidos:\n${snap.error}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
+
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
           final docs = snap.data!.docs;
+
           if (docs.isEmpty) {
             return const Center(child: Text('No tienes retos recibidos.'));
           }
 
           return ListView.separated(
+            padding: const EdgeInsets.all(12),
             itemCount: docs.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
               final doc = docs[i];
               final d = doc.data();
@@ -53,6 +67,7 @@ class AsyncInboxScreen extends StatelessWidget {
               final canPlay = myStatus != 'finished';
 
               String subtitle = 'De: $challengerName';
+
               if (status == 'completed') {
                 if (winnerUid == null) {
                   subtitle += ' • Empate ($challengerScore-$challengedScore)';
@@ -69,28 +84,44 @@ class AsyncInboxScreen extends StatelessWidget {
                 }
               }
 
-              return ListTile(
-                title: Text('Reto: ${d['categoryId'] ?? 'fixed'}'),
-                subtitle: Text(subtitle),
-                trailing: canPlay
-                    ? const Icon(Icons.play_arrow)
-                    : const Icon(Icons.check_circle_outline),
-                onTap: () {
-                  if (!canPlay) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ya jugaste este reto.')),
-                    );
-                    return;
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          AsyncMatchPlayScreen(asyncMatchId: doc.id),
+              return Card(
+                elevation: 0,
+                color: Colors.black12,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Icon(
+                      canPlay ? Icons.play_arrow : Icons.check_circle_outline,
                     ),
-                  );
-                },
+                  ),
+                  title: Text(
+                    'Reto: ${d['categoryId'] ?? 'fixed'}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(subtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    if (!canPlay) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ya jugaste este reto.'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AsyncMatchPlayScreen(
+                          asyncMatchId: doc.id,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

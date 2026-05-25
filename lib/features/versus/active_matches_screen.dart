@@ -1,61 +1,184 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'async_match_play_screen.dart';
 
-class ActiveMatchesScreen extends StatelessWidget {
+class ActiveMatchesScreen extends StatefulWidget {
   const ActiveMatchesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+  State<ActiveMatchesScreen> createState() => _ActiveMatchesScreenState();
+}
 
+class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
+  static const Duration _loadTimeout = Duration(seconds: 12);
+  static const Duration _autoRetryDelay = Duration(seconds: 5);
+
+  late final String uid;
+
+  bool _loading = true;
+  String? _softError;
+
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _yourTurn = [];
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _waitingOpponent = [];
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _finished = [];
+
+  Timer? _retryTimer;
+  bool _loadingNow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    uid = FirebaseAuth.instance.currentUser!.uid;
+    _loadMatches();
+  }
+
+  @override
+  void dispose() {
+    _retryTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<QuerySnapshot<Map<String, dynamic>>> _safeGet(
+    Query<Map<String, dynamic>> query,
+  ) {
+    return query.get().timeout(
+      _loadTimeout,
+      onTimeout: () {
+        throw TimeoutException('Firestore query timeout');
+      },
+    );
+  }
+
+  Future<void> _loadMatches({bool retry = false}) async {
+    if (_loadingNow) return;
+
+    _retryTimer?.cancel();
+    _loadingNow = true;
+
+    if (!retry && mounted) {
+      setState(() {
+        _loading = true;
+        _softError = null;
+      });
+    }
+
+    try {
+      final db = FirebaseFirestore.instance.collection('async_matches');
+
+      final results = await Future.wait([
+        _safeGet(
+          db
+              .where('challengedUid', isEqualTo: uid)
+              .where('challengedStatus', isEqualTo: 'pending')
+              .orderBy('createdAt', descending: true),
+        ),
+        _safeGet(
+          db
+              .where('challengerUid', isEqualTo: uid)
+              .where('challengerStatus', isEqualTo: 'finished')
+              .where('challengedStatus', isEqualTo: 'pending')
+              .orderBy('createdAt', descending: true),
+        ),
+        _safeGet(
+          db
+              .where('participants', arrayContains: uid)
+              .where('status', isEqualTo: 'completed')
+              .orderBy('updatedAt', descending: true)
+              .limit(20),
+        ),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _yourTurn = results[0].docs;
+        _waitingOpponent = results[1].docs;
+        _finished = results[2].docs;
+        _loading = false;
+        _softError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _softError = 'Reconnecting...';
+      });
+
+      _retryTimer = Timer(_autoRetryDelay, () {
+        if (mounted) {
+          _loadMatches(retry: true);
+        }
+      });
+    } finally {
+      _loadingNow = false;
+    }
+  }
+
+  Future<void> _refreshSilently() async {
+    await _loadMatches(retry: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Active Matches'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _AsyncMatchesSection(
-            title: 'Your Turn',
-            emptyText: 'No async matches waiting for you.',
-            query: FirebaseFirestore.instance
-                .collection('async_matches')
-                .where('challengedUid', isEqualTo: uid)
-                .where('challengedStatus', isEqualTo: 'pending')
-                .orderBy('createdAt', descending: true),
-            uid: uid,
-            mode: _AsyncSectionMode.yourTurn,
-          ),
-          const SizedBox(height: 22),
-          _AsyncMatchesSection(
-            title: 'Waiting For Opponent',
-            emptyText: 'No matches waiting for your opponent.',
-            query: FirebaseFirestore.instance
-                .collection('async_matches')
-                .where('challengerUid', isEqualTo: uid)
-                .where('challengerStatus', isEqualTo: 'finished')
-                .where('challengedStatus', isEqualTo: 'pending')
-                .orderBy('createdAt', descending: true),
-            uid: uid,
-            mode: _AsyncSectionMode.waitingOpponent,
-          ),
-          const SizedBox(height: 22),
-          _AsyncMatchesSection(
-            title: 'Recently Finished',
-            emptyText: 'No recent finished matches.',
-            query: FirebaseFirestore.instance
-                .collection('async_matches')
-                .where('participants', arrayContains: uid)
-                .where('status', isEqualTo: 'completed')
-                .orderBy('updatedAt', descending: true)
-                .limit(20),
-            uid: uid,
-            mode: _AsyncSectionMode.finished,
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _refreshSilently,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (_softError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _SoftStatusCard(text: _softError!),
+              ),
+
+            _AsyncMatchesSection(
+              title: 'Your Turn',
+              emptyText: _loading
+                  ? 'Loading your matches...'
+                  : 'No async matches waiting for you.',
+              docs: _yourTurn,
+              uid: uid,
+              mode: _AsyncSectionMode.yourTurn,
+              loading: _loading,
+            ),
+
+            const SizedBox(height: 22),
+
+            _AsyncMatchesSection(
+              title: 'Waiting For Opponent',
+              emptyText: _loading
+                  ? 'Loading matches...'
+                  : 'No matches waiting for your opponent.',
+              docs: _waitingOpponent,
+              uid: uid,
+              mode: _AsyncSectionMode.waitingOpponent,
+              loading: _loading,
+            ),
+
+            const SizedBox(height: 22),
+
+            _AsyncMatchesSection(
+              title: 'Recently Finished',
+              emptyText: _loading
+                  ? 'Loading results...'
+                  : 'No recent finished matches.',
+              docs: _finished,
+              uid: uid,
+              mode: _AsyncSectionMode.finished,
+              loading: _loading,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -70,67 +193,50 @@ enum _AsyncSectionMode {
 class _AsyncMatchesSection extends StatelessWidget {
   final String title;
   final String emptyText;
-  final Query<Map<String, dynamic>> query;
+  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
   final String uid;
   final _AsyncSectionMode mode;
+  final bool loading;
 
   const _AsyncMatchesSection({
     required this.title,
     required this.emptyText,
-    required this.query,
+    required this.docs,
     required this.uid,
     required this.mode,
+    required this.loading,
   });
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: query.snapshots(),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return _SectionCard(
-            title: title,
-            child: Text(
-              'Error loading matches:\n${snap.error}',
-              textAlign: TextAlign.center,
-            ),
+    if (loading && docs.isEmpty) {
+      return _SectionCard(
+        title: title,
+        child: const _LoadingLine(),
+      );
+    }
+
+    if (docs.isEmpty) {
+      return _SectionCard(
+        title: title,
+        child: _EmptyLine(text: emptyText),
+      );
+    }
+
+    return _SectionCard(
+      title: title,
+      child: Column(
+        children: docs.map((doc) {
+          final data = doc.data();
+
+          return _AsyncMatchTile(
+            matchId: doc.id,
+            data: data,
+            uid: uid,
+            mode: mode,
           );
-        }
-
-        if (!snap.hasData) {
-          return _SectionCard(
-            title: title,
-            child: const Padding(
-              padding: EdgeInsets.all(18),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        final docs = snap.data!.docs;
-
-        if (docs.isEmpty) {
-          return _SectionCard(
-            title: title,
-            child: _EmptyLine(text: emptyText),
-          );
-        }
-
-        return _SectionCard(
-          title: title,
-          child: Column(
-            children: docs.map((doc) {
-              final data = doc.data();
-              return _AsyncMatchTile(
-                matchId: doc.id,
-                data: data,
-                uid: uid,
-                mode: mode,
-              );
-            }).toList(),
-          ),
-        );
-      },
+        }).toList(),
+      ),
     );
   }
 }
@@ -163,13 +269,23 @@ class _AsyncMatchTile extends StatelessWidget {
     return (data['categoryId'] ?? 'random').toString();
   }
 
+  int _challengerScore() {
+    final raw = (data['challenger'] as Map?)?['score'] ?? 0;
+    return raw is num ? raw.toInt() : 0;
+  }
+
+  int _challengedScore() {
+    final raw = (data['challenged'] as Map?)?['score'] ?? 0;
+    return raw is num ? raw.toInt() : 0;
+  }
+
   String _subtitle() {
-    final challengerScore = ((data['challenger']?['score']) ?? 0) as int;
-    final challengedScore = ((data['challenged']?['score']) ?? 0) as int;
+    final challengerScore = _challengerScore();
+    final challengedScore = _challengedScore();
 
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return 'Pending • ${_category()}';
+        return 'Your turn • ${_category()}';
       case _AsyncSectionMode.waitingOpponent:
         return 'Waiting • Your score: $challengerScore';
       case _AsyncSectionMode.finished:
@@ -184,6 +300,17 @@ class _AsyncMatchTile extends StatelessWidget {
         }
 
         return 'Defeat • $challengerScore-$challengedScore';
+    }
+  }
+
+  String _buttonText() {
+    switch (mode) {
+      case _AsyncSectionMode.yourTurn:
+        return 'Play';
+      case _AsyncSectionMode.waitingOpponent:
+        return 'View';
+      case _AsyncSectionMode.finished:
+        return 'Result';
     }
   }
 
@@ -230,15 +357,19 @@ class _AsyncMatchTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(_subtitle()),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AsyncMatchPlayScreen(asyncMatchId: matchId),
-            ),
-          );
-        },
+        trailing: FilledButton.tonal(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AsyncMatchPlayScreen(
+                  asyncMatchId: matchId,
+                ),
+              ),
+            );
+          },
+          child: Text(_buttonText()),
+        ),
       ),
     );
   }
@@ -272,6 +403,33 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+class _LoadingLine extends StatelessWidget {
+  const _LoadingLine();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 12),
+          Text('Loading...'),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyLine extends StatelessWidget {
   final String text;
 
@@ -291,6 +449,45 @@ class _EmptyLine extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+class _SoftStatusCard extends StatelessWidget {
+  final String text;
+
+  const _SoftStatusCard({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.orange.withOpacity(0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

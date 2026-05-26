@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
+import '../../services/realtime_invite_service.dart';
 import 'async_match_play_screen.dart';
 
 class FriendChallengeSetupScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class FriendChallengeSetupScreen extends StatefulWidget {
 class _FriendChallengeSetupScreenState
     extends State<FriendChallengeSetupScreen> {
   final _matchService = MatchService();
+  final _realtimeInviteService = RealtimeInviteService.instance;
 
   bool _loading = false;
   String? _error;
@@ -70,21 +72,65 @@ class _FriendChallengeSetupScreenState
     }
   }
 
-  void _startRealtimeChallenge() {
+  Future<void> _startRealtimeChallenge() async {
+    if (_loading) return;
+
     if (!widget.isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tu amigo no está conectado para jugar en tiempo real.'),
+          content: Text(
+            'Tu amigo no está conectado para jugar en tiempo real.',
+          ),
         ),
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Reto en tiempo real con amigos será el siguiente paso.'),
-      ),
-    );
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final myName = await _matchService.getMyDisplayNameFallback(
+        'Player',
+      );
+
+      await _realtimeInviteService.markExpiredInvites();
+
+      await _realtimeInviteService.createInvite(
+        toUid: widget.friendUid,
+        toName: widget.friendName,
+        fromName: myName,
+        categoryId: 'random',
+        difficulty: 1,
+        totalQuestions: 10,
+        timePerQuestionSec: 10,
+        winReward: 2,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Realtime invite sent to ${widget.friendName}',
+          ),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
   }
 
   @override
@@ -192,7 +238,9 @@ class _FriendChallengeSetupScreenState
           if (_loading)
             Container(
               color: Colors.black.withOpacity(0.25),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
         ],
       ),

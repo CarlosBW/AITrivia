@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'async_inbox_screen.dart';
 import 'async_outbox_screen.dart';
 import 'challenge_friend_list_screen.dart';
+import 'realtime_invites_screen.dart';
 
 class PlayWithFriendsScreen extends StatelessWidget {
   const PlayWithFriendsScreen({super.key});
@@ -16,6 +17,19 @@ class PlayWithFriendsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _MenuCard(
+            icon: Icons.bolt,
+            title: 'Realtime Invites',
+            subtitle: 'Accept or decline live challenges from friends.',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RealtimeInvitesScreen(),
+                ),
+              );
+            },
+          ),
           _MenuCard(
             icon: Icons.inbox,
             title: 'Retos recibidos',

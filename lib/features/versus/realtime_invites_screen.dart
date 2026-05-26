@@ -2,15 +2,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/realtime_invite_service.dart';
+import 'realtime_match_lobby_screen.dart';
 
 class RealtimeInvitesScreen extends StatefulWidget {
   const RealtimeInvitesScreen({super.key});
 
   @override
-  State<RealtimeInvitesScreen> createState() => _RealtimeInvitesScreenState();
+  State<RealtimeInvitesScreen> createState() =>
+      _RealtimeInvitesScreenState();
 }
 
-class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
+class _RealtimeInvitesScreenState
+    extends State<RealtimeInvitesScreen> {
   final _service = RealtimeInviteService.instance;
 
   bool _loadingAction = false;
@@ -33,22 +36,53 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
         ),
       );
     } finally {
-      if (mounted) setState(() => _loadingAction = false);
+      if (mounted) {
+        setState(() => _loadingAction = false);
+      }
     }
   }
 
   Future<void> _acceptInvite(String inviteId) async {
     if (_loadingAction) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Accept realtime invite will be connected next.'),
-      ),
-    );
+    setState(() => _loadingAction = true);
+
+    try {
+      final matchId = await _service.acceptInvite(
+        inviteId: inviteId,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RealtimeMatchLobbyScreen(
+            matchId: matchId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _loadingAction = false);
+      }
+    }
   }
 
   @override
@@ -75,7 +109,9 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
               }
 
               if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
               }
 
               final docs = snap.data!.docs;
@@ -87,7 +123,8 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: docs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final doc = docs[index];
                   final data = doc.data();
@@ -96,7 +133,8 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                       (data['fromName'] ?? 'Player').toString();
 
                   final categoryId =
-                      (data['categoryId'] ?? 'random').toString();
+                      (data['categoryId'] ?? 'random')
+                          .toString();
 
                   return Card(
                     elevation: 0,
@@ -104,19 +142,22 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
-                        color: Colors.deepPurple.withOpacity(0.45),
+                        color:
+                            Colors.deepPurple.withOpacity(0.45),
                       ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               CircleAvatar(
                                 backgroundColor:
-                                    Colors.deepPurple.withOpacity(0.18),
+                                    Colors.deepPurple
+                                        .withOpacity(0.18),
                                 child: const Icon(Icons.bolt),
                               ),
                               const SizedBox(width: 12),
@@ -125,37 +166,56 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                                   '$fromName invited you',
                                   style: const TextStyle(
                                     fontSize: 17,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight:
+                                        FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 8),
+
                           Text(
                             'Realtime 1 vs 1 • Category: $categoryId',
-                            style: const TextStyle(color: Colors.black54),
+                            style: const TextStyle(
+                              color: Colors.black54,
+                            ),
                           ),
+
                           const SizedBox(height: 14),
+
                           Row(
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: _loadingAction
                                       ? null
-                                      : () => _declineInvite(doc.id),
-                                  icon: const Icon(Icons.close),
-                                  label: const Text('Decline'),
+                                      : () => _declineInvite(
+                                            doc.id,
+                                          ),
+                                  icon: const Icon(
+                                    Icons.close,
+                                  ),
+                                  label:
+                                      const Text('Decline'),
                                 ),
                               ),
+
                               const SizedBox(width: 10),
+
                               Expanded(
                                 child: FilledButton.icon(
                                   onPressed: _loadingAction
                                       ? null
-                                      : () => _acceptInvite(doc.id),
-                                  icon: const Icon(Icons.check),
-                                  label: const Text('Accept'),
+                                      : () => _acceptInvite(
+                                            doc.id,
+                                          ),
+                                  icon: const Icon(
+                                    Icons.check,
+                                  ),
+                                  label:
+                                      const Text('Accept'),
                                 ),
                               ),
                             ],
@@ -168,10 +228,13 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
               );
             },
           ),
+
           if (_loadingAction)
             Container(
               color: Colors.black.withOpacity(0.25),
-              child: const Center(child: CircularProgressIndicator()),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
         ],
       ),
@@ -195,7 +258,9 @@ class _EmptyInvites extends StatelessWidget {
             Text(
               'No realtime invites right now.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),

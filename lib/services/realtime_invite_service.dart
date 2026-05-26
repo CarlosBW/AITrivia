@@ -19,6 +19,10 @@ class RealtimeInviteService {
     return _db.collection('realtime_invites');
   }
 
+  CollectionReference<Map<String, dynamic>> get _matchesCol {
+    return _db.collection('matches');
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyIncomingInvites({
     int limit = 20,
   }) {
@@ -92,6 +96,134 @@ class RealtimeInviteService {
     } catch (_) {}
 
     return inviteRef.id;
+  }
+
+  Future<String> acceptInvite({
+    required String inviteId,
+  }) async {
+    final inviteRef = _invitesCol.doc(inviteId);
+    final matchRef = _matchesCol.doc();
+
+    await _db.runTransaction((tx) async {
+      final inviteSnap = await tx.get(inviteRef);
+      final invite = inviteSnap.data();
+
+      if (invite == null) {
+        throw Exception('La invitación ya no existe.');
+      }
+
+      final fromUid = (invite['fromUid'] ?? '').toString();
+      final fromName = (invite['fromName'] ?? 'Player 1').toString();
+      final toUid = (invite['toUid'] ?? '').toString();
+      final toName = (invite['toName'] ?? 'Player 2').toString();
+      final status = (invite['status'] ?? '').toString();
+
+      if (toUid != uid) {
+        throw Exception('No puedes aceptar esta invitación.');
+      }
+
+      if (status == 'accepted') {
+        final existingMatchId = (invite['matchId'] ?? '').toString();
+
+        if (existingMatchId.isNotEmpty) {
+          return;
+        }
+
+        throw Exception('La invitación ya fue aceptada.');
+      }
+
+      if (status != 'pending') {
+        throw Exception('Esta invitación ya no está disponible.');
+      }
+
+      final categoryId = (invite['categoryId'] ?? 'random').toString();
+      final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
+      final totalQuestions =
+          ((invite['totalQuestions'] ?? 10) as num).toInt();
+      final timePerQuestionSec =
+          ((invite['timePerQuestionSec'] ?? 10) as num).toInt();
+      final winReward = ((invite['winReward'] ?? 2) as num).toInt();
+
+      final now = FieldValue.serverTimestamp();
+
+      tx.set(matchRef, {
+        'createdAt': now,
+        'updatedAt': now,
+
+        'status': 'realtime_lobby',
+        'mode': 'realtime_friend',
+        'source': 'friend_invite',
+        'inviteId': inviteId,
+
+        'categoryId': categoryId,
+        'difficulty': difficulty,
+        'totalQuestions': totalQuestions,
+        'timePerQuestionSec': timePerQuestionSec,
+        'winReward': winReward,
+        'loseReward': 0,
+
+        'hostUid': fromUid,
+        'guestUid': toUid,
+
+        'player1Uid': fromUid,
+        'player1Name': fromName,
+        'player1Ready': false,
+
+        'player2Uid': toUid,
+        'player2Name': toName,
+        'player2Ready': false,
+
+        'players': {
+          fromUid: {
+            'displayName': fromName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+          toUid: {
+            'displayName': toName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+        },
+
+        'questions': [],
+        'startAt': null,
+        'endedAt': null,
+        'winnerUid': null,
+        'rewarded': false,
+      });
+
+      tx.update(inviteRef, {
+        'status': 'accepted',
+        'matchId': matchRef.id,
+        'updatedAt': now,
+      });
+    });
+
+    try {
+      final snap = await inviteRef.get();
+      final data = snap.data();
+
+      if (data != null) {
+        final fromUid = (data['fromUid'] ?? '').toString();
+        final toName = (data['toName'] ?? 'Player').toString();
+
+        await _notificationService.createNotification(
+          targetUid: fromUid,
+          type: 'realtime_invite_accepted',
+          title: 'Realtime invite accepted',
+          body: '$toName accepted your realtime challenge.',
+          data: {
+            'inviteId': inviteId,
+            'matchId': matchRef.id,
+          },
+        );
+      }
+    } catch (_) {}
+
+    return matchRef.id;
   }
 
   Future<void> declineInvite({

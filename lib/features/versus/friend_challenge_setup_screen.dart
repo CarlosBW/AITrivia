@@ -96,8 +96,6 @@ class _FriendChallengeSetupScreenState
         'Player',
       );
 
-      await _realtimeInviteService.markExpiredInvites();
-
       await _realtimeInviteService.createInvite(
         toUid: widget.friendUid,
         toName: widget.friendName,

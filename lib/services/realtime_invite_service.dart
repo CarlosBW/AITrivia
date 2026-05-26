@@ -10,8 +10,7 @@ class RealtimeInviteService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final NotificationService _notificationService =
-      NotificationService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -138,8 +137,7 @@ class RealtimeInviteService {
 
       final categoryId = (invite['categoryId'] ?? 'random').toString();
       final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
-      final totalQuestions =
-          ((invite['totalQuestions'] ?? 10) as num).toInt();
+      final totalQuestions = ((invite['totalQuestions'] ?? 10) as num).toInt();
       final timePerQuestionSec =
           ((invite['timePerQuestionSec'] ?? 10) as num).toInt();
       final winReward = ((invite['winReward'] ?? 2) as num).toInt();
@@ -149,30 +147,24 @@ class RealtimeInviteService {
       tx.set(matchRef, {
         'createdAt': now,
         'updatedAt': now,
-
         'status': 'realtime_lobby',
         'mode': 'realtime_friend',
         'source': 'friend_invite',
         'inviteId': inviteId,
-
         'categoryId': categoryId,
         'difficulty': difficulty,
         'totalQuestions': totalQuestions,
         'timePerQuestionSec': timePerQuestionSec,
         'winReward': winReward,
         'loseReward': 0,
-
         'hostUid': fromUid,
         'guestUid': toUid,
-
         'player1Uid': fromUid,
         'player1Name': fromName,
         'player1Ready': false,
-
         'player2Uid': toUid,
         'player2Name': toName,
         'player2Ready': false,
-
         'players': {
           fromUid: {
             'displayName': fromName,
@@ -187,8 +179,58 @@ class RealtimeInviteService {
             'finished': false,
           },
         },
-
-        'questions': [],
+        'questions': [
+          {
+            'q': 'What planet is known as the Red Planet?',
+            'options': [
+              'Earth',
+              'Mars',
+              'Jupiter',
+              'Venus',
+            ],
+            'answerIndex': 1,
+          },
+          {
+            'q': 'Which ocean is the largest?',
+            'options': [
+              'Atlantic',
+              'Indian',
+              'Pacific',
+              'Arctic',
+            ],
+            'answerIndex': 2,
+          },
+          {
+            'q': 'Who wrote Hamlet?',
+            'options': [
+              'Shakespeare',
+              'Cervantes',
+              'Homer',
+              'Tolstoy',
+            ],
+            'answerIndex': 0,
+          },
+          {
+            'q': 'What is the capital of Japan?',
+            'options': [
+              'Tokyo',
+              'Seoul',
+              'Bangkok',
+              'Beijing',
+            ],
+            'answerIndex': 0,
+          },
+          {
+            'q': 'What gas do humans breathe in?',
+            'options': [
+              'Hydrogen',
+              'Nitrogen',
+              'Oxygen',
+              'Helium',
+            ],
+            'answerIndex': 2,
+          },
+        ],
         'startAt': null,
         'endedAt': null,
         'winnerUid': null,

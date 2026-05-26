@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../services/notification_service.dart';
 import '../social/friends_screen.dart';
 import '../versus/async_match_play_screen.dart';
+import '../versus/realtime_invites_screen.dart';
+import '../versus/realtime_match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
 import '../achievements/achievements_screen.dart';
 
@@ -35,6 +37,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.card_giftcard;
       case 'daily_available':
         return Icons.calendar_today;
+      case 'realtime_invite':
+        return Icons.bolt;
+      case 'realtime_invite_accepted':
+        return Icons.check_circle;
       default:
         return Icons.notifications;
     }
@@ -75,6 +81,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return 'Claim';
       case 'achievement_completed':
         return 'View';
+      case 'realtime_invite':
+        return 'Open';
+      case 'realtime_invite_accepted':
+        return 'Open lobby';
       default:
         return 'Open';
     }
@@ -152,6 +162,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => const AchievementsScreen(),
+          ),
+        );
+        return;
+
+      case 'realtime_invite':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const RealtimeInvitesScreen(),
+          ),
+        );
+        return;
+
+      case 'realtime_invite_accepted':
+        final matchId = (data['matchId'] ?? '').toString();
+
+        if (matchId.isEmpty) return;
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RealtimeMatchLobbyScreen(
+              matchId: matchId,
+            ),
           ),
         );
         return;
@@ -304,8 +338,7 @@ class _NotificationTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor:
-              read ? Colors.white.withOpacity(0.8) : accentColor,
+          backgroundColor: read ? Colors.white.withOpacity(0.8) : accentColor,
           child: Icon(
             icon,
             color: read ? Colors.black87 : Colors.white,

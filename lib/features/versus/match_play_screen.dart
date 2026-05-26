@@ -190,13 +190,23 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     if (_finishedSent || _finishing) return;
 
     _finishing = true;
-    _finishedSent = true;
     _timer?.cancel();
 
     try {
       await _service.setFinished(widget.matchId);
-    } catch (_) {
-      // No romper UX si falla momentáneamente.
+
+      if (!mounted) return;
+
+      setState(() {
+        _finishedSent = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _finishedSent = false;
+        _statusMsg = e.toString().replaceFirst('Exception: ', '');
+      });
     } finally {
       _finishing = false;
     }
@@ -302,9 +312,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           }
 
           if (_index >= questions.length) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _finishMatch();
-            });
+            if (!_finishedSent && !_finishing) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _finishMatch();
+              });
+            }
 
             return _buildWaitingFinish(
               context,

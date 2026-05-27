@@ -35,6 +35,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   final _presenceService = PresenceService.instance;
 
   static const Duration _pollInterval = Duration(seconds: 5);
+  static const Duration _queueHeartbeatInterval = Duration(seconds: 10);
   static const Duration _searchTimeout = Duration(seconds: 90);
 
   bool _searching = false;
@@ -43,6 +44,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   bool _navigatingToLobby = false;
 
   Timer? _pollTimer;
+  Timer? _queueHeartbeatTimer;
   Timer? _timeoutTimer;
   String? _error;
 
@@ -65,6 +67,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
+    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     // No se espera el Future para evitar bloquear dispose.
@@ -97,7 +100,18 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         displayName: widget.displayName,
       );
 
+      await _service.updateLiveSearchHeartbeat();
       await _tryFindOpponentOnce();
+
+      _queueHeartbeatTimer?.cancel();
+      _queueHeartbeatTimer = Timer.periodic(_queueHeartbeatInterval, (_) async {
+        if (!_searching || _navigatingToLobby) return;
+
+        try {
+          await _presenceService.refreshHeartbeatNow();
+          await _service.updateLiveSearchHeartbeat();
+        } catch (_) {}
+      });
 
       _pollTimer?.cancel();
       _pollTimer = Timer.periodic(_pollInterval, (_) {
@@ -159,6 +173,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
   Future<void> _cancel({bool silent = false}) async {
     _pollTimer?.cancel();
+    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     if (mounted) {
@@ -183,6 +198,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
     _navigatingToLobby = true;
     _pollTimer?.cancel();
+    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     if (mounted) {

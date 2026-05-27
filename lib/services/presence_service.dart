@@ -13,6 +13,9 @@ class PresenceService {
 
   Timer? _heartbeatTimer;
 
+  static const Duration heartbeatInterval = Duration(seconds: 15);
+  static const Duration onlineMaxAge = Duration(seconds: 45);
+
   String get uid => _auth.currentUser!.uid;
 
   DocumentReference<Map<String, dynamic>> _userRef(String userId) {
@@ -42,6 +45,8 @@ class PresenceService {
       status: 'searching_match',
       inMatch: false,
     );
+
+    _startHeartbeat();
   }
 
   Future<void> setInMatch() async {
@@ -49,6 +54,8 @@ class PresenceService {
       status: 'in_match',
       inMatch: true,
     );
+
+    _startHeartbeat();
   }
 
   Future<void> setAvailable() async {
@@ -56,6 +63,8 @@ class PresenceService {
       status: 'online',
       inMatch: false,
     );
+
+    _startHeartbeat();
   }
 
   Future<void> _setPresence({
@@ -79,7 +88,7 @@ class PresenceService {
     _heartbeatTimer?.cancel();
 
     _heartbeatTimer = Timer.periodic(
-      const Duration(seconds: 45),
+      heartbeatInterval,
       (_) async {
         try {
           final snap = await _userRef(uid).get();
@@ -100,6 +109,33 @@ class PresenceService {
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+  }
+
+
+
+  Future<Map<String, dynamic>?> getMyPresence() async {
+    final snap = await _userRef(uid).get();
+    final data = snap.data();
+    final presence = data?['presence'];
+
+    if (presence is Map) {
+      return Map<String, dynamic>.from(presence);
+    }
+
+    return null;
+  }
+
+  Future<void> refreshHeartbeatNow() async {
+    try {
+      final presence = await getMyPresence();
+      final status = (presence?['status'] ?? 'online').toString();
+      final inMatch = presence?['inMatch'] == true;
+
+      await _setPresence(
+        status: status,
+        inMatch: inMatch,
+      );
+    } catch (_) {}
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserPresence({
@@ -138,6 +174,6 @@ class PresenceService {
     final last = updatedAt.toDate();
     final diff = DateTime.now().difference(last);
 
-    return diff.inMinutes <= 5;
+    return diff <= onlineMaxAge;
   }
 }

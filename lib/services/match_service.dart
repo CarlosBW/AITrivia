@@ -63,6 +63,10 @@ class MatchService {
       'opponentUid': null,
       'createdAt': now,
       'updatedAt': now,
+      'lastHeartbeatAt': now,
+      'expiresAt': Timestamp.fromDate(
+        DateTime.now().add(_liveSearchMaxAge),
+      ),
     }, SetOptions(merge: true));
   }
 
@@ -85,11 +89,120 @@ class MatchService {
       'matchId': null,
       'opponentUid': null,
       'updatedAt': FieldValue.serverTimestamp(),
+      'lastHeartbeatAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  Future<void> updateLiveSearchHeartbeat() async {
+    final ref = _liveSearchRef(uid);
+    final snap = await ref.get();
+    final data = snap.data();
+
+    if (data == null || (data['status'] ?? '') != 'searching') return;
+
+    await ref.set({
+      'updatedAt': FieldValue.serverTimestamp(),
+      'lastHeartbeatAt': FieldValue.serverTimestamp(),
+      'expiresAt': Timestamp.fromDate(
+        DateTime.now().add(_liveSearchMaxAge),
+      ),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> recoverMyRealtimeStateOnAppStart() async {
+    final queueRef = _liveSearchRef(uid);
+    final userRef = _userRef(uid);
+
+    final queueSnap = await queueRef.get();
+    final userSnap = await userRef.get();
+
+    final queue = queueSnap.data();
+    final user = userSnap.data();
+    final presence = Map<String, dynamic>.from(
+      user?['presence'] as Map? ?? {},
+    );
+
+    final queueIsActive = _isLiveQueueEntryValid(queue);
+    final presenceStatus = (presence['status'] ?? '').toString();
+    final inMatch = presence['inMatch'] == true;
+
+    if (queue != null && !queueIsActive && (queue['status'] ?? '') == 'searching') {
+      await queueRef.set({
+        'status': 'stopped',
+        'matchId': null,
+        'opponentUid': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    if ((presenceStatus == 'searching_match' && !queueIsActive) ||
+        (presenceStatus == 'in_match' && !inMatch)) {
+      await userRef.set({
+        'presence': {
+          'status': 'online',
+          'inMatch': false,
+          'lastSeenAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  static const Duration _liveSearchMaxAge = Duration(seconds: 30);
+  static const Duration _presenceMaxAge = Duration(seconds: 45);
+
+  DocumentReference<Map<String, dynamic>> _userRef(String userId) =>
+      _db.collection('users').doc(userId);
+
+  bool _timestampIsRecent(
+    dynamic value, {
+    required Duration maxAge,
+  }) {
+    if (value is! Timestamp) return true;
+
+    final age = DateTime.now().difference(value.toDate());
+    return age <= maxAge;
+  }
+
+  bool _isLiveQueueEntryValid(Map<String, dynamic>? data) {
+    if (data == null) return false;
+
+    final status = (data['status'] ?? '').toString();
+    if (status != 'searching') return false;
+    if (data['matchId'] != null) return false;
+
+    return _timestampIsRecent(
+      data['lastHeartbeatAt'] ?? data['updatedAt'],
+      maxAge: _liveSearchMaxAge,
+    );
+  }
+
+  bool _isAvailableForLiveMatch(Map<String, dynamic>? userData) {
+    final presence = Map<String, dynamic>.from(
+      userData?['presence'] as Map? ?? {},
+    );
+
+    final status = (presence['status'] ?? 'offline').toString();
+    final inMatch = presence['inMatch'] == true;
+
+    if (inMatch) return false;
+
+    // Para matchmaking público exigimos que el jugador esté activamente
+    // buscando. Esto evita emparejar usuarios online que ya salieron de cola.
+    if (status != 'searching_match') return false;
+
+    return _timestampIsRecent(
+      presence['updatedAt'] ?? presence['lastSeenAt'],
+      maxAge: _presenceMaxAge,
+    );
   }
 
   /// Busca candidatos con query normal (FUERA del transaction),
   /// y luego intenta reclamar a uno con transaction.
+  ///
+  /// Además valida Presence dentro del transaction para evitar emparejar
+  /// usuarios offline, en otra partida o atrapados en una cola vieja.
   ///
   /// Retorna matchId si logró crear/reclamar match, o null si no.
   Future<String?> tryFindLiveOpponent({
@@ -101,23 +214,24 @@ class MatchService {
     String myDisplayName = 'Host',
   }) async {
     final meRef = _liveSearchRef(uid);
+    final meUserRef = _userRef(uid);
 
     final meSnap = await meRef.get();
     final meData = meSnap.data();
-    if (meData == null || (meData['status'] ?? '') != 'searching') {
+    if (!_isLiveQueueEntryValid(meData)) {
       return null;
     }
 
-    final myTotal = (meData['totalQuestions'] as int?) ?? totalQuestions;
-    final myTime = (meData['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
-    final myWinReward = (meData['winReward'] as int?) ?? winReward;
+    final myTotal = (meData?['totalQuestions'] as int?) ?? totalQuestions;
+    final myTime = (meData?['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
+    final myWinReward = (meData?['winReward'] as int?) ?? winReward;
 
     final qs = await _db
         .collection('live_search')
         .where('status', isEqualTo: 'searching')
         .where('categoryId', isEqualTo: categoryId)
         .where('difficulty', isEqualTo: difficulty)
-        .limit(8)
+        .limit(20)
         .get();
 
     final candidates = qs.docs.where((d) => d.id != uid).toList();
@@ -126,23 +240,24 @@ class MatchService {
     for (final oppDoc in candidates) {
       final oppUid = oppDoc.id;
       final oppRef = _liveSearchRef(oppUid);
+      final oppUserRef = _userRef(oppUid);
       final matchId = _db.collection('matches').doc().id;
 
       final claimed = await _db.runTransaction<bool>((tx) async {
         final meTxSnap = await tx.get(meRef);
         final oppTxSnap = await tx.get(oppRef);
+        final meUserSnap = await tx.get(meUserRef);
+        final oppUserSnap = await tx.get(oppUserRef);
 
         final meTx = meTxSnap.data();
         final oppTx = oppTxSnap.data();
+        final meUser = meUserSnap.data();
+        final oppUser = oppUserSnap.data();
 
-        if (meTx == null || oppTx == null) return false;
-
-        final meOk =
-            (meTx['status'] == 'searching') && (meTx['matchId'] == null);
-        final oppOk =
-            (oppTx['status'] == 'searching') && (oppTx['matchId'] == null);
-
-        if (!meOk || !oppOk) return false;
+        if (!_isLiveQueueEntryValid(meTx)) return false;
+        if (!_isLiveQueueEntryValid(oppTx)) return false;
+        if (!_isAvailableForLiveMatch(meUser)) return false;
+        if (!_isAvailableForLiveMatch(oppUser)) return false;
 
         tx.update(meRef, {
           'status': 'matched',
@@ -157,6 +272,26 @@ class MatchService {
           'opponentUid': uid,
           'updatedAt': FieldValue.serverTimestamp(),
         });
+
+        tx.set(meUserRef, {
+          'presence': {
+            'status': 'in_match',
+            'inMatch': true,
+            'lastSeenAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        tx.set(oppUserRef, {
+          'presence': {
+            'status': 'in_match',
+            'inMatch': true,
+            'lastSeenAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
 
         return true;
       });
@@ -800,6 +935,52 @@ class MatchService {
     });
   }
 
+
+
+  Future<void> forceFinishMatchByDisconnect({
+    required String matchId,
+    required String winnerUid,
+  }) async {
+    final ref = _db.collection('matches').doc(matchId);
+
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (data == null) return;
+
+      final status = (data['status'] ?? '').toString();
+      if (status == 'finished') return;
+
+      final hostUid = (data['hostUid'] ?? '').toString();
+      final guestUid = (data['guestUid'] ?? '').toString();
+      if (winnerUid != hostUid && winnerUid != guestUid) return;
+
+      final players = Map<String, dynamic>.from(data['players'] ?? {});
+      if (!players.containsKey(winnerUid)) return;
+
+      final winReward = ((data['winReward'] ?? 0) as num).toInt();
+
+      tx.update(ref, {
+        'status': 'finished',
+        'endedAt': FieldValue.serverTimestamp(),
+        'winnerUid': winnerUid,
+        'rewarded': true,
+        'finishReason': 'opponent_disconnected',
+        'players.$winnerUid.finished': true,
+      });
+
+      if (winReward > 0) {
+        tx.set(
+          _db.collection('users').doc(winnerUid),
+          {
+            'coins': FieldValue.increment(winReward),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+      }
+    });
+  }
   // ============================================================
   // ASYNC (diferido) 1 vs 1 (async_matches) - existente
   // ============================================================

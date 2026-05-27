@@ -50,6 +50,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _presenceInitialized = false;
   bool _leavingMatch = false;
 
+  Timer? _disconnectWatchTimer;
+  DateTime? _opponentUnavailableSince;
+  bool _disconnectCheckRunning = false;
+  bool _disconnectFinalizing = false;
+
   static const int _defaultTimePerQ = 10;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -57,6 +62,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   @override
   void initState() {
     super.initState();
+
+    _disconnectWatchTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      // La validación se ejecuta desde build con el último snapshot del match.
+    });
 
     Future.microtask(() async {
       if (_presenceInitialized) return;
@@ -72,6 +81,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _disconnectWatchTimer?.cancel();
 
     if (!_navigatedToRematch && !_leavingMatch) {
       _presenceService.setAvailable();
@@ -186,6 +196,66 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     }
   }
 
+  Future<void> _checkOpponentDisconnect({
+    required Map<String, dynamic> matchData,
+    required String myUid,
+  }) async {
+    if (_disconnectCheckRunning || _disconnectFinalizing) return;
+
+    final status = (matchData['status'] ?? '').toString();
+    if (status != 'playing') {
+      _opponentUnavailableSince = null;
+      return;
+    }
+
+    final hostUid = (matchData['hostUid'] ?? '').toString();
+    final guestUid = (matchData['guestUid'] ?? '').toString();
+    final opponentUid = myUid == hostUid ? guestUid : hostUid;
+    if (opponentUid.isEmpty || opponentUid == myUid) return;
+
+    _disconnectCheckRunning = true;
+
+    try {
+      final opponentSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(opponentUid)
+          .get();
+
+      final opponentData = opponentSnap.data();
+      final presence = Map<String, dynamic>.from(
+        opponentData?['presence'] as Map? ?? {},
+      );
+
+      final presenceStatus = (presence['status'] ?? 'offline').toString();
+      final inMatch = presence['inMatch'] == true;
+      final isFresh = _presenceService.isProbablyOnline(presence);
+      final opponentOk = isFresh && presenceStatus == 'in_match' && inMatch;
+
+      if (opponentOk) {
+        _opponentUnavailableSince = null;
+        return;
+      }
+
+      _opponentUnavailableSince ??= DateTime.now();
+
+      final unavailableFor = DateTime.now().difference(
+        _opponentUnavailableSince!,
+      );
+
+      if (unavailableFor < const Duration(seconds: 30)) return;
+
+      _disconnectFinalizing = true;
+      await _service.forceFinishMatchByDisconnect(
+        matchId: widget.matchId,
+        winnerUid: myUid,
+      );
+    } catch (_) {
+      // No romper UX si la lectura falla momentáneamente.
+    } finally {
+      _disconnectCheckRunning = false;
+    }
+  }
+
   Future<void> _finishMatch() async {
     if (_finishedSent || _finishing) return;
 
@@ -289,6 +359,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
           if (status != 'playing' && status != 'finished') {
             return const Center(child: Text('Esperando que inicie...'));
+          }
+
+          if (status == 'playing') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _checkOpponentDisconnect(matchData: data, myUid: uid);
+            });
           }
 
           final timePerQ =

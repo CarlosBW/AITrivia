@@ -42,6 +42,25 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     super.dispose();
   }
 
+
+  Future<void> _leaveBecauseMatchUnavailable(String message) async {
+    if (_navigatingToMatch) return;
+
+    _navigatingToMatch = true;
+
+    try {
+      await _presenceService.setAvailable();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -64,6 +83,17 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           }
 
           final status = (data['status'] ?? 'waiting').toString();
+
+          if ((status == 'cancelled' || status == 'expired') &&
+              !_navigatingToMatch) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _leaveBecauseMatchUnavailable(
+                'La sala ya no está disponible.',
+              );
+            });
+          }
+
           final mode = (data['mode'] ?? 'fixed').toString();
           final categoryId = (data['categoryId'] ?? 'cine').toString();
 

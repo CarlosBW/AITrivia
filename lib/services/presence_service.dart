@@ -79,12 +79,18 @@ class PresenceService {
     _heartbeatTimer?.cancel();
 
     _heartbeatTimer = Timer.periodic(
-      const Duration(minutes: 2),
+      const Duration(seconds: 45),
       (_) async {
         try {
+          final snap = await _userRef(uid).get();
+          final presence = snap.data()?['presence'] as Map<String, dynamic>?;
+
+          final status = (presence?['status'] ?? 'online').toString();
+          final inMatch = presence?['inMatch'] == true;
+
           await _setPresence(
-            status: 'online',
-            inMatch: false,
+            status: status,
+            inMatch: inMatch,
           );
         } catch (_) {}
       },

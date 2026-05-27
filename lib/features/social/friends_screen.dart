@@ -47,6 +47,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
     return avatars[avatarId] ?? '🙂';
   }
 
+  String _offlineLabel(Map<String, dynamic>? presence) {
+    final updatedAt = presence?['updatedAt'];
+
+    if (updatedAt is! Timestamp) {
+      return 'Offline';
+    }
+
+    final diff = DateTime.now().difference(
+      updatedAt.toDate(),
+    );
+
+    if (diff.inMinutes < 1) {
+      return 'Last seen just now';
+    }
+
+    if (diff.inMinutes < 60) {
+      return 'Last seen ${diff.inMinutes}m ago';
+    }
+
+    if (diff.inHours < 24) {
+      return 'Last seen ${diff.inHours}h ago';
+    }
+
+    return 'Offline';
+  }
+
   bool _matchesActiveSearch(String value) {
     if (_activeSearchQuery.isEmpty) return true;
     return value.toLowerCase().contains(_activeSearchQuery);
@@ -552,8 +578,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         builder: (context, presenceSnap) {
                           final presenceData = presenceSnap.data?.data();
 
-                          final presence =
-                              presenceData?['presence'] as Map<String, dynamic>?;
+                          final presence = presenceData?['presence']
+                              as Map<String, dynamic>?;
 
                           final online = _presenceService.isProbablyOnline(
                             presence,
@@ -566,15 +592,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           return _UserTile(
                             avatar: _avatarEmoji(avatarId),
                             title: displayName,
-                            subtitle: online ? statusText : 'Offline',
+                            subtitle:
+                                online ? statusText : _offlineLabel(presence),
                             statusColor: online
                                 ? (statusText == 'In match'
-                                    ? Colors.orange
+                                    ? Colors.orangeAccent
                                     : statusText == 'Searching match'
-                                        ? Colors.blue
-                                        : Colors.green)
+                                        ? Colors.blueAccent
+                                        : Colors.greenAccent)
                                 : Colors.grey,
-                            trailing: FilledButton(
+                            trailing: FilledButton.icon(
                               onPressed: _actionLoading
                                   ? null
                                   : () => _challengeFriend(
@@ -582,7 +609,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                         displayName: displayName,
                                         isOnline: online,
                                       ),
-                              child: const Text('Retar'),
+                              icon: Icon(
+                                online ? Icons.flash_on : Icons.schedule,
+                                size: 18,
+                              ),
+                              label: Text(
+                                online ? 'Retar' : 'Async only',
+                              ),
                             ),
                           );
                         },

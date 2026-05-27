@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -11,6 +12,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'firebase_options.dart';
 import 'app/app.dart';
 import 'services/sfx_service.dart';
+import 'services/presence_service.dart';
 
 const AndroidNotificationChannel triviaChannel = AndroidNotificationChannel(
   'triviaia_channel',
@@ -27,6 +29,42 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 }
+
+class AppLifecyclePresenceObserver extends WidgetsBindingObserver {
+  bool _started = false;
+
+  Future<void> start() async {
+    if (_started) return;
+    _started = true;
+
+    if (FirebaseAuth.instance.currentUser == null) return;
+
+    try {
+      await PresenceService.instance.setOnline();
+    } catch (e) {
+      debugPrint('Presence start failed: $e');
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (FirebaseAuth.instance.currentUser == null) return;
+
+    if (state == AppLifecycleState.resumed) {
+      PresenceService.instance.setOnline();
+      return;
+    }
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.inactive) {
+      PresenceService.instance.setOffline();
+    }
+  }
+}
+
+final AppLifecyclePresenceObserver presenceObserver =
+    AppLifecyclePresenceObserver();
 
 tz.TZDateTime _nextDailyReminderTime({
   int hour = 19,
@@ -162,6 +200,8 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  WidgetsBinding.instance.addObserver(presenceObserver);
+
   if (!kIsWeb) {
     try {
       FirebaseMessaging.onBackgroundMessage(
@@ -179,6 +219,8 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('SFX init failed: $e');
   }
+
+  unawaited(presenceObserver.start());
 
   runApp(const TriviaIAApp());
 }

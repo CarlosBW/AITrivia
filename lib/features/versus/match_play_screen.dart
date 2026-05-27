@@ -270,7 +270,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('1 vs 1'),
+        title: Text('1 vs 1 • ${widget.matchId.substring(0, 5)}'),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
@@ -305,6 +305,28 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           final players = Map<String, dynamic>.from(data['players'] ?? {});
           final me = Map<String, dynamic>.from(players[uid] ?? {});
           final myScore = ((me['score'] ?? 0) as num).toInt();
+          final hostUid = (data['hostUid'] ?? '').toString();
+          final guestUid = (data['guestUid'] ?? '').toString();
+
+          final hostData = Map<String, dynamic>.from(players[hostUid] ?? {});
+          final guestData = Map<String, dynamic>.from(players[guestUid] ?? {});
+
+          final bothFinished =
+              hostData['finished'] == true && guestData['finished'] == true;
+
+          if (status == 'playing' && bothFinished && !_finishing) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (_finishing) return;
+
+              _finishing = true;
+
+              try {
+                await _service.forceFinalizeMatch(widget.matchId);
+              } finally {
+                _finishing = false;
+              }
+            });
+          }
 
           if (status == 'finished') {
             _timer?.cancel();

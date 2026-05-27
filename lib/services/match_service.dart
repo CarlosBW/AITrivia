@@ -572,61 +572,32 @@ class MatchService {
   Future<void> finalizeMatchIfComplete(String matchId) async {
     final ref = _db.collection('matches').doc(matchId);
 
-    String? winnerUid;
-    String? hostUid;
-    String? guestUid;
-
-    int hostScore = 0;
-    int guestScore = 0;
-    int winReward = 0;
-
-    bool shouldRewardWinner = false;
-
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data();
-
       if (data == null) return;
 
-      final status = (data['status'] ?? 'waiting').toString();
+      final status = (data['status'] ?? '').toString();
       if (status == 'finished') return;
 
-      final rewarded = data['rewarded'] == true;
-      if (rewarded) return;
+      final hostUid = (data['hostUid'] ?? '').toString();
+      final guestUid = (data['guestUid'] ?? '').toString();
+      if (hostUid.isEmpty || guestUid.isEmpty) return;
 
-      hostUid = data['hostUid'] as String?;
-      guestUid = data['guestUid'] as String?;
+      final players = Map<String, dynamic>.from(data['players'] ?? {});
+      final host = Map<String, dynamic>.from(players[hostUid] ?? {});
+      final guest = Map<String, dynamic>.from(players[guestUid] ?? {});
 
-      if (hostUid == null || guestUid == null) return;
+      if (host['finished'] != true || guest['finished'] != true) return;
 
-      final players = Map<String, dynamic>.from(
-        data['players'] ?? {},
-      );
+      final hostScore = ((host['score'] ?? 0) as num).toInt();
+      final guestScore = ((guest['score'] ?? 0) as num).toInt();
 
-      final host = Map<String, dynamic>.from(
-        players[hostUid] ?? {},
-      );
+      String? winnerUid;
+      if (hostScore > guestScore) winnerUid = hostUid;
+      if (guestScore > hostScore) winnerUid = guestUid;
 
-      final guest = Map<String, dynamic>.from(
-        players[guestUid] ?? {},
-      );
-
-      if (host['finished'] != true || guest['finished'] != true) {
-        return;
-      }
-
-      hostScore = ((host['score'] ?? 0) as num).toInt();
-      guestScore = ((guest['score'] ?? 0) as num).toInt();
-
-      if (hostScore > guestScore) {
-        winnerUid = hostUid;
-      }
-
-      if (guestScore > hostScore) {
-        winnerUid = guestUid;
-      }
-
-      winReward = ((data['winReward'] ?? 0) as num).toInt();
+      final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
       tx.update(ref, {
         'status': 'finished',
@@ -636,37 +607,63 @@ class MatchService {
       });
 
       if (winnerUid != null && winReward > 0) {
-        shouldRewardWinner = true;
-
-        final winnerRef = _db.collection('users').doc(winnerUid);
-
         tx.set(
-          winnerRef,
+          _db.collection('users').doc(winnerUid),
           {
             'coins': FieldValue.increment(winReward),
+            'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );
       }
     });
+  }
 
-    // =========================================================
-    // STATS + ACHIEVEMENTS FUERA DEL TRANSACTION
-    // =========================================================
+  Future<void> forceFinalizeMatch(String matchId) async {
+    final ref = _db.collection('matches').doc(matchId);
 
-    if (hostUid != null && guestUid != null) {
-      try {
-        await _db.runTransaction((tx) async {
-          await _queuePvpStatsUpdates(
-            tx: tx,
-            playerAUid: hostUid!,
-            playerBUid: guestUid!,
-            playerAScore: hostScore,
-            playerBScore: guestScore,
-            winnerUid: winnerUid,
-          );
-        });
-      } catch (_) {}
+    final snap = await ref.get();
+    final data = snap.data();
+
+    if (data == null) return;
+
+    final status = (data['status'] ?? '').toString();
+    if (status == 'finished') return;
+
+    final hostUid = (data['hostUid'] ?? '').toString();
+    final guestUid = (data['guestUid'] ?? '').toString();
+
+    if (hostUid.isEmpty || guestUid.isEmpty) return;
+
+    final players = Map<String, dynamic>.from(data['players'] ?? {});
+    final host = Map<String, dynamic>.from(players[hostUid] ?? {});
+    final guest = Map<String, dynamic>.from(players[guestUid] ?? {});
+
+    if (host['finished'] != true || guest['finished'] != true) return;
+
+    final hostScore = ((host['score'] ?? 0) as num).toInt();
+    final guestScore = ((guest['score'] ?? 0) as num).toInt();
+
+    String? winnerUid;
+    if (hostScore > guestScore) winnerUid = hostUid;
+    if (guestScore > hostScore) winnerUid = guestUid;
+
+    final winReward = ((data['winReward'] ?? 0) as num).toInt();
+    final rewardAlreadyGiven = data['rewarded'] == true;
+
+    await ref.set({
+      'status': 'finished',
+      'endedAt': FieldValue.serverTimestamp(),
+      'winnerUid': winnerUid,
+      'rewarded': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (winnerUid != null && winReward > 0 && !rewardAlreadyGiven) {
+      await _db.collection('users').doc(winnerUid).set({
+        'coins': FieldValue.increment(winReward),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     }
   }
 

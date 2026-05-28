@@ -46,8 +46,12 @@ class MatchService {
     int timePerQuestionSec = 10,
     int winReward = 2,
     String displayName = 'Player',
+    bool ranked = false,
   }) async {
     final ref = _liveSearchRef(uid);
+    final userSnap = await _userRef(uid).get();
+    final userData = userSnap.data() ?? {};
+    final pvpRating = _safeInt(userData['pvpRating'], _defaultPvpRating);
     final now = FieldValue.serverTimestamp();
 
     await ref.set({
@@ -58,10 +62,14 @@ class MatchService {
       'totalQuestions': totalQuestions,
       'timePerQuestionSec': timePerQuestionSec,
       'winReward': winReward,
+      'ranked': ranked,
+      'matchType': ranked ? 'ranked' : 'casual',
+      'pvpRating': pvpRating,
       'status': 'searching', // searching | matched | stopped
       'matchId': null,
       'opponentUid': null,
       'createdAt': now,
+      'searchStartedAt': now,
       'updatedAt': now,
       'lastHeartbeatAt': now,
       'expiresAt': Timestamp.fromDate(
@@ -152,6 +160,9 @@ class MatchService {
   static const Duration _liveSearchMaxAge = Duration(seconds: 30);
   static const Duration _presenceMaxAge = Duration(seconds: 45);
 
+  static const int _defaultPvpRating = 1000;
+  static const int _pvpRatingKFactor = 32;
+
   DocumentReference<Map<String, dynamic>> _userRef(String userId) =>
       _db.collection('users').doc(userId);
 
@@ -163,6 +174,84 @@ class MatchService {
 
     final age = DateTime.now().difference(value.toDate());
     return age <= maxAge;
+  }
+
+  int _safeInt(dynamic value, int fallback) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  int _searchAgeSeconds(Map<String, dynamic>? data) {
+    if (data == null) return 0;
+
+    final raw = data['searchStartedAt'] ?? data['createdAt'];
+    if (raw is! Timestamp) return 0;
+
+    final age = DateTime.now().difference(raw.toDate()).inSeconds;
+    return age < 0 ? 0 : age;
+  }
+
+  int _allowedRatingGapForSearchAge(int secondsSearching) {
+    if (secondsSearching < 10) return 100;
+    if (secondsSearching < 20) return 250;
+    if (secondsSearching < 30) return 500;
+    return 999999;
+  }
+
+  bool _ratingsAreCompatible({
+    required Map<String, dynamic>? myQueue,
+    required Map<String, dynamic>? opponentQueue,
+  }) {
+    final myRating = _safeInt(myQueue?['pvpRating'], _defaultPvpRating);
+    final opponentRating = _safeInt(
+      opponentQueue?['pvpRating'],
+      _defaultPvpRating,
+    );
+
+    final longestSearchAge = max(
+      _searchAgeSeconds(myQueue),
+      _searchAgeSeconds(opponentQueue),
+    );
+
+    final allowedGap = _allowedRatingGapForSearchAge(longestSearchAge);
+    final ratingGap = (myRating - opponentRating).abs();
+
+    return ratingGap <= allowedGap;
+  }
+
+  Map<String, int> _calculateNewPvpRatings({
+    required int playerARating,
+    required int playerBRating,
+    required int playerAScore,
+    required int playerBScore,
+  }) {
+    double resultA;
+
+    if (playerAScore > playerBScore) {
+      resultA = 1.0;
+    } else if (playerBScore > playerAScore) {
+      resultA = 0.0;
+    } else {
+      resultA = 0.5;
+    }
+
+    final expectedA = 1 / (1 + pow(10, (playerBRating - playerARating) / 400));
+    final expectedB = 1 - expectedA;
+    final resultB = 1 - resultA;
+
+    final newA = (playerARating + _pvpRatingKFactor * (resultA - expectedA))
+        .round()
+        .clamp(100, 5000)
+        .toInt();
+    final newB = (playerBRating + _pvpRatingKFactor * (resultB - expectedB))
+        .round()
+        .clamp(100, 5000)
+        .toInt();
+
+    return {
+      'playerA': newA,
+      'playerB': newB,
+    };
   }
 
   bool _isLiveQueueEntryValid(Map<String, dynamic>? data) {
@@ -212,6 +301,7 @@ class MatchService {
     int timePerQuestionSec = 10,
     int winReward = 2,
     String myDisplayName = 'Host',
+    bool ranked = false,
   }) async {
     final meRef = _liveSearchRef(uid);
     final meUserRef = _userRef(uid);
@@ -231,6 +321,7 @@ class MatchService {
         .where('status', isEqualTo: 'searching')
         .where('categoryId', isEqualTo: categoryId)
         .where('difficulty', isEqualTo: difficulty)
+        .where('ranked', isEqualTo: ranked)
         .limit(20)
         .get();
 
@@ -258,6 +349,14 @@ class MatchService {
         if (!_isLiveQueueEntryValid(oppTx)) return false;
         if (!_isAvailableForLiveMatch(meUser)) return false;
         if (!_isAvailableForLiveMatch(oppUser)) return false;
+        if ((meTx?['ranked'] == true) != ranked) return false;
+        if ((oppTx?['ranked'] == true) != ranked) return false;
+        if (ranked && !_ratingsAreCompatible(
+          myQueue: meTx,
+          opponentQueue: oppTx,
+        )) {
+          return false;
+        }
 
         tx.update(meRef, {
           'status': 'matched',
@@ -313,6 +412,18 @@ class MatchService {
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'waiting',
         'mode': 'fixed',
+        'matchmakingType': ranked ? 'ranked_flexible_mmr' : 'casual_public',
+        'ranked': ranked,
+        'affectsPvpRating': ranked,
+        'hostInitialPvpRating': _safeInt(meData?['pvpRating'], _defaultPvpRating),
+        'guestInitialPvpRating': _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating),
+        'matchmakingRatingGap': (_safeInt(meData?['pvpRating'], _defaultPvpRating) -
+                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
+            .abs(),
+        'matchmakingWaitSec': max(
+          _searchAgeSeconds(meData),
+          _searchAgeSeconds(oppDoc.data()),
+        ),
         'categoryId': categoryId,
         'difficulty': difficulty,
         'aiTopic': null,
@@ -351,6 +462,49 @@ class MatchService {
     return null;
   }
 
+  Future<void> _queueCasualPvpStatsUpdates({
+    required Transaction tx,
+    required String playerAUid,
+    required String playerBUid,
+    required String? winnerUid,
+  }) async {
+    final playerARef = _db.collection('users').doc(playerAUid);
+    final playerBRef = _db.collection('users').doc(playerBUid);
+
+    if (winnerUid == null) {
+      tx.set(playerARef, {
+        'matches1v1': FieldValue.increment(1),
+        'draws1v1': FieldValue.increment(1),
+        'currentWinStreak1v1': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      tx.set(playerBRef, {
+        'matches1v1': FieldValue.increment(1),
+        'draws1v1': FieldValue.increment(1),
+        'currentWinStreak1v1': 0,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    final loserUid = winnerUid == playerAUid ? playerBUid : playerAUid;
+
+    tx.set(_db.collection('users').doc(winnerUid), {
+      'matches1v1': FieldValue.increment(1),
+      'wins1v1': FieldValue.increment(1),
+      'currentWinStreak1v1': FieldValue.increment(1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    tx.set(_db.collection('users').doc(loserUid), {
+      'matches1v1': FieldValue.increment(1),
+      'losses1v1': FieldValue.increment(1),
+      'currentWinStreak1v1': 0,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<void> _queuePvpStatsUpdates({
     required Transaction tx,
     required String playerAUid,
@@ -363,12 +517,28 @@ class MatchService {
     final playerBRef = _db.collection('users').doc(playerBUid);
 
     if (winnerUid == null) {
+      final playerASnap = await tx.get(playerARef);
+      final playerBSnap = await tx.get(playerBRef);
+      final playerAData = playerASnap.data() ?? {};
+      final playerBData = playerBSnap.data() ?? {};
+      final playerARating = _safeInt(playerAData['pvpRating'], _defaultPvpRating);
+      final playerBRating = _safeInt(playerBData['pvpRating'], _defaultPvpRating);
+
+      final newRatings = _calculateNewPvpRatings(
+        playerARating: playerARating,
+        playerBRating: playerBRating,
+        playerAScore: playerAScore,
+        playerBScore: playerBScore,
+      );
+
       tx.set(
         playerARef,
         {
           'matches1v1': FieldValue.increment(1),
           'draws1v1': FieldValue.increment(1),
           'currentWinStreak1v1': 0,
+          'pvpRating': newRatings['playerA'],
+          'pvpRatingDelta': newRatings['playerA']! - playerARating,
           'updatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -380,6 +550,8 @@ class MatchService {
           'matches1v1': FieldValue.increment(1),
           'draws1v1': FieldValue.increment(1),
           'currentWinStreak1v1': 0,
+          'pvpRating': newRatings['playerB'],
+          'pvpRatingDelta': newRatings['playerB']! - playerBRating,
           'updatedAt': FieldValue.serverTimestamp(),
         },
         SetOptions(merge: true),
@@ -398,6 +570,26 @@ class MatchService {
 
     final winnerData = winnerSnap.data() ?? {};
     final loserData = loserSnap.data() ?? {};
+
+    final winnerRating = _safeInt(winnerData['pvpRating'], _defaultPvpRating);
+    final loserRating = _safeInt(loserData['pvpRating'], _defaultPvpRating);
+
+    final playerARating = winnerUid == playerAUid ? winnerRating : loserRating;
+    final playerBRating = winnerUid == playerBUid ? winnerRating : loserRating;
+
+    final newRatings = _calculateNewPvpRatings(
+      playerARating: playerARating,
+      playerBRating: playerBRating,
+      playerAScore: playerAScore,
+      playerBScore: playerBScore,
+    );
+
+    final newWinnerRating = winnerUid == playerAUid
+        ? newRatings['playerA']!
+        : newRatings['playerB']!;
+    final newLoserRating = loserUid == playerAUid
+        ? newRatings['playerA']!
+        : newRatings['playerB']!;
 
     final currentWinnerStreak =
         ((winnerData['currentWinStreak1v1'] ?? 0) as num).toInt();
@@ -422,6 +614,8 @@ class MatchService {
         'wins1v1': FieldValue.increment(1),
         'currentWinStreak1v1': newCurrentWinnerStreak,
         'bestWinStreak1v1': newBestWinnerStreak,
+        'pvpRating': newWinnerRating,
+        'pvpRatingDelta': newWinnerRating - winnerRating,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -433,6 +627,8 @@ class MatchService {
         'matches1v1': FieldValue.increment(1),
         'losses1v1': FieldValue.increment(1),
         'currentWinStreak1v1': 0,
+        'pvpRating': newLoserRating,
+        'pvpRatingDelta': newLoserRating - loserRating,
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -470,6 +666,7 @@ class MatchService {
     int winReward = 2,
     int difficulty = 1,
     String displayName = 'Host',
+    bool ranked = false,
   }) async {
     final matchRef = _db.collection('matches').doc();
 
@@ -485,6 +682,9 @@ class MatchService {
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'waiting',
       'mode': 'fixed',
+      'matchType': ranked ? 'ranked_private' : 'private',
+      'ranked': ranked,
+      'affectsPvpRating': ranked,
       'categoryId': categoryId,
       'difficulty': difficulty,
       'aiTopic': null,
@@ -733,6 +933,26 @@ class MatchService {
       if (guestScore > hostScore) winnerUid = guestUid;
 
       final winReward = ((data['winReward'] ?? 0) as num).toInt();
+
+      final affectsPvpRating = data['affectsPvpRating'] == true || data['ranked'] == true;
+
+      if (affectsPvpRating) {
+        await _queuePvpStatsUpdates(
+          tx: tx,
+          playerAUid: hostUid,
+          playerBUid: guestUid,
+          playerAScore: hostScore,
+          playerBScore: guestScore,
+          winnerUid: winnerUid,
+        );
+      } else {
+        await _queueCasualPvpStatsUpdates(
+          tx: tx,
+          playerAUid: hostUid,
+          playerBUid: guestUid,
+          winnerUid: winnerUid,
+        );
+      }
 
       tx.update(ref, {
         'status': 'finished',
@@ -1181,6 +1401,15 @@ class MatchService {
 
       final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
+      await _queuePvpStatsUpdates(
+        tx: tx,
+        playerAUid: challengerUid,
+        playerBUid: challengedUid,
+        playerAScore: challengerScore,
+        playerBScore: challengedScore,
+        winnerUid: winnerUid,
+      );
+
       tx.update(ref, {
         'status': 'completed',
         'endedAt': FieldValue.serverTimestamp(),
@@ -1190,15 +1419,6 @@ class MatchService {
         'challengedScore': challengedScore,
         'resultNotificationsSent': false,
       });
-
-      await _queuePvpStatsUpdates(
-        tx: tx,
-        playerAUid: challengerUid,
-        playerBUid: challengedUid,
-        playerAScore: challengerScore,
-        playerBScore: challengedScore,
-        winnerUid: winnerUid,
-      );
 
       if (winnerUid != null && winReward > 0) {
         final winnerRef = _db.collection('users').doc(winnerUid);

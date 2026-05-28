@@ -28,6 +28,7 @@ Future<void> bootstrapUserDoc(String uid) async {
         'wrongAnswers': 0,
 
         // PvP stats
+        'pvpRating': 1000,
         'wins1v1': 0,
         'losses1v1': 0,
         'draws1v1': 0,
@@ -93,6 +94,7 @@ Future<void> bootstrapUserDoc(String uid) async {
         'wrongAnswers': data['wrongAnswers'] ?? 0,
 
         // PvP stats
+        'pvpRating': data['pvpRating'] ?? 1000,
         'wins1v1': data['wins1v1'] ?? 0,
         'losses1v1': data['losses1v1'] ?? 0,
         'draws1v1': data['draws1v1'] ?? 0,

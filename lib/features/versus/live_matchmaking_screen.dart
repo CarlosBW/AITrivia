@@ -14,6 +14,7 @@ class LiveMatchmakingScreen extends StatefulWidget {
   final int totalQuestions;
   final int winReward;
   final String displayName;
+  final bool ranked;
 
   const LiveMatchmakingScreen({
     super.key,
@@ -23,6 +24,7 @@ class LiveMatchmakingScreen extends StatefulWidget {
     this.totalQuestions = 10,
     this.winReward = 2,
     this.displayName = 'Player',
+    this.ranked = false,
   });
 
   @override
@@ -35,7 +37,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   final _presenceService = PresenceService.instance;
 
   static const Duration _pollInterval = Duration(seconds: 5);
-  static const Duration _queueHeartbeatInterval = Duration(seconds: 10);
   static const Duration _searchTimeout = Duration(seconds: 90);
 
   bool _searching = false;
@@ -44,7 +45,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   bool _navigatingToLobby = false;
 
   Timer? _pollTimer;
-  Timer? _queueHeartbeatTimer;
   Timer? _timeoutTimer;
   String? _error;
 
@@ -67,7 +67,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
-    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     // No se espera el Future para evitar bloquear dispose.
@@ -98,20 +97,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         timePerQuestionSec: widget.timePerQuestionSec,
         winReward: widget.winReward,
         displayName: widget.displayName,
+        ranked: widget.ranked,
       );
 
-      await _service.updateLiveSearchHeartbeat();
       await _tryFindOpponentOnce();
-
-      _queueHeartbeatTimer?.cancel();
-      _queueHeartbeatTimer = Timer.periodic(_queueHeartbeatInterval, (_) async {
-        if (!_searching || _navigatingToLobby) return;
-
-        try {
-          await _presenceService.refreshHeartbeatNow();
-          await _service.updateLiveSearchHeartbeat();
-        } catch (_) {}
-      });
 
       _pollTimer?.cancel();
       _pollTimer = Timer.periodic(_pollInterval, (_) {
@@ -161,6 +150,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         timePerQuestionSec: widget.timePerQuestionSec,
         winReward: widget.winReward,
         myDisplayName: widget.displayName,
+        ranked: widget.ranked,
       );
     } catch (e) {
       if (mounted) {
@@ -173,7 +163,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
   Future<void> _cancel({bool silent = false}) async {
     _pollTimer?.cancel();
-    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     if (mounted) {
@@ -198,7 +187,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
     _navigatingToLobby = true;
     _pollTimer?.cancel();
-    _queueHeartbeatTimer?.cancel();
     _timeoutTimer?.cancel();
 
     if (mounted) {
@@ -225,7 +213,9 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     final queueStream = _service.watchMyLiveQueue();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Buscar jugadores')),
+      appBar: AppBar(
+        title: Text(widget.ranked ? 'Ranked Matchmaking' : 'Casual Matchmaking'),
+      ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: queueStream,
         builder: (context, snap) {
@@ -245,6 +235,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Tipo: ${widget.ranked ? 'Ranked' : 'Casual'}'),
                 Text('Categoría: ${widget.categoryId}'),
                 Text('Dificultad: ${widget.difficulty}'),
                 Text('Preguntas: ${widget.totalQuestions}'),
@@ -292,9 +283,11 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Esto puede tardar unos segundos.',
-                    style: TextStyle(color: Colors.black54),
+                  Text(
+                    widget.ranked
+                        ? 'Primero busca rivales cercanos a tu MMR; si tarda, amplía el rango automáticamente.'
+                        : 'Casual no afecta tu MMR. Se prioriza encontrar rival rápido.',
+                    style: const TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(

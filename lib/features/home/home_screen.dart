@@ -525,8 +525,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     label: Text(
                       _hasPendingSeasonRewards
-                          ? 'Weekly League • Reward!'
-                          : 'Weekly League',
+                          ? 'Weekly Challenge • Reward!'
+                          : 'Weekly Challenge',
                     ),
                   ),
                 ),

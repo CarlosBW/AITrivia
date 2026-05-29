@@ -49,7 +49,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
         SnackBar(
           content: Text(
             result.claimedCount == 0
-                ? 'No pending rewards.'
+                ? 'No pending weekly rewards.'
                 : 'Claimed ${result.claimedCount} reward(s): +${result.totalCoins} coins!',
           ),
         ),
@@ -71,7 +71,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Season Rewards'),
+        title: const Text('Weekly Rewards'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -106,7 +106,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
           const SizedBox(height: 22),
 
           const Text(
-            'Season History',
+            'Weekly Rewards History',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
                   final rewardCoins =
                       ((data['rewardCoins'] ?? 0) as num).toInt();
                   final rewardMessage =
-                      (data['rewardMessage'] ?? 'Reward claimed').toString();
+                      (data['rewardMessage'] ?? 'Weekly reward claimed').toString();
 
                   return _HistoryTile(
                     seasonId: seasonId,
@@ -192,7 +192,7 @@ class _LoadingCard extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           SizedBox(width: 12),
-          Text('Checking pending rewards...'),
+          Text('Checking pending weekly rewards...'),
         ],
       ),
     );
@@ -216,7 +216,7 @@ class _NoPendingRewardsCard extends StatelessWidget {
           Icon(Icons.verified, size: 38),
           SizedBox(height: 10),
           Text(
-            'No pending rewards',
+            'No pending weekly rewards',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -224,7 +224,7 @@ class _NoPendingRewardsCard extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Keep playing weekly leagues to earn season rewards.',
+            'Keep playing Weekly Challenge to earn weekly rewards.',
             textAlign: TextAlign.center,
           ),
         ],

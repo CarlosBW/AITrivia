@@ -104,7 +104,14 @@ class PvpLeagueService {
   PvpLeagueInfo leagueForRating(int rating) {
     return leagues.firstWhere(
       (league) => league.contains(rating),
-      orElse: () => leagues.last,
+      orElse: () => rating < leagues.first.minRating ? leagues.first : leagues.last,
+    );
+  }
+
+  PvpLeagueInfo leagueById(String id) {
+    return leagues.firstWhere(
+      (league) => league.id == id,
+      orElse: () => leagues.first,
     );
   }
 
@@ -142,6 +149,19 @@ class PvpLeagueService {
       label: 'Cualquier rival disponible',
       description: 'Ahora se prioriza que puedas jugar sin quedarte esperando.',
     );
+  }
+
+  int allowedRatingGapForSearchSeconds(int secondsSearching) {
+    return windowForSearchSeconds(secondsSearching).allowedRatingGap;
+  }
+
+  String searchMessageForSeconds(int secondsSearching) {
+    return windowForSearchSeconds(secondsSearching).description;
+  }
+
+  String leagueLabelForRating(int rating) {
+    final league = leagueForRating(rating);
+    return '${league.emoji} ${league.name} League';
   }
 
   String formatDelta(int delta) => delta > 0 ? '+$delta' : '$delta';

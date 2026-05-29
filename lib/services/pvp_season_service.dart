@@ -5,10 +5,12 @@ import 'pvp_league_service.dart';
 class PvpSeasonRewardInfo {
   final int coins;
   final String label;
+  final String description;
 
   const PvpSeasonRewardInfo({
     required this.coins,
     required this.label,
+    required this.description,
   });
 }
 
@@ -37,8 +39,8 @@ class PvpSeasonService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Monthly client-side season id. Example: pvp_2026_05.
-  /// This keeps the first version simple and avoids needing Cloud Functions.
+  /// Monthly season id. Example: pvp_2026_05.
+  /// This version is client-side so it works without Cloud Functions.
   PvpSeasonInfo currentSeason() {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, 1);
@@ -57,33 +59,39 @@ class PvpSeasonService {
       case 'master':
         return const PvpSeasonRewardInfo(
           coins: 2000,
-          label: 'Master season reward',
+          label: 'Master reward',
+          description: 'Top-tier ranked season reward.',
         );
       case 'diamond':
         return const PvpSeasonRewardInfo(
           coins: 1200,
-          label: 'Diamond season reward',
+          label: 'Diamond reward',
+          description: 'High competitive season reward.',
         );
       case 'platinum':
         return const PvpSeasonRewardInfo(
           coins: 750,
-          label: 'Platinum season reward',
+          label: 'Platinum reward',
+          description: 'Advanced ranked season reward.',
         );
       case 'gold':
         return const PvpSeasonRewardInfo(
           coins: 450,
-          label: 'Gold season reward',
+          label: 'Gold reward',
+          description: 'Strong ranked season reward.',
         );
       case 'silver':
         return const PvpSeasonRewardInfo(
           coins: 250,
-          label: 'Silver season reward',
+          label: 'Silver reward',
+          description: 'Progression ranked season reward.',
         );
       case 'bronze':
       default:
         return const PvpSeasonRewardInfo(
           coins: 100,
-          label: 'Bronze season reward',
+          label: 'Bronze reward',
+          description: 'Entry ranked season reward.',
         );
     }
   }

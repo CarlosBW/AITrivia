@@ -339,6 +339,12 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                         16,
                       ),
                       children: [
+                        _RewardsCard(
+                          league: league,
+                        ),
+
+                        const SizedBox(height: 12),
+
                         FutureBuilder<bool>(
                           future: _hasPendingRewardsFuture,
                           builder: (context, rewardsSnap) {
@@ -351,8 +357,26 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                                 rewardsSnap.data == true;
 
                             if (!hasPending) {
-                              return _RewardsCard(
-                                league: league,
+                              return _RewardsHistoryButton(
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const SeasonRewardsScreen(),
+                                    ),
+                                  );
+
+                                  if (!context.mounted) return;
+
+                                  setState(() {
+                                    _hasPendingRewardsFuture =
+                                        _seasonService
+                                            .hasPendingSeasonRewards(
+                                      uid: uid,
+                                    );
+                                  });
+                                },
                               );
                             }
 
@@ -380,43 +404,6 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                               },
                             );
                           },
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SeasonRewardsScreen(),
-                                ),
-                              );
-
-                              if (!context.mounted) return;
-
-                              setState(() {
-                                _hasPendingRewardsFuture =
-                                    _seasonService
-                                        .hasPendingSeasonRewards(
-                                  uid: uid,
-                                );
-                              });
-                            },
-                            icon:
-                                const Icon(Icons.workspace_premium),
-                            label:
-                                const Text('Weekly Rewards'),
-                          ),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        _RewardsCard(
-                          league: league,
                         ),
                       ],
                     ),
@@ -512,6 +499,27 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
           SizedBox(width: 12),
           Text('Checking pending weekly rewards...'),
         ],
+      ),
+    );
+  }
+}
+
+
+class _RewardsHistoryButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _RewardsHistoryButton({
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.workspace_premium),
+        label: const Text('Reward history'),
       ),
     );
   }

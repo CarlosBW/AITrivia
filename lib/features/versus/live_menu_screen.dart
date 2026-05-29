@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/pvp_league_service.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
 import 'live_matchmaking_screen.dart';
+import 'pvp_season_screen.dart';
 
 class LiveMenuScreen extends StatefulWidget {
   const LiveMenuScreen({super.key});
@@ -24,14 +26,6 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
   ];
 
   String _selectedCategoryId = 'cine';
-
-  String _tierForRating(int rating) {
-    if (rating >= 1800) return 'Diamond';
-    if (rating >= 1500) return 'Platinum';
-    if (rating >= 1300) return 'Gold';
-    if (rating >= 1100) return 'Silver';
-    return 'Bronze';
-  }
 
   void _goMatchmaking({required bool ranked}) {
     if (_useAi) {
@@ -55,6 +49,69 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
     );
   }
 
+  Widget _buildPvpLeagueCard({
+    required int rating,
+    required int delta,
+  }) {
+    final leagueService = PvpLeagueService.instance;
+    final league = leagueService.leagueForRating(rating);
+    final color = Color(league.colorValue);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: color.withOpacity(0.28),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            league.emoji,
+            style: const TextStyle(fontSize: 36),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${league.name} League',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('$rating MMR'),
+                const SizedBox(height: 4),
+                const Text(
+                  'Ranked intenta emparejarte primero con rivales cercanos y luego amplía la búsqueda.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (delta != 0)
+            Text(
+              delta > 0 ? '+$delta' : '$delta',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: delta > 0 ? Colors.green : Colors.red,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -69,50 +126,12 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             stream: userRef.snapshots(),
             builder: (context, snap) {
               final data = snap.data?.data() ?? {};
-              final rating = ((data['pvpRating'] ?? 1000) as num).toInt();
+              final rating = ((data['pvpRating'] ?? PvpLeagueService.defaultRating) as num).toInt();
               final delta = ((data['pvpRatingDelta'] ?? 0) as num).toInt();
-              final tier = _tierForRating(rating);
 
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.deepPurple.withOpacity(0.22),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shield, size: 38),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$tier League',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('$rating MMR'),
-                        ],
-                      ),
-                    ),
-                    if (delta != 0)
-                      Text(
-                        delta > 0 ? '+$delta' : '$delta',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: delta > 0 ? Colors.green : Colors.red,
-                        ),
-                      ),
-                  ],
-                ),
+              return _buildPvpLeagueCard(
+                rating: rating,
+                delta: delta,
               );
             },
           ),
@@ -188,6 +207,28 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             onPressed: () => _goMatchmaking(ranked: false),
             icon: const Icon(Icons.sports_esports),
             label: const Text('Casual Match'),
+          ),
+
+
+          const SizedBox(height: 22),
+
+          const Text(
+            'Temporada PvP',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+
+          FilledButton.tonalIcon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PvpSeasonScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.leaderboard),
+            label: const Text('Ver temporada y ranking PvP'),
           ),
 
           const SizedBox(height: 22),

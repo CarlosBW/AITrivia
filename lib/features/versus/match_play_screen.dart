@@ -614,6 +614,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     );
   }
 
+  int? _safeIntOrNull(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
   Widget _buildWaitingFinish(
     BuildContext context,
     Map<String, dynamic> match,
@@ -683,6 +688,30 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     final winnerUid = match['winnerUid'] as String?;
     final winReward = ((match['winReward'] ?? 0) as num).toInt();
+    final affectsPvpRating =
+        match['affectsPvpRating'] == true || match['ranked'] == true;
+
+    final ratingResults = Map<String, dynamic>.from(
+      match['ratingResults'] as Map? ?? {},
+    );
+    final myRatingResult = Map<String, dynamic>.from(
+      ratingResults[uid] as Map? ?? {},
+    );
+
+    final oldRating = _safeIntOrNull(myRatingResult['oldRating']);
+    final newRating = _safeIntOrNull(myRatingResult['newRating']);
+    final ratingDelta = _safeIntOrNull(myRatingResult['ratingDelta']);
+    final xpEarned = _safeIntOrNull(myRatingResult['xpEarned']);
+    final rankedCoinsEarned = _safeIntOrNull(myRatingResult['coinsEarned']);
+    final winStreak = _safeIntOrNull(myRatingResult['winStreak']);
+    final oldLeagueName = (myRatingResult['oldLeagueName'] ??
+            myRatingResult['oldLeague'] ??
+            '')
+        .toString();
+    final newLeagueName = (myRatingResult['newLeagueName'] ??
+            myRatingResult['newLeague'] ??
+            '')
+        .toString();
 
     final rematchRequests =
         Map<String, dynamic>.from(match['rematchRequests'] ?? {});
@@ -712,12 +741,16 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     } else if (winnerUid == uid) {
       state = PvpResultState.victory;
       title = '¡Ganaste!';
-      subtitle = 'Buen duelo. Sumaste una victoria 1 vs 1.';
-      coinsEarned = winReward;
+      subtitle = affectsPvpRating
+          ? 'Buen duelo. Tu rating competitivo fue actualizado.'
+          : 'Buen duelo. Sumaste una victoria 1 vs 1.';
+      coinsEarned = affectsPvpRating ? (rankedCoinsEarned ?? winReward) : winReward;
     } else {
       state = PvpResultState.defeat;
       title = 'Perdiste';
-      subtitle = 'Estuviste cerca. Intenta una revancha.';
+      subtitle = affectsPvpRating
+          ? 'Estuviste cerca. Tu rating competitivo fue actualizado.'
+          : 'Estuviste cerca. Intenta una revancha.';
     }
 
     String secondaryText = 'Revancha';
@@ -739,6 +772,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       myScore: myScore,
       opponentScore: opponentScore,
       coinsEarned: coinsEarned > 0 ? coinsEarned : null,
+      xpEarned: xpEarned,
+      oldRating: oldRating,
+      newRating: newRating,
+      ratingDelta: ratingDelta,
+      winStreak: winStreak,
+      oldLeagueName: oldLeagueName.isEmpty ? null : oldLeagueName,
+      newLeagueName: newLeagueName.isEmpty ? null : newLeagueName,
       primaryButtonText: 'Volver',
       onPrimaryPressed: () async {
         _leavingMatch = true;

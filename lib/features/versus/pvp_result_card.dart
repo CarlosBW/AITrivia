@@ -20,6 +20,13 @@ class PvpResultCard extends StatelessWidget {
   final int? coinsEarned;
   final int? xpEarned;
 
+  final int? oldRating;
+  final int? newRating;
+  final int? ratingDelta;
+  final int? winStreak;
+  final String? oldLeagueName;
+  final String? newLeagueName;
+
   final String primaryButtonText;
   final VoidCallback onPrimaryPressed;
 
@@ -37,6 +44,12 @@ class PvpResultCard extends StatelessWidget {
     this.opponentScore,
     this.coinsEarned,
     this.xpEarned,
+    this.oldRating,
+    this.newRating,
+    this.ratingDelta,
+    this.winStreak,
+    this.oldLeagueName,
+    this.newLeagueName,
     required this.primaryButtonText,
     required this.onPrimaryPressed,
     this.secondaryButtonText,
@@ -72,6 +85,8 @@ class PvpResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasOpponentScore = opponentScore != null;
+    final hasRatingChange =
+        oldRating != null && newRating != null && ratingDelta != null;
 
     return Center(
       child: SingleChildScrollView(
@@ -91,7 +106,6 @@ class PvpResultCard extends StatelessWidget {
               child: Icon(_icon, size: 48, color: _color),
             ),
             const SizedBox(height: 18),
-
             Text(
               title,
               textAlign: TextAlign.center,
@@ -101,7 +115,6 @@ class PvpResultCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-
             Text(
               subtitle,
               textAlign: TextAlign.center,
@@ -111,7 +124,6 @@ class PvpResultCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -130,7 +142,6 @@ class PvpResultCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   Row(
                     children: [
                       Expanded(
@@ -157,7 +168,6 @@ class PvpResultCard extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   if (coinsEarned != null || xpEarned != null) ...[
                     const SizedBox(height: 18),
                     Row(
@@ -183,12 +193,21 @@ class PvpResultCard extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (hasRatingChange) ...[
+                    const SizedBox(height: 18),
+                    _RatingChangeCard(
+                      oldRating: oldRating!,
+                      newRating: newRating!,
+                      ratingDelta: ratingDelta!,
+                      winStreak: winStreak,
+                      oldLeagueName: oldLeagueName,
+                      newLeagueName: newLeagueName,
+                    ),
+                  ],
                 ],
               ),
             ),
-
             const SizedBox(height: 26),
-
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -196,7 +215,6 @@ class PvpResultCard extends StatelessWidget {
                 child: Text(primaryButtonText),
               ),
             ),
-
             if (secondaryButtonText != null && onSecondaryPressed != null) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -284,6 +302,110 @@ class _RewardMiniCard extends StatelessWidget {
               fontSize: 17,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingChangeCard extends StatelessWidget {
+  final int oldRating;
+  final int newRating;
+  final int ratingDelta;
+  final int? winStreak;
+  final String? oldLeagueName;
+  final String? newLeagueName;
+
+  const _RatingChangeCard({
+    required this.oldRating,
+    required this.newRating,
+    required this.ratingDelta,
+    this.winStreak,
+    this.oldLeagueName,
+    this.newLeagueName,
+  });
+
+  String get _deltaText {
+    if (ratingDelta > 0) return '+$ratingDelta';
+    return '$ratingDelta';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = ratingDelta > 0;
+    final neutral = ratingDelta == 0;
+    final color = neutral
+        ? Colors.blueGrey
+        : positive
+            ? Colors.green
+            : Colors.redAccent;
+
+    final hasLeague = (oldLeagueName != null && oldLeagueName!.isNotEmpty) ||
+        (newLeagueName != null && newLeagueName!.isNotEmpty);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(positive ? Icons.trending_up : Icons.trending_down, color: color),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Ranked rating',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              Text(
+                _deltaText,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$oldRating MMR'),
+              const Icon(Icons.arrow_forward, size: 18),
+              Text(
+                '$newRating MMR',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (hasLeague) ...[
+            const SizedBox(height: 8),
+            Text(
+              oldLeagueName != null &&
+                      newLeagueName != null &&
+                      oldLeagueName != newLeagueName
+                  ? '$oldLeagueName → $newLeagueName'
+                  : (newLeagueName ?? oldLeagueName ?? ''),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (winStreak != null && winStreak! > 1) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Racha actual: $winStreak victorias',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
         ],
       ),
     );

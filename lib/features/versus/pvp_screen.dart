@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'play_with_friends_screen.dart';
 import 'find_opponent_screen.dart';
 import 'active_matches_screen.dart';
+import 'pvp_season_screen.dart';
 
 class PvPScreen extends StatelessWidget {
   const PvPScreen({super.key});
@@ -49,7 +50,9 @@ class PvPScreen extends StatelessWidget {
 
               return _PvpCard(
                 icon: Icons.flash_on,
-                title: hasPendingTurn ? 'Active Matches • Your Turn!' : 'Active Matches',
+                title: hasPendingTurn
+                    ? 'Active Matches • Your Turn!'
+                    : 'Active Matches',
                 subtitle: hasPendingTurn
                     ? 'You have pending matches waiting for your move.'
                     : 'Pending turns, live games, and recent results.',
@@ -62,6 +65,21 @@ class PvPScreen extends StatelessWidget {
                     ),
                   );
                 },
+              );
+            },
+          ),
+
+          _PvpCard(
+            icon: Icons.workspace_premium,
+            title: 'PvP Season',
+            subtitle:
+                'View your ranked league, season progress, leaderboard and rewards.',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PvpSeasonScreen(),
+                ),
               );
             },
           ),
@@ -135,9 +153,7 @@ class _PvpCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             CircleAvatar(
-              backgroundColor: alert
-                  ? Colors.redAccent.withOpacity(0.18)
-                  : null,
+              backgroundColor: alert ? Colors.redAccent.withOpacity(0.18) : null,
               child: Icon(
                 icon,
                 color: alert ? Colors.redAccent : null,

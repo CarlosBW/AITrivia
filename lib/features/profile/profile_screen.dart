@@ -6,6 +6,7 @@ import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
 import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
+import '../../services/pvp_league_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -402,6 +403,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     final maxDailyStreak =
         ((data['maxDailyStreak'] ?? dailyStreak) as num).toInt();
     final bestDailyScore = ((data['bestDailyScore'] ?? 0) as num).toInt();
+    final pvpRating = ((data['pvpRating'] ?? 1000) as num).toInt();
+    final pvpRatingDelta = ((data['pvpRatingDelta'] ?? 0) as num).toInt();
+    final pvpLeague = PvpLeagueService.instance.leagueForRating(pvpRating);
+    final pvpLeagueProgress = pvpLeague.progressFor(pvpRating);
+
     final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
     final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();
     final draws1v1 = ((data['draws1v1'] ?? 0) as num).toInt();
@@ -612,6 +618,67 @@ class _ProfileScreenState extends State<ProfileScreen>
                 value: '$bestDailyScore',
               ),
               const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Color(pvpLeague.colorValue).withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Color(pvpLeague.colorValue).withOpacity(0.35),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          pvpLeague.emoji,
+                          style: const TextStyle(fontSize: 30),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${pvpLeague.name} PvP League',
+                                style: TextStyle(
+                                  color: Color(pvpLeague.colorValue),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                pvpRatingDelta == 0
+                                    ? '$pvpRating MMR'
+                                    : '$pvpRating MMR (${pvpRatingDelta > 0 ? '+' : ''}$pvpRatingDelta)',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: pvpLeagueProgress,
+                        minHeight: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.',
+                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text(
                 '1 vs 1 Stats',
                 style: TextStyle(
@@ -620,6 +687,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(height: 10),
+              _WideStatTile(
+                icon: Icons.leaderboard,
+                label: 'Ranked MMR',
+                value: pvpRatingDelta == 0
+                    ? '$pvpRating'
+                    : '$pvpRating (${pvpRatingDelta > 0 ? '+' : ''}$pvpRatingDelta)',
+              ),
               _WideStatTile(
                 icon: Icons.emoji_events,
                 label: 'Victories',
@@ -655,6 +729,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                 label: 'Best streak',
                 value: '$bestWinStreak1v1',
               ),
+              const SizedBox(height: 20),
+              const Text(
+                'Recent PvP matches',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _RecentMatchHistory(uid: uid),
               const SizedBox(height: 18),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -688,6 +772,159 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
         ],
       ),
+    );
+  }
+}
+
+
+class _RecentMatchHistory extends StatelessWidget {
+  final String uid;
+
+  const _RecentMatchHistory({required this.uid});
+
+  String _resultText(String result) {
+    switch (result) {
+      case 'victory':
+        return 'Victory';
+      case 'defeat':
+        return 'Defeat';
+      case 'draw':
+        return 'Draw';
+      default:
+        return 'Match';
+    }
+  }
+
+  IconData _resultIcon(String result) {
+    switch (result) {
+      case 'victory':
+        return Icons.emoji_events;
+      case 'defeat':
+        return Icons.close;
+      case 'draw':
+        return Icons.handshake;
+      default:
+        return Icons.sports_esports;
+    }
+  }
+
+  Color _resultColor(String result) {
+    switch (result) {
+      case 'victory':
+        return Colors.green;
+      case 'defeat':
+        return Colors.redAccent;
+      case 'draw':
+        return Colors.blueGrey;
+      default:
+        return Colors.black54;
+    }
+  }
+
+  String _deltaText(dynamic value) {
+    final delta = value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
+    if (delta == null) return '';
+    if (delta > 0) return '+$delta MMR';
+    return '$delta MMR';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('match_history')
+        .orderBy('createdAt', descending: true)
+        .limit(10);
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: query.snapshots(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Text(
+            'Error loading match history:\n${snap.error}',
+            textAlign: TextAlign.center,
+          );
+        }
+
+        if (!snap.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(12),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final docs = snap.data!.docs;
+
+        if (docs.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Text(
+              'No PvP matches yet.',
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data();
+            final result = (data['result'] ?? 'match').toString();
+            final opponent = (data['opponentName'] ?? 'Rival').toString();
+            final myScore = ((data['myScore'] ?? 0) as num).toInt();
+            final opponentScore = ((data['opponentScore'] ?? 0) as num).toInt();
+            final ranked = data['ranked'] == true;
+            final deltaText = ranked ? _deltaText(data['ratingDelta']) : '';
+            final color = _resultColor(result);
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.25)),
+              ),
+              child: Row(
+                children: [
+                  Icon(_resultIcon(result), color: color),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_resultText(result)} vs $opponent',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ranked ? 'Ranked • $myScore-$opponentScore' : 'Casual • $myScore-$opponentScore',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (deltaText.isNotEmpty)
+                    Text(
+                      deltaText,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }

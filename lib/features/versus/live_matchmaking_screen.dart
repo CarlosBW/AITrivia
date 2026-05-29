@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
+import '../../services/pvp_league_service.dart';
 import 'match_lobby_screen.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
@@ -77,6 +78,55 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     }
 
     super.dispose();
+  }
+
+
+  int _searchAgeSeconds(Map<String, dynamic>? data) {
+    final raw = data?['searchStartedAt'] ?? data?['createdAt'];
+    if (raw is! Timestamp) return 0;
+
+    final age = DateTime.now().difference(raw.toDate()).inSeconds;
+    return age < 0 ? 0 : age;
+  }
+
+  Widget _rankedSearchWindowCard(Map<String, dynamic>? data) {
+    final rating = ((data?['pvpRating'] ?? PvpLeagueService.defaultRating) as num).toInt();
+    final league = PvpLeagueService.instance.leagueForRating(rating);
+    final seconds = _searchAgeSeconds(data);
+    final window = PvpLeagueService.instance.windowForSearchSeconds(seconds);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Color(league.colorValue).withOpacity(0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(league.colorValue).withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${league.emoji} ${league.name} • $rating MMR',
+            style: TextStyle(
+              color: Color(league.colorValue),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            window.label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            window.description,
+            style: const TextStyle(color: Colors.black54),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _start() async {
@@ -241,6 +291,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                 Text('Preguntas: ${widget.totalQuestions}'),
                 Text('Tiempo/Pregunta: ${widget.timePerQuestionSec}s'),
                 const SizedBox(height: 16),
+                if (widget.ranked) ...[
+                  _rankedSearchWindowCard(data),
+                  const SizedBox(height: 16),
+                ],
                 if (_error != null) ...[
                   Text(
                     _error!,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/pvp_league_service.dart';
 
 Future<void> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
@@ -11,6 +12,8 @@ Future<void> bootstrapUserDoc(String uid) async {
     final defaultUsernameLower = defaultUsername.toLowerCase();
 
     if (!snap.exists) {
+      final defaultPvpLeague = PvpLeagueService.instance.leagueForRating(1000);
+
       tx.set(ref, {
         'coins': 0,
         'xp': 0,
@@ -29,6 +32,12 @@ Future<void> bootstrapUserDoc(String uid) async {
 
         // PvP stats
         'pvpRating': 1000,
+        'pvpRatingDelta': 0,
+        'pvpLeagueId': defaultPvpLeague.id,
+        'pvpLeagueName': defaultPvpLeague.name,
+        'pvpAbandonCount': 0,
+        'pvpCooldownUntil': null,
+        'lastPvpPenaltyReason': null,
         'wins1v1': 0,
         'losses1v1': 0,
         'draws1v1': 0,
@@ -54,6 +63,10 @@ Future<void> bootstrapUserDoc(String uid) async {
     }
 
     final data = snap.data() ?? {};
+    final currentPvpRating = data['pvpRating'] is num
+        ? (data['pvpRating'] as num).toInt()
+        : int.tryParse(data['pvpRating']?.toString() ?? '') ?? 1000;
+    final currentPvpLeague = PvpLeagueService.instance.leagueForRating(currentPvpRating);
 
     final username = (data['username'] ??
             data['displayName'] ??
@@ -94,7 +107,13 @@ Future<void> bootstrapUserDoc(String uid) async {
         'wrongAnswers': data['wrongAnswers'] ?? 0,
 
         // PvP stats
-        'pvpRating': data['pvpRating'] ?? 1000,
+        'pvpRating': currentPvpRating,
+        'pvpRatingDelta': data['pvpRatingDelta'] ?? 0,
+        'pvpLeagueId': data['pvpLeagueId'] ?? currentPvpLeague.id,
+        'pvpLeagueName': data['pvpLeagueName'] ?? currentPvpLeague.name,
+        'pvpAbandonCount': data['pvpAbandonCount'] ?? 0,
+        'pvpCooldownUntil': data['pvpCooldownUntil'],
+        'lastPvpPenaltyReason': data['lastPvpPenaltyReason'],
         'wins1v1': data['wins1v1'] ?? 0,
         'losses1v1': data['losses1v1'] ?? 0,
         'draws1v1': data['draws1v1'] ?? 0,

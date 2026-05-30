@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'achievement_service.dart';
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
+import 'pvp_season_service.dart';
 
 class MatchService {
   final _db = FirebaseFirestore.instance;
@@ -38,6 +39,69 @@ class MatchService {
       'matchId': null,
       'opponentUid': null,
     }, SetOptions(merge: true));
+  }
+
+  void _queuePvpSeasonStatsWrite({
+    required Transaction tx,
+    required DocumentReference<Map<String, dynamic>> userRef,
+    required Map<String, dynamic> userData,
+    required int oldRating,
+    required int newRating,
+    required bool won,
+    required bool lost,
+    required bool draw,
+  }) {
+    final season = PvpSeasonService.instance.currentSeason();
+
+    final sameSeason =
+        (userData['currentPvpSeasonId'] ?? '').toString() == season.id;
+
+    final previousBest = sameSeason
+        ? _safeInt(userData['pvpSeasonBestRating'], oldRating)
+        : oldRating;
+
+    final bestRating = max(max(previousBest, oldRating), newRating);
+
+    final finalLeague = PvpLeagueService.instance.leagueForRating(newRating);
+    final bestLeague = PvpLeagueService.instance.leagueForRating(bestRating);
+
+    final statsRef = userRef.collection('pvp_season_stats').doc(season.id);
+
+    tx.set(
+        statsRef,
+        {
+          'seasonId': season.id,
+          'seasonStart': Timestamp.fromDate(season.start),
+          'seasonEnd': Timestamp.fromDate(season.end),
+          'finalRating': newRating,
+          'finalLeagueId': finalLeague.id,
+          'finalLeagueName': finalLeague.name,
+          'finalLeagueEmoji': finalLeague.emoji,
+          'bestRating': bestRating,
+          'bestLeagueId': bestLeague.id,
+          'bestLeagueName': bestLeague.name,
+          'bestLeagueEmoji': bestLeague.emoji,
+          'matchesPlayed': FieldValue.increment(1),
+          if (won) 'wins': FieldValue.increment(1),
+          if (lost) 'losses': FieldValue.increment(1),
+          if (draw) 'draws': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
+
+    tx.set(
+        userRef,
+        {
+          'currentPvpSeasonId': season.id,
+          'pvpSeasonBestRating': bestRating,
+          'pvpSeasonBestLeagueId': bestLeague.id,
+          'pvpSeasonBestLeagueName': bestLeague.name,
+          'pvpSeasonFinalRating': newRating,
+          'pvpSeasonFinalLeagueId': finalLeague.id,
+          'pvpSeasonFinalLeagueName': finalLeague.name,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
   }
 
   Future<void> startLiveSearch({
@@ -149,7 +213,9 @@ class MatchService {
     final presenceStatus = (presence['status'] ?? '').toString();
     final inMatch = presence['inMatch'] == true;
 
-    if (queue != null && !queueIsActive && (queue['status'] ?? '') == 'searching') {
+    if (queue != null &&
+        !queueIsActive &&
+        (queue['status'] ?? '') == 'searching') {
       await queueRef.set({
         'status': 'stopped',
         'matchId': null,
@@ -359,7 +425,8 @@ class MatchService {
     }
 
     final myTotal = (meData?['totalQuestions'] as int?) ?? totalQuestions;
-    final myTime = (meData?['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
+    final myTime =
+        (meData?['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
     final myWinReward = (meData?['winReward'] as int?) ?? winReward;
 
     final qs = await _db
@@ -397,10 +464,11 @@ class MatchService {
         if (!_isAvailableForLiveMatch(oppUser)) return false;
         if ((meTx?['ranked'] == true) != ranked) return false;
         if ((oppTx?['ranked'] == true) != ranked) return false;
-        if (ranked && !_ratingsAreCompatible(
-          myQueue: meTx,
-          opponentQueue: oppTx,
-        )) {
+        if (ranked &&
+            !_ratingsAreCompatible(
+              myQueue: meTx,
+              opponentQueue: oppTx,
+            )) {
           return false;
         }
 
@@ -418,25 +486,31 @@ class MatchService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        tx.set(meUserRef, {
-          'presence': {
-            'status': 'in_match',
-            'inMatch': true,
-            'lastSeenAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        tx.set(
+            meUserRef,
+            {
+              'presence': {
+                'status': 'in_match',
+                'inMatch': true,
+                'lastSeenAt': FieldValue.serverTimestamp(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true));
 
-        tx.set(oppUserRef, {
-          'presence': {
-            'status': 'in_match',
-            'inMatch': true,
-            'lastSeenAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        tx.set(
+            oppUserRef,
+            {
+              'presence': {
+                'status': 'in_match',
+                'inMatch': true,
+                'lastSeenAt': FieldValue.serverTimestamp(),
+                'updatedAt': FieldValue.serverTimestamp(),
+              },
+              'updatedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true));
 
         return true;
       });
@@ -461,22 +535,27 @@ class MatchService {
         'matchmakingType': ranked ? 'ranked_flexible_mmr' : 'casual_public',
         'ranked': ranked,
         'affectsPvpRating': ranked,
-        'hostInitialPvpRating': _safeInt(meData?['pvpRating'], _defaultPvpRating),
-        'guestInitialPvpRating': _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating),
-        'matchmakingRatingGap': (_safeInt(meData?['pvpRating'], _defaultPvpRating) -
-                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
-            .abs(),
+        'hostInitialPvpRating':
+            _safeInt(meData?['pvpRating'], _defaultPvpRating),
+        'guestInitialPvpRating':
+            _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating),
+        'matchmakingRatingGap':
+            (_safeInt(meData?['pvpRating'], _defaultPvpRating) -
+                    _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
+                .abs(),
         'hostPvpLeagueId': PvpLeagueService.instance
             .leagueForRating(_safeInt(meData?['pvpRating'], _defaultPvpRating))
             .id,
         'guestPvpLeagueId': PvpLeagueService.instance
-            .leagueForRating(_safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
+            .leagueForRating(
+                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
             .id,
         'hostPvpLeagueName': PvpLeagueService.instance
             .leagueForRating(_safeInt(meData?['pvpRating'], _defaultPvpRating))
             .name,
         'guestPvpLeagueName': PvpLeagueService.instance
-            .leagueForRating(_safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
+            .leagueForRating(
+                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
             .name,
         'matchmakingWaitSec': max(
           _searchAgeSeconds(meData),
@@ -530,37 +609,49 @@ class MatchService {
     final playerBRef = _db.collection('users').doc(playerBUid);
 
     if (winnerUid == null) {
-      tx.set(playerARef, {
-        'matches1v1': FieldValue.increment(1),
-        'draws1v1': FieldValue.increment(1),
-        'currentWinStreak1v1': 0,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      tx.set(
+          playerARef,
+          {
+            'matches1v1': FieldValue.increment(1),
+            'draws1v1': FieldValue.increment(1),
+            'currentWinStreak1v1': 0,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
 
-      tx.set(playerBRef, {
-        'matches1v1': FieldValue.increment(1),
-        'draws1v1': FieldValue.increment(1),
-        'currentWinStreak1v1': 0,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      tx.set(
+          playerBRef,
+          {
+            'matches1v1': FieldValue.increment(1),
+            'draws1v1': FieldValue.increment(1),
+            'currentWinStreak1v1': 0,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
       return;
     }
 
     final loserUid = winnerUid == playerAUid ? playerBUid : playerAUid;
 
-    tx.set(_db.collection('users').doc(winnerUid), {
-      'matches1v1': FieldValue.increment(1),
-      'wins1v1': FieldValue.increment(1),
-      'currentWinStreak1v1': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    tx.set(
+        _db.collection('users').doc(winnerUid),
+        {
+          'matches1v1': FieldValue.increment(1),
+          'wins1v1': FieldValue.increment(1),
+          'currentWinStreak1v1': FieldValue.increment(1),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
 
-    tx.set(_db.collection('users').doc(loserUid), {
-      'matches1v1': FieldValue.increment(1),
-      'losses1v1': FieldValue.increment(1),
-      'currentWinStreak1v1': 0,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    tx.set(
+        _db.collection('users').doc(loserUid),
+        {
+          'matches1v1': FieldValue.increment(1),
+          'losses1v1': FieldValue.increment(1),
+          'currentWinStreak1v1': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true));
   }
 
   Future<Map<String, Map<String, dynamic>>> _queuePvpStatsUpdates({
@@ -597,10 +688,14 @@ class MatchService {
     final playerADelta = newPlayerARating - playerARating;
     final playerBDelta = newPlayerBRating - playerBRating;
 
-    final oldPlayerALeague = PvpLeagueService.instance.leagueForRating(playerARating);
-    final newPlayerALeague = PvpLeagueService.instance.leagueForRating(newPlayerARating);
-    final oldPlayerBLeague = PvpLeagueService.instance.leagueForRating(playerBRating);
-    final newPlayerBLeague = PvpLeagueService.instance.leagueForRating(newPlayerBRating);
+    final oldPlayerALeague =
+        PvpLeagueService.instance.leagueForRating(playerARating);
+    final newPlayerALeague =
+        PvpLeagueService.instance.leagueForRating(newPlayerARating);
+    final oldPlayerBLeague =
+        PvpLeagueService.instance.leagueForRating(playerBRating);
+    final newPlayerBLeague =
+        PvpLeagueService.instance.leagueForRating(newPlayerBRating);
 
     final isDraw = winnerUid == null;
     final playerAWon = winnerUid == playerAUid;
@@ -625,10 +720,12 @@ class MatchService {
     final newPlayerAStreak = playerAWon ? playerACurrentStreak + 1 : 0;
     final newPlayerBStreak = playerBWon ? playerBCurrentStreak + 1 : 0;
 
-    final newPlayerABestStreak =
-        newPlayerAStreak > playerABestStreak ? newPlayerAStreak : playerABestStreak;
-    final newPlayerBBestStreak =
-        newPlayerBStreak > playerBBestStreak ? newPlayerBStreak : playerBBestStreak;
+    final newPlayerABestStreak = newPlayerAStreak > playerABestStreak
+        ? newPlayerAStreak
+        : playerABestStreak;
+    final newPlayerBBestStreak = newPlayerBStreak > playerBBestStreak
+        ? newPlayerBStreak
+        : playerBBestStreak;
 
     tx.set(
       playerARef,
@@ -674,14 +771,35 @@ class MatchService {
       SetOptions(merge: true),
     );
 
+    _queuePvpSeasonStatsWrite(
+      tx: tx,
+      userRef: playerARef,
+      userData: playerAData,
+      oldRating: playerARating,
+      newRating: newPlayerARating,
+      won: playerAWon,
+      lost: playerBWon,
+      draw: isDraw,
+    );
+
+    _queuePvpSeasonStatsWrite(
+      tx: tx,
+      userRef: playerBRef,
+      userData: playerBData,
+      oldRating: playerBRating,
+      newRating: newPlayerBRating,
+      won: playerBWon,
+      lost: playerAWon,
+      draw: isDraw,
+    );
+
     if (winnerUid != null) {
       final winnerWins = ((winnerUid == playerAUid
-                  ? playerAData['wins1v1']
-                  : playerBData['wins1v1']) ??
-              0) as num;
-      final winnerStreak = winnerUid == playerAUid
-          ? newPlayerAStreak
-          : newPlayerBStreak;
+              ? playerAData['wins1v1']
+              : playerBData['wins1v1']) ??
+          0) as num;
+      final winnerStreak =
+          winnerUid == playerAUid ? newPlayerAStreak : newPlayerBStreak;
       final loserUid = winnerUid == playerAUid ? playerBUid : playerAUid;
       final loserWins = (((loserUid == playerAUid
                   ? playerAData['wins1v1']
@@ -779,7 +897,11 @@ class MatchService {
     }
 
     tx.set(
-      _db.collection('users').doc(playerAUid).collection('match_history').doc(matchId),
+      _db
+          .collection('users')
+          .doc(playerAUid)
+          .collection('match_history')
+          .doc(matchId),
       historyFor(
         userId: playerAUid,
         opponentUid: playerBUid,
@@ -791,7 +913,11 @@ class MatchService {
     );
 
     tx.set(
-      _db.collection('users').doc(playerBUid).collection('match_history').doc(matchId),
+      _db
+          .collection('users')
+          .doc(playerBUid)
+          .collection('match_history')
+          .doc(matchId),
       historyFor(
         userId: playerBUid,
         opponentUid: playerAUid,
@@ -1082,7 +1208,8 @@ class MatchService {
 
       final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
-      final affectsPvpRating = data['affectsPvpRating'] == true || data['ranked'] == true;
+      final affectsPvpRating =
+          data['affectsPvpRating'] == true || data['ranked'] == true;
 
       Map<String, Map<String, dynamic>> ratingResults = {};
 
@@ -1324,10 +1451,8 @@ class MatchService {
     });
   }
 
-
-
-
-  Future<Map<String, Map<String, dynamic>>> _queueRankedDisconnectPenaltyUpdates({
+  Future<Map<String, Map<String, dynamic>>>
+      _queueRankedDisconnectPenaltyUpdates({
     required Transaction tx,
     required String winnerUid,
     required String loserUid,
@@ -1354,17 +1479,20 @@ class MatchService {
     final newWinnerRating = (oldWinnerRating + _rankedDisconnectWinnerBonus)
         .clamp(100, 5000)
         .toInt();
-    final newLoserRating = (oldLoserRating - _rankedAbandonRatingPenalty)
-        .clamp(100, 5000)
-        .toInt();
+    final newLoserRating =
+        (oldLoserRating - _rankedAbandonRatingPenalty).clamp(100, 5000).toInt();
 
     final winnerDelta = newWinnerRating - oldWinnerRating;
     final loserDelta = newLoserRating - oldLoserRating;
 
-    final oldWinnerLeague = PvpLeagueService.instance.leagueForRating(oldWinnerRating);
-    final newWinnerLeague = PvpLeagueService.instance.leagueForRating(newWinnerRating);
-    final oldLoserLeague = PvpLeagueService.instance.leagueForRating(oldLoserRating);
-    final newLoserLeague = PvpLeagueService.instance.leagueForRating(newLoserRating);
+    final oldWinnerLeague =
+        PvpLeagueService.instance.leagueForRating(oldWinnerRating);
+    final newWinnerLeague =
+        PvpLeagueService.instance.leagueForRating(newWinnerRating);
+    final oldLoserLeague =
+        PvpLeagueService.instance.leagueForRating(oldLoserRating);
+    final newLoserLeague =
+        PvpLeagueService.instance.leagueForRating(newLoserRating);
 
     final winnerCurrentStreak =
         ((winnerData['currentWinStreak1v1'] ?? 0) as num).toInt();
@@ -1372,9 +1500,8 @@ class MatchService {
         ((winnerData['bestWinStreak1v1'] ?? 0) as num).toInt();
 
     final newWinnerStreak = winnerCurrentStreak + 1;
-    final newWinnerBestStreak = newWinnerStreak > winnerBestStreak
-        ? newWinnerStreak
-        : winnerBestStreak;
+    final newWinnerBestStreak =
+        newWinnerStreak > winnerBestStreak ? newWinnerStreak : winnerBestStreak;
 
     final cooldownUntil = Timestamp.fromDate(
       DateTime.now().add(_rankedAbandonCooldown),
@@ -1418,6 +1545,28 @@ class MatchService {
         'updatedAt': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
+    );
+
+    _queuePvpSeasonStatsWrite(
+      tx: tx,
+      userRef: winnerRef,
+      userData: winnerData,
+      oldRating: oldWinnerRating,
+      newRating: newWinnerRating,
+      won: true,
+      lost: false,
+      draw: false,
+    );
+
+    _queuePvpSeasonStatsWrite(
+      tx: tx,
+      userRef: loserRef,
+      userData: loserData,
+      oldRating: oldLoserRating,
+      newRating: newLoserRating,
+      won: false,
+      lost: true,
+      draw: false,
     );
 
     Future.microtask(() async {

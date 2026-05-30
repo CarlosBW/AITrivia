@@ -42,7 +42,6 @@ class PvPScreen extends StatelessWidget {
             style: TextStyle(color: Colors.black54),
           ),
           const SizedBox(height: 18),
-
           StreamBuilder<bool>(
             stream: _hasPendingTurnsStream(uid),
             builder: (context, snap) {
@@ -68,22 +67,6 @@ class PvPScreen extends StatelessWidget {
               );
             },
           ),
-
-          _PvpCard(
-            icon: Icons.workspace_premium,
-            title: 'PvP Season',
-            subtitle:
-                'View your ranked league, season progress, leaderboard and rewards.',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PvpSeasonScreen(),
-                ),
-              );
-            },
-          ),
-
           _PvpCard(
             icon: Icons.group,
             title: 'Play with Friends',
@@ -97,7 +80,6 @@ class PvPScreen extends StatelessWidget {
               );
             },
           ),
-
           _PvpCard(
             icon: Icons.public,
             title: 'Find Opponent',
@@ -107,6 +89,20 @@ class PvPScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => const FindOpponentScreen(),
+                ),
+              );
+            },
+          ),
+          _PvpCard(
+            icon: Icons.workspace_premium,
+            title: 'PvP Season',
+            subtitle:
+                'View your ranked league, season progress, leaderboard and rewards.',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PvpSeasonScreen(),
                 ),
               );
             },
@@ -153,7 +149,8 @@ class _PvpCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             CircleAvatar(
-              backgroundColor: alert ? Colors.redAccent.withOpacity(0.18) : null,
+              backgroundColor:
+                  alert ? Colors.redAccent.withOpacity(0.18) : null,
               child: Icon(
                 icon,
                 color: alert ? Colors.redAccent : null,

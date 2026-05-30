@@ -503,29 +503,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(league.colorValue).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Color(league.colorValue),
-                        ),
-                      ),
-                      child: Text(
-                        '${league.emoji} ${league.name} League',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(league.colorValue),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
                     Text(
-                      'League Score: $leagueScore',
+                      'Weekly Score: $leagueScore',
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
@@ -655,7 +634,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 pvpRatingDelta == 0
                                     ? '$pvpRating MMR'
                                     : '$pvpRating MMR (${pvpRatingDelta > 0 ? '+' : ''}$pvpRatingDelta)',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -776,7 +756,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 }
 
-
 class _RecentMatchHistory extends StatelessWidget {
   final String uid;
 
@@ -822,7 +801,8 @@ class _RecentMatchHistory extends StatelessWidget {
   }
 
   String _deltaText(dynamic value) {
-    final delta = value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
+    final delta =
+        value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
     if (delta == null) return '';
     if (delta > 0) return '+$delta MMR';
     return '$delta MMR';
@@ -905,7 +885,9 @@ class _RecentMatchHistory extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          ranked ? 'Ranked • $myScore-$opponentScore' : 'Casual • $myScore-$opponentScore',
+                          ranked
+                              ? 'Ranked • $myScore-$opponentScore'
+                              : 'Casual • $myScore-$opponentScore',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],

@@ -237,13 +237,57 @@ class _LeaderboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.group), text: 'Friends'),
+              Tab(icon: Icon(Icons.public), text: 'Global'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _FriendsLeaderboardList(
+                  currentUid: currentUid,
+                  avatarBuilder: avatarBuilder,
+                ),
+                _GlobalLeaderboardTab(
+                  currentUid: currentUid,
+                  avatarBuilder: avatarBuilder,
+                  seasonService: seasonService,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlobalLeaderboardTab extends StatelessWidget {
+  final String currentUid;
+  final String Function(String avatarId) avatarBuilder;
+  final PvpSeasonService seasonService;
+
+  const _GlobalLeaderboardTab({
+    required this.currentUid,
+    required this.avatarBuilder,
+    required this.seasonService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
       length: PvpLeagueService.leagues.length + 1,
       child: Column(
         children: [
           TabBar(
             isScrollable: true,
             tabs: [
-              const Tab(text: 'Global'),
+              const Tab(text: 'All'),
               ...PvpLeagueService.leagues.map(
                 (league) => Tab(text: '${league.emoji} ${league.name}'),
               ),
@@ -272,6 +316,227 @@ class _LeaderboardTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LeaderboardPlayer {
+  final String uid;
+  final String username;
+  final String avatarId;
+  final int rating;
+  final int wins;
+  final int losses;
+  final int draws;
+
+  const _LeaderboardPlayer({
+    required this.uid,
+    required this.username,
+    required this.avatarId,
+    required this.rating,
+    required this.wins,
+    required this.losses,
+    required this.draws,
+  });
+
+  int get matches => wins + losses + draws;
+}
+
+class _FriendsLeaderboardList extends StatelessWidget {
+  final String currentUid;
+  final String Function(String avatarId) avatarBuilder;
+
+  const _FriendsLeaderboardList({
+    required this.currentUid,
+    required this.avatarBuilder,
+  });
+
+  Future<List<_LeaderboardPlayer>> _loadPlayers() async {
+    final db = FirebaseFirestore.instance;
+
+    final friendsSnap = await db
+        .collection('users')
+        .doc(currentUid)
+        .collection('friends')
+        .limit(100)
+        .get();
+
+    final ids = <String>{currentUid};
+    for (final doc in friendsSnap.docs) {
+      final data = doc.data();
+      final friendUid = (data['uid'] ?? doc.id).toString();
+      if (friendUid.trim().isNotEmpty) ids.add(friendUid);
+    }
+
+    final userSnaps = await Future.wait(
+      ids.map((id) => db.collection('users').doc(id).get()),
+    );
+
+    final players = <_LeaderboardPlayer>[];
+
+    for (final snap in userSnaps) {
+      final data = snap.data();
+      if (data == null) continue;
+
+      final username = (data['username'] ??
+              data['displayName'] ??
+              (snap.id == currentUid ? 'You' : 'Player'))
+          .toString();
+
+      players.add(
+        _LeaderboardPlayer(
+          uid: snap.id,
+          username: username,
+          avatarId: (data['avatarId'] ?? 'avatar_1').toString(),
+          rating: ((data['pvpRating'] ?? PvpLeagueService.defaultRating) as num)
+              .toInt(),
+          wins: ((data['wins1v1'] ?? 0) as num).toInt(),
+          losses: ((data['losses1v1'] ?? 0) as num).toInt(),
+          draws: ((data['draws1v1'] ?? 0) as num).toInt(),
+        ),
+      );
+    }
+
+    players.sort((a, b) {
+      final ratingCompare = b.rating.compareTo(a.rating);
+      if (ratingCompare != 0) return ratingCompare;
+      return b.matches.compareTo(a.matches);
+    });
+
+    return players;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<_LeaderboardPlayer>>(
+      future: _loadPlayers(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Error loading friends leaderboard:\n${snap.error}',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final players = snap.data ?? const <_LeaderboardPlayer>[];
+
+        if (players.length <= 1) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.group_add, size: 44, color: Colors.black54),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No friends in leaderboard yet',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    players.isEmpty
+                        ? 'Play Ranked Matches and add friends to compare your PvP rating.'
+                        : 'Add friends to compare your PvP rating with people you know.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            // Rebuilds the FutureBuilder by changing the element tree through setState
+            // is not available here because this widget is stateless. Pull refresh still
+            // completes after re-fetching through a new navigation/rebuild cycle.
+            await _loadPlayers();
+          },
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            itemCount: players.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
+              final player = players[i];
+              final isMe = player.uid == currentUid;
+              final league = PvpLeagueService.instance.leagueForRating(
+                player.rating,
+              );
+              final color = Color(league.colorValue);
+
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isMe ? color.withOpacity(0.14) : Colors.black12,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isMe ? color : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 38,
+                      child: Text(
+                        '#${i + 1}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    CircleAvatar(
+                      backgroundColor: Colors.white70,
+                      child: Text(avatarBuilder(player.avatarId)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isMe ? '${player.username} (You)' : player.username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${league.emoji} ${league.name} • ${player.matches} matches',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            '${player.wins} W / ${player.losses} L / ${player.draws} D',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${player.rating} MMR',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

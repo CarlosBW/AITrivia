@@ -416,41 +416,45 @@ class _RewardsTab extends StatefulWidget {
 }
 
 class _RewardsTabState extends State<_RewardsTab> {
-  Future<PvpSeasonClaimStatus>? _claimStatusFuture;
+  Future<List<PendingPvpSeasonReward>>? _pendingRewardsFuture;
   bool _claiming = false;
 
   @override
   void initState() {
     super.initState();
-    _claimStatusFuture = widget.seasonService.getClaimStatus(uid: widget.uid);
+    _reloadPendingRewards();
   }
 
-  Future<void> _reloadClaimStatus() async {
-    setState(() {
-      _claimStatusFuture = widget.seasonService.getClaimStatus(uid: widget.uid);
-    });
+  void _reloadPendingRewards() {
+    _pendingRewardsFuture = widget.seasonService.getPendingPvpSeasonRewards(
+      uid: widget.uid,
+    );
   }
 
-  Future<void> _claimReward() async {
+  Future<void> _refreshPendingRewards() async {
+    setState(_reloadPendingRewards);
+  }
+
+  Future<void> _claimAllRewards() async {
     if (_claiming) return;
 
     setState(() => _claiming = true);
 
     try {
-      final result = await widget.seasonService.claimPreviousSeasonReward(
+      final result = await widget.seasonService.claimAllPendingPvpSeasonRewards(
         uid: widget.uid,
       );
 
       if (!mounted) return;
 
-      await _reloadClaimStatus();
+      await _refreshPendingRewards();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            result.alreadyClaimed
-                ? 'Reward already claimed for ${result.seasonId}.'
-                : 'Claimed ${result.leagueName} reward: +${result.rewardCoins} coins!',
+            result.claimedCount == 0
+                ? 'No pending PvP season rewards available.'
+                : 'Claimed ${result.claimedCount} PvP season reward(s): +${result.totalCoins} coins!',
           ),
         ),
       );
@@ -469,118 +473,143 @@ class _RewardsTabState extends State<_RewardsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final previousSeason = widget.seasonService.previousSeason();
+    return RefreshIndicator(
+      onRefresh: _refreshPendingRewards,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Season Rewards',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Rewards are based on your best PvP league from each finished season.',
+            style: TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<List<PendingPvpSeasonReward>>(
+            future: _pendingRewardsFuture,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const _PendingRewardsCard.loading();
+              }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text(
-          'Season Rewards',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Rewards are based on your final PvP league at the end of the season.',
-          style: TextStyle(color: Colors.black54),
-        ),
-        const SizedBox(height: 16),
-        FutureBuilder<PvpSeasonClaimStatus>(
-          future: _claimStatusFuture,
-          builder: (context, snap) {
-            final status = snap.data;
+              if (snap.hasError) {
+                return _PendingRewardsCard.error(
+                  message: snap.error.toString(),
+                  onRetry: _refreshPendingRewards,
+                );
+              }
 
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const _ClaimRewardCard.loading();
-            }
+              final pendingRewards =
+                  snap.data ?? const <PendingPvpSeasonReward>[];
 
-            return _ClaimRewardCard(
-              seasonId: previousSeason.id,
-              canClaim: status?.canClaim == true,
-              alreadyClaimed: status?.alreadyClaimed == true,
-              claiming: _claiming,
-              onClaim: status?.canClaim == true && !_claiming
-                  ? _claimReward
-                  : null,
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-        ...PvpLeagueService.leagues.reversed.map((league) {
-          final reward = widget.seasonService.rewardForLeague(league);
-          final color = Color(league.colorValue);
-          final isCurrent = league.id == widget.currentLeague.id;
+              return _PendingRewardsCard(
+                pendingRewards: pendingRewards,
+                claiming: _claiming,
+                onClaimAll: pendingRewards.isNotEmpty && !_claiming
+                    ? _claimAllRewards
+                    : null,
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          ...PvpLeagueService.leagues.reversed.map((league) {
+            final reward = widget.seasonService.rewardForLeague(league);
+            final color = Color(league.colorValue);
+            final isCurrent = league.id == widget.currentLeague.id;
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isCurrent ? color.withOpacity(0.14) : Colors.black12,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isCurrent ? color : Colors.transparent,
-                width: isCurrent ? 2 : 1,
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isCurrent ? color.withOpacity(0.14) : Colors.black12,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isCurrent ? color : Colors.transparent,
+                  width: isCurrent ? 2 : 1,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                Text(league.emoji, style: const TextStyle(fontSize: 30)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${league.name} League',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${league.minRating}-${league.maxRating} MMR',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      if (isCurrent)
-                        const Text(
-                          'Current projected reward',
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
+              child: Row(
+                children: [
+                  Text(league.emoji, style: const TextStyle(fontSize: 30)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${league.name} League',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                    ],
+                        Text(
+                          '${league.minRating}-${league.maxRating} MMR',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        if (isCurrent)
+                          const Text(
+                            'Current projected reward',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                Text(
-                  '+${reward.coins} coins',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          );
-        }),
-      ],
+                  Text(
+                    '+${reward.coins} coins',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
 
-class _ClaimRewardCard extends StatelessWidget {
-  final String? seasonId;
-  final bool canClaim;
-  final bool alreadyClaimed;
+class _PendingRewardsCard extends StatelessWidget {
+  final List<PendingPvpSeasonReward> pendingRewards;
   final bool claiming;
-  final VoidCallback? onClaim;
+  final VoidCallback? onClaimAll;
   final bool loading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
-  const _ClaimRewardCard({
-    required this.seasonId,
-    required this.canClaim,
-    required this.alreadyClaimed,
+  const _PendingRewardsCard({
+    required this.pendingRewards,
     required this.claiming,
-    required this.onClaim,
-  }) : loading = false;
+    required this.onClaimAll,
+  })  : loading = false,
+        errorMessage = null,
+        onRetry = null;
 
-  const _ClaimRewardCard.loading()
-      : seasonId = null,
-        canClaim = false,
-        alreadyClaimed = false,
+  const _PendingRewardsCard.loading()
+      : pendingRewards = const [],
         claiming = false,
-        onClaim = null,
-        loading = true;
+        onClaimAll = null,
+        loading = true,
+        errorMessage = null,
+        onRetry = null;
+
+  const _PendingRewardsCard.error({
+    required String message,
+    required VoidCallback this.onRetry,
+  })  : pendingRewards = const [],
+        claiming = false,
+        onClaimAll = null,
+        loading = false,
+        errorMessage = message;
+
+  int get _totalCoins => pendingRewards.fold<int>(
+        0,
+        (sum, reward) => sum + reward.rewardCoins,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -600,82 +629,165 @@ class _ClaimRewardCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             SizedBox(width: 12),
-            Text('Checking previous season reward...'),
+            Text('Checking pending PvP season rewards...'),
           ],
         ),
       );
     }
 
-    IconData icon;
-    String title;
-    String subtitle;
-    Color color;
-
-    if (alreadyClaimed) {
-      icon = Icons.verified;
-      title = 'Reward already claimed';
-      subtitle = 'You already claimed your reward for $seasonId.';
-      color = Colors.green;
-    } else if (canClaim) {
-      icon = Icons.card_giftcard;
-      title = 'Previous season reward available';
-      subtitle = 'Claim your reward for $seasonId based on your current PvP league.';
-      color = Colors.amber;
-    } else {
-      icon = Icons.lock_clock;
-      title = 'No reward available yet';
-      subtitle = 'Finish the current PvP season to claim your reward.';
-      color = Colors.blueGrey;
+    if (errorMessage != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.redAccent.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.redAccent),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Could not load rewards',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage!,
+              style: const TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
     }
+
+    if (pendingRewards.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blueGrey.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.blueGrey.withOpacity(0.35)),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.lock_clock, color: Colors.blueGrey),
+            SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No reward available yet',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Play Ranked Matches this season. When the season ends, your PvP reward will appear here.',
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final plural = pendingRewards.length == 1 ? 'reward' : 'rewards';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: Colors.amber.withOpacity(0.12),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: Colors.amber.withOpacity(0.55)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: color),
+              const Icon(Icons.card_giftcard, color: Colors.amber),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  title,
+                  '${pendingRewards.length} pending season $plural',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
               ),
+              Text(
+                '+$_totalCoins coins',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.black54),
-          ),
-          if (canClaim) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: claiming ? null : onClaim,
-                icon: claiming
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.redeem),
-                label: Text(claiming ? 'Claiming...' : 'Claim Reward'),
+          const SizedBox(height: 10),
+          ...pendingRewards.take(3).map(
+                (reward) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(reward.leagueEmoji),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${reward.seasonId} • ${reward.leagueName} • best ${reward.bestRating} MMR',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      Text(
+                        '+${reward.rewardCoins}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+          if (pendingRewards.length > 3)
+            Text(
+              '+${pendingRewards.length - 3} more pending season(s)',
+              style: const TextStyle(color: Colors.black54, fontSize: 12),
             ),
-          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: claiming ? null : onClaimAll,
+              icon: claiming
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.redeem),
+              label: Text(claiming ? 'Claiming...' : 'Claim All Rewards'),
+            ),
+          ),
         ],
       ),
     );

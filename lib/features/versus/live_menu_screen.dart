@@ -6,7 +6,6 @@ import '../../services/pvp_league_service.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
 import 'live_matchmaking_screen.dart';
-import 'pvp_season_screen.dart';
 
 class LiveMenuScreen extends StatefulWidget {
   const LiveMenuScreen({super.key});
@@ -207,28 +206,6 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             onPressed: () => _goMatchmaking(ranked: false),
             icon: const Icon(Icons.sports_esports),
             label: const Text('Casual Match'),
-          ),
-
-
-          const SizedBox(height: 22),
-
-          const Text(
-            'Temporada PvP',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          FilledButton.tonalIcon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PvpSeasonScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.leaderboard),
-            label: const Text('Ver temporada y ranking PvP'),
           ),
 
           const SizedBox(height: 22),

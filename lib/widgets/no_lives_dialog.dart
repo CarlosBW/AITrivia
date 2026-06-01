@@ -4,12 +4,20 @@ class NoLivesDialog extends StatelessWidget {
   final String currentLivesText;
   final String nextHalfLifeText;
   final String nextFullLifeText;
+  final VoidCallback? onBuyLife;
+  final int cost;
+  final String title;
+  final String message;
 
   const NoLivesDialog({
     super.key,
     required this.currentLivesText,
     required this.nextHalfLifeText,
     required this.nextFullLifeText,
+    this.onBuyLife,
+    this.cost = 10,
+    this.title = 'Sin vidas suficientes',
+    this.message = 'Necesitas al menos 1 vida completa para entrar a un nivel.',
   });
 
   @override
@@ -35,17 +43,17 @@ class NoLivesDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Sin vidas suficientes',
+            Text(
+              title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              'Necesitas al menos 1 vida completa para entrar a un nivel.',
+              message,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -100,6 +108,17 @@ class NoLivesDialog extends StatelessWidget {
                 ),
               ],
             ),
+            if (onBuyLife != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onBuyLife,
+                  icon: const Icon(Icons.favorite),
+                  label: Text('Recuperar 1 vida ($cost monedas)'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

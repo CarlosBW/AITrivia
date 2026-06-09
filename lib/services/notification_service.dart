@@ -34,6 +34,34 @@ class NotificationService {
         .snapshots();
   }
 
+  Future<void> markRematchRequestNotificationsAsRead({
+    required String matchId,
+  }) async {
+    final snap = await _notificationsCol(uid)
+        .where('read', isEqualTo: false)
+        .where('type', isEqualTo: 'rematch_request')
+        .where('data.matchId', isEqualTo: matchId)
+        .limit(20)
+        .get();
+
+    if (snap.docs.isEmpty) return;
+
+    final batch = _db.batch();
+
+    for (final doc in snap.docs) {
+      batch.set(
+        doc.reference,
+        {
+          'read': true,
+          'readAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+
+    await batch.commit();
+  }
+
   Future<void> createNotification({
     required String targetUid,
     required String type,

@@ -55,6 +55,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _disconnectCheckRunning = false;
   bool _disconnectFinalizing = false;
 
+  bool _rematchPromptShowing = false;
+
   static const int _defaultTimePerQ = 10;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -153,6 +155,50 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       _timer = null;
       _resetPerQuestion();
     });
+  }
+
+  Future<void> _maybeShowIncomingRematchDialog({
+    required BuildContext context,
+    required Map<String, dynamic> match,
+    required String uid,
+    required String opponentUid,
+    required String opponentName,
+    required bool myRematchAccepted,
+    required bool opponentRematchAccepted,
+  }) async {
+    if (_rematchPromptShowing) return;
+    if (myRematchAccepted) return;
+    if (!opponentRematchAccepted) return;
+
+    _rematchPromptShowing = true;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Solicitud de revancha'),
+          content: Text('$opponentName quiere jugar una revancha.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Luego'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                await _requestRematch(match);
+              },
+              child: const Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    _rematchPromptShowing = false;
   }
 
   Future<void> _onTapAnswer({
@@ -625,41 +671,47 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     String uid,
     int myScore,
   ) {
-    final players = Map<String, dynamic>.from(match['players'] ?? {});
-
-    final hostUid = (match['hostUid'] ?? '').toString();
-    final guestUid = (match['guestUid'] ?? '').toString();
-
-    final opponentUid = uid == hostUid ? guestUid : hostUid;
-
-    final myData = Map<String, dynamic>.from(players[uid] ?? {});
-    final opponentData = Map<String, dynamic>.from(
-      players[opponentUid] ?? {},
-    );
-
-    final myName = (myData['displayName'] ?? 'Tú').toString();
-    final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
-
-    return PvpResultCard(
-      state: PvpResultState.waiting,
-      title: 'Reto completado',
-      subtitle: 'Terminaste tus preguntas. Esperando que tu rival finalice.',
-      myName: myName,
-      opponentName: opponentName,
-      myScore: myScore,
-      opponentScore: null,
-      primaryButtonText: 'Salir',
-      onPrimaryPressed: () async {
-        _leavingMatch = true;
-
-        try {
-          await _presenceService.setAvailable();
-        } catch (_) {}
-
-        if (!context.mounted) return;
-
-        Navigator.pop(context);
-      },
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 72,
+              height: 72,
+              child: CircularProgressIndicator(
+                strokeWidth: 6,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Esperando resultado final...',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Tu rival todavía está respondiendo preguntas.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Tu puntaje: $myScore',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -704,20 +756,34 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final xpEarned = _safeIntOrNull(myRatingResult['xpEarned']);
     final rankedCoinsEarned = _safeIntOrNull(myRatingResult['coinsEarned']);
     final winStreak = _safeIntOrNull(myRatingResult['winStreak']);
-    final oldLeagueName = (myRatingResult['oldLeagueName'] ??
-            myRatingResult['oldLeague'] ??
-            '')
-        .toString();
-    final newLeagueName = (myRatingResult['newLeagueName'] ??
-            myRatingResult['newLeague'] ??
-            '')
-        .toString();
+    final oldLeagueName =
+        (myRatingResult['oldLeagueName'] ?? myRatingResult['oldLeague'] ?? '')
+            .toString();
+    final newLeagueName =
+        (myRatingResult['newLeagueName'] ?? myRatingResult['newLeague'] ?? '')
+            .toString();
 
     final rematchRequests =
         Map<String, dynamic>.from(match['rematchRequests'] ?? {});
 
     final myRematchAccepted = rematchRequests[uid] == true;
     final opponentRematchAccepted = rematchRequests[opponentUid] == true;
+
+    if (opponentRematchAccepted && !myRematchAccepted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+
+        _maybeShowIncomingRematchDialog(
+          context: context,
+          match: match,
+          uid: uid,
+          opponentUid: opponentUid,
+          opponentName: opponentName,
+          myRematchAccepted: myRematchAccepted,
+          opponentRematchAccepted: opponentRematchAccepted,
+        );
+      });
+    }
 
     final rematchMatchId = (match['rematchMatchId'] ?? '').toString();
 
@@ -744,7 +810,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       subtitle = affectsPvpRating
           ? 'Buen duelo. Tu rating competitivo fue actualizado.'
           : 'Buen duelo. Sumaste una victoria 1 vs 1.';
-      coinsEarned = affectsPvpRating ? (rankedCoinsEarned ?? winReward) : winReward;
+      coinsEarned =
+          affectsPvpRating ? (rankedCoinsEarned ?? winReward) : winReward;
     } else {
       state = PvpResultState.defeat;
       title = 'Perdiste';
@@ -756,9 +823,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     String secondaryText = 'Revancha';
 
     if (_requestingRematch) {
-      secondaryText = 'Enviando...';
+      secondaryText = 'Enviando solicitud...';
     } else if (myRematchAccepted && !opponentRematchAccepted) {
-      secondaryText = 'Esperando rival...';
+      secondaryText = 'Solicitud enviada ✓';
     } else if (myRematchAccepted && opponentRematchAccepted) {
       secondaryText = 'Creando revancha...';
     }
@@ -793,8 +860,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       },
       secondaryButtonText: secondaryText,
       onSecondaryPressed: myRematchAccepted || _requestingRematch
-          ? null
-          : () => _requestRematch(match),
+    ? () {}
+    : () => _requestRematch(match),
     );
   }
 }

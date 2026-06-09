@@ -7,10 +7,8 @@ import 'package:flutter/services.dart';
 
 import '../daily/daily_challenge_screen.dart';
 import '../leagues/weekly_league_screen.dart';
-import '../notifications/notifications_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
-import '../../services/notification_service.dart';
 import '../../services/season_service.dart';
 import '../../widgets/no_lives_dialog.dart';
 
@@ -289,68 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('TriviaIA'),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: NotificationService.instance
-                  .watchMyUnreadNotifications(limit: 1),
-              builder: (context, snap) {
-                final hasUnread = (snap.data?.docs.isNotEmpty ?? false);
-
-                return IconButton(
-                  tooltip: 'Notifications',
-                  onPressed: _isNavigating || _buyingLife
-                      ? null
-                      : () {
-                          _safeNavigate(() async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationsScreen(),
-                              ),
-                            );
-                          });
-                        },
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        child: Icon(
-                          Icons.notifications_rounded,
-                          size: 30,
-                          color: hasUnread
-                              ? Colors.amber
-                              : Colors.white.withOpacity(0.82),
-                        ),
-                      ),
-                      if (hasUnread)
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            width: 11,
-                            height: 11,
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color:
-                                    Theme.of(context).scaffoldBackgroundColor,
-                                width: 1.4,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+        centerTitle: true,        
       ),
       body: Stack(
         children: [

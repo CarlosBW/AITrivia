@@ -1325,11 +1325,51 @@ class MatchService {
   Future<void> requestRematch(String matchId) async {
     final ref = _db.collection('matches').doc(matchId);
 
+    final snap = await ref.get();
+    final data = snap.data();
+
+    if (data == null) {
+      throw Exception('Match no encontrado');
+    }
+
+    final hostUid = (data['hostUid'] ?? '').toString();
+    final guestUid = (data['guestUid'] ?? '').toString();
+
+    final opponentUid = uid == hostUid ? guestUid : hostUid;
+
+    final players = Map<String, dynamic>.from(data['players'] ?? {});
+    final myPlayer = Map<String, dynamic>.from(players[uid] ?? {});
+    final myName = (myPlayer['displayName'] ?? 'Player').toString();
+
+    final rematchRequests =
+        Map<String, dynamic>.from(data['rematchRequests'] ?? {});
+
+    final opponentAlreadyAccepted = rematchRequests[opponentUid] == true;
+
+    await _notificationService.markRematchRequestNotificationsAsRead(
+      matchId: matchId,
+    );
+
     await ref.set({
       'rematchRequests': {
         uid: true,
       },
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    if (!opponentAlreadyAccepted && opponentUid.isNotEmpty) {
+      try {
+        await _notificationService.createNotification(
+          targetUid: opponentUid,
+          type: 'rematch_request',
+          title: 'Rematch requested',
+          body: '$myName wants a rematch.',
+          data: {
+            'matchId': matchId,
+          },
+        );
+      } catch (_) {}
+    }
 
     await createRematchIfReady(matchId);
   }
@@ -1402,7 +1442,7 @@ class MatchService {
 
       tx.set(newRef, {
         'createdAt': FieldValue.serverTimestamp(),
-        'status': 'waiting',
+        'status': 'playing',
         'mode': 'fixed',
         'categoryId': categoryId,
         'difficulty': difficulty,
@@ -1421,18 +1461,18 @@ class MatchService {
           hostUid: {
             'displayName': hostName,
             'score': 0,
-            'ready': false,
+            'ready': true,
             'finished': false,
           },
           guestUid: {
             'displayName': guestName,
             'score': 0,
-            'ready': false,
+            'ready': true,
             'finished': false,
           },
         },
 
-        'startAt': null,
+        'startAt': FieldValue.serverTimestamp(),
         'endedAt': null,
         'winnerUid': null,
         'rewarded': false,

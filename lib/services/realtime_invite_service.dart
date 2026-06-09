@@ -8,34 +8,27 @@ import 'notification_service.dart';
 class RealtimeInviteService {
   RealtimeInviteService._();
 
-  static final RealtimeInviteService instance =
-      RealtimeInviteService._();
+  static final RealtimeInviteService instance = RealtimeInviteService._();
 
-  final FirebaseFirestore _db =
-      FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  final FirebaseAuth _auth =
-      FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final NotificationService _notificationService =
-      NotificationService.instance;
+  final NotificationService _notificationService = NotificationService.instance;
 
   final Random _random = Random();
 
   String get uid => _auth.currentUser!.uid;
 
-  CollectionReference<Map<String, dynamic>>
-      get _invitesCol {
+  CollectionReference<Map<String, dynamic>> get _invitesCol {
     return _db.collection('realtime_invites');
   }
 
-  CollectionReference<Map<String, dynamic>>
-      get _matchesCol {
+  CollectionReference<Map<String, dynamic>> get _matchesCol {
     return _db.collection('matches');
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>>
-      watchMyIncomingInvites({
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchMyIncomingInvites({
     int limit = 20,
   }) {
     return _invitesCol
@@ -49,8 +42,7 @@ class RealtimeInviteService {
         .snapshots();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>>
-      watchMyOutgoingInvites({
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchMyOutgoingInvites({
     int limit = 20,
   }) {
     return _invitesCol
@@ -97,8 +89,7 @@ class RealtimeInviteService {
       'categoryId': categoryId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
-      'timePerQuestionSec':
-          timePerQuestionSec,
+      'timePerQuestionSec': timePerQuestionSec,
       'winReward': winReward,
       'matchId': null,
       'createdAt': now,
@@ -106,13 +97,11 @@ class RealtimeInviteService {
     });
 
     try {
-      await _notificationService
-          .createNotification(
+      await _notificationService.createNotification(
         targetUid: toUid,
         type: 'realtime_invite',
         title: 'Realtime challenge',
-        body:
-            '$fromName invited you to a realtime 1 vs 1 match.',
+        body: '$fromName invited you to a realtime 1 vs 1 match.',
         data: {
           'inviteId': inviteRef.id,
           'fromUid': uid,
@@ -140,22 +129,15 @@ class RealtimeInviteService {
       );
     }
 
-    final fromUid =
-        (invite['fromUid'] ?? '').toString();
+    final fromUid = (invite['fromUid'] ?? '').toString();
 
-    final fromName =
-        (invite['fromName'] ?? 'Player 1')
-            .toString();
+    final fromName = (invite['fromName'] ?? 'Player 1').toString();
 
-    final toUid =
-        (invite['toUid'] ?? '').toString();
+    final toUid = (invite['toUid'] ?? '').toString();
 
-    final toName =
-        (invite['toName'] ?? 'Player 2')
-            .toString();
+    final toName = (invite['toName'] ?? 'Player 2').toString();
 
-    final status =
-        (invite['status'] ?? '').toString();
+    final status = (invite['status'] ?? '').toString();
 
     if (toUid != uid) {
       throw Exception(
@@ -169,36 +151,30 @@ class RealtimeInviteService {
       );
     }
 
-    final categoryId =
-        (invite['categoryId'] ?? 'random')
-            .toString();
+    final categoryId = (invite['categoryId'] ?? 'random').toString();
 
-    final difficulty =
-        ((invite['difficulty'] ?? 1)
-                as num)
-            .toInt();
+    final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
 
-    final totalQuestions =
-        ((invite['totalQuestions'] ?? 10)
-                as num)
-            .toInt();
+    final totalQuestions = ((invite['totalQuestions'] ?? 10) as num).toInt();
 
     final timePerQuestionSec =
-        ((invite['timePerQuestionSec'] ??
-                    10)
-                as num)
-            .toInt();
+        ((invite['timePerQuestionSec'] ?? 10) as num).toInt();
 
-    final winReward =
-        ((invite['winReward'] ?? 2)
-                as num)
-            .toInt();
+    final winReward = ((invite['winReward'] ?? 2) as num).toInt();
 
-    final questions =
-        await _generateQuestions(
-      categoryId: categoryId,
+    final resolvedCategoryId = await _resolveCategoryId(categoryId);
+
+    final questions = await _generateQuestions(
+      categoryId: resolvedCategoryId,
+      difficulty: difficulty,
       totalQuestions: totalQuestions,
     );
+
+    if (questions.isEmpty) {
+      throw Exception(
+        'No hay preguntas disponibles para esta categoría.',
+      );
+    }
 
     final now = FieldValue.serverTimestamp();
 
@@ -209,11 +185,11 @@ class RealtimeInviteService {
       'mode': 'realtime_friend',
       'source': 'friend_invite',
       'inviteId': inviteId,
-      'categoryId': categoryId,
+      'categoryId': resolvedCategoryId,
+      'requestedCategoryId': categoryId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
-      'timePerQuestionSec':
-          timePerQuestionSec,
+      'timePerQuestionSec': timePerQuestionSec,
       'winReward': winReward,
       'loseReward': 0,
       'hostUid': fromUid,
@@ -252,15 +228,11 @@ class RealtimeInviteService {
     });
 
     try {
-      await _notificationService
-          .createNotification(
+      await _notificationService.createNotification(
         targetUid: fromUid,
-        type:
-            'realtime_invite_accepted',
-        title:
-            'Realtime invite accepted',
-        body:
-            '$toName accepted your realtime challenge.',
+        type: 'realtime_invite_accepted',
+        title: 'Realtime invite accepted',
+        body: '$toName accepted your realtime challenge.',
         data: {
           'inviteId': inviteId,
           'matchId': matchRef.id,
@@ -271,39 +243,97 @@ class RealtimeInviteService {
     return matchRef.id;
   }
 
-  Future<List<Map<String, dynamic>>>
-      _generateQuestions({
-    required String categoryId,
-    required int totalQuestions,
-  }) async {
-    final List<Map<String, dynamic>>
-        questions = [];
+  Future<String> _resolveCategoryId(String categoryId) async {
+    if (categoryId != 'random') return categoryId;
 
-    final poolSnap = await _db
-        .collection('fixed_pools')
-        .doc(categoryId)
-        .collection('questions')
+    final snap = await _db
+        .collection('fixed_categories')
+        .where('isActive', isEqualTo: true)
         .get();
 
-    final allQuestions = poolSnap.docs
-        .map((d) => d.data())
-        .toList();
+    final ids = snap.docs.map((d) => d.id).toList();
 
+    if (ids.isEmpty) {
+      throw Exception('No hay categorías activas disponibles.');
+    }
+
+    ids.shuffle(_random);
+    return ids.first;
+  }
+
+  Future<List<Map<String, dynamic>>> _generateQuestions({
+    required String categoryId,
+    required int difficulty,
+    required int totalQuestions,
+  }) async {
+    final questions = <Map<String, dynamic>>[];
+
+    final difficulties = <int>[
+      difficulty,
+      1,
+      2,
+      3,
+    ].toSet().toList();
+
+    QuerySnapshot<Map<String, dynamic>>? poolSnap;
+
+    for (final diff in difficulties) {
+      final snap = await _db
+          .collection('fixed_pools')
+          .doc(categoryId)
+          .collection('difficulty_$diff')
+          .doc('pool')
+          .collection('questions')
+          .get();
+
+      if (snap.docs.isNotEmpty) {
+        poolSnap = snap;
+        break;
+      }
+    }
+
+    if (poolSnap == null || poolSnap.docs.isEmpty) {
+      return questions;
+    }
+
+    final allQuestions = poolSnap.docs.map((d) => d.data()).toList();
     allQuestions.shuffle(_random);
 
-    final selected = allQuestions
-        .take(totalQuestions)
-        .toList();
+    final selected = allQuestions.take(totalQuestions).toList();
 
     for (final q in selected) {
-      final correct =
-          (q['correctAnswer'] ?? '')
-              .toString();
+      final existingQuestionText = (q['q'] ?? q['question'] ?? '').toString();
 
-      final incorrect =
-          List<String>.from(
-        q['incorrectAnswers'] ?? [],
-      );
+      final existingOptions =
+          (q['options'] as List<dynamic>?)?.map((e) => e.toString()).toList();
+
+      final existingAnswerIndex = q['answerIndex'];
+
+      if (existingQuestionText.isNotEmpty &&
+          existingOptions != null &&
+          existingOptions.length >= 2 &&
+          existingAnswerIndex is num) {
+        questions.add({
+          'q': existingQuestionText,
+          'options': existingOptions,
+          'answerIndex': existingAnswerIndex.toInt(),
+        });
+        continue;
+      }
+
+      final correct = (q['correctAnswer'] ?? '').toString().trim();
+
+      final incorrect = (q['incorrectAnswers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList() ??
+          [];
+
+      if (existingQuestionText.isEmpty ||
+          correct.isEmpty ||
+          incorrect.isEmpty) {
+        continue;
+      }
 
       final options = [
         correct,
@@ -313,11 +343,9 @@ class RealtimeInviteService {
       options.shuffle(_random);
 
       questions.add({
-        'q': (q['question'] ?? '')
-            .toString(),
+        'q': existingQuestionText,
         'options': options,
-        'answerIndex':
-            options.indexOf(correct),
+        'answerIndex': options.indexOf(correct),
       });
     }
 
@@ -331,8 +359,7 @@ class RealtimeInviteService {
 
     await ref.update({
       'status': 'declined',
-      'updatedAt':
-          FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -343,8 +370,7 @@ class RealtimeInviteService {
 
     await ref.update({
       'status': 'cancelled',
-      'updatedAt':
-          FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -372,8 +398,7 @@ class RealtimeInviteService {
     for (final doc in snap.docs) {
       batch.update(doc.reference, {
         'status': 'expired',
-        'updatedAt':
-            FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
     }
 

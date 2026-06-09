@@ -8,6 +8,7 @@ import '../versus/realtime_invites_screen.dart';
 import '../versus/realtime_match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
 import '../achievements/achievements_screen.dart';
+import '../versus/match_play_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -184,6 +185,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => RealtimeMatchLobbyScreen(
+              matchId: matchId,
+            ),
+          ),
+        );
+        return;
+
+      case 'rematch_request':
+        final matchId = (data['matchId'] ?? '').toString();
+
+        if (matchId.isEmpty) return;
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MatchPlayScreen(
               matchId: matchId,
             ),
           ),

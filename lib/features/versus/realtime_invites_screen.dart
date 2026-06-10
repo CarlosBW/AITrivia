@@ -2,18 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/realtime_invite_service.dart';
-import 'realtime_match_lobby_screen.dart';
+import 'match_lobby_screen.dart';
 
 class RealtimeInvitesScreen extends StatefulWidget {
   const RealtimeInvitesScreen({super.key});
 
   @override
-  State<RealtimeInvitesScreen> createState() =>
-      _RealtimeInvitesScreenState();
+  State<RealtimeInvitesScreen> createState() => _RealtimeInvitesScreenState();
 }
 
-class _RealtimeInvitesScreenState
-    extends State<RealtimeInvitesScreen> {
+class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
   final _service = RealtimeInviteService.instance;
 
   bool _loadingAction = false;
@@ -63,7 +61,7 @@ class _RealtimeInvitesScreenState
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => RealtimeMatchLobbyScreen(
+          builder: (_) => MatchLobbyScreen(
             matchId: matchId,
           ),
         ),
@@ -123,18 +121,15 @@ class _RealtimeInvitesScreenState
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: docs.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(height: 10),
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final doc = docs[index];
                   final data = doc.data();
 
-                  final fromName =
-                      (data['fromName'] ?? 'Player').toString();
+                  final fromName = (data['fromName'] ?? 'Player').toString();
 
                   final categoryId =
-                      (data['categoryId'] ?? 'random')
-                          .toString();
+                      (data['categoryId'] ?? 'random').toString();
 
                   return Card(
                     elevation: 0,
@@ -142,22 +137,19 @@ class _RealtimeInvitesScreenState
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
-                        color:
-                            Colors.deepPurple.withOpacity(0.45),
+                        color: Colors.deepPurple.withOpacity(0.45),
                       ),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
                               CircleAvatar(
                                 backgroundColor:
-                                    Colors.deepPurple
-                                        .withOpacity(0.18),
+                                    Colors.deepPurple.withOpacity(0.18),
                                 child: const Icon(Icons.bolt),
                               ),
                               const SizedBox(width: 12),
@@ -166,25 +158,20 @@ class _RealtimeInvitesScreenState
                                   '$fromName invited you',
                                   style: const TextStyle(
                                     fontSize: 17,
-                                    fontWeight:
-                                        FontWeight.bold,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 8),
-
                           Text(
                             'Realtime 1 vs 1 • Category: $categoryId',
                             style: const TextStyle(
                               color: Colors.black54,
                             ),
                           ),
-
                           const SizedBox(height: 14),
-
                           Row(
                             children: [
                               Expanded(
@@ -197,13 +184,10 @@ class _RealtimeInvitesScreenState
                                   icon: const Icon(
                                     Icons.close,
                                   ),
-                                  label:
-                                      const Text('Decline'),
+                                  label: const Text('Decline'),
                                 ),
                               ),
-
                               const SizedBox(width: 10),
-
                               Expanded(
                                 child: FilledButton.icon(
                                   onPressed: _loadingAction
@@ -214,8 +198,7 @@ class _RealtimeInvitesScreenState
                                   icon: const Icon(
                                     Icons.check,
                                   ),
-                                  label:
-                                      const Text('Accept'),
+                                  label: const Text('Accept'),
                                 ),
                               ),
                             ],
@@ -228,7 +211,6 @@ class _RealtimeInvitesScreenState
               );
             },
           ),
-
           if (_loadingAction)
             Container(
               color: Colors.black.withOpacity(0.25),

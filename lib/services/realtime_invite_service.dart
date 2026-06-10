@@ -181,8 +181,8 @@ class RealtimeInviteService {
     await matchRef.set({
       'createdAt': now,
       'updatedAt': now,
-      'status': 'realtime_lobby',
-      'mode': 'realtime_friend',
+      'status': 'waiting',
+      'mode': 'fixed',
       'source': 'friend_invite',
       'inviteId': inviteId,
       'categoryId': resolvedCategoryId,

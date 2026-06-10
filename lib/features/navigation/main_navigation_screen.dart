@@ -7,6 +7,7 @@ import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import '../social/friends_screen.dart';
 import '../versus/pvp_screen.dart';
+import '../versus/match_lobby_screen.dart';
 import '../solo/solo_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
@@ -28,6 +29,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   bool _showNotificationOverlay = false;
   Timer? _overlayTimer;
 
+  String? _lastNotificationId;
+  bool _showingChallengeAcceptedDialog = false;
+  bool _navigatingToAcceptedChallenge = false;
+
   final Set<int> _visitedTabs = {0};
 
   void _selectTab(int index) {
@@ -48,6 +53,104 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
 
     return child;
+  }
+
+  Future<void> _checkSpecialNotifications(
+    QuerySnapshot<Map<String, dynamic>> snap,
+  ) async {
+    if (_showingChallengeAcceptedDialog) return;
+    if (_navigatingToAcceptedChallenge) return;
+    if (_isOpeningNotifications) return;
+    if (snap.docs.isEmpty) return;
+
+    final doc = snap.docs.first;
+
+    if (_lastNotificationId == doc.id) return;
+    _lastNotificationId = doc.id;
+
+    final notification = doc.data();
+    final type = (notification['type'] ?? '').toString();
+
+    if (type != 'realtime_invite_accepted') return;
+
+    final payload = Map<String, dynamic>.from(notification['data'] ?? {});
+    final matchId = (payload['matchId'] ?? '').toString();
+
+    if (matchId.isEmpty || !mounted) return;
+
+    _showingChallengeAcceptedDialog = true;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        final body = (notification['body'] ?? '').toString();
+
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(
+                Icons.sports_esports,
+                color: Colors.deepPurple,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Reto aceptado'),
+              ),
+            ],
+          ),
+          content: Text(
+            body.isEmpty ? 'Tu invitación fue aceptada.' : body,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Luego'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+
+                if (!mounted) return;
+
+                setState(() {
+                  _navigatingToAcceptedChallenge = true;
+                  _showNotificationOverlay = false;
+                });
+
+                try {
+                  await NotificationService.instance.markAsRead(
+                    notificationId: doc.id,
+                  );
+                } catch (_) {}
+
+                if (!mounted) return;
+
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MatchLobbyScreen(
+                      matchId: matchId,
+                    ),
+                  ),
+                );
+
+                if (!mounted) return;
+
+                setState(() {
+                  _navigatingToAcceptedChallenge = false;
+                });
+              },
+              child: const Text('Jugar ahora'),
+            ),
+          ],
+        );
+      },
+    );
+
+    _showingChallengeAcceptedDialog = false;
   }
 
   Future<void> _openNotifications() async {
@@ -115,7 +218,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           limit: 99,
         ),
         builder: (context, snap) {
-          final unreadCount = snap.data?.docs.length ?? 0;
+          final unreadSnapshot = snap.data;
+          final unreadCount = unreadSnapshot?.docs.length ?? 0;
+
+          if (unreadSnapshot != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _checkSpecialNotifications(unreadSnapshot);
+            });
+          }
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _handleUnreadCountChanged(unreadCount);
@@ -148,7 +259,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ],
               ),
-
               Positioned(
                 top: MediaQuery.of(context).padding.top + 6,
                 right: 10,
@@ -161,9 +271,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   ),
                 ),
               ),
-
-              if (_showNotificationOverlay)
-                const _NewNotificationOverlay(),
+              if (_showNotificationOverlay) const _NewNotificationOverlay(),
             ],
           );
         },

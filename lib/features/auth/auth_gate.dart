@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -31,17 +32,50 @@ class _AuthGateState extends State<AuthGate> {
         await auth.signInAnonymously();
       }
 
-      await bootstrapUserDoc(auth.currentUser!.uid);
+      final uid = auth.currentUser!.uid;
+
+      await _runWithFirestoreRetry(
+        () => bootstrapUserDoc(uid),
+      );
+
       await MatchService().recoverMyRealtimeStateOnAppStart();
       await PresenceService.instance.setOnline();
 
-      if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+
+      setState(() {
+        _loading = false;
+        _error = null;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
+      if (!mounted) return;
+
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _runWithFirestoreRetry(
+    Future<void> Function() action,
+  ) async {
+    const maxAttempts = 4;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await action();
+        return;
+      } on FirebaseException catch (e) {
+        final canRetry = e.code == 'aborted' || e.code == 'unavailable';
+
+        if (!canRetry || attempt == maxAttempts) {
+          rethrow;
+        }
+
+        await Future.delayed(
+          Duration(milliseconds: 250 * attempt),
+        );
       }
     }
   }
@@ -49,11 +83,25 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     if (_error != null) {
-      return Scaffold(body: Center(child: Text('Error: $_error')));
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Error: $_error',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
     }
 
     return const MainNavigationScreen();

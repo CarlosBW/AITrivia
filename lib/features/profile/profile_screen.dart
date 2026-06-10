@@ -192,6 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             maxLength: 20,
             decoration: const InputDecoration(
               hintText: 'Enter username',
+              helperText: 'Debe ser único. Usa 3 a 20 caracteres.',
             ),
             onChanged: (value) {
               draftUsername = value.trim();
@@ -217,22 +218,117 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     if (!mounted) return;
-    if (newUsername == null || newUsername.trim().isEmpty) return;
+    if (newUsername == null) return;
 
     final username = newUsername.trim();
+
+    if (username.isEmpty) return;
     if (username == currentUsername) return;
+
+    if (username.length < 3 || username.length > 20) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El username debe tener entre 3 y 20 caracteres.'),
+        ),
+      );
+      return;
+    }
+
+    final validUsernameRegex = RegExp(r'^[a-zA-Z0-9_]+$');
+
+    if (!validUsernameRegex.hasMatch(username)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Usa solo letras, números y guion bajo.'),
+        ),
+      );
+      return;
+    }
 
     setState(() => _saving = true);
 
     try {
-      await userRef.set({
-        'username': username,
-        'usernameLower': username.toLowerCase(),
-        'displayName': username,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      final db = FirebaseFirestore.instance;
+      final usernameLower = username.toLowerCase();
 
-      await _syncLeaderboardProfiles(username: username);
+      final existingUsersSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .where('usernameLower', isEqualTo: usernameLower)
+          .limit(2)
+          .get();
+
+      final usedByAnotherUser = existingUsersSnap.docs.any(
+        (doc) => doc.id != uid,
+      );
+
+      if (usedByAnotherUser) {
+        throw Exception('Username already in use.');
+      }
+
+      final newUsernameRef = db.collection('usernames').doc(usernameLower);
+
+      await db.runTransaction((tx) async {
+        final currentSnap = await tx.get(userRef);
+        final currentData = currentSnap.data() ?? {};
+
+        final oldUsernameLower =
+            (currentData['usernameLower'] ?? '').toString().toLowerCase();
+
+        final oldUsernameRef = oldUsernameLower.isEmpty
+            ? null
+            : db.collection('usernames').doc(oldUsernameLower);
+
+        final newUsernameSnap = await tx.get(newUsernameRef);
+
+        DocumentSnapshot<Map<String, dynamic>>? oldUsernameSnap;
+
+        if (oldUsernameRef != null && oldUsernameLower != usernameLower) {
+          oldUsernameSnap = await tx.get(oldUsernameRef);
+        }
+
+        if (newUsernameSnap.exists) {
+          final ownerUid = (newUsernameSnap.data()?['uid'] ?? '').toString();
+
+          if (ownerUid != uid) {
+            throw Exception('Username already in use.');
+          }
+        }
+
+        tx.set(
+          userRef,
+          {
+            'username': username,
+            'usernameLower': usernameLower,
+            'displayName': username,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+
+        tx.set(
+          newUsernameRef,
+          {
+            'uid': uid,
+            'username': username,
+            'usernameLower': usernameLower,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (!newUsernameSnap.exists)
+              'createdAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+
+        if (oldUsernameRef != null &&
+            oldUsernameSnap != null &&
+            oldUsernameSnap.exists &&
+            (oldUsernameSnap.data()?['uid'] ?? '').toString() == uid) {
+          tx.delete(oldUsernameRef);
+        }
+      });
+
+      await _syncLeaderboardProfiles(
+        username: username,
+      );
       await _loadProfile(showLoading: false);
 
       if (!mounted) return;
@@ -240,9 +336,17 @@ class _ProfileScreenState extends State<ProfileScreen>
         const SnackBar(content: Text('Perfil actualizado')),
       );
     } catch (e) {
+      debugPrint('PROFILE UPDATE ERROR: $e');
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error actualizando perfil: $e')),
+        SnackBar(
+          content: Text(
+            e.toString().contains('Username already in use')
+                ? 'Ese username ya existe.'
+                : 'Error actualizando perfil: $e',
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -863,44 +967,114 @@ class _RecentMatchHistory extends StatelessWidget {
             final color = _resultColor(result);
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: color.withOpacity(0.25)),
+                color: color.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: color.withOpacity(0.30),
+                ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(_resultIcon(result), color: color),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_resultText(result)} vs $opponent',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Icon(
+                        _resultIcon(result),
+                        color: color,
+                        size: 26,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _resultText(result).toUpperCase(),
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          ranked
-                              ? 'Ranked • $myScore-$opponentScore'
-                              : 'Casual • $myScore-$opponentScore',
-                          style: const TextStyle(fontSize: 12),
+                      ),
+                      if (deltaText.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            deltaText,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'vs $opponent',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
                   ),
-                  if (deltaText.isNotEmpty)
-                    Text(
-                      deltaText,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.70),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Score',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$myScore - $opponentScore',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.70),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          ranked ? 'Ranked' : 'Casual',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );

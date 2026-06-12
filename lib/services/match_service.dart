@@ -487,30 +487,18 @@ class MatchService {
         });
 
         tx.set(
-            meUserRef,
-            {
-              'presence': {
-                'status': 'in_match',
-                'inMatch': true,
-                'lastSeenAt': FieldValue.serverTimestamp(),
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
+          meUserRef,
+          {
+            'presence': {
+              'status': 'in_match',
+              'inMatch': true,
+              'lastSeenAt': FieldValue.serverTimestamp(),
               'updatedAt': FieldValue.serverTimestamp(),
             },
-            SetOptions(merge: true));
-
-        tx.set(
-            oppUserRef,
-            {
-              'presence': {
-                'status': 'in_match',
-                'inMatch': true,
-                'lastSeenAt': FieldValue.serverTimestamp(),
-                'updatedAt': FieldValue.serverTimestamp(),
-              },
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
 
         return true;
       });

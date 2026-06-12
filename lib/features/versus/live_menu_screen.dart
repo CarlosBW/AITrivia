@@ -26,7 +26,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
 
   String _selectedCategoryId = 'cine';
 
-  void _goMatchmaking({required bool ranked}) {
+  void _goMatchmaking() {
     if (_useAi) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -41,8 +41,8 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
       MaterialPageRoute(
         builder: (_) => LiveMatchmakingScreen(
           categoryId: _selectedCategoryId,
-          ranked: ranked,
-          winReward: ranked ? 2 : 0,
+          ranked: true,
+          winReward: 2,
         ),
       ),
     );
@@ -89,7 +89,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
                 Text('$rating MMR'),
                 const SizedBox(height: 4),
                 const Text(
-                  'Ranked intenta emparejarte primero con rivales cercanos y luego amplía la búsqueda.',
+                  'Buscar rival afecta tu MMR y tu liga PvP.',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.black54,
@@ -125,7 +125,10 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             stream: userRef.snapshots(),
             builder: (context, snap) {
               final data = snap.data?.data() ?? {};
-              final rating = ((data['pvpRating'] ?? PvpLeagueService.defaultRating) as num).toInt();
+              final rating =
+                  ((data['pvpRating'] ?? PvpLeagueService.defaultRating)
+                          as num)
+                      .toInt();
               final delta = ((data['pvpRatingDelta'] ?? 0) as num).toInt();
 
               return _buildPvpLeagueCard(
@@ -134,9 +137,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               );
             },
           ),
-
           const SizedBox(height: 18),
-
           Row(
             children: [
               const Expanded(
@@ -155,9 +156,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           if (!_useAi) ...[
             const Text(
               'Tema fijo',
@@ -187,35 +186,29 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               ),
             ),
           ],
-
           const SizedBox(height: 22),
-
           const Text(
             'Matchmaking público',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
           FilledButton.icon(
-            onPressed: () => _goMatchmaking(ranked: true),
+            onPressed: _goMatchmaking,
             icon: const Icon(Icons.emoji_events),
-            label: const Text('Ranked Match'),
+            label: const Text('Buscar rival'),
           ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: () => _goMatchmaking(ranked: false),
-            icon: const Icon(Icons.sports_esports),
-            label: const Text('Casual Match'),
+          const SizedBox(height: 8),
+          const Text(
+            'Buscar rival afecta tu MMR, liga y estadísticas PvP.',
+            style: TextStyle(color: Colors.black54, fontSize: 13),
+            textAlign: TextAlign.center,
           ),
-
-          const SizedBox(height: 22),
-
+          const SizedBox(height: 24),
           const Text(
             'Partidas privadas',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-
           FilledButton.tonalIcon(
             onPressed: () {
               Navigator.push(
@@ -241,11 +234,9 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             icon: const Icon(Icons.login),
             label: const Text('Unirme con código'),
           ),
-
           const SizedBox(height: 28),
-
           const Text(
-            'Ranked afecta tu MMR. Casual y salas privadas son para jugar sin presión.',
+            'Las partidas privadas son amistosas y no afectan tu ranking.',
             style: TextStyle(color: Colors.black54),
             textAlign: TextAlign.center,
           ),

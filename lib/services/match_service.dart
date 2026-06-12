@@ -1180,12 +1180,12 @@ class MatchService {
   }
 
   Future<void> finalizeMatchIfComplete(String matchId) async {
-    // La Cloud Function finaliza cuando ambos jugadores están finished.
+    // La finalización real la hace Firebase Functions.
     return;
   }
 
   Future<void> forceFinalizeMatch(String matchId) async {
-    // La finalización real la hace Cloud Function.
+    // La finalización real la hace Firebase Functions.
     return;
   }
 

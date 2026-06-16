@@ -34,6 +34,41 @@ class NotificationService {
         .snapshots();
   }
 
+  Future<void> markMatchNotificationsAsRead({
+    required String matchId,
+    List<String> types = const ['match_invite', 'match_turn'],
+  }) async {
+    if (matchId.trim().isEmpty) return;
+
+    final batch = _db.batch();
+    int count = 0;
+
+    for (final type in types) {
+      final snap = await _notificationsCol(uid)
+          .where('read', isEqualTo: false)
+          .where('type', isEqualTo: type)
+          .where('data.matchId', isEqualTo: matchId)
+          .limit(20)
+          .get();
+
+      for (final doc in snap.docs) {
+        batch.set(
+          doc.reference,
+          {
+            'read': true,
+            'readAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+  }
+
   Future<void> markRematchRequestNotificationsAsRead({
     required String matchId,
   }) async {

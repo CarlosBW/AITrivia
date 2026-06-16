@@ -8,6 +8,7 @@ import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
+import '../../services/notification_service.dart';
 
 class AsyncMatchPlayScreen extends StatefulWidget {
   final String asyncMatchId;
@@ -182,6 +183,9 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     _submittedFinal = true;
 
     try {
+      await NotificationService.instance.markMatchNotificationsAsRead(
+        matchId: widget.asyncMatchId,
+      );
       await _service.submitAsyncResult(
         matchId: widget.asyncMatchId,
         score: _correct,

@@ -209,6 +209,20 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reto asíncrono'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            _leavingScreen = true;
+
+            try {
+              await _presenceService.setAvailable();
+            } catch (_) {}
+
+            if (!context.mounted) return;
+
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+        ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
@@ -520,7 +534,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       opponentName: opponentName,
       myScore: myScore,
       opponentScore: null,
-      primaryButtonText: 'Volver',
+      primaryButtonText: 'Salir',
       onPrimaryPressed: () async {
         _leavingScreen = true;
 
@@ -530,7 +544,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
         if (!context.mounted) return;
 
-        Navigator.pop(context);
+        Navigator.popUntil(context, (route) => route.isFirst);
       },
     );
   }
@@ -557,7 +571,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         opponentName: opponentName,
         myScore: myScore,
         opponentScore: opponentFinished ? opponentScore : null,
-        primaryButtonText: 'Volver',
+        primaryButtonText: 'Salir',
         onPrimaryPressed: () async {
           _leavingScreen = true;
 
@@ -567,7 +581,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
           if (!context.mounted) return;
 
-          Navigator.pop(context);
+          Navigator.popUntil(context, (route) => route.isFirst);
         },
       );
     }
@@ -598,7 +612,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       opponentName: opponentName,
       myScore: myScore,
       opponentScore: opponentScore,
-      primaryButtonText: 'Volver',
+      primaryButtonText: 'Salir',
       onPrimaryPressed: () async {
         _leavingScreen = true;
 
@@ -608,7 +622,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
         if (!context.mounted) return;
 
-        Navigator.pop(context);
+        Navigator.popUntil(context, (route) => route.isFirst);
       },
       secondaryButtonText: 'Revancha',
       onSecondaryPressed: () {

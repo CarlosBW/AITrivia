@@ -404,11 +404,20 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('1 vs 1 • ${widget.matchId.substring(0, 5)}'),
+        title: const Text('1 vs 1'),
         leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: 'Salir',
-          onPressed: () => _exitToPvpMenu(context),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            _leavingMatch = true;
+
+            try {
+              await _presenceService.setAvailable();
+            } catch (_) {}
+
+            if (!context.mounted) return;
+
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(

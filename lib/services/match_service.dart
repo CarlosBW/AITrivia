@@ -1693,11 +1693,54 @@ class MatchService {
         data: {
           'matchId': matchRef.id,
           'challengerUid': uid,
+          'challengerName': challengerDisplayName,
+          'categoryId': categoryId,
+          'difficulty': difficulty,
+          'totalQuestions': totalQuestions,
+          'timePerQuestionSec': timePerQuestionSec,
         },
       );
     } catch (_) {}
 
     return matchRef.id;
+  }
+
+  Future<void> declineAsyncMatch({
+    required String matchId,
+  }) async {
+    final ref = _db.collection('async_matches').doc(matchId);
+
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+
+      if (data == null) {
+        throw Exception('Reto no encontrado');
+      }
+
+      final challengerUid = (data['challengerUid'] ?? '').toString();
+      final challengedUid = (data['challengedUid'] ?? '').toString();
+
+      if (uid != challengerUid && uid != challengedUid) {
+        throw Exception('No perteneces a este reto');
+      }
+
+      final status = (data['status'] ?? '').toString();
+
+      if (status == 'completed' || status == 'declined') {
+        return;
+      }
+
+      tx.set(
+          ref,
+          {
+            'status': 'declined',
+            'declinedByUid': uid,
+            'declinedAt': FieldValue.serverTimestamp(),
+            'lastUpdatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
+    });
   }
 
   Future<void> submitAsyncResult({

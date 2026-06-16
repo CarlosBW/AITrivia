@@ -9,6 +9,8 @@ import '../versus/realtime_match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
 import '../achievements/achievements_screen.dart';
 import '../versus/match_play_screen.dart';
+import '../../services/match_service.dart';
+import '../../services/realtime_invite_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -19,6 +21,9 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _service = NotificationService.instance;
+  final _matchService = MatchService();
+  final _realtimeInviteService = RealtimeInviteService.instance;
+  final Set<String> _decliningIds = {};
 
   bool _markingAll = false;
 
@@ -101,6 +106,72 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } finally {
       if (mounted) {
         setState(() => _markingAll = false);
+      }
+    }
+  }
+
+  Future<void> _declineRealtimeInvite({
+    required String notificationId,
+    required String inviteId,
+  }) async {
+    if (inviteId.isEmpty) return;
+    if (_decliningIds.contains(notificationId)) return;
+
+    setState(() => _decliningIds.add(notificationId));
+
+    try {
+      await _realtimeInviteService.declineInvite(inviteId: inviteId);
+      await _markAsRead(notificationId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invitación rechazada')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _decliningIds.remove(notificationId));
+      }
+    }
+  }
+
+  Future<void> _declineAsyncInvite({
+    required String notificationId,
+    required String matchId,
+  }) async {
+    if (matchId.isEmpty) return;
+    if (_decliningIds.contains(notificationId)) return;
+
+    setState(() => _decliningIds.add(notificationId));
+
+    try {
+      await _matchService.declineAsyncMatch(matchId: matchId);
+      await _markAsRead(notificationId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reto rechazado')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _decliningIds.remove(notificationId));
       }
     }
   }
@@ -297,6 +368,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   isPvp: type == 'match_invite' ||
                       type == 'match_turn' ||
                       type == 'match_result',
+                  matchData: payload,
+                  declining: _decliningIds.contains(doc.id),
+                  onDecline: type == 'match_invite'
+                      ? () => _declineAsyncInvite(
+                            notificationId: doc.id,
+                            matchId: (payload['matchId'] ?? '').toString(),
+                          )
+                      : type == 'realtime_invite'
+                          ? () => _declineRealtimeInvite(
+                                notificationId: doc.id,
+                                inviteId:
+                                    (payload['inviteId'] ?? '').toString(),
+                              )
+                          : null,
                   onTap: () => _handleNotificationTap(
                     notificationId: doc.id,
                     type: type,
@@ -320,6 +405,9 @@ class _NotificationTile extends StatelessWidget {
   final String cta;
   final bool read;
   final bool isPvp;
+  final Map<String, dynamic> matchData;
+  final bool declining;
+  final VoidCallback? onDecline;
   final VoidCallback? onTap;
 
   const _NotificationTile({
@@ -330,11 +418,24 @@ class _NotificationTile extends StatelessWidget {
     required this.cta,
     required this.read,
     required this.isPvp,
+    required this.matchData,
+    required this.declining,
+    required this.onDecline,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final challengerName = (matchData['challengerName'] ?? '').toString();
+
+    final categoryId = (matchData['categoryId'] ?? '').toString();
+
+    final totalQuestions = (matchData['totalQuestions'] ?? '').toString();
+
+    final timePerQuestionSec =
+        (matchData['timePerQuestionSec'] ?? '').toString();
+
+    final showMatchDetails = cta == 'Play now' && categoryId.isNotEmpty;
     final cardColor = read
         ? Colors.black12
         : isPvp
@@ -373,13 +474,47 @@ class _NotificationTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(body),
             ],
+            if (showMatchDetails) ...[
+              const SizedBox(height: 10),
+              if (challengerName.isNotEmpty)
+                Text(
+                  '👤 $challengerName',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              const SizedBox(height: 4),
+              Text('🎯 Category: $categoryId'),
+              Text('❓ Questions: $totalQuestions'),
+              Text('⏱ Time: $timePerQuestionSec sec'),
+            ],
             const SizedBox(height: 8),
-            Text(
-              cta,
-              style: TextStyle(
-                color: read ? Colors.black54 : accentColor,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    cta,
+                    style: TextStyle(
+                      color: read ? Colors.black54 : accentColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (onDecline != null)
+                  TextButton.icon(
+                    onPressed: declining ? null : onDecline,
+                    icon: declining
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.close),
+                    label: const Text('Decline'),
+                  ),
+              ],
             ),
           ],
         ),

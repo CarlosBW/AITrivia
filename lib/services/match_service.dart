@@ -117,6 +117,16 @@ class MatchService {
     final userSnap = await _userRef(uid).get();
     final userData = userSnap.data() ?? {};
 
+    final resolvedDisplayName =
+        (userData['displayName'] ?? userData['username'] ?? displayName)
+                .toString()
+                .trim()
+                .isEmpty
+            ? displayName
+            : (userData['displayName'] ?? userData['username'] ?? displayName)
+                .toString()
+                .trim();
+
     if (ranked) {
       final cooldownUntil = _activePvpCooldownUntil(userData);
       if (cooldownUntil != null) {
@@ -132,7 +142,7 @@ class MatchService {
 
     await ref.set({
       'uid': uid,
-      'displayName': displayName,
+      'displayName': resolvedDisplayName,
       'categoryId': categoryId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
@@ -516,6 +526,11 @@ class MatchService {
 
       final code = _randomCode(5);
 
+      final myName =
+          (meData?['displayName'] ?? myDisplayName).toString().trim();
+
+      final finalMyName = myName.isEmpty ? 'Player' : myName;
+
       await matchRef.set({
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'waiting',
@@ -562,7 +577,7 @@ class MatchService {
         'guestUid': oppUid,
         'players': {
           uid: {
-            'displayName': myDisplayName,
+            'displayName': finalMyName,
             'score': 0,
             'ready': false,
             'finished': false,
@@ -1299,6 +1314,10 @@ class MatchService {
 
       final code = _randomCode(5);
 
+      final ranked = data['ranked'] == true;
+      final affectsPvpRating = data['affectsPvpRating'] == true || ranked;
+      final matchmakingType = (data['matchmakingType'] ?? '').toString();
+
       tx.set(newRef, {
         'createdAt': FieldValue.serverTimestamp(),
         'status': 'playing',
@@ -1312,10 +1331,8 @@ class MatchService {
         'totalQuestions': totalQuestions,
         'timePerQuestionSec': timePerQuestionSec,
         'questions': questions,
-
         'hostUid': hostUid,
         'guestUid': guestUid,
-
         'players': {
           hostUid: {
             'displayName': hostName,
@@ -1330,14 +1347,16 @@ class MatchService {
             'finished': false,
           },
         },
-
         'startAt': FieldValue.serverTimestamp(),
         'endedAt': null,
         'winnerUid': null,
         'rewarded': false,
         'matchCode': code,
-
-        // referencia al match anterior
+        'ranked': ranked,
+        'affectsPvpRating': affectsPvpRating,
+        'matchmakingType': matchmakingType.isEmpty
+            ? (ranked ? 'ranked_rematch' : 'casual_rematch')
+            : matchmakingType,
         'previousMatchId': matchId,
       });
 

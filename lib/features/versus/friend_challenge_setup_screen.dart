@@ -29,8 +29,30 @@ class _FriendChallengeSetupScreenState
   bool _loading = false;
   String? _error;
 
-  Future<void> _startAsyncChallenge() async {
+  String _challengeType = 'realtime';
+  String _categoryId = 'random';
+  int _difficulty = 1;
+  int _totalQuestions = 10;
+  int _timePerQuestionSec = 10;
+
+  final List<String> _categories = const [
+    'random',
+    'cine',
+    'historia',
+    'videojuegos',
+  ];
+
+  Future<void> _sendChallenge() async {
     if (_loading) return;
+
+    if (_challengeType == 'realtime' && !widget.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tu amigo no está conectado para jugar en tiempo real.'),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -40,12 +62,36 @@ class _FriendChallengeSetupScreenState
     try {
       final myName = await _matchService.getMyDisplayNameFallback('Player');
 
+      if (_challengeType == 'realtime') {
+        await _realtimeInviteService.createInvite(
+          toUid: widget.friendUid,
+          toName: widget.friendName,
+          fromName: myName,
+          categoryId: _categoryId,
+          difficulty: _difficulty,
+          totalQuestions: _totalQuestions,
+          timePerQuestionSec: _timePerQuestionSec,
+          winReward: 2,
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reto en tiempo real enviado a ${widget.friendName}'),
+          ),
+        );
+
+        Navigator.pop(context);
+        return;
+      }
+
       final matchId = await _matchService.createAsyncFixedMatch(
         challengedUid: widget.friendUid,
-        categoryId: 'random',
-        difficulty: 1,
-        totalQuestions: 10,
-        timePerQuestionSec: 10,
+        categoryId: _categoryId,
+        difficulty: _difficulty,
+        totalQuestions: _totalQuestions,
+        timePerQuestionSec: _timePerQuestionSec,
         winReward: 2,
         challengerDisplayName: myName,
         challengedDisplayName: widget.friendName,
@@ -72,73 +118,18 @@ class _FriendChallengeSetupScreenState
     }
   }
 
-  Future<void> _startRealtimeChallenge() async {
-    if (_loading) return;
-
-    if (!widget.isOnline) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Tu amigo no está conectado para jugar en tiempo real.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final myName = await _matchService.getMyDisplayNameFallback(
-        'Player',
-      );
-
-      await _realtimeInviteService.createInvite(
-        toUid: widget.friendUid,
-        toName: widget.friendName,
-        fromName: myName,
-        categoryId: 'random',
-        difficulty: 1,
-        totalQuestions: 10,
-        timePerQuestionSec: 10,
-        winReward: 2,
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Realtime invite sent to ${widget.friendName}',
-          ),
-        ),
-      );
-
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final onlineText = widget.isOnline ? 'Online' : 'Offline';
     final onlineColor = widget.isOnline ? Colors.green : Colors.grey;
 
+    final canSendRealtime = widget.isOnline;
+    final sendButtonText =
+        _challengeType == 'realtime' ? 'Enviar reto en tiempo real' : 'Crear reto asíncrono';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Challenge Friend'),
+        title: const Text('Configurar reto'),
       ),
       body: Stack(
         children: [
@@ -149,8 +140,11 @@ class _FriendChallengeSetupScreenState
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: Colors.deepPurple.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.deepPurple.withOpacity(0.25),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -189,50 +183,158 @@ class _FriendChallengeSetupScreenState
                   ],
                 ),
               ),
-
               const SizedBox(height: 18),
-
+              const Text(
+                'Tipo de reto',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(
+                    value: 'realtime',
+                    icon: Icon(
+                      widget.isOnline ? Icons.bolt : Icons.lock,
+                    ),
+                    label: const Text('Tiempo real'),
+                  ),
+                  const ButtonSegment(
+                    value: 'async',
+                    icon: Icon(Icons.schedule),
+                    label: Text('Asíncrono'),
+                  ),
+                ],
+                selected: {_challengeType},
+                onSelectionChanged: (values) {
+                  setState(() {
+                    _challengeType = values.first;
+                  });
+                },
+              ),
+              if (_challengeType == 'realtime' && !canSendRealtime) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Tu amigo debe estar online para jugar en tiempo real.',
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ],
+              const SizedBox(height: 20),
+              const Text(
+                'Configuración del match',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _categoryId,
+                decoration: const InputDecoration(
+                  labelText: 'Categoría',
+                  border: OutlineInputBorder(),
+                ),
+                items: _categories
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(
+                          category == 'random' ? 'Random' : category,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _loading
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() => _categoryId = value);
+                      },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _difficulty,
+                decoration: const InputDecoration(
+                  labelText: 'Dificultad',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('Fácil')),
+                  DropdownMenuItem(value: 2, child: Text('Media')),
+                  DropdownMenuItem(value: 3, child: Text('Difícil')),
+                ],
+                onChanged: _loading
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() => _difficulty = value);
+                      },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _totalQuestions,
+                decoration: const InputDecoration(
+                  labelText: 'Cantidad de preguntas',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 5, child: Text('5 preguntas')),
+                  DropdownMenuItem(value: 10, child: Text('10 preguntas')),
+                  DropdownMenuItem(value: 15, child: Text('15 preguntas')),
+                ],
+                onChanged: _loading
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() => _totalQuestions = value);
+                      },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _timePerQuestionSec,
+                decoration: const InputDecoration(
+                  labelText: 'Tiempo por pregunta',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 10, child: Text('10 segundos')),
+                  DropdownMenuItem(value: 15, child: Text('15 segundos')),
+                  DropdownMenuItem(value: 20, child: Text('20 segundos')),
+                ],
+                onChanged: _loading
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() => _timePerQuestionSec = value);
+                      },
+              ),
               if (_error != null) ...[
+                const SizedBox(height: 14),
                 Text(
                   _error!,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
               ],
-
+              const SizedBox(height: 22),
               FilledButton.icon(
-                onPressed: _loading || !widget.isOnline
-                    ? null
-                    : _startRealtimeChallenge,
+                onPressed:
+                    _loading || (_challengeType == 'realtime' && !canSendRealtime)
+                        ? null
+                        : _sendChallenge,
                 icon: Icon(
-                  widget.isOnline ? Icons.bolt : Icons.lock,
+                  _challengeType == 'realtime'
+                      ? Icons.bolt
+                      : Icons.schedule,
                 ),
-                label: Text(
-                  widget.isOnline
-                      ? 'Realtime Challenge'
-                      : 'Realtime Challenge Locked',
-                ),
+                label: Text(sendButtonText),
               ),
-
               const SizedBox(height: 12),
-
-              OutlinedButton.icon(
-                onPressed: _loading ? null : _startAsyncChallenge,
-                icon: const Icon(Icons.schedule),
-                label: const Text('Async Challenge'),
-              ),
-
-              const SizedBox(height: 18),
-
-              const Text(
-                'Realtime requires both players to be online. Async can be played anytime.',
+              Text(
+                _challengeType == 'realtime'
+                    ? 'Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.'
+                    : 'Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
+                style: const TextStyle(color: Colors.black54),
               ),
             ],
           ),
-
           if (_loading)
             Container(
               color: Colors.black.withOpacity(0.25),

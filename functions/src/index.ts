@@ -11,6 +11,59 @@ const db = admin.firestore();
 const DEFAULT_RATING = 1000;
 const K_FACTOR = 32;
 
+type PvpLeagueInfo = {
+  id: string;
+  name: string;
+  emoji: string;
+  minRating: number;
+  maxRating: number;
+};
+
+const PVP_LEAGUES: PvpLeagueInfo[] = [
+  {
+    id: "bronze",
+    name: "Bronze",
+    emoji: "🥉",
+    minRating: 0,
+    maxRating: 999,
+  },
+  {
+    id: "silver",
+    name: "Silver",
+    emoji: "🥈",
+    minRating: 1000,
+    maxRating: 1199,
+  },
+  {
+    id: "gold",
+    name: "Gold",
+    emoji: "🥇",
+    minRating: 1200,
+    maxRating: 1399,
+  },
+  {
+    id: "platinum",
+    name: "Platinum",
+    emoji: "💎",
+    minRating: 1400,
+    maxRating: 1599,
+  },
+  {
+    id: "diamond",
+    name: "Diamond",
+    emoji: "🔷",
+    minRating: 1600,
+    maxRating: 1899,
+  },
+  {
+    id: "master",
+    name: "Master",
+    emoji: "👑",
+    minRating: 1900,
+    maxRating: 5000,
+  },
+];
+
 /**
  * Safely converts a value to integer.
  * @param {unknown} value Value to convert.
@@ -20,6 +73,25 @@ const K_FACTOR = 32;
 function safeInt(value: unknown, fallback: number): number {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
+}
+
+/**
+ * Returns the PvP league for a rating.
+ * @param {number} rating Player rating.
+ * @return {PvpLeagueInfo} League information.
+ */
+function leagueForRating(rating: number): PvpLeagueInfo {
+  const league = PVP_LEAGUES.find((item) => {
+    return rating >= item.minRating && rating <= item.maxRating;
+  });
+
+  if (league) return league;
+
+  if (rating < PVP_LEAGUES[0].minRating) {
+    return PVP_LEAGUES[0];
+  }
+
+  return PVP_LEAGUES[PVP_LEAGUES.length - 1];
 }
 
 /**
@@ -37,7 +109,7 @@ function calculateRatings(params: {
   playerBRating: number;
   playerAScore: number;
   playerBScore: number;
-}) {
+}): {newA: number; newB: number} {
   let resultA = 0.5;
 
   if (params.playerAScore > params.playerBScore) resultA = 1.0;
@@ -141,11 +213,30 @@ export const finalizePvpMatch = onDocumentUpdated(
       const guestWon = winnerUid === guestUid;
       const draw = winnerUid === null;
 
+      const hostCurrentStreak = safeInt(hostUser.currentWinStreak1v1, 0);
+      const guestCurrentStreak = safeInt(guestUser.currentWinStreak1v1, 0);
+
+      const hostNewStreak = hostWon ? hostCurrentStreak + 1 : 0;
+      const guestNewStreak = guestWon ? guestCurrentStreak + 1 : 0;
+
+      const hostBestStreak = Math.max(
+        safeInt(hostUser.bestWinStreak1v1, 0),
+        hostNewStreak
+      );
+
+      const guestBestStreak = Math.max(
+        safeInt(guestUser.bestWinStreak1v1, 0),
+        guestNewStreak
+      );
+
       const ratingResults: Record<string, Record<string, unknown>> = {};
 
       if (ranked) {
         const hostOldRating = safeInt(hostUser.pvpRating, DEFAULT_RATING);
         const guestOldRating = safeInt(guestUser.pvpRating, DEFAULT_RATING);
+
+        const hostOldLeague = leagueForRating(hostOldRating);
+        const guestOldLeague = leagueForRating(guestOldRating);
 
         const {newA: hostNewRating, newB: guestNewRating} = calculateRatings({
           playerARating: hostOldRating,
@@ -153,6 +244,9 @@ export const finalizePvpMatch = onDocumentUpdated(
           playerAScore: hostScore,
           playerBScore: guestScore,
         });
+
+        const hostNewLeague = leagueForRating(hostNewRating);
+        const guestNewLeague = leagueForRating(guestNewRating);
 
         const hostDelta = hostNewRating - hostOldRating;
         const guestDelta = guestNewRating - guestOldRating;
@@ -169,6 +263,9 @@ export const finalizePvpMatch = onDocumentUpdated(
           ratingDelta: hostDelta,
           xpEarned: hostXp,
           coinsEarned: hostCoins,
+          winStreak: hostNewStreak,
+          oldLeagueName: hostOldLeague.name,
+          newLeagueName: hostNewLeague.name,
         };
 
         ratingResults[guestUid] = {
@@ -177,6 +274,9 @@ export const finalizePvpMatch = onDocumentUpdated(
           ratingDelta: guestDelta,
           xpEarned: guestXp,
           coinsEarned: guestCoins,
+          winStreak: guestNewStreak,
+          oldLeagueName: guestOldLeague.name,
+          newLeagueName: guestNewLeague.name,
         };
 
         tx.set(
@@ -186,11 +286,12 @@ export const finalizePvpMatch = onDocumentUpdated(
             wins1v1: admin.firestore.FieldValue.increment(hostWon ? 1 : 0),
             losses1v1: admin.firestore.FieldValue.increment(guestWon ? 1 : 0),
             draws1v1: admin.firestore.FieldValue.increment(draw ? 1 : 0),
-            currentWinStreak1v1: hostWon ?
-              admin.firestore.FieldValue.increment(1) :
-              0,
+            currentWinStreak1v1: hostNewStreak,
+            bestWinStreak1v1: hostBestStreak,
             pvpRating: hostNewRating,
             pvpRatingDelta: hostDelta,
+            pvpLeagueId: hostNewLeague.id,
+            pvpLeagueName: hostNewLeague.name,
             xp: admin.firestore.FieldValue.increment(hostXp),
             coins: admin.firestore.FieldValue.increment(hostCoins),
             lastRankedXpEarned: hostXp,
@@ -207,11 +308,12 @@ export const finalizePvpMatch = onDocumentUpdated(
             wins1v1: admin.firestore.FieldValue.increment(guestWon ? 1 : 0),
             losses1v1: admin.firestore.FieldValue.increment(hostWon ? 1 : 0),
             draws1v1: admin.firestore.FieldValue.increment(draw ? 1 : 0),
-            currentWinStreak1v1: guestWon ?
-              admin.firestore.FieldValue.increment(1) :
-              0,
+            currentWinStreak1v1: guestNewStreak,
+            bestWinStreak1v1: guestBestStreak,
             pvpRating: guestNewRating,
             pvpRatingDelta: guestDelta,
+            pvpLeagueId: guestNewLeague.id,
+            pvpLeagueName: guestNewLeague.name,
             xp: admin.firestore.FieldValue.increment(guestXp),
             coins: admin.firestore.FieldValue.increment(guestCoins),
             lastRankedXpEarned: guestXp,
@@ -228,9 +330,8 @@ export const finalizePvpMatch = onDocumentUpdated(
             wins1v1: admin.firestore.FieldValue.increment(hostWon ? 1 : 0),
             losses1v1: admin.firestore.FieldValue.increment(guestWon ? 1 : 0),
             draws1v1: admin.firestore.FieldValue.increment(draw ? 1 : 0),
-            currentWinStreak1v1: hostWon ?
-              admin.firestore.FieldValue.increment(1) :
-              0,
+            currentWinStreak1v1: hostNewStreak,
+            bestWinStreak1v1: hostBestStreak,
             coins: admin.firestore.FieldValue.increment(
               hostWon ? winReward : 0
             ),
@@ -246,9 +347,8 @@ export const finalizePvpMatch = onDocumentUpdated(
             wins1v1: admin.firestore.FieldValue.increment(guestWon ? 1 : 0),
             losses1v1: admin.firestore.FieldValue.increment(hostWon ? 1 : 0),
             draws1v1: admin.firestore.FieldValue.increment(draw ? 1 : 0),
-            currentWinStreak1v1: guestWon ?
-              admin.firestore.FieldValue.increment(1) :
-              0,
+            currentWinStreak1v1: guestNewStreak,
+            bestWinStreak1v1: guestBestStreak,
             coins: admin.firestore.FieldValue.increment(
               guestWon ? winReward : 0
             ),
@@ -269,9 +369,14 @@ export const finalizePvpMatch = onDocumentUpdated(
           opponentName: guestName,
           myScore: hostScore,
           opponentScore: guestScore,
+          oldRating: ratingResults[hostUid]?.oldRating ?? null,
+          newRating: ratingResults[hostUid]?.newRating ?? null,
           ratingDelta: ratingResults[hostUid]?.ratingDelta ?? null,
           xpEarned: ratingResults[hostUid]?.xpEarned ?? null,
           coinsEarned: ratingResults[hostUid]?.coinsEarned ?? null,
+          winStreak: ratingResults[hostUid]?.winStreak ?? null,
+          oldLeagueName: ratingResults[hostUid]?.oldLeagueName ?? null,
+          newLeagueName: ratingResults[hostUid]?.newLeagueName ?? null,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -288,9 +393,14 @@ export const finalizePvpMatch = onDocumentUpdated(
           opponentName: hostName,
           myScore: guestScore,
           opponentScore: hostScore,
+          oldRating: ratingResults[guestUid]?.oldRating ?? null,
+          newRating: ratingResults[guestUid]?.newRating ?? null,
           ratingDelta: ratingResults[guestUid]?.ratingDelta ?? null,
           xpEarned: ratingResults[guestUid]?.xpEarned ?? null,
           coinsEarned: ratingResults[guestUid]?.coinsEarned ?? null,
+          winStreak: ratingResults[guestUid]?.winStreak ?? null,
+          oldLeagueName: ratingResults[guestUid]?.oldLeagueName ?? null,
+          newLeagueName: ratingResults[guestUid]?.newLeagueName ?? null,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}

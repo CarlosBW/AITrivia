@@ -11,11 +11,8 @@ class RealtimeInviteService {
   static final RealtimeInviteService instance = RealtimeInviteService._();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
   final NotificationService _notificationService = NotificationService.instance;
-
   final Random _random = Random();
 
   String get uid => _auth.currentUser!.uid;
@@ -34,10 +31,7 @@ class RealtimeInviteService {
     return _invitesCol
         .where('toUid', isEqualTo: uid)
         .where('status', isEqualTo: 'pending')
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
+        .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots();
   }
@@ -48,12 +42,41 @@ class RealtimeInviteService {
     return _invitesCol
         .where('fromUid', isEqualTo: uid)
         .where('status', isEqualTo: 'pending')
-        .orderBy(
-          'createdAt',
-          descending: true,
-        )
+        .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots();
+  }
+
+  String _notificationIdForInvite({
+    required String fromUid,
+    required String categoryId,
+    required int difficulty,
+    required int totalQuestions,
+    required int timePerQuestionSec,
+  }) {
+    return 'realtime_invite_${fromUid}_${categoryId}_${difficulty}_${totalQuestions}_$timePerQuestionSec';
+  }
+
+  Future<String?> _findExistingPendingInvite({
+    required String toUid,
+    required String categoryId,
+    required int difficulty,
+    required int totalQuestions,
+    required int timePerQuestionSec,
+  }) async {
+    final snap = await _invitesCol
+        .where('fromUid', isEqualTo: uid)
+        .where('toUid', isEqualTo: toUid)
+        .where('status', isEqualTo: 'pending')
+        .where('categoryId', isEqualTo: categoryId)
+        .where('difficulty', isEqualTo: difficulty)
+        .where('totalQuestions', isEqualTo: totalQuestions)
+        .where('timePerQuestionSec', isEqualTo: timePerQuestionSec)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return snap.docs.first.id;
   }
 
   Future<String> createInvite({
@@ -71,95 +94,112 @@ class RealtimeInviteService {
     }
 
     if (toUid == uid) {
-      throw Exception(
-        'No puedes retarte a ti mismo.',
-      );
+      throw Exception('No puedes retarte a ti mismo.');
     }
+
+    final existingInviteId = await _findExistingPendingInvite(
+      toUid: toUid,
+      categoryId: categoryId,
+      difficulty: difficulty,
+      totalQuestions: totalQuestions,
+      timePerQuestionSec: timePerQuestionSec,
+    );
 
     final now = FieldValue.serverTimestamp();
 
-    final inviteRef = _invitesCol.doc();
+    late final String inviteId;
 
-    await inviteRef.set({
-      'fromUid': uid,
-      'fromName': fromName,
-      'toUid': toUid,
-      'toName': toName,
-      'status': 'pending',
-      'categoryId': categoryId,
-      'difficulty': difficulty,
-      'totalQuestions': totalQuestions,
-      'timePerQuestionSec': timePerQuestionSec,
-      'winReward': winReward,
-      'matchId': null,
-      'createdAt': now,
-      'updatedAt': now,
-    });
+    if (existingInviteId != null) {
+      inviteId = existingInviteId;
 
-    try {
-      await _notificationService.createNotification(
-        targetUid: toUid,
-        type: 'realtime_invite',
-        title: 'Realtime challenge',
-        body: '$fromName invited you to a realtime 1 vs 1 match.',
-        data: {
-          'inviteId': inviteRef.id,
-          'fromUid': uid,
-        },
-      );
-    } catch (_) {}
+      await _invitesCol.doc(inviteId).set({
+        'fromName': fromName,
+        'toName': toName,
+        'winReward': winReward,
+        'updatedAt': now,
+      }, SetOptions(merge: true));
+    } else {
+      final inviteRef = _invitesCol.doc();
+      inviteId = inviteRef.id;
 
-    return inviteRef.id;
+      await inviteRef.set({
+        'fromUid': uid,
+        'fromName': fromName,
+        'toUid': toUid,
+        'toName': toName,
+        'status': 'pending',
+        'categoryId': categoryId,
+        'difficulty': difficulty,
+        'totalQuestions': totalQuestions,
+        'timePerQuestionSec': timePerQuestionSec,
+        'winReward': winReward,
+        'matchId': null,
+        'createdAt': now,
+        'updatedAt': now,
+      });
+    }
+
+    final notificationId = _notificationIdForInvite(
+      fromUid: uid,
+      categoryId: categoryId,
+      difficulty: difficulty,
+      totalQuestions: totalQuestions,
+      timePerQuestionSec: timePerQuestionSec,
+    );
+
+    await _notificationService.createOrBumpNotificationById(
+      targetUid: toUid,
+      notificationId: notificationId,
+      type: 'realtime_invite',
+      title: 'Realtime challenge',
+      body: '$fromName invited you to a realtime 1 vs 1 match.',
+      data: {
+        'inviteId': inviteId,
+        'fromUid': uid,
+        'fromName': fromName,
+        'categoryId': categoryId,
+        'difficulty': difficulty,
+        'totalQuestions': totalQuestions,
+        'timePerQuestionSec': timePerQuestionSec,
+        'winReward': winReward,
+      },
+    );
+
+    return inviteId;
   }
 
   Future<String> acceptInvite({
     required String inviteId,
   }) async {
     final inviteRef = _invitesCol.doc(inviteId);
-
     final matchRef = _matchesCol.doc();
 
     final inviteSnap = await inviteRef.get();
-
     final invite = inviteSnap.data();
 
     if (invite == null) {
-      throw Exception(
-        'La invitación ya no existe.',
-      );
+      throw Exception('La invitación ya no existe.');
     }
 
     final fromUid = (invite['fromUid'] ?? '').toString();
-
     final fromName = (invite['fromName'] ?? 'Player 1').toString();
-
     final toUid = (invite['toUid'] ?? '').toString();
-
     final toName = (invite['toName'] ?? 'Player 2').toString();
-
     final status = (invite['status'] ?? '').toString();
 
     if (toUid != uid) {
-      throw Exception(
-        'No puedes aceptar esta invitación.',
-      );
+      throw Exception('No puedes aceptar esta invitación.');
     }
 
     if (status != 'pending') {
-      throw Exception(
-        'Esta invitación ya no está disponible.',
-      );
+      throw Exception('Esta invitación ya no está disponible.');
     }
 
     final categoryId = (invite['categoryId'] ?? 'random').toString();
-
     final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
-
     final totalQuestions = ((invite['totalQuestions'] ?? 10) as num).toInt();
-
     final timePerQuestionSec =
         ((invite['timePerQuestionSec'] ?? 10) as num).toInt();
-
     final winReward = ((invite['winReward'] ?? 2) as num).toInt();
 
     final resolvedCategoryId = await _resolveCategoryId(categoryId);
@@ -171,9 +211,7 @@ class RealtimeInviteService {
     );
 
     if (questions.isEmpty) {
-      throw Exception(
-        'No hay preguntas disponibles para esta categoría.',
-      );
+      throw Exception('No hay preguntas disponibles para esta categoría.');
     }
 
     final now = FieldValue.serverTimestamp();
@@ -192,6 +230,8 @@ class RealtimeInviteService {
       'timePerQuestionSec': timePerQuestionSec,
       'winReward': winReward,
       'loseReward': 0,
+      'ranked': false,
+      'affectsPvpRating': false,
       'hostUid': fromUid,
       'guestUid': toUid,
       'player1Uid': fromUid,
@@ -227,18 +267,16 @@ class RealtimeInviteService {
       'updatedAt': now,
     });
 
-    try {
-      await _notificationService.createNotification(
-        targetUid: fromUid,
-        type: 'realtime_invite_accepted',
-        title: 'Realtime invite accepted',
-        body: '$toName accepted your realtime challenge.',
-        data: {
-          'inviteId': inviteId,
-          'matchId': matchRef.id,
-        },
-      );
-    } catch (_) {}
+    await _notificationService.createNotification(
+      targetUid: fromUid,
+      type: 'realtime_invite_accepted',
+      title: 'Realtime invite accepted',
+      body: '$toName accepted your realtime challenge.',
+      data: {
+        'inviteId': inviteId,
+        'matchId': matchRef.id,
+      },
+    );
 
     return matchRef.id;
   }
@@ -376,20 +414,12 @@ class RealtimeInviteService {
 
   Future<void> markExpiredInvites() async {
     final cutoff = Timestamp.fromDate(
-      DateTime.now().subtract(
-        const Duration(minutes: 5),
-      ),
+      DateTime.now().subtract(const Duration(minutes: 5)),
     );
 
     final snap = await _invitesCol
-        .where(
-          'status',
-          isEqualTo: 'pending',
-        )
-        .where(
-          'createdAt',
-          isLessThan: cutoff,
-        )
+        .where('status', isEqualTo: 'pending')
+        .where('createdAt', isLessThan: cutoff)
         .limit(20)
         .get();
 

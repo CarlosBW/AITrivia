@@ -8,6 +8,7 @@ import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
+import 'versus_menu_screen.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
@@ -155,6 +156,23 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       _timer = null;
       _resetPerQuestion();
     });
+  }
+
+  Future<void> _exitToPvpMenu(BuildContext context) async {
+    _leavingMatch = true;
+
+    try {
+      await _presenceService.setAvailable();
+    } catch (_) {}
+
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const VersusMenuScreen(),
+      ),
+      (route) => route.isFirst,
+    );
   }
 
   Future<void> _maybeShowIncomingRematchDialog({
@@ -387,6 +405,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('1 vs 1 • ${widget.matchId.substring(0, 5)}'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Salir',
+          onPressed: () => _exitToPvpMenu(context),
+        ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
@@ -846,22 +869,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       winStreak: winStreak,
       oldLeagueName: oldLeagueName.isEmpty ? null : oldLeagueName,
       newLeagueName: newLeagueName.isEmpty ? null : newLeagueName,
-      primaryButtonText: 'Volver',
+      primaryButtonText: 'Salir',
       onPrimaryPressed: () async {
-        _leavingMatch = true;
-
-        try {
-          await _presenceService.setAvailable();
-        } catch (_) {}
-
-        if (!context.mounted) return;
-
-        Navigator.pop(context);
+        await _exitToPvpMenu(context);
       },
       secondaryButtonText: secondaryText,
       onSecondaryPressed: myRematchAccepted || _requestingRematch
-    ? () {}
-    : () => _requestRematch(match),
+          ? () {}
+          : () => _requestRematch(match),
     );
   }
 }

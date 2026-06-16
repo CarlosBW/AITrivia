@@ -62,6 +62,30 @@ class NotificationService {
     await batch.commit();
   }
 
+  Future<void> createOrBumpNotificationById({
+    required String targetUid,
+    required String notificationId,
+    required String type,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    if (targetUid.trim().isEmpty) return;
+
+    final ref = _notificationsCol(targetUid).doc(notificationId);
+
+    await ref.set({
+      'type': type,
+      'title': title,
+      'body': body,
+      'data': data ?? {},
+      'read': false,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'bumpedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> createNotification({
     required String targetUid,
     required String type,
@@ -78,6 +102,51 @@ class NotificationService {
       'data': data ?? {},
       'read': false,
       'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> createOrBumpUniqueUnreadNotification({
+    required String targetUid,
+    required String type,
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+    required List<String> uniqueDataKeys,
+  }) async {
+    if (targetUid.trim().isEmpty) return;
+
+    Query<Map<String, dynamic>> query = _notificationsCol(targetUid)
+        .where('read', isEqualTo: false)
+        .where('type', isEqualTo: type);
+
+    for (final key in uniqueDataKeys) {
+      if (!data.containsKey(key)) continue;
+      query = query.where('data.$key', isEqualTo: data[key]);
+    }
+
+    final snap = await query.limit(1).get();
+
+    if (snap.docs.isNotEmpty) {
+      await snap.docs.first.reference.set({
+        'title': title,
+        'body': body,
+        'data': data,
+        'read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'bumpedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    await _notificationsCol(targetUid).add({
+      'type': type,
+      'title': title,
+      'body': body,
+      'data': data,
+      'read': false,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 

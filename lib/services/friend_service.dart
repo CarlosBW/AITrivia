@@ -142,8 +142,7 @@ class FriendService {
       final targetUsername =
           (targetData['username'] ?? targetDisplayName).toString();
 
-      final targetAvatarId =
-          (targetData['avatarId'] ?? 'avatar_1').toString();
+      final targetAvatarId = (targetData['avatarId'] ?? 'avatar_1').toString();
 
       final now = FieldValue.serverTimestamp();
 
@@ -208,8 +207,7 @@ class FriendService {
     final myFriendRef = _friendsCol(uid).doc(requesterUid);
     final requesterFriendRef = _friendsCol(requesterUid).doc(uid);
 
-    final requesterSentRequestRef =
-        _sentRequestsCol(requesterUid).doc(uid);
+    final requesterSentRequestRef = _sentRequestsCol(requesterUid).doc(uid);
 
     await _db.runTransaction((tx) async {
       final mySnap = await tx.get(myRef);
@@ -250,7 +248,15 @@ class FriendService {
           'username':
               (requesterData['username'] ?? requesterDisplayName).toString(),
           'avatarId': (requesterData['avatarId'] ?? 'avatar_1').toString(),
+
+          // PvP snapshot for future efficient friend leaderboards.
+          'pvpRating': requesterData['pvpRating'] ?? 1000,
+          'pvpLeagueId': requesterData['pvpLeagueId'] ?? 'bronze',
+          'pvpLeagueName': requesterData['pvpLeagueName'] ?? 'Bronze',
+          'pvpLeagueEmoji': requesterData['pvpLeagueEmoji'] ?? '🥉',
+
           'createdAt': now,
+          'updatedAt': now,
         },
         SetOptions(merge: true),
       );
@@ -262,7 +268,15 @@ class FriendService {
           'displayName': myDisplayName,
           'username': (myData['username'] ?? myDisplayName).toString(),
           'avatarId': (myData['avatarId'] ?? 'avatar_1').toString(),
+
+          // PvP snapshot for future efficient friend leaderboards.
+          'pvpRating': myData['pvpRating'] ?? 1000,
+          'pvpLeagueId': myData['pvpLeagueId'] ?? 'bronze',
+          'pvpLeagueName': myData['pvpLeagueName'] ?? 'Bronze',
+          'pvpLeagueEmoji': myData['pvpLeagueEmoji'] ?? '🥉',
+
           'createdAt': now,
+          'updatedAt': now,
         },
         SetOptions(merge: true),
       );
@@ -309,8 +323,7 @@ class FriendService {
     }
 
     final requestRef = _requestsCol(uid).doc(requesterUid);
-    final requesterSentRequestRef =
-        _sentRequestsCol(requesterUid).doc(uid);
+    final requesterSentRequestRef = _sentRequestsCol(requesterUid).doc(uid);
 
     await _db.runTransaction((tx) async {
       final now = FieldValue.serverTimestamp();

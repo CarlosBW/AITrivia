@@ -68,10 +68,11 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
         stream: userRef.snapshots(),
         builder: (context, userSnap) {
           final userData = userSnap.data?.data() ?? {};
-          final rating = ((userData['pvpRating'] ??
-                  PvpLeagueService.defaultRating) as num)
-              .toInt();
-          final ratingDelta = ((userData['pvpRatingDelta'] ?? 0) as num).toInt();
+          final rating =
+              ((userData['pvpRating'] ?? PvpLeagueService.defaultRating) as num)
+                  .toInt();
+          final ratingDelta =
+              ((userData['pvpRatingDelta'] ?? 0) as num).toInt();
           final league = _leagueService.leagueForRating(rating);
           final reward = _seasonService.rewardForLeague(league);
 
@@ -165,7 +166,8 @@ class _SeasonOverviewTab extends StatelessWidget {
                     Text(
                       '($deltaText)',
                       style: TextStyle(
-                        color: ratingDelta > 0 ? Colors.green : Colors.redAccent,
+                        color:
+                            ratingDelta > 0 ? Colors.green : Colors.redAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -214,7 +216,8 @@ class _SeasonOverviewTab extends StatelessWidget {
               Text('• Play Ranked Matches to increase your MMR.'),
               Text('• Your league is calculated from your current MMR.'),
               Text('• Leaderboards rank players by MMR.'),
-              Text('• Rewards are based on your final league when the season ends.'),
+              Text(
+                  '• Rewards are based on your final league when the season ends.'),
             ],
           ),
         ),
@@ -592,12 +595,13 @@ class _LeaderboardList extends StatelessWidget {
             final doc = docs[i];
             final data = doc.data();
             final isMe = doc.id == currentUid;
-            final rating = ((data['pvpRating'] ??
-                    PvpLeagueService.defaultRating) as num)
-                .toInt();
+            final rating =
+                ((data['pvpRating'] ?? PvpLeagueService.defaultRating) as num)
+                    .toInt();
             final league = PvpLeagueService.instance.leagueForRating(rating);
             final username =
-                (data['username'] ?? data['displayName'] ?? 'Player').toString();
+                (data['username'] ?? data['displayName'] ?? 'Player')
+                    .toString();
             final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
             final wins = ((data['wins1v1'] ?? 0) as num).toInt();
             final losses = ((data['losses1v1'] ?? 0) as num).toInt();
@@ -744,6 +748,11 @@ class _RewardsTabState extends State<_RewardsTab> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
+          _CurrentRewardSummaryCard(
+            currentLeague: widget.currentLeague,
+            seasonService: widget.seasonService,
+          ),
+          const SizedBox(height: 16),
           const Text(
             'Season Rewards',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -832,6 +841,77 @@ class _RewardsTabState extends State<_RewardsTab> {
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+}
+
+class _CurrentRewardSummaryCard extends StatelessWidget {
+  final PvpLeagueInfo currentLeague;
+  final PvpSeasonService seasonService;
+
+  const _CurrentRewardSummaryCard({
+    required this.currentLeague,
+    required this.seasonService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final reward = seasonService.rewardForLeague(currentLeague);
+    final season = seasonService.currentSeason();
+    final color = Color(currentLeague.colorValue);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.45)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            currentLeague.emoji,
+            style: const TextStyle(fontSize: 38),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Current projected reward',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${currentLeague.name} League',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Season ends in ${seasonService.formatTimeLeft(season.timeLeft)}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '+${reward.coins}',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'async_menu_screen.dart';
 import 'live_menu_screen.dart';
+import 'friend_leaderboard_screen.dart';
 
 class VersusMenuScreen extends StatelessWidget {
   const VersusMenuScreen({super.key});
@@ -21,7 +22,6 @@ class VersusMenuScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-
             FilledButton(
               onPressed: () {
                 Navigator.push(
@@ -32,7 +32,6 @@ class VersusMenuScreen extends StatelessWidget {
               child: const Text('Tiempo real'),
             ),
             const SizedBox(height: 12),
-
             OutlinedButton(
               onPressed: () {
                 Navigator.push(
@@ -42,9 +41,20 @@ class VersusMenuScreen extends StatelessWidget {
               },
               child: const Text('Reto asíncrono'),
             ),
-
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FriendLeaderboardScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.leaderboard),
+              label: const Text('Friends Leaderboard'),
+            ),
             const Spacer(),
-
             const Text(
               'Tiempo real: juegan al mismo tiempo.\n'
               'Reto asíncrono: retas y el otro juega cuando pueda.',

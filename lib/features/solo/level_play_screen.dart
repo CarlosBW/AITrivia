@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/life_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/sfx_service.dart';
+import '../../services/economy_service.dart';
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
@@ -76,7 +77,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   final _achievementService = AchievementService.instance;
 
   static const int _defaultTimePerQ = 10;
-  static const int _buyLifeCost = 10;
+  static const int _buyLifeCost = EconomyService.buyFullLifeCost;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
@@ -967,11 +968,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     int coins = 0;
     if (pct >= 0.9) {
-      coins = 8;
+      coins = EconomyService.soloPerfectLevelCoins;
     } else if (pct >= 0.7) {
-      coins = 5;
+      coins = EconomyService.soloGreatLevelCoins;
     } else if (pct >= 0.4) {
-      coins = 3;
+      coins = EconomyService.soloGoodLevelCoins;
     }
 
     return {
@@ -1187,7 +1188,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
             tx.set(
               userRef,
-              {'coins': FieldValue.increment(10)},
+              {'coins': FieldValue.increment(EconomyService.completeFixedCategoryCoins)},
               SetOptions(merge: true),
             );
 

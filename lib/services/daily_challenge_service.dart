@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'player_level_service.dart';
 import 'league_service.dart';
 import 'weekly_league_service.dart';
+import 'economy_service.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -72,8 +73,9 @@ class DailyChallengeService {
 
   static const int defaultDurationSeconds = 120;
   static const int defaultQuestionLimit = 60;
-  static const int coinsPerBlock = 5;
-  static const int correctPerCoinBlock = 10;
+  static const int coinsPerBlock = EconomyService.dailyCoinsPerBlock;
+  static const int correctPerCoinBlock =
+    EconomyService.dailyCorrectPerCoinBlock;
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
@@ -137,9 +139,9 @@ class DailyChallengeService {
   }
 
   int calculateStreakBonusCoins(int streak) {
-    if (streak > 0 && streak % 14 == 0) return 30;
-    if (streak > 0 && streak % 7 == 0) return 15;
-    if (streak > 0 && streak % 3 == 0) return 5;
+    if (streak > 0 && streak % 14 == 0) return EconomyService.dailyStreak14DaysCoins;
+    if (streak > 0 && streak % 7 == 0) return EconomyService.dailyStreak7DaysCoins;
+    if (streak > 0 && streak % 3 == 0) return EconomyService.dailyStreak3DaysCoins;
     return 0;
   }
 
@@ -148,7 +150,7 @@ class DailyChallengeService {
     required int newLevel,
   }) {
     if (newLevel <= oldLevel) return 0;
-    return (newLevel - oldLevel) * 15;
+    return (newLevel - oldLevel) * EconomyService.dailyLevelUpCoins;
   }
 
   DateTime _dateOnly(DateTime date) {

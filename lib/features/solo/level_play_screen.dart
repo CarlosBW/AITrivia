@@ -13,11 +13,15 @@ import '../../services/economy_service.dart';
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
   final int levelNumber;
+  final bool isAiTopic;
+  final String? aiTopicId;
 
   const LevelPlayScreen({
     super.key,
     required this.categoryId,
     required this.levelNumber,
+    this.isAiTopic = false,
+    this.aiTopicId,
   });
 
   @override
@@ -435,20 +439,30 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final db = FirebaseFirestore.instance;
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    final categoryRef =
-        db.collection('fixed_categories').doc(widget.categoryId);
+    final categoryRef = widget.isAiTopic
+        ? db
+            .collection('users')
+            .doc(uid)
+            .collection('ai_topics')
+            .doc(widget.aiTopicId)
+        : db.collection('fixed_categories').doc(widget.categoryId);
 
-    final sessionId = '${widget.categoryId}_${widget.levelNumber}';
+    final sessionId = widget.isAiTopic
+        ? '${widget.aiTopicId}_${widget.levelNumber}'
+        : '${widget.categoryId}_${widget.levelNumber}';
     final sessionRef = db
         .collection('users')
         .doc(uid)
-        .collection('sessions_fixed')
+        .collection(
+          widget.isAiTopic ? 'sessions_ai' : 'sessions_fixed',
+        )
         .doc(sessionId);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.categoryId} - Nivel ${widget.levelNumber}'),
-      ),
+          title: Text(
+        '${widget.isAiTopic ? "Tema IA" : widget.categoryId} - Nivel ${widget.levelNumber}',
+      )),
       body: Stack(
         children: [
           FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -989,6 +1003,37 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final existing = await sessionRef.get();
     if (existing.exists) return;
 
+    if (widget.isAiTopic) {
+      final levelRef = db
+          .collection('users')
+          .doc(uid)
+          .collection('ai_topics')
+          .doc(widget.aiTopicId)
+          .collection('levels')
+          .doc('level_${widget.levelNumber}');
+
+      final questionsSnap = await levelRef.collection('questions').get();
+
+      if (questionsSnap.docs.isEmpty) {
+        throw Exception(
+          'No questions found for AI topic level ${widget.levelNumber}',
+        );
+      }
+
+      final chosen = questionsSnap.docs.map((e) => e.data()).toList();
+
+      await sessionRef.set({
+        'categoryId': widget.aiTopicId,
+        'levelNumber': widget.levelNumber,
+        'difficulty': 1,
+        'total': chosen.length,
+        'questions': chosen,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      return;
+    }
+
     final preferredDifficulty = _difficultyForLevel(widget.levelNumber);
     final difficulties = {preferredDifficulty, 1, 2, 3}.toList();
 
@@ -1060,7 +1105,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       final progressRef = db
           .collection('users')
           .doc(uid)
-          .collection('progress_fixed')
+          .collection(
+            widget.isAiTopic ? 'progress_ai' : 'progress_fixed',
+          )
           .doc(widget.categoryId);
 
       final userRef = db.collection('users').doc(uid);
@@ -1188,7 +1235,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
             tx.set(
               userRef,
-              {'coins': FieldValue.increment(EconomyService.completeFixedCategoryCoins)},
+              {
+                'coins': FieldValue.increment(
+                    EconomyService.completeFixedCategoryCoins)
+              },
               SetOptions(merge: true),
             );
 

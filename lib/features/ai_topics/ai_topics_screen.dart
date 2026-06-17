@@ -95,13 +95,13 @@ class AiTopicsScreen extends StatelessWidget {
               final data = doc.data();
 
               final title = (data['title'] ?? 'Untitled topic').toString();
-              final status = (data['status'] ?? 'pending_generation').toString();
+              final status =
+                  (data['status'] ?? 'pending_generation').toString();
               final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
               final questionsCount =
                   ((data['questionsCount'] ?? 0) as num).toInt();
               final usedFreePass = data['usedFreePass'] == true;
-              final cost =
-                  ((data['generationCostCoins'] ?? 0) as num).toInt();
+              final cost = ((data['generationCostCoins'] ?? 0) as num).toInt();
 
               final color = _statusColor(status);
 
@@ -172,7 +172,9 @@ class AiTopicsScreen extends StatelessWidget {
                       child: Text(
                         status == 'ready'
                             ? '$levelsCount levels • $questionsCount questions'
-                            : 'Generation will be connected soon.',
+                            : status == 'failed'
+                                ? 'Tap to retry generation.'
+                                : 'Tap to continue preparing this topic.',
                       ),
                     ),
                     trailing: Column(
@@ -193,17 +195,43 @@ class AiTopicsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    onTap: status == 'ready'
-                        ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'AI topic gameplay will be connected next.',
-                                ),
+                    onTap: () async {
+                      if (status == 'pending_generation' ||
+                          status == 'failed') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Generating topic...'),
+                          ),
+                        );
+
+                        try {
+                          await AiTopicService.instance.generateMockTopic(
+                            topicId: doc.id,
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                e.toString().replaceFirst('Exception: ', ''),
                               ),
-                            );
-                          }
-                        : null,
+                            ),
+                          );
+                        }
+
+                        return;
+                      }
+
+                      if (status == 'ready') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'AI topic gameplay will be connected next.'),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ),
               );

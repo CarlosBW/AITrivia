@@ -10,10 +10,15 @@ class LevelSelectScreen extends StatefulWidget {
   final String categoryId;
   final String categoryName;
 
+  final bool isAiTopic;
+  final String? aiTopicId;
+
   const LevelSelectScreen({
     super.key,
     required this.categoryId,
     required this.categoryName,
+    this.isAiTopic = false,
+    this.aiTopicId,
   });
 
   @override
@@ -80,14 +85,30 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     }
 
     try {
-      final categoryRef =
-          db.collection('fixed_categories').doc(widget.categoryId);
+      late final DocumentReference<Map<String, dynamic>> categoryRef;
+      late final DocumentReference<Map<String, dynamic>> progressRef;
 
-      final progressRef = db
-          .collection('users')
-          .doc(uid)
-          .collection('progress_fixed')
-          .doc(widget.categoryId);
+      if (widget.isAiTopic) {
+        categoryRef = db
+            .collection('users')
+            .doc(uid)
+            .collection('ai_topics')
+            .doc(widget.aiTopicId);
+
+        progressRef = db
+            .collection('users')
+            .doc(uid)
+            .collection('progress_ai')
+            .doc(widget.aiTopicId);
+      } else {
+        categoryRef = db.collection('fixed_categories').doc(widget.categoryId);
+
+        progressRef = db
+            .collection('users')
+            .doc(uid)
+            .collection('progress_fixed')
+            .doc(widget.categoryId);
+      }
 
       final snaps = await Future.wait<DocumentSnapshot<Map<String, dynamic>>>([
         categoryRef.get(),
@@ -209,8 +230,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
     final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
     final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
-    final secondsToNextHalfLife =
-        lifeState['secondsToNextHalfLife'] as int?;
+    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
 
     if (lifeUnits < 2) {
       if (!context.mounted) return false;
@@ -260,6 +280,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           builder: (_) => LevelPlayScreen(
             categoryId: widget.categoryId,
             levelNumber: level,
+            isAiTopic: widget.isAiTopic,
+            aiTopicId: widget.aiTopicId,
           ),
         ),
       );
@@ -341,13 +363,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     }
 
     final completedCount = completedLevels.length;
-    final progress = levelCount == 0
-        ? 0.0
-        : (completedCount / levelCount).clamp(0.0, 1.0);
+    final progress =
+        levelCount == 0 ? 0.0 : (completedCount / levelCount).clamp(0.0, 1.0);
 
-    final completedAll =
-        _progressData['completedAllLevels'] == true ||
-            (levelCount > 0 && completedCount >= levelCount);
+    final completedAll = _progressData['completedAllLevels'] == true ||
+        (levelCount > 0 && completedCount >= levelCount);
 
     final recommendedLevel = completedAll ? levelCount : maxUnlocked;
 
@@ -389,8 +409,12 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             children: [
               Text(
                 completedAll
-                    ? 'Categoría completada'
-                    : 'Tu progreso en esta categoría',
+                    ? widget.isAiTopic
+                        ? 'Tema IA completado'
+                        : 'Categoría completada'
+                    : widget.isAiTopic
+                        ? 'Tu progreso en este tema IA'
+                        : 'Tu progreso en esta categoría',
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,

@@ -11,6 +11,7 @@ import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../ai_topics/ai_topics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -287,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('TriviaIA'),
-        centerTitle: true,        
+        centerTitle: true,
       ),
       body: Stack(
         children: [
@@ -475,11 +476,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: _isNavigating || _buyingLife
                         ? null
                         : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Próximamente: Tema libre con IA (consumirá pases o monedas).',
-                                ),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AiTopicsScreen(),
                               ),
                             );
                           },

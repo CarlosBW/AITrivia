@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/ai_topic_service.dart';
 import 'create_ai_topic_screen.dart';
+import '../solo/level_select_screen.dart';
 
 class AiTopicsScreen extends StatelessWidget {
   const AiTopicsScreen({super.key});
@@ -224,10 +225,15 @@ class AiTopicsScreen extends StatelessWidget {
                       }
 
                       if (status == 'ready') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'AI topic gameplay will be connected next.'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LevelSelectScreen(
+                              categoryId: doc.id,
+                              categoryName: title,
+                              isAiTopic: true,
+                              aiTopicId: doc.id,
+                            ),
                           ),
                         );
                       }

@@ -16,6 +16,8 @@ class AiTopicsScreen extends StatelessWidget {
         return Colors.redAccent;
       case 'deleted':
         return Colors.grey;
+      case 'invalid':
+        return Colors.redAccent;
       case 'pending_generation':
       default:
         return Colors.orange;
@@ -30,6 +32,8 @@ class AiTopicsScreen extends StatelessWidget {
         return 'Failed';
       case 'deleted':
         return 'Deleted';
+      case 'invalid':
+        return 'Needs repair';
       case 'pending_generation':
       default:
         return 'Preparing';
@@ -96,8 +100,13 @@ class AiTopicsScreen extends StatelessWidget {
               final data = doc.data();
 
               final title = (data['title'] ?? 'Untitled topic').toString();
-              final status =
+              final rawStatus =
                   (data['status'] ?? 'pending_generation').toString();
+
+              final isInvalidReadyTopic = rawStatus == 'ready' &&
+                  !AiTopicService.instance.isTopicStructurallyValid(data);
+
+              final status = isInvalidReadyTopic ? 'invalid' : rawStatus;
               final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
               final questionsCount =
                   ((data['questionsCount'] ?? 0) as num).toInt();
@@ -170,13 +179,13 @@ class AiTopicsScreen extends StatelessWidget {
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        status == 'ready'
-                            ? '$levelsCount levels • $questionsCount questions'
-                            : status == 'failed'
-                                ? 'Tap to retry generation.'
-                                : 'Tap to continue preparing this topic.',
-                      ),
+                      child: Text(status == 'ready'
+                          ? '$levelsCount levels • $questionsCount questions'
+                          : status == 'failed'
+                              ? 'Tap to retry generation.'
+                              : status == 'invalid'
+                                  ? 'This topic needs to be regenerated.'
+                                  : 'Tap to continue preparing this topic.'),
                     ),
                     trailing: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -198,7 +207,8 @@ class AiTopicsScreen extends StatelessWidget {
                     ),
                     onTap: () async {
                       if (status == 'pending_generation' ||
-                          status == 'failed') {
+                          status == 'failed' ||
+                          status == 'invalid') {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Generating topic...'),

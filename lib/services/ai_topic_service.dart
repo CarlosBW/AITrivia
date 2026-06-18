@@ -8,6 +8,10 @@ class AiTopicService {
   AiTopicService._();
 
   static final AiTopicService instance = AiTopicService._();
+  static const int expectedAiLevelsCount = 10;
+  static const int expectedAiQuestionsPerLevel = 10;
+  static const int expectedAiQuestionsCount =
+      expectedAiLevelsCount * expectedAiQuestionsPerLevel;
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -49,6 +53,18 @@ class AiTopicService {
 
   bool isReservedTopic(String normalizedTitle) {
     return _reservedTopicNames.contains(normalizedTitle);
+  }
+
+  bool isTopicStructurallyValid(Map<String, dynamic> data) {
+    final status = (data['status'] ?? '').toString();
+
+    if (status != 'ready') return true;
+
+    final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
+    final questionsCount = ((data['questionsCount'] ?? 0) as num).toInt();
+
+    return levelsCount >= expectedAiLevelsCount &&
+        questionsCount >= expectedAiQuestionsCount;
   }
 
   Future<void> _validateTopicIsAvailable({

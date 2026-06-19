@@ -145,38 +145,42 @@ class PvpSeasonService {
     switch (league.id) {
       case 'master':
         return const PvpSeasonRewardInfo(
-          coins: 2000,
+          coins: 80,
           label: 'Master reward',
           description: 'Top-tier ranked season reward.',
         );
+
       case 'diamond':
         return const PvpSeasonRewardInfo(
-          coins: 1200,
+          coins: 40,
           label: 'Diamond reward',
           description: 'High competitive season reward.',
         );
+
       case 'platinum':
         return const PvpSeasonRewardInfo(
-          coins: 750,
+          coins: 20,
           label: 'Platinum reward',
           description: 'Advanced ranked season reward.',
         );
+
       case 'gold':
         return const PvpSeasonRewardInfo(
-          coins: 450,
+          coins: 10,
           label: 'Gold reward',
           description: 'Strong ranked season reward.',
         );
+
       case 'silver':
         return const PvpSeasonRewardInfo(
-          coins: 250,
+          coins: 5,
           label: 'Silver reward',
           description: 'Progression ranked season reward.',
         );
+
       case 'bronze':
-      default:
         return const PvpSeasonRewardInfo(
-          coins: 100,
+          coins: 2,
           label: 'Bronze reward',
           description: 'Entry ranked season reward.',
         );
@@ -386,25 +390,28 @@ class PvpSeasonService {
         final historyRef =
             userRef.collection('pvp_season_history').doc(reward.seasonId);
 
-        tx.set(historyRef, {
-          'seasonId': reward.seasonId,
-          'finalRating': reward.finalRating,
-          'finalLeagueId': finalLeague.id,
-          'finalLeagueName': finalLeague.name,
-          'finalLeagueEmoji': finalLeague.emoji,
-          'bestRating': reward.bestRating,
-          'bestLeagueId': reward.leagueId,
-          'bestLeagueName': reward.leagueName,
-          'bestLeagueEmoji': reward.leagueEmoji,
-          'matchesPlayed': reward.matchesPlayed,
-          'wins': reward.wins,
-          'losses': reward.losses,
-          'draws': reward.draws,
-          'rewardCoins': reward.rewardCoins,
-          'rewardBasedOn': 'bestRating',
-          'claimedAt': FieldValue.serverTimestamp(),
-          'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        tx.set(
+            historyRef,
+            {
+              'seasonId': reward.seasonId,
+              'finalRating': reward.finalRating,
+              'finalLeagueId': finalLeague.id,
+              'finalLeagueName': finalLeague.name,
+              'finalLeagueEmoji': finalLeague.emoji,
+              'bestRating': reward.bestRating,
+              'bestLeagueId': reward.leagueId,
+              'bestLeagueName': reward.leagueName,
+              'bestLeagueEmoji': reward.leagueEmoji,
+              'matchesPlayed': reward.matchesPlayed,
+              'wins': reward.wins,
+              'losses': reward.losses,
+              'draws': reward.draws,
+              'rewardCoins': reward.rewardCoins,
+              'rewardBasedOn': 'bestRating',
+              'claimedAt': FieldValue.serverTimestamp(),
+              'createdAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true));
 
         results.add(
           PvpSeasonClaimResult(
@@ -419,14 +426,17 @@ class PvpSeasonService {
         );
       }
 
-      tx.set(userRef, {
-        'coins': FieldValue.increment(totalCoins),
-        'lastClaimedPvpSeasonId': pending.first.seasonId,
-        'lastPvpSeasonRewardCoins': totalCoins,
-        'lastPvpSeasonRewardCount': pending.length,
-        'lastPvpSeasonRewardClaimedAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      tx.set(
+          userRef,
+          {
+            'coins': FieldValue.increment(totalCoins),
+            'lastClaimedPvpSeasonId': pending.first.seasonId,
+            'lastPvpSeasonRewardCoins': totalCoins,
+            'lastPvpSeasonRewardCount': pending.length,
+            'lastPvpSeasonRewardClaimedAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
 
       return PvpSeasonClaimAllResult(
         claimedCount: results.length,

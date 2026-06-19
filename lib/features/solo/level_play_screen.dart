@@ -9,6 +9,7 @@ import '../../services/life_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
+import '../../services/ai_topic_service.dart';
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
@@ -473,7 +474,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               }
 
               final catData = catSnap.data!.data();
-              _levelCount ??= (catData?['levelCount'] ?? 0) as int;
+              _levelCount ??= widget.isAiTopic
+                  ? ((catData?['targetLevels'] ??
+                              catData?['levelsCount'] ??
+                              EconomyService.aiLevelsPerTopic)
+                          as num)
+                      .toInt()
+                  : ((catData?['levelCount'] ?? 0) as num).toInt();
 
               if (!_lifeChecked && !_lifeLoading) {
                 Future.microtask(() => _checkAndConsumeLife(uid));
@@ -1108,7 +1115,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           .collection(
             widget.isAiTopic ? 'progress_ai' : 'progress_fixed',
           )
-          .doc(widget.categoryId);
+          .doc(
+            widget.isAiTopic ? widget.aiTopicId : widget.categoryId,
+          );
 
       final userRef = db.collection('users').doc(uid);
 
@@ -1118,6 +1127,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       final rewards = _calculateLevelRewards(correct: _correct, total: total);
       final levelXp = rewards['xp']!;
       final levelCoins = rewards['coins']!;
+
+      bool shouldEnsureAiBuffer = false;
 
       await db.runTransaction((tx) async {
         final progressSnap = await tx.get(progressRef);
@@ -1174,6 +1185,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         if (!wasAlreadyCompleted) {
           grantedXp = levelXp;
           grantedCoins = levelCoins;
+          shouldEnsureAiBuffer = widget.isAiTopic && widget.aiTopicId != null;
 
           tx.set(
             progressRef,
@@ -1242,7 +1254,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               SetOptions(merge: true),
             );
 
-            grantedCoins += 10;
+            grantedCoins += EconomyService.completeFixedCategoryCoins;
           }
         }
 
@@ -1251,6 +1263,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         _rewardGrantedForLevel = !wasAlreadyCompleted;
         _userTotalXp = prevUserXp + grantedXp;
       });
+
+      if (shouldEnsureAiBuffer && widget.aiTopicId != null) {
+        unawaited(
+          AiTopicService.instance.ensureAiTopicBuffer(
+            topicId: widget.aiTopicId!,
+            completedLevel: widget.levelNumber,
+          ),
+        );
+      }
 
       _saved = true;
     } catch (e) {
@@ -1439,6 +1460,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                     builder: (_) => LevelPlayScreen(
                                       categoryId: widget.categoryId,
                                       levelNumber: nextLevel,
+                                      isAiTopic: widget.isAiTopic,
+                                      aiTopicId: widget.aiTopicId,
                                     ),
                                   ),
                                 );

@@ -60,11 +60,30 @@ class AiTopicService {
 
     if (status != 'ready') return true;
 
-    final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
+    final targetLevels =
+        ((data['targetLevels'] ?? EconomyService.aiLevelsPerTopic) as num)
+            .toInt();
+
+    final generatedLevels = ((data['generatedLevels'] ?? 0) as num).toInt();
+
     final questionsCount = ((data['questionsCount'] ?? 0) as num).toInt();
 
-    return levelsCount >= expectedAiLevelsCount &&
-        questionsCount >= expectedAiQuestionsCount;
+    if (targetLevels != EconomyService.aiLevelsPerTopic) {
+      return false;
+    }
+
+    if (generatedLevels < EconomyService.aiInitialGeneratedLevels) {
+      return false;
+    }
+
+    if (generatedLevels > targetLevels) {
+      return false;
+    }
+
+    final expectedQuestions =
+        generatedLevels * EconomyService.aiQuestionsPerLevel;
+
+    return questionsCount >= expectedQuestions;
   }
 
   Future<void> _validateTopicIsAvailable({
@@ -171,6 +190,24 @@ class AiTopicService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      final activeTopicsSnap = await _topicsCol(uid)
+          .where(
+            'status',
+            whereIn: [
+              'pending_generation',
+              'ready',
+              'failed',
+            ],
+          )
+          .limit(EconomyService.maxAiTopicsPerUser)
+          .get();
+
+      if (activeTopicsSnap.docs.length >= EconomyService.maxAiTopicsPerUser) {
+        throw Exception(
+          'You can have up to ${EconomyService.maxAiTopicsPerUser} AI topics. Delete one to create another.',
+        );
+      }
+
       tx.set(
           userRef,
           {
@@ -206,6 +243,98 @@ class AiTopicService {
     }, SetOptions(merge: true));
   }
 
+  Future<void> generateMockLevel({
+    required String topicId,
+    required int levelNumber,
+  }) async {
+    if (levelNumber < 1 || levelNumber > EconomyService.aiLevelsPerTopic) {
+      return;
+    }
+
+    final topicRef = _topicsCol(uid).doc(topicId);
+    final topicSnap = await topicRef.get();
+    final topicData = topicSnap.data();
+
+    if (topicData == null) return;
+
+    final title = (topicData['title'] ?? 'Custom Topic').toString();
+
+    final levelRef = topicRef.collection('levels').doc('level_$levelNumber');
+    final levelSnap = await levelRef.get();
+
+    if (levelSnap.exists) return;
+
+    final batch = _db.batch();
+
+    batch.set(levelRef, {
+      'levelNumber': levelNumber,
+      'title': 'Level $levelNumber',
+      'questionsCount': EconomyService.aiQuestionsPerLevel,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    for (int q = 1; q <= EconomyService.aiQuestionsPerLevel; q++) {
+      final questionRef = levelRef.collection('questions').doc('q_$q');
+
+      batch.set(questionRef, {
+        'q': 'Mock question $q about $title - Level $levelNumber?',
+        'options': [
+          'Correct answer',
+          'Wrong answer A',
+          'Wrong answer B',
+          'Wrong answer C',
+        ],
+        'answerIndex': 0,
+        'explanation': 'This is a temporary mock question.',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+  }
+
+  Future<void> ensureAiTopicBuffer({
+    required String topicId,
+    required int completedLevel,
+  }) async {
+    final topicRef = _topicsCol(uid).doc(topicId);
+    final snap = await topicRef.get();
+    final data = snap.data();
+
+    if (data == null) return;
+    if ((data['status'] ?? '') != 'ready') return;
+
+    final generatedLevels = ((data['generatedLevels'] ?? 0) as num).toInt();
+
+    final targetLevels =
+        ((data['targetLevels'] ?? EconomyService.aiLevelsPerTopic) as num)
+            .toInt();
+
+    final desiredGeneratedLevel =
+        (completedLevel + EconomyService.aiGenerationBufferLevels)
+            .clamp(0, targetLevels)
+            .toInt();
+
+    if (generatedLevels >= desiredGeneratedLevel) return;
+
+    for (int level = generatedLevels + 1;
+        level <= desiredGeneratedLevel;
+        level++) {
+      await generateMockLevel(
+        topicId: topicId,
+        levelNumber: level,
+      );
+    }
+
+    await topicRef.set({
+      'generatedLevels': desiredGeneratedLevel,
+      'questionsCount':
+          desiredGeneratedLevel * EconomyService.aiQuestionsPerLevel,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<void> generateMockTopic({
     required String topicId,
   }) async {
@@ -217,56 +346,27 @@ class AiTopicService {
 
       if (topicData == null) return;
 
-      final title = (topicData['title'] ?? 'Custom Topic').toString();
-
       await Future.delayed(const Duration(seconds: 2));
 
-      final batch = _db.batch();
-
-      const levelsCount = 10;
-      const questionsPerLevel = 10;
-
-      for (int level = 1; level <= levelsCount; level++) {
-        final levelRef = topicRef.collection('levels').doc('level_$level');
-
-        batch.set(levelRef, {
-          'levelNumber': level,
-          'title': 'Level $level',
-          'questionsCount': questionsPerLevel,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        for (int q = 1; q <= questionsPerLevel; q++) {
-          final questionRef = levelRef.collection('questions').doc('q_$q');
-
-          batch.set(questionRef, {
-            'q': 'Mock question $q about $title?',
-            'options': [
-              'Correct answer',
-              'Wrong answer A',
-              'Wrong answer B',
-              'Wrong answer C',
-            ],
-            'answerIndex': 0,
-            'explanation': 'This is a temporary mock question.',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
+      for (int level = 1;
+          level <= EconomyService.aiInitialGeneratedLevels;
+          level++) {
+        await generateMockLevel(
+          topicId: topicId,
+          levelNumber: level,
+        );
       }
 
-      batch.set(
-          topicRef,
-          {
-            'status': 'ready',
-            'levelsCount': levelsCount,
-            'questionsCount': levelsCount * questionsPerLevel,
-            'generationMode': 'mock',
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      await batch.commit();
+      await topicRef.set({
+        'status': 'ready',
+        'targetLevels': EconomyService.aiLevelsPerTopic,
+        'levelsCount': EconomyService.aiLevelsPerTopic,
+        'generatedLevels': EconomyService.aiInitialGeneratedLevels,
+        'questionsCount': EconomyService.aiInitialGeneratedLevels *
+            EconomyService.aiQuestionsPerLevel,
+        'generationMode': 'mock_buffered',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       await topicRef.set({
         'status': 'failed',

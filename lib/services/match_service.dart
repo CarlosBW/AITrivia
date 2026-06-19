@@ -96,6 +96,10 @@ class MatchService {
           'pvpSeasonBestRating': bestRating,
           'pvpSeasonBestLeagueId': bestLeague.id,
           'pvpSeasonBestLeagueName': bestLeague.name,
+          ..._bestLeaguePatch(
+            userData: userData,
+            candidateLeague: bestLeague,
+          ),
           'pvpSeasonFinalRating': newRating,
           'pvpSeasonFinalLeagueId': finalLeague.id,
           'pvpSeasonFinalLeagueName': finalLeague.name,
@@ -302,6 +306,45 @@ class MatchService {
   int _safeInt(dynamic value, int fallback) {
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  int _leagueRank(String leagueId) {
+    switch (leagueId) {
+      case 'master':
+        return 6;
+      case 'diamond':
+        return 5;
+      case 'platinum':
+        return 4;
+      case 'gold':
+        return 3;
+      case 'silver':
+        return 2;
+      case 'bronze':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  Map<String, dynamic> _bestLeaguePatch({
+    required Map<String, dynamic> userData,
+    required PvpLeagueInfo candidateLeague,
+  }) {
+    final currentBestLeagueId =
+        (userData['bestLeagueId'] ?? userData['pvpLeagueId'] ?? '')
+            .toString();
+
+    if (_leagueRank(candidateLeague.id) <= _leagueRank(currentBestLeagueId)) {
+      return {};
+    }
+
+    return {
+      'bestLeagueId': candidateLeague.id,
+      'bestLeagueName': candidateLeague.name,
+      'bestLeagueEmoji': candidateLeague.emoji,
+      'bestLeagueColorValue': candidateLeague.colorValue,
+    };
   }
 
   int _searchAgeSeconds(Map<String, dynamic>? data) {
@@ -743,6 +786,10 @@ class MatchService {
         'pvpRatingDelta': playerADelta,
         'pvpLeagueId': newPlayerALeague.id,
         'pvpLeagueName': newPlayerALeague.name,
+        ..._bestLeaguePatch(
+          userData: playerAData,
+          candidateLeague: newPlayerALeague,
+        ),
         'xp': FieldValue.increment(playerAXp),
         if (playerACoins > 0) 'coins': FieldValue.increment(playerACoins),
         'lastRankedXpEarned': playerAXp,
@@ -765,6 +812,10 @@ class MatchService {
         'pvpRatingDelta': playerBDelta,
         'pvpLeagueId': newPlayerBLeague.id,
         'pvpLeagueName': newPlayerBLeague.name,
+        ..._bestLeaguePatch(
+          userData: playerBData,
+          candidateLeague: newPlayerBLeague,
+        ),
         'xp': FieldValue.increment(playerBXp),
         if (playerBCoins > 0) 'coins': FieldValue.increment(playerBCoins),
         'lastRankedXpEarned': playerBXp,
@@ -1436,6 +1487,10 @@ class MatchService {
         'pvpRatingDelta': winnerDelta,
         'pvpLeagueId': newWinnerLeague.id,
         'pvpLeagueName': newWinnerLeague.name,
+        ..._bestLeaguePatch(
+          userData: winnerData,
+          candidateLeague: newWinnerLeague,
+        ),
         'xp': FieldValue.increment(15),
         if (winReward > 0) 'coins': FieldValue.increment(winReward),
         'lastRankedXpEarned': 15,
@@ -1455,6 +1510,10 @@ class MatchService {
         'pvpRatingDelta': loserDelta,
         'pvpLeagueId': newLoserLeague.id,
         'pvpLeagueName': newLoserLeague.name,
+        ..._bestLeaguePatch(
+          userData: loserData,
+          candidateLeague: newLoserLeague,
+        ),
         'pvpAbandonCount': FieldValue.increment(1),
         'pvpCooldownUntil': cooldownUntil,
         'lastRankedXpEarned': 0,

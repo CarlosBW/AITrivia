@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/pvp_league_service.dart';
+import '../../services/avatar_service.dart';
 
 Future<void> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
@@ -22,6 +23,13 @@ Future<void> bootstrapUserDoc(String uid) async {
       'usernameLower': defaultUsernameLower,
       'displayName': defaultUsername,
       'avatarId': 'avatar_1',
+      'unlockedAvatars': AvatarService.instance.defaultUnlockedAvatarIds(),
+
+      'equippedFrame': defaultPvpLeague.id,
+      'bestLeagueId': defaultPvpLeague.id,
+      'bestLeagueName': defaultPvpLeague.name,
+      'bestLeagueEmoji': defaultPvpLeague.emoji,
+      'bestLeagueColorValue': defaultPvpLeague.colorValue,
 
       'gamesPlayed': 0,
       'dailyGamesPlayed': 0,
@@ -80,6 +88,15 @@ Future<void> bootstrapUserDoc(String uid) async {
   final inferredUnits =
       oldLives is num ? (oldLives.toDouble() * 2).round() : 10;
 
+  final bestLeagueId =
+      (data['bestLeagueId'] ?? data['pvpLeagueId'] ?? currentPvpLeague.id)
+          .toString();
+
+  final bestLeague = PvpLeagueService.instance.leagueById(bestLeagueId);
+
+  final unlockedAvatars = data['unlockedAvatars'] ??
+      AvatarService.instance.defaultUnlockedAvatarIds();
+
   await ref.set(
     {
       'xp': data['xp'] ?? 0,
@@ -90,6 +107,14 @@ Future<void> bootstrapUserDoc(String uid) async {
       'usernameLower': usernameLower,
       'displayName': displayName,
       'avatarId': data['avatarId'] ?? 'avatar_1',
+      'unlockedAvatars': unlockedAvatars,
+
+      'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
+      'bestLeagueId': bestLeague.id,
+      'bestLeagueName': data['bestLeagueName'] ?? bestLeague.name,
+      'bestLeagueEmoji': data['bestLeagueEmoji'] ?? bestLeague.emoji,
+      'bestLeagueColorValue':
+          data['bestLeagueColorValue'] ?? bestLeague.colorValue,
 
       'gamesPlayed': data['gamesPlayed'] ?? 0,
       'dailyGamesPlayed': data['dailyGamesPlayed'] ?? 0,

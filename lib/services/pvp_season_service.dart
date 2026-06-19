@@ -149,36 +149,32 @@ class PvpSeasonService {
           label: 'Master reward',
           description: 'Top-tier ranked season reward.',
         );
-
       case 'diamond':
         return const PvpSeasonRewardInfo(
           coins: 40,
           label: 'Diamond reward',
           description: 'High competitive season reward.',
         );
-
       case 'platinum':
         return const PvpSeasonRewardInfo(
           coins: 20,
           label: 'Platinum reward',
           description: 'Advanced ranked season reward.',
         );
-
       case 'gold':
         return const PvpSeasonRewardInfo(
           coins: 10,
           label: 'Gold reward',
           description: 'Strong ranked season reward.',
         );
-
       case 'silver':
         return const PvpSeasonRewardInfo(
           coins: 5,
           label: 'Silver reward',
           description: 'Progression ranked season reward.',
         );
-
       case 'bronze':
+      default:
         return const PvpSeasonRewardInfo(
           coins: 2,
           label: 'Bronze reward',

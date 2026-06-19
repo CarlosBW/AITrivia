@@ -7,6 +7,8 @@ import '../../services/player_level_service.dart';
 import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../services/pvp_league_service.dart';
+import '../../services/frame_service.dart';
+import '../../services/avatar_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,17 +19,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with WidgetsBindingObserver {
-  static const Map<String, String> avatars = {
-    'avatar_1': '🧠',
-    'avatar_2': '🚀',
-    'avatar_3': '🎮',
-    'avatar_4': '🔥',
-    'avatar_5': '⭐',
-    'avatar_6': '🐱',
-    'avatar_7': '🤖',
-    'avatar_8': '🏆',
-  };
-
   late final String uid;
   late final DocumentReference<Map<String, dynamic>> userRef;
 
@@ -356,13 +347,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   Future<void> _chooseAvatar({
     required BuildContext context,
     required String currentAvatarId,
+    required String bestLeagueId,
+    required List<dynamic>? storedUnlockedAvatars,
   }) async {
     if (_saving) return;
+
+    final unlockedIds = AvatarService.instance.unlockedAvatarIdsForBestLeague(
+      bestLeagueId: bestLeagueId,
+      storedUnlockedAvatars: storedUnlockedAvatars,
+    );
 
     final selectedAvatarId = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) {
+        final avatars = AvatarService.instance.allAvatars;
+
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
           child: Column(
@@ -381,12 +381,24 @@ class _ProfileScreenState extends State<ProfileScreen>
                 shrinkWrap: true,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                children: avatars.entries.map((entry) {
-                  final isSelected = entry.key == currentAvatarId;
+                children: avatars.map((avatar) {
+                  final isSelected = avatar.id == currentAvatarId;
+                  final isUnlocked = unlockedIds.contains(avatar.id);
 
                   return InkWell(
                     borderRadius: BorderRadius.circular(18),
-                    onTap: () => Navigator.pop(sheetContext, entry.key),
+                    onTap: () {
+                      if (!isUnlocked) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(avatar.unlockLabel),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.pop(sheetContext, avatar.id);
+                    },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       decoration: BoxDecoration(
@@ -401,11 +413,27 @@ class _ProfileScreenState extends State<ProfileScreen>
                           width: 2,
                         ),
                       ),
-                      child: Center(
-                        child: Text(
-                          entry.value,
-                          style: const TextStyle(fontSize: 32),
-                        ),
+                      child: Stack(
+                        children: [
+                          Center(
+                            child: Opacity(
+                              opacity: isUnlocked ? 1.0 : 0.35,
+                              child: Text(
+                                avatar.emoji,
+                                style: const TextStyle(fontSize: 32),
+                              ),
+                            ),
+                          ),
+                          if (!isUnlocked)
+                            const Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: Icon(
+                                Icons.lock,
+                                size: 18,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   );
@@ -488,8 +516,16 @@ class _ProfileScreenState extends State<ProfileScreen>
             'Player${uid.substring(0, 4)}')
         .toString();
 
-    final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
-    final avatar = avatars[avatarId] ?? '🙂';
+    final storedUnlockedAvatars = data['unlockedAvatars'] as List<dynamic>?;
+
+    final safeAvatarId = AvatarService.instance.safestEquippedAvatar(
+      avatarId: (data['avatarId'] ?? 'avatar_1').toString(),
+      bestLeagueId: bestLeagueId,
+      storedUnlockedAvatars: storedUnlockedAvatars,
+    );
+
+    final avatarInfo = AvatarService.instance.avatarById(safeAvatarId);
+    final avatar = avatarInfo.emoji;
 
     final xp = ((data['xp'] ?? 0) as num).toInt();
     final coins = ((data['coins'] ?? 0) as num).toInt();
@@ -511,6 +547,17 @@ class _ProfileScreenState extends State<ProfileScreen>
     final pvpRatingDelta = ((data['pvpRatingDelta'] ?? 0) as num).toInt();
     final pvpLeague = PvpLeagueService.instance.leagueForRating(pvpRating);
     final pvpLeagueProgress = pvpLeague.progressFor(pvpRating);
+
+    final bestLeagueId = (data['bestLeagueId'] ?? pvpLeague.id).toString();
+
+    final equippedFrame = (data['equippedFrame'] ?? bestLeagueId).toString();
+
+    final frame = FrameService.instance.frameById(
+      FrameService.instance.safestEquippedFrame(
+        equippedFrame: equippedFrame,
+        bestLeagueId: bestLeagueId,
+      ),
+    );
 
     final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
     final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();
@@ -561,14 +608,32 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ? null
                           : () => _chooseAvatar(
                                 context: context,
-                                currentAvatarId: avatarId,
+                                currentAvatarId: safeAvatarId,
+                                bestLeagueId: bestLeagueId,
+                                storedUnlockedAvatars: storedUnlockedAvatars,
                               ),
-                      child: CircleAvatar(
-                        radius: 48,
-                        backgroundColor: Colors.white.withOpacity(0.75),
-                        child: Text(
-                          avatar,
-                          style: const TextStyle(fontSize: 44),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Color(frame.colorValue),
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(frame.colorValue).withOpacity(0.30),
+                              blurRadius: 12,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 48,
+                          backgroundColor: Colors.white.withOpacity(0.75),
+                          child: Text(
+                            avatar,
+                            style: const TextStyle(fontSize: 44),
+                          ),
                         ),
                       ),
                     ),
@@ -604,6 +669,27 @@ class _ProfileScreenState extends State<ProfileScreen>
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(frame.colorValue).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Color(frame.colorValue).withOpacity(0.40),
+                        ),
+                      ),
+                      child: Text(
+                        '${frame.emoji} ${frame.name}',
+                        style: TextStyle(
+                          color: Color(frame.colorValue),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -831,7 +917,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Text(
-                  'Coming soon: achievements, profile frames, leagues, and premium avatars.',
+                  'Coming soon: achievements, unlockable avatars, weekly events and AI rewards.',
                   textAlign: TextAlign.center,
                 ),
               ),

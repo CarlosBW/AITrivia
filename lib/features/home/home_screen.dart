@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/weekly_topic_service.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../leagues/weekly_league_screen.dart';
 import '../../services/daily_challenge_service.dart';
@@ -438,6 +439,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _WeeklyTopicCard(
+                  isBusy: _isNavigating || _buyingLife,
+                  onOpen: (topicData) {
+                    final title =
+                        (topicData['title'] ?? 'Weekly Topic').toString();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('$title is ready. Screen coming next.'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -576,23 +591,182 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-String _avatarEmoji(String avatarId, {String fallbackName = 'Player'}) {
-  const avatars = {
-    'avatar_1': '🧠',
-    'avatar_2': '🚀',
-    'avatar_3': '🎮',
-    'avatar_4': '🔥',
-    'avatar_5': '⭐',
-    'avatar_6': '🐱',
-    'avatar_7': '🤖',
-    'avatar_8': '🏆',
-  };
 
-  if (avatars.containsKey(avatarId)) return avatars[avatarId]!;
+class _WeeklyTopicCard extends StatelessWidget {
+  final bool isBusy;
+  final void Function(Map<String, dynamic> topicData) onOpen;
 
-  final trimmed = fallbackName.trim();
-  if (trimmed.isEmpty) return '🙂';
-  return trimmed.characters.first.toUpperCase();
+  const _WeeklyTopicCard({
+    required this.isBusy,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: WeeklyTopicService.instance.watchCurrentTopic(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return _WeeklyTopicUnavailableCard(
+            message: 'Weekly Topic unavailable',
+            detail: snap.error.toString(),
+          );
+        }
+
+        if (!snap.hasData) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.amber.withOpacity(0.30),
+              ),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Loading Weekly Topic...',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final data = snap.data!.data();
+
+        if (data == null || data['active'] != true) {
+          return const _WeeklyTopicUnavailableCard(
+            message: 'No Weekly Topic available',
+            detail: 'Check back soon for a featured challenge.',
+          );
+        }
+
+        final title = (data['title'] ?? 'Weekly Topic').toString();
+        final description =
+            (data['description'] ?? 'Complete levels and earn rewards.')
+                .toString();
+        final rewardCoins = ((data['rewardCoins'] ?? 0) as num).toInt();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.amber.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.amber.withOpacity(0.45),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.star_rounded, color: Colors.amber, size: 30),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (rewardCoins > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '+$rewardCoins coins',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: isBusy ? null : () => onOpen(data),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Open Weekly Topic'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WeeklyTopicUnavailableCard extends StatelessWidget {
+  final String message;
+  final String detail;
+
+  const _WeeklyTopicUnavailableCard({
+    required this.message,
+    required this.detail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_busy),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _WeeklyButtonIcon extends StatelessWidget {

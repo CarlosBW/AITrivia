@@ -516,17 +516,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             'Player${uid.substring(0, 4)}')
         .toString();
 
-    final storedUnlockedAvatars = data['unlockedAvatars'] as List<dynamic>?;
-
-    final safeAvatarId = AvatarService.instance.safestEquippedAvatar(
-      avatarId: (data['avatarId'] ?? 'avatar_1').toString(),
-      bestLeagueId: bestLeagueId,
-      storedUnlockedAvatars: storedUnlockedAvatars,
-    );
-
-    final avatarInfo = AvatarService.instance.avatarById(safeAvatarId);
-    final avatar = avatarInfo.emoji;
-
     final xp = ((data['xp'] ?? 0) as num).toInt();
     final coins = ((data['coins'] ?? 0) as num).toInt();
     final freeTopicPasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
@@ -558,6 +547,17 @@ class _ProfileScreenState extends State<ProfileScreen>
         bestLeagueId: bestLeagueId,
       ),
     );
+
+    final storedUnlockedAvatars = data['unlockedAvatars'] as List<dynamic>?;
+
+    final safeAvatarId = AvatarService.instance.safestEquippedAvatar(
+      avatarId: (data['avatarId'] ?? 'avatar_1').toString(),
+      bestLeagueId: bestLeagueId,
+      storedUnlockedAvatars: storedUnlockedAvatars,
+    );
+
+    final avatarInfo = AvatarService.instance.avatarById(safeAvatarId);
+    final avatar = avatarInfo.emoji;
 
     final wins1v1 = ((data['wins1v1'] ?? 0) as num).toInt();
     final losses1v1 = ((data['losses1v1'] ?? 0) as num).toInt();

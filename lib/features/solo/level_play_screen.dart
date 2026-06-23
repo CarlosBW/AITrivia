@@ -1149,8 +1149,31 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         final prevLevelStats =
             Map<String, dynamic>.from(prev?['levelStats'] as Map? ?? {});
 
-        final wasAlreadyCompleted = prevCompleted.contains(widget.levelNumber);
+        final migratedPassedLevels = <int>{};
+        for (final entry in prevLevelStats.entries) {
+          final level = int.tryParse(entry.key);
+          final stat = Map<String, dynamic>.from(entry.value as Map? ?? {});
+          final statPercent = ((stat['percent'] ?? 0.0) as num).toDouble();
+
+          if (level != null && statPercent >= 0.4) {
+            migratedPassedLevels.add(level);
+          }
+        }
+
+        final prevPassed = (prev?['passedLevels'] as List<dynamic>?)
+                ?.map((e) => (e as num).toInt())
+                .toSet() ??
+            migratedPassedLevels;
+
+        final passedLevel = percent >= 0.4;
+
+        final wasAlreadyPlayed = prevCompleted.contains(widget.levelNumber);
+        final wasAlreadyPassed = prevPassed.contains(widget.levelNumber);
+
         prevCompleted.add(widget.levelNumber);
+        if (passedLevel) {
+          prevPassed.add(widget.levelNumber);
+        }
 
         final levelKey = widget.levelNumber.toString();
         final oldStat = Map<String, dynamic>.from(
@@ -1163,6 +1186,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             'correct': _correct,
             'total': total,
             'percent': percent,
+            'passed': passedLevel,
             'updatedAt': FieldValue.serverTimestamp(),
           };
         }
@@ -1171,11 +1195,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           progressRef,
           {
             'completedLevels': prevCompleted.toList()..sort(),
+            'passedLevels': prevPassed.toList()..sort(),
             'levelStats': prevLevelStats,
             'lastScore': {
               'correct': _correct,
               'total': total,
               'percent': percent,
+              'passed': passedLevel,
               'levelNumber': widget.levelNumber,
             },
             'updatedAt': FieldValue.serverTimestamp(),
@@ -1186,11 +1212,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         int grantedXp = 0;
         int grantedCoins = 0;
 
-        if (!wasAlreadyCompleted) {
+        if (!wasAlreadyPlayed) {
           grantedXp = levelXp;
+        }
+
+        if (passedLevel && !wasAlreadyPassed) {
           grantedCoins = levelCoins;
           shouldEnsureAiBuffer = widget.isAiTopic && widget.aiTopicId != null;
+        }
 
+        if (grantedXp > 0 || grantedCoins > 0) {
           tx.set(
             progressRef,
             {
@@ -1198,6 +1229,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                 'levelNumber': widget.levelNumber,
                 'xp': grantedXp,
                 'coins': grantedCoins,
+                'passed': passedLevel,
                 'grantedAt': FieldValue.serverTimestamp(),
               },
             },
@@ -1207,8 +1239,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           tx.set(
             userRef,
             {
-              'xp': FieldValue.increment(grantedXp),
-              'coins': FieldValue.increment(grantedCoins),
+              if (grantedXp > 0) 'xp': FieldValue.increment(grantedXp),
+              if (grantedCoins > 0)
+                'coins': FieldValue.increment(grantedCoins),
             },
             SetOptions(merge: true),
           );
@@ -1218,7 +1251,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         // ACHIEVEMENTS
         // =========================================================
 
-        if (!wasAlreadyCompleted) {
+        if (passedLevel && !wasAlreadyPassed) {
           Future.microtask(() async {
             try {
               await _achievementService.incrementSoloLevelCompleted(
@@ -1228,8 +1261,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           });
         }
 
-        final completedAll =
-            levelCount > 0 && prevCompleted.length >= levelCount;
+        final completedAll = levelCount > 0 && prevPassed.length >= levelCount;
 
         if (completedAll) {
           tx.set(
@@ -1264,7 +1296,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
         _earnedXp = grantedXp;
         _earnedCoins = grantedCoins;
-        _rewardGrantedForLevel = !wasAlreadyCompleted;
+        _rewardGrantedForLevel = grantedXp > 0 || grantedCoins > 0;
         _userTotalXp = prevUserXp + grantedXp;
       });
 
@@ -1376,9 +1408,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              '¡Nivel completado!',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            Text(
+              pct >= 0.4 ? '¡Nivel aprobado!' : 'Nivel finalizado',
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -1448,10 +1483,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   ),
                   if (!_rewardGrantedForLevel) ...[
                     const SizedBox(height: 12),
-                    const Text(
-                      'Este nivel ya había sido completado antes.',
+                    Text(
+                      pct >= 0.4
+                          ? 'Este nivel ya había sido aprobado antes.'
+                          : 'Necesitas al menos 40% de aciertos para aprobar este nivel.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.orange,
                         fontWeight: FontWeight.w600,
                       ),

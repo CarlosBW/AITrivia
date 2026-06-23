@@ -347,7 +347,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   }) {
     final levelCount = ((_categoryData['levelCount'] ?? 10) as num).toInt();
 
-    final completedLevels =
+    final playedLevels =
         (_progressData['completedLevels'] as List<dynamic>? ?? [])
             .map((e) => (e as num).toInt())
             .where((level) => level >= 1 && level <= levelCount)
@@ -357,19 +357,39 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       _progressData['levelStats'] as Map? ?? {},
     );
 
+    final migratedPassedLevels = <int>{};
+    for (final entry in levelStats.entries) {
+      final level = int.tryParse(entry.key);
+      final stat = Map<String, dynamic>.from(entry.value as Map? ?? {});
+      final percent = ((stat['percent'] ?? 0.0) as num).toDouble();
+
+      if (level != null &&
+          level >= 1 &&
+          level <= levelCount &&
+          percent >= 0.4) {
+        migratedPassedLevels.add(level);
+      }
+    }
+
+    final passedLevels = (_progressData['passedLevels'] as List<dynamic>?)
+            ?.map((e) => (e as num).toInt())
+            .where((level) => level >= 1 && level <= levelCount)
+            .toSet() ??
+        migratedPassedLevels;
+
     int maxUnlocked = 1;
-    if (completedLevels.isNotEmpty) {
-      final highestCompleted = completedLevels.reduce(
+    if (passedLevels.isNotEmpty) {
+      final highestPassed = passedLevels.reduce(
         (a, b) => a > b ? a : b,
       );
-      maxUnlocked = highestCompleted + 1;
+      maxUnlocked = highestPassed + 1;
     }
 
     if (maxUnlocked > levelCount) {
       maxUnlocked = levelCount;
     }
 
-    final completedCount = completedLevels.length;
+    final completedCount = passedLevels.length;
     final progress =
         levelCount == 0 ? 0.0 : (completedCount / levelCount).clamp(0.0, 1.0);
 
@@ -417,11 +437,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               Text(
                 completedAll
                     ? widget.isAiTopic
-                        ? 'Tema IA completado'
-                        : 'Categoría completada'
+                        ? 'Tema IA aprobado'
+                        : 'Categoría aprobada'
                     : widget.isAiTopic
-                        ? 'Tu progreso en este tema IA'
-                        : 'Tu progreso en esta categoría',
+                        ? 'Tu progreso aprobado en este tema IA'
+                        : 'Tu progreso aprobado en esta categoría',
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -429,7 +449,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Completados: $completedCount / $levelCount',
+                'Aprobados: $completedCount / $levelCount',
                 style: const TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 10),
@@ -477,7 +497,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           ),
           itemBuilder: (context, index) {
             final level = index + 1;
-            final isCompleted = completedLevels.contains(level);
+            final isCompleted = passedLevels.contains(level);
+            final isPlayed = playedLevels.contains(level);
             final isUnlocked = level <= maxUnlocked;
 
             final stars = _starsForLevel(
@@ -495,9 +516,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               icon = Icons.check_circle;
               subtitle = 'Completado';
             } else if (isUnlocked) {
-              tileColor = Colors.blue.withOpacity(0.12);
-              icon = Icons.play_circle_fill;
-              subtitle = 'Disponible';
+              tileColor = isPlayed
+                  ? Colors.orange.withOpacity(0.12)
+                  : Colors.blue.withOpacity(0.12);
+              icon = isPlayed ? Icons.refresh : Icons.play_circle_fill;
+              subtitle = isPlayed ? 'Reintentar' : 'Disponible';
             } else {
               tileColor = Colors.black12;
               icon = Icons.lock;

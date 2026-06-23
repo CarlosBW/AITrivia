@@ -100,4 +100,47 @@ class WeeklyTopicService {
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
+
+  Future<bool> claimCoinReward({
+    required String uid,
+    required String weekId,
+    required int rewardCoins,
+  }) async {
+    final userRef = _db.collection('users').doc(uid);
+    final participationRef = userParticipationRef(
+      uid: uid,
+      weekId: weekId,
+    );
+
+    return _db.runTransaction((tx) async {
+      final participationSnap = await tx.get(participationRef);
+      final data = participationSnap.data() ?? {};
+
+      if (!canClaimCoinReward(data)) return false;
+
+      tx.set(
+        participationRef,
+        {
+          'coinRewardClaimed': true,
+          'coinRewardClaimedAt': FieldValue.serverTimestamp(),
+          'coinRewardCoins': rewardCoins,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        userRef,
+        {
+          'coins': FieldValue.increment(rewardCoins),
+          'lastWeeklyTopicRewardWeekId': weekId,
+          'lastWeeklyTopicRewardCoins': rewardCoins,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      return true;
+    });
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../services/pvp_league_service.dart';
+
 import '../../services/avatar_service.dart';
+import '../../services/pvp_league_service.dart';
 
 Future<void> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
@@ -22,8 +23,12 @@ Future<void> bootstrapUserDoc(String uid) async {
       'username': defaultUsername,
       'usernameLower': defaultUsernameLower,
       'displayName': defaultUsername,
+
       'avatarId': 'avatar_1',
       'unlockedAvatars': AvatarService.instance.defaultUnlockedAvatarIds(),
+      'lastUnlockedAvatarId': null,
+      'lastUnlockedAvatarReason': null,
+      'lastUnlockedAvatarAt': null,
 
       'equippedFrame': defaultPvpLeague.id,
       'bestLeagueId': defaultPvpLeague.id,
@@ -106,8 +111,12 @@ Future<void> bootstrapUserDoc(String uid) async {
       'username': username,
       'usernameLower': usernameLower,
       'displayName': displayName,
+
       'avatarId': data['avatarId'] ?? 'avatar_1',
       'unlockedAvatars': unlockedAvatars,
+      'lastUnlockedAvatarId': data['lastUnlockedAvatarId'],
+      'lastUnlockedAvatarReason': data['lastUnlockedAvatarReason'],
+      'lastUnlockedAvatarAt': data['lastUnlockedAvatarAt'],
 
       'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
       'bestLeagueId': bestLeague.id,
@@ -142,8 +151,7 @@ Future<void> bootstrapUserDoc(String uid) async {
       'lifeUnits': data['lifeUnits'] ?? inferredUnits,
       'maxLifeUnits': data['maxLifeUnits'] ?? 10,
       'lifeRegenSeconds': data['lifeRegenSeconds'] ?? 150,
-      'lastLifeTickAt':
-          data['lastLifeTickAt'] ?? FieldValue.serverTimestamp(),
+      'lastLifeTickAt': data['lastLifeTickAt'] ?? FieldValue.serverTimestamp(),
 
       'updatedAt': FieldValue.serverTimestamp(),
     },

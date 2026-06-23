@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/weekly_topic_service.dart';
+import '../../services/avatar_service.dart';
 import '../solo/level_select_screen.dart';
 
 class WeeklyTopicScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
   final _uid = FirebaseAuth.instance.currentUser!.uid;
 
   bool _claimingCoins = false;
+  bool _claimingCompletion = false;
 
   Future<void> _claimCoinReward({
     required String weekId,
@@ -60,6 +62,60 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
     }
   }
 
+  Future<void> _claimCompletionReward({
+    required String weekId,
+    required String rewardAvatarId,
+  }) async {
+    if (_claimingCompletion) return;
+
+    if (rewardAvatarId.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No exclusive reward configured for this week.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _claimingCompletion = true);
+
+    try {
+      final claimed = await WeeklyTopicService.instance.claimCompletionReward(
+        uid: _uid,
+        weekId: weekId,
+        rewardAvatarId: rewardAvatarId,
+      );
+
+      final avatar = AvatarService.instance.avatarById(rewardAvatarId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            claimed
+                ? '${avatar.emoji} ${avatar.name} unlocked!'
+                : 'Reward already claimed or not available yet.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _claimingCompletion = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -89,6 +145,10 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
           final title = (topicData['title'] ?? 'Weekly Topic').toString();
           final description = (topicData['description'] ?? '').toString();
           final rewardCoins = ((topicData['rewardCoins'] ?? 0) as num).toInt();
+          final rewardAvatarId =
+              (topicData['rewardAvatarId'] ?? '').toString();
+          final rewardAvatar =
+              AvatarService.instance.avatarById(rewardAvatarId);
 
           return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             stream: WeeklyTopicService.instance.watchMyParticipation(
@@ -104,8 +164,14 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
               final coinRewardClaimed =
                   participation?['coinRewardClaimed'] == true;
 
+              final completionRewardClaimed =
+                  participation?['completionRewardClaimed'] == true;
+
               final canClaimCoins =
                   WeeklyTopicService.instance.canClaimCoinReward(participation);
+
+              final canClaimCompletion = WeeklyTopicService.instance
+                  .canClaimCompletionReward(participation);
 
               final progress = (levelsCompleted / 10).clamp(0.0, 1.0);
 
@@ -215,13 +281,36 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const SizedBox(height: 14),
                             const Divider(),
                             const SizedBox(height: 8),
-                            const Text('10 levels: Exclusive reward'),
+                            Text(
+                              '10 levels: ${rewardAvatar.emoji} ${rewardAvatar.name}',
+                            ),
                             const SizedBox(height: 6),
                             Text(
-                              levelsCompleted >= 10
-                                  ? 'Exclusive reward ready soon.'
-                                  : 'Complete all 10 levels to unlock this reward.',
+                              completionRewardClaimed
+                                  ? 'Exclusive reward claimed.'
+                                  : levelsCompleted >= 10
+                                      ? 'Exclusive reward ready to claim.'
+                                      : 'Complete all 10 levels to unlock this reward.',
                               style: const TextStyle(color: Colors.black54),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: canClaimCompletion &&
+                                        !_claimingCompletion
+                                    ? () => _claimCompletionReward(
+                                          weekId: weekId,
+                                          rewardAvatarId: rewardAvatarId,
+                                        )
+                                    : null,
+                                icon: const Icon(Icons.card_giftcard),
+                                label: Text(
+                                  completionRewardClaimed
+                                      ? 'Exclusive reward claimed'
+                                      : 'Claim 10-level reward',
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -259,7 +348,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       ),
                     ],
                   ),
-                  if (_claimingCoins)
+                  if (_claimingCoins || _claimingCompletion)
                     Container(
                       color: Colors.black.withOpacity(0.25),
                       child: const Center(

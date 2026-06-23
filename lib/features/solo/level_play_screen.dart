@@ -1277,7 +1277,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         );
       }
 
-      if (widget.isWeeklyTopic &&
+      final passedLevel = percent >= 0.4;
+
+      if (passedLevel &&
+          widget.isWeeklyTopic &&
           widget.weeklyTopicWeekId != null &&
           widget.weeklyTopicWeekId!.trim().isNotEmpty) {
         unawaited(
@@ -1295,6 +1298,48 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Widget _buildWeeklyTopicResultCard(double pct) {
+    if (!widget.isWeeklyTopic) {
+      return const SizedBox.shrink();
+    }
+
+    final counted = pct >= 0.4;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: counted
+            ? Colors.green.withOpacity(0.12)
+            : Colors.orange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: counted ? Colors.green : Colors.orange,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            counted ? Icons.check_circle : Icons.warning_amber_rounded,
+            color: counted ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              counted
+                  ? 'Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.'
+                  : 'No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: counted ? Colors.green.shade800 : Colors.orange.shade900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEnd(BuildContext context, int total) {
@@ -1353,6 +1398,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               ),
               textAlign: TextAlign.center,
             ),
+            if (widget.isWeeklyTopic) ...[
+              const SizedBox(height: 16),
+              _buildWeeklyTopicResultCard(pct),
+            ],
             const SizedBox(height: 22),
             Container(
               width: double.infinity,

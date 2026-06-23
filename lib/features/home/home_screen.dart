@@ -13,6 +13,7 @@ import '../../services/life_service.dart';
 import '../../services/season_service.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../ai_topics/ai_topics_screen.dart';
+import '../weekly/weekly_topic_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -442,12 +443,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 _WeeklyTopicCard(
                   isBusy: _isNavigating || _buyingLife,
                   onOpen: (topicData) {
-                    final title =
-                        (topicData['title'] ?? 'Weekly Topic').toString();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('$title is ready. Screen coming next.'),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const WeeklyTopicScreen(),
                       ),
                     );
                   },
@@ -590,7 +589,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
 
 class _WeeklyTopicCard extends StatelessWidget {
   final bool isBusy;

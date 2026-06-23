@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/weekly_topic_service.dart';
+import '../solo/level_select_screen.dart';
 
 class WeeklyTopicScreen extends StatefulWidget {
   const WeeklyTopicScreen({super.key});
@@ -47,39 +48,26 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
             );
           }
 
-          final weekId =
-              (topicData['weekId'] ?? '').toString();
+          final weekId = (topicData['weekId'] ?? '').toString();
 
-          final title =
-              (topicData['title'] ?? 'Weekly Topic')
-                  .toString();
+          final title = (topicData['title'] ?? 'Weekly Topic').toString();
 
-          final description =
-              (topicData['description'] ?? '')
-                  .toString();
+          final description = (topicData['description'] ?? '').toString();
 
-          final rewardCoins =
-              ((topicData['rewardCoins'] ?? 0) as num)
-                  .toInt();
+          final rewardCoins = ((topicData['rewardCoins'] ?? 0) as num).toInt();
 
-          return StreamBuilder<
-              DocumentSnapshot<Map<String, dynamic>>>(
-            stream: WeeklyTopicService.instance
-                .watchMyParticipation(
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: WeeklyTopicService.instance.watchMyParticipation(
               uid: _uid,
               weekId: weekId,
             ),
             builder: (context, participationSnap) {
-              final participation =
-                  participationSnap.data?.data();
+              final participation = participationSnap.data?.data();
 
               final levelsCompleted =
-                  ((participation?['levelsCompleted'] ?? 0)
-                          as num)
-                      .toInt();
+                  ((participation?['levelsCompleted'] ?? 0) as num).toInt();
 
-              final progress =
-                  (levelsCompleted / 10).clamp(0.0, 1.0);
+              final progress = (levelsCompleted / 10).clamp(0.0, 1.0);
 
               return ListView(
                 padding: const EdgeInsets.all(16),
@@ -88,16 +76,13 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: Colors.amber.withOpacity(0.12),
-                      borderRadius:
-                          BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color:
-                            Colors.amber.withOpacity(0.35),
+                        color: Colors.amber.withOpacity(0.35),
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(
                           children: [
@@ -109,8 +94,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             Text(
                               'Weekly Featured Topic',
                               style: TextStyle(
-                                fontWeight:
-                                    FontWeight.bold,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
@@ -120,8 +104,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           title,
                           style: const TextStyle(
                             fontSize: 22,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -129,26 +112,21 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: Colors.black12,
-                      borderRadius:
-                          BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Progress',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -162,27 +140,21 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color:
-                          Colors.green.withOpacity(0.08),
-                      borderRadius:
-                          BorderRadius.circular(18),
+                      color: Colors.green.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Rewards',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight:
-                                FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -196,23 +168,33 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
                   FilledButton.icon(
                     onPressed: () {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Category launch will be connected next.',
+                      final categoryId =
+                          (topicData['categoryId'] ?? '').toString();
+
+                      if (categoryId.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Weekly Topic category is missing.'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LevelSelectScreen(
+                            categoryId: categoryId,
+                            categoryName: title,
                           ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.play_arrow),
-                    label:
-                        const Text('Play Weekly Topic'),
+                    label: const Text('Play Weekly Topic'),
                   ),
                 ],
               );

@@ -10,12 +10,15 @@ import '../../services/achievement_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
+import '../../services/weekly_topic_service.dart';
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
   final int levelNumber;
   final bool isAiTopic;
   final String? aiTopicId;
+  final bool isWeeklyTopic;
+  final String? weeklyTopicWeekId;
 
   const LevelPlayScreen({
     super.key,
@@ -23,6 +26,8 @@ class LevelPlayScreen extends StatefulWidget {
     required this.levelNumber,
     this.isAiTopic = false,
     this.aiTopicId,
+    this.isWeeklyTopic = false,
+    this.weeklyTopicWeekId,
   });
 
   @override
@@ -476,9 +481,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               final catData = catSnap.data!.data();
               _levelCount ??= widget.isAiTopic
                   ? ((catData?['targetLevels'] ??
-                              catData?['levelsCount'] ??
-                              EconomyService.aiLevelsPerTopic)
-                          as num)
+                          catData?['levelsCount'] ??
+                          EconomyService.aiLevelsPerTopic) as num)
                       .toInt()
                   : ((catData?['levelCount'] ?? 0) as num).toInt();
 
@@ -1273,6 +1277,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         );
       }
 
+      if (widget.isWeeklyTopic &&
+          widget.weeklyTopicWeekId != null &&
+          widget.weeklyTopicWeekId!.trim().isNotEmpty) {
+        unawaited(
+          WeeklyTopicService.instance.markLevelCompleted(
+            uid: uid,
+            weekId: widget.weeklyTopicWeekId!,
+            levelNumber: widget.levelNumber,
+          ),
+        );
+      }
+
       _saved = true;
     } catch (e) {
       _saveError = e.toString();
@@ -1462,6 +1478,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                       levelNumber: nextLevel,
                                       isAiTopic: widget.isAiTopic,
                                       aiTopicId: widget.aiTopicId,
+                                      isWeeklyTopic: widget.isWeeklyTopic,
+                                      weeklyTopicWeekId:
+                                          widget.weeklyTopicWeekId,
                                     ),
                                   ),
                                 );

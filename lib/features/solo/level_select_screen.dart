@@ -13,12 +13,17 @@ class LevelSelectScreen extends StatefulWidget {
   final bool isAiTopic;
   final String? aiTopicId;
 
+  final bool isWeeklyTopic;
+  final String? weeklyTopicWeekId;
+
   const LevelSelectScreen({
     super.key,
     required this.categoryId,
     required this.categoryName,
     this.isAiTopic = false,
     this.aiTopicId,
+    this.isWeeklyTopic = false,
+    this.weeklyTopicWeekId,
   });
 
   @override
@@ -282,6 +287,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             levelNumber: level,
             isAiTopic: widget.isAiTopic,
             aiTopicId: widget.aiTopicId,
+            isWeeklyTopic: widget.isWeeklyTopic,
+            weeklyTopicWeekId: widget.weeklyTopicWeekId,
           ),
         ),
       );

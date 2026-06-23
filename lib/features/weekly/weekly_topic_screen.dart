@@ -189,6 +189,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           builder: (_) => LevelSelectScreen(
                             categoryId: categoryId,
                             categoryName: title,
+                            isWeeklyTopic: true,
+                            weeklyTopicWeekId: weekId,
                           ),
                         ),
                       );

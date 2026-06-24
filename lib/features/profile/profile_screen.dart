@@ -357,90 +357,216 @@ class _ProfileScreenState extends State<ProfileScreen>
       storedUnlockedAvatars: storedUnlockedAvatars,
     );
 
+    final avatars = AvatarService.instance.allAvatars;
+    final currentAvatar = AvatarService.instance.avatarById(currentAvatarId);
+    final unlockedCount =
+        avatars.where((avatar) => unlockedIds.contains(avatar.id)).length;
+
     final selectedAvatarId = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) {
-        final avatars = AvatarService.instance.allAvatars;
-
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Choose avatar',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.78,
+          minChildSize: 0.45,
+          maxChildSize: 0.92,
+          builder: (context, scrollController) {
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              children: [
+                const Text(
+                  'Avatar Collection',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              GridView.count(
-                crossAxisCount: 4,
-                shrinkWrap: true,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                children: avatars.map((avatar) {
-                  final isSelected = avatar.id == currentAvatarId;
-                  final isUnlocked = unlockedIds.contains(avatar.id);
-
-                  return InkWell(
+                const SizedBox(height: 6),
+                Text(
+                  'Unlocked $unlockedCount / ${avatars.length}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(18),
-                    onTap: () {
-                      if (!isUnlocked) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(avatar.unlockLabel),
-                          ),
-                        );
-                        return;
-                      }
-
-                      Navigator.pop(sheetContext, avatar.id);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? Colors.deepPurple.withOpacity(0.16)
-                            : Colors.black12,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isSelected
-                              ? Colors.deepPurple
-                              : Colors.transparent,
-                          width: 2,
+                    border: Border.all(
+                      color: Colors.deepPurple.withOpacity(0.25),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white.withOpacity(0.75),
+                        child: Text(
+                          currentAvatar.emoji,
+                          style: const TextStyle(fontSize: 30),
                         ),
                       ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Opacity(
-                              opacity: isUnlocked ? 1.0 : 0.35,
-                              child: Text(
-                                avatar.emoji,
-                                style: const TextStyle(fontSize: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Currently equipped',
+                              style: TextStyle(
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                          if (!isUnlocked)
-                            const Positioned(
-                              right: 8,
-                              bottom: 8,
-                              child: Icon(
-                                Icons.lock,
-                                size: 18,
+                            const SizedBox(height: 2),
+                            Text(
+                              currentAvatar.name,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                        ],
+                            const SizedBox(height: 4),
+                            _AvatarCategoryBadge(
+                              category: currentAvatar.category,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: avatars.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.82,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemBuilder: (context, index) {
+                    final avatar = avatars[index];
+                    final isSelected = avatar.id == currentAvatarId;
+                    final isUnlocked = unlockedIds.contains(avatar.id);
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () {
+                        if (!isUnlocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(avatar.unlockLabel),
+                            ),
+                          );
+                          return;
+                        }
+
+                        Navigator.pop(sheetContext, avatar.id);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.deepPurple.withOpacity(0.16)
+                              : isUnlocked
+                                  ? Colors.black12
+                                  : Colors.black.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.deepPurple
+                                : isUnlocked
+                                    ? Colors.black12
+                                    : Colors.black.withOpacity(0.08),
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Opacity(
+                                  opacity: isUnlocked ? 1.0 : 0.35,
+                                  child: Text(
+                                    avatar.emoji,
+                                    style: const TextStyle(fontSize: 34),
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  avatar.name,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isUnlocked
+                                        ? Colors.black87
+                                        : Colors.black45,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                if (isUnlocked)
+                                  _AvatarCategoryBadge(
+                                    category: avatar.category,
+                                  )
+                                else
+                                  Text(
+                                    avatar.unlockLabel,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.black45,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (!isUnlocked)
+                              const Positioned(
+                                right: 2,
+                                top: 2,
+                                child: Icon(
+                                  Icons.lock,
+                                  size: 18,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            if (isSelected)
+                              const Positioned(
+                                right: 2,
+                                top: 2,
+                                child: Icon(
+                                  Icons.check_circle,
+                                  size: 20,
+                                  color: Colors.deepPurple,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -459,8 +585,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       await _loadProfile(showLoading: false);
 
       if (!mounted) return;
+      final selectedAvatar = AvatarService.instance.avatarById(selectedAvatarId);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar actualizado')),
+        SnackBar(
+          content:
+              Text('${selectedAvatar.emoji} ${selectedAvatar.name} equipped'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -471,6 +602,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) setState(() => _saving = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -941,6 +1073,78 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _AvatarCategoryBadge extends StatelessWidget {
+  final String category;
+
+  const _AvatarCategoryBadge({required this.category});
+
+  String get _label {
+    switch (category) {
+      case 'base':
+        return 'BASE';
+      case 'pvp':
+        return 'PVP';
+      case 'weekly':
+        return 'WEEKLY';
+      case 'achievement':
+        return 'ACHIEVEMENT';
+      case 'ai':
+        return 'AI';
+      case 'ai_dynamic':
+        return 'AI UNIQUE';
+      default:
+        return category.toUpperCase();
+    }
+  }
+
+  Color get _color {
+    switch (category) {
+      case 'base':
+        return Colors.blueGrey;
+      case 'pvp':
+        return Colors.deepPurple;
+      case 'weekly':
+        return Colors.amber.shade800;
+      case 'achievement':
+        return Colors.green;
+      case 'ai':
+      case 'ai_dynamic':
+        return Colors.pinkAccent;
+      default:
+        return Colors.black54;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 7,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: _color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: _color.withOpacity(0.35),
+        ),
+      ),
+      child: Text(
+        _label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: _color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

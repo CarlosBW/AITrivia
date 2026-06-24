@@ -585,7 +585,8 @@ class _ProfileScreenState extends State<ProfileScreen>
       await _loadProfile(showLoading: false);
 
       if (!mounted) return;
-      final selectedAvatar = AvatarService.instance.avatarById(selectedAvatarId);
+      final selectedAvatar =
+          AvatarService.instance.avatarById(selectedAvatarId);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -603,6 +604,96 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  Future<void> _chooseFrame({
+    required BuildContext context,
+    required String equippedFrame,
+    required String bestLeagueId,
+  }) async {
+    if (_saving) return;
+
+    final unlockedFrames = FrameService.instance.unlockedLeagueFrames(
+      bestLeagueId: bestLeagueId,
+    );
+
+    final selectedFrameId = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Text(
+              'Choose Frame',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ...unlockedFrames.map(
+              (frame) => ListTile(
+                leading: Text(
+                  frame.emoji,
+                  style: const TextStyle(fontSize: 24),
+                ),
+                title: Text(frame.name),
+                subtitle: Text(frame.unlockLabel),
+                trailing: frame.id == equippedFrame
+                    ? const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                      )
+                    : null,
+                onTap: () {
+                  Navigator.pop(
+                    sheetContext,
+                    frame.id,
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selectedFrameId == null || selectedFrameId == equippedFrame) {
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      await userRef.set(
+        {
+          'equippedFrame': selectedFrameId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      await _loadProfile(showLoading: false);
+
+      if (!mounted) return;
+
+      final frame = FrameService.instance.frameById(
+        selectedFrameId,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${frame.emoji} ${frame.name} equipped',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -804,23 +895,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Color(frame.colorValue).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                          color: Color(frame.colorValue).withOpacity(0.40),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: _saving
+                          ? null
+                          : () => _chooseFrame(
+                                context: context,
+                                equippedFrame: equippedFrame,
+                                bestLeagueId: bestLeagueId,
+                              ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                      ),
-                      child: Text(
-                        '${frame.emoji} ${frame.name}',
-                        style: TextStyle(
-                          color: Color(frame.colorValue),
-                          fontWeight: FontWeight.bold,
+                        decoration: BoxDecoration(
+                          color: Color(frame.colorValue).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Color(frame.colorValue).withOpacity(0.40),
+                          ),
+                        ),
+                        child: Text(
+                          '${frame.emoji} ${frame.name}',
+                          style: TextStyle(
+                            color: Color(frame.colorValue),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -1077,7 +1178,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 }
-
 
 class _AvatarCategoryBadge extends StatelessWidget {
   final String category;

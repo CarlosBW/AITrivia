@@ -120,6 +120,7 @@ class MatchService {
     final ref = _liveSearchRef(uid);
     final userSnap = await _userRef(uid).get();
     final userData = userSnap.data() ?? {};
+    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
 
     final resolvedDisplayName =
         (userData['displayName'] ?? userData['username'] ?? displayName)
@@ -147,6 +148,7 @@ class MatchService {
     await ref.set({
       'uid': uid,
       'displayName': resolvedDisplayName,
+      'avatarId': avatarId,
       'categoryId': categoryId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
@@ -332,8 +334,7 @@ class MatchService {
     required PvpLeagueInfo candidateLeague,
   }) {
     final currentBestLeagueId =
-        (userData['bestLeagueId'] ?? userData['pvpLeagueId'] ?? '')
-            .toString();
+        (userData['bestLeagueId'] ?? userData['pvpLeagueId'] ?? '').toString();
 
     if (_leagueRank(candidateLeague.id) <= _leagueRank(currentBestLeagueId)) {
       return {};
@@ -560,6 +561,9 @@ class MatchService {
 
       final matchRef = _db.collection('matches').doc(matchId);
       final oppName = (oppDoc.data()['displayName'] ?? 'Guest').toString();
+      final myAvatarId = (meData?['avatarId'] ?? 'avatar_1').toString();
+
+      final oppAvatarId = (oppDoc.data()['avatarId'] ?? 'avatar_1').toString();
 
       final questions = await _generateFixedQuestions(
         categoryId: categoryId,
@@ -621,12 +625,14 @@ class MatchService {
         'players': {
           uid: {
             'displayName': finalMyName,
+            'avatarId': myAvatarId,
             'score': 0,
             'ready': false,
             'finished': false,
           },
           oppUid: {
             'displayName': oppName,
+            'avatarId': oppAvatarId,
             'score': 0,
             'ready': false,
             'finished': false,
@@ -1005,6 +1011,10 @@ class MatchService {
     );
 
     final code = _randomCode(5);
+    final userSnap = await _userRef(uid).get();
+    final userData = userSnap.data() ?? {};
+
+    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
 
     await matchRef.set({
       'createdAt': FieldValue.serverTimestamp(),
@@ -1027,6 +1037,7 @@ class MatchService {
       'players': {
         uid: {
           'displayName': displayName,
+          'avatarId': avatarId,
           'score': 0,
           'ready': false,
           'finished': false,
@@ -1097,7 +1108,10 @@ class MatchService {
     String displayName = 'Guest',
   }) async {
     final ref = _db.collection('matches').doc(matchId);
+    final userSnap = await _userRef(uid).get();
+    final userData = userSnap.data() ?? {};
 
+    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       if (!snap.exists) throw Exception('Sala no existe');
@@ -1116,6 +1130,7 @@ class MatchService {
         'guestUid': uid,
         'players.$uid': {
           'displayName': displayName,
+          'avatarId': avatarId,
           'score': 0,
           'ready': false,
           'finished': false,

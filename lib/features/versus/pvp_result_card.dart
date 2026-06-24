@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/avatar_service.dart';
 
 enum PvpResultState {
   victory,
@@ -14,6 +15,8 @@ class PvpResultCard extends StatelessWidget {
 
   final String myName;
   final String opponentName;
+  final String? myAvatarId;
+  final String? opponentAvatarId;
   final int myScore;
   final int? opponentScore;
 
@@ -54,6 +57,8 @@ class PvpResultCard extends StatelessWidget {
     required this.onPrimaryPressed,
     this.secondaryButtonText,
     this.onSecondaryPressed,
+    this.myAvatarId,
+    this.opponentAvatarId,
   });
 
   IconData get _icon {
@@ -95,7 +100,8 @@ class PvpResultCard extends StatelessWidget {
   int get _accuracy {
     if (myScore <= 0) return 0;
 
-    final total = myScore > (opponentScore ?? 0) ? myScore : (opponentScore ?? myScore);
+    final total =
+        myScore > (opponentScore ?? 0) ? myScore : (opponentScore ?? myScore);
 
     if (total <= 0) return 0;
 
@@ -206,6 +212,7 @@ class PvpResultCard extends StatelessWidget {
                       Expanded(
                         child: _ScoreColumn(
                           label: myName,
+                          avatarId: myAvatarId,
                           score: myScore,
                           highlight: true,
                         ),
@@ -231,6 +238,7 @@ class PvpResultCard extends StatelessWidget {
                         child: hasOpponentScore
                             ? _ScoreColumn(
                                 label: opponentName,
+                                avatarId: opponentAvatarId,
                                 score: opponentScore!,
                               )
                             : const SizedBox.shrink(),
@@ -313,21 +321,24 @@ class _ScoreColumn extends StatelessWidget {
   final String label;
   final int score;
   final bool highlight;
+  final String? avatarId;
 
   const _ScoreColumn({
     required this.label,
     required this.score,
     this.highlight = false,
+    this.avatarId,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = highlight ? Colors.deepPurple : Colors.black87;
-
+    final avatar =
+        avatarId == null ? null : AvatarService.instance.avatarById(avatarId);
     return Column(
       children: [
         Text(
-          label,
+          avatar == null ? label : '${avatar.emoji} $label',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(

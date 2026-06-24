@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/friend_service.dart';
 import '../../services/presence_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
+import '../../services/avatar_service.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -33,18 +34,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
   }
 
   String _avatarEmoji(String avatarId) {
-    const avatars = {
-      'avatar_1': '🧠',
-      'avatar_2': '🚀',
-      'avatar_3': '🎮',
-      'avatar_4': '🔥',
-      'avatar_5': '⭐',
-      'avatar_6': '🐱',
-      'avatar_7': '🤖',
-      'avatar_8': '🏆',
-    };
-
-    return avatars[avatarId] ?? '🙂';
+    return AvatarService.instance.avatarById(avatarId).emoji;
   }
 
   String _offlineLabel(Map<String, dynamic>? presence) {
@@ -666,7 +656,7 @@ class _UserTile extends StatelessWidget {
           child: Text(avatar),
         ),
         title: Text(
-          title,
+          '$avatar $title',
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),

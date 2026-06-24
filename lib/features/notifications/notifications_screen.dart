@@ -5,7 +5,7 @@ import '../../services/notification_service.dart';
 import '../social/friends_screen.dart';
 import '../versus/async_match_play_screen.dart';
 import '../versus/realtime_invites_screen.dart';
-import '../versus/realtime_match_lobby_screen.dart';
+import '../versus/match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
 import '../achievements/achievements_screen.dart';
 import '../versus/match_play_screen.dart';
@@ -255,7 +255,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RealtimeMatchLobbyScreen(
+            builder: (_) => MatchLobbyScreen(
               matchId: matchId,
             ),
           ),

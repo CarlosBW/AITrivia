@@ -1,153 +1,137 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../services/match_service.dart';
+import '../../services/presence_service.dart';
+import '../../services/avatar_service.dart';
 import 'match_play_screen.dart';
 
-class RealtimeMatchLobbyScreen extends StatefulWidget {
+class MatchLobbyScreen extends StatefulWidget {
   final String matchId;
 
-  const RealtimeMatchLobbyScreen({
+  const MatchLobbyScreen({
     super.key,
     required this.matchId,
   });
 
   @override
-  State<RealtimeMatchLobbyScreen> createState() =>
-      _RealtimeMatchLobbyScreenState();
+  State<MatchLobbyScreen> createState() => _MatchLobbyScreenState();
 }
 
-class _RealtimeMatchLobbyScreenState extends State<RealtimeMatchLobbyScreen> {
-  final _uid = FirebaseAuth.instance.currentUser!.uid;
+class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
+  final _presenceService = PresenceService.instance;
 
-  bool _updatingReady = false;
+  bool _navigatingToMatch = false;
 
-  int? _countdown;
-  Timer? _countdownTimer;
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() async {
+      try {
+        await _presenceService.setInMatch();
+      } catch (_) {}
+    });
+  }
 
   @override
   void dispose() {
-    _countdownTimer?.cancel();
+    if (!_navigatingToMatch) {
+      _presenceService.setAvailable();
+    }
+
     super.dispose();
   }
 
-  Future<void> _setReady({
-    required bool isPlayer1,
-  }) async {
-    if (_updatingReady) return;
+  Future<void> _leaveBecauseMatchUnavailable(String message) async {
+    if (_navigatingToMatch) return;
 
-    setState(() => _updatingReady = true);
+    _navigatingToMatch = true;
 
     try {
-      final ref =
-          FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
+      await _presenceService.setAvailable();
+    } catch (_) {}
 
-      await ref.update({
-        isPlayer1 ? 'player1Ready' : 'player2Ready': true,
-        'players.$_uid.ready': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _updatingReady = false);
-      }
-    }
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+
+    Navigator.pop(context);
   }
 
-  Future<void> _startMatchCountdown() async {
-    if (_countdown != null) return;
+  String _displayCategory(String categoryId) {
+    if (categoryId == 'random') return 'Random';
+    if (categoryId.isEmpty) return 'Categoría';
+    return categoryId[0].toUpperCase() + categoryId.substring(1);
+  }
 
-    setState(() {
-      _countdown = 3;
-    });
+  String _statusText({
+    required bool myReady,
+    required bool opponentReady,
+    required bool hasGuest,
+  }) {
+    if (!hasGuest) {
+      return 'Esperando que tu amigo se una a la sala.';
+    }
 
-    _countdownTimer = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) async {
-        if (_countdown == null) {
-          timer.cancel();
-          return;
-        }
+    if (myReady && opponentReady) {
+      return 'Todo listo. La partida está iniciando...';
+    }
 
-        if (_countdown! <= 1) {
-          timer.cancel();
+    if (myReady && !opponentReady) {
+      return 'Listo. Esperando que tu rival confirme.';
+    }
 
-          final ref = FirebaseFirestore.instance
-              .collection('matches')
-              .doc(widget.matchId);
+    if (!myReady && opponentReady) {
+      return 'Tu rival ya está listo. Confirma para empezar.';
+    }
 
-          await ref.update({
-            'status': 'playing',
-            'startAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-          if (!mounted) return;
-
-          setState(() {
-            _countdown = 0;
-          });
-
-          return;
-        }
-
-        if (!mounted) return;
-
-        setState(() {
-          _countdown = _countdown! - 1;
-        });
-      },
-    );
+    return 'Esperando que ambos jugadores estén listos.';
   }
 
   @override
   Widget build(BuildContext context) {
-    final matchRef =
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final service = MatchService();
+    final ref =
         FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Realtime Lobby'),
+        title: const Text('Sala 1 vs 1'),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: matchRef.snapshots(),
+        stream: ref.snapshots(),
         builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Error loading lobby:\n${snap.error}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snap.hasData || !snap.data!.exists) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          final data = snap.data!.data();
+
+          if (data == null) {
+            return const Center(child: Text('Sala no encontrada'));
           }
-
-          final data = snap.data!.data()!;
-
-          final player1Uid = (data['player1Uid'] ?? '').toString();
-
-          final player2Uid = (data['player2Uid'] ?? '').toString();
-
-          final player1Name = (data['player1Name'] ?? 'Player 1').toString();
-
-          final player2Name = (data['player2Name'] ?? 'Player 2').toString();
-
-          final player1Ready = data['player1Ready'] == true;
-
-          final player2Ready = data['player2Ready'] == true;
 
           final status = (data['status'] ?? 'waiting').toString();
 
-          if (status == 'playing') {
+          if ((status == 'cancelled' || status == 'expired') &&
+              !_navigatingToMatch) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _leaveBecauseMatchUnavailable(
+                'La sala ya no está disponible.',
+              );
+            });
+          }
+
+          if (status == 'playing' && !_navigatingToMatch) {
+            _navigatingToMatch = true;
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!context.mounted) return;
 
@@ -162,156 +146,195 @@ class _RealtimeMatchLobbyScreenState extends State<RealtimeMatchLobbyScreen> {
             });
           }
 
-          final isPlayer1 = player1Uid == _uid;
-          final isPlayer2 = player2Uid == _uid;
+          final mode = (data['mode'] ?? 'fixed').toString();
+          final categoryId = (data['categoryId'] ?? 'cine').toString();
+          final code = (data['matchCode'] ?? widget.matchId).toString();
 
-          final myReady = isPlayer1 ? player1Ready : player2Ready;
+          final totalQuestions =
+              ((data['totalQuestions'] ?? 10) as num).toInt();
+          final timePerQuestionSec =
+              ((data['timePerQuestionSec'] ?? 10) as num).toInt();
 
-          final bothReady = player1Ready && player2Ready;
+          final hostUid = (data['hostUid'] ?? '').toString();
+          final guestUid = (data['guestUid'] ?? '').toString();
 
-          if (bothReady && status == 'realtime_lobby' && _countdown == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _startMatchCountdown();
-            });
-          }
+          final players = Map<String, dynamic>.from(data['players'] ?? {});
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.bolt,
-                      size: 42,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Realtime Match Lobby',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Match ID: ${widget.matchId}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 22),
-              _PlayerCard(
-                playerName: player1Name,
-                ready: player1Ready,
-              ),
-              const SizedBox(height: 12),
-              _PlayerCard(
-                playerName: player2Name,
-                ready: player2Ready,
-              ),
-              const SizedBox(height: 28),
-              if (!myReady)
-                FilledButton.icon(
-                  onPressed: _updatingReady
-                      ? null
-                      : () => _setReady(
-                            isPlayer1: isPlayer1,
-                          ),
-                  icon: _updatingReady
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.check),
-                  label: const Text('READY'),
-                )
-              else
+          final hostPlayer = Map<String, dynamic>.from(
+            players[hostUid] ?? {},
+          );
+          final guestPlayer = Map<String, dynamic>.from(
+            players[guestUid] ?? {},
+          );
+          final me = Map<String, dynamic>.from(players[uid] ?? {});
+
+          final hostName =
+              (hostPlayer['displayName'] ?? 'Jugador 1').toString();
+          final guestName = guestUid.isEmpty
+              ? 'Esperando rival'
+              : (guestPlayer['displayName'] ?? 'Jugador 2').toString();
+
+          final hostAvatarId =
+              (hostPlayer['avatarId'] ?? 'avatar_1').toString();
+          final guestAvatarId =
+              (guestPlayer['avatarId'] ?? 'avatar_1').toString();
+
+          final hostReady = hostPlayer['ready'] == true;
+          final guestReady = guestPlayer['ready'] == true;
+          final myReady = me['ready'] == true;
+
+          final opponentReady = uid == hostUid ? guestReady : hostReady;
+          final hasGuest = guestUid.isNotEmpty;
+
+          final statusMessage = _statusText(
+            myReady: myReady,
+            opponentReady: opponentReady,
+            hasGuest: hasGuest,
+          );
+
+          return SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(18),
+                    color: Colors.deepPurple.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(26),
                     border: Border.all(
-                      color: Colors.green.withOpacity(0.45),
+                      color: Colors.deepPurple.withOpacity(0.22),
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
+                      const Text(
+                        '⚔️',
+                        style: TextStyle(fontSize: 48),
                       ),
-                      SizedBox(width: 10),
-                      Text(
-                        'You are READY',
+                      const SizedBox(height: 8),
+                      const Text(
+                        '1 vs 1 Match',
                         style: TextStyle(
+                          fontSize: 25,
                           fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        statusMessage,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.65),
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Column(
+                const SizedBox(height: 16),
+                _InfoCard(
                   children: [
-                    if (_countdown == null)
-                      const SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: CircularProgressIndicator(),
-                      )
-                    else
-                      Text(
-                        '$_countdown',
-                        style: const TextStyle(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    const SizedBox(height: 14),
-                    Text(
-                      bothReady
-                          ? 'Starting realtime match...'
-                          : 'Waiting for both players...',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
+                    _InfoRow(
+                      icon: Icons.category,
+                      label: 'Tema',
+                      value: _displayCategory(categoryId),
+                    ),
+                    _InfoRow(
+                      icon: Icons.auto_awesome,
+                      label: 'Modo',
+                      value: mode == 'fixed' ? 'Sin IA' : 'Con IA',
+                    ),
+                    _InfoRow(
+                      icon: Icons.quiz,
+                      label: 'Preguntas',
+                      value: '$totalQuestions',
+                    ),
+                    _InfoRow(
+                      icon: Icons.timer,
+                      label: 'Tiempo',
+                      value: '$timePerQuestionSec s por pregunta',
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 18),
-              if (!isPlayer1 && !isPlayer2)
-                const Text(
-                  'Warning: you are not a participant in this match.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.red,
-                  ),
+                const SizedBox(height: 16),
+                _PlayersCard(
+                  hostName: hostName,
+                  guestName: guestName,
+                  hostAvatarId: hostAvatarId,
+                  guestAvatarId: guestAvatarId,
+                  hostReady: hostReady,
+                  guestReady: guestReady,
+                  hasGuest: hasGuest,
                 ),
-            ],
+                const SizedBox(height: 16),
+                _RoomCodeCard(
+                  code: code,
+                  onCopy: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: code),
+                    );
+
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Código copiado'),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                if (status == 'waiting') ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: FilledButton.icon(
+                      onPressed: !hasGuest || myReady
+                          ? null
+                          : () async {
+                              await service.setReady(
+                                widget.matchId,
+                                true,
+                              );
+                            },
+                      icon: Icon(
+                        myReady ? Icons.hourglass_top : Icons.check_circle,
+                      ),
+                      label: Text(
+                        !hasGuest
+                            ? 'Esperando rival'
+                            : myReady
+                                ? 'Esperando rival...'
+                                : 'Estoy listo',
+                      ),
+                    ),
+                  ),
+                  if (myReady) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          await service.setReady(
+                            widget.matchId,
+                            false,
+                          );
+                        },
+                        child: const Text('Cancelar listo'),
+                      ),
+                    ),
+                  ],
+                ] else if (status != 'playing') ...[
+                  Center(
+                    child: Text(
+                      'Estado de la sala: $status',
+                      style: const TextStyle(color: Colors.black54),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           );
         },
       ),
@@ -319,45 +342,264 @@ class _RealtimeMatchLobbyScreenState extends State<RealtimeMatchLobbyScreen> {
   }
 }
 
-class _PlayerCard extends StatelessWidget {
-  final String playerName;
-  final bool ready;
+class _InfoCard extends StatelessWidget {
+  final List<Widget> children;
 
-  const _PlayerCard({
-    required this.playerName,
-    required this.ready,
+  const _InfoCard({
+    required this.children,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = ready ? Colors.green : Colors.orange;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        children: children,
+      ),
+    );
+  }
+}
 
-    return Card(
-      elevation: 0,
-      color: color.withOpacity(0.12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: color.withOpacity(0.45),
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: Colors.deepPurple),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayersCard extends StatelessWidget {
+  final String hostName;
+  final String guestName;
+  final String hostAvatarId;
+  final String guestAvatarId;
+  final bool hostReady;
+  final bool guestReady;
+  final bool hasGuest;
+
+  const _PlayersCard({
+    required this.hostName,
+    required this.guestName,
+    required this.hostAvatarId,
+    required this.guestAvatarId,
+    required this.hostReady,
+    required this.guestReady,
+    required this.hasGuest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _PlayerStatusCard(
+          name: hostName,
+          avatarId: hostAvatarId,
+          ready: hostReady,
+          waiting: false,
+        ),
+        const SizedBox(height: 12),
+        _PlayerStatusCard(
+          name: guestName,
+          avatarId: guestAvatarId,
+          ready: hasGuest && guestReady,
+          waiting: !hasGuest,
+        ),
+      ],
+    );
+  }
+}
+
+class _PlayerStatusCard extends StatelessWidget {
+  final String name;
+  final String avatarId;
+  final bool ready;
+  final bool waiting;
+
+  const _PlayerStatusCard({
+    required this.name,
+    required this.avatarId,
+    required this.ready,
+    this.waiting = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = AvatarService.instance.avatarById(avatarId);
+
+    final Color borderColor =
+        ready ? Colors.green.shade300 : Colors.orange.shade300;
+
+    final IconData icon = ready ? Icons.check_circle : Icons.access_time;
+
+    final String statusText = waiting
+        ? 'Esperando rival...'
+        : ready
+            ? 'Listo'
+            : 'Esperando...';
+
+    final Color statusColor = ready ? Colors.green : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ready
+            ? Colors.green.withOpacity(0.08)
+            : Colors.orange.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: borderColor,
         ),
       ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.18),
-          child: Icon(
-            ready ? Icons.check : Icons.schedule,
-            color: color,
+      child: Row(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: ready
+                    ? Colors.green.withOpacity(0.15)
+                    : Colors.orange.withOpacity(0.15),
+                child: Text(
+                  avatar.emoji,
+                  style: const TextStyle(fontSize: 25),
+                ),
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: statusColor,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        title: Text(
-          playerName,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoomCodeCard extends StatelessWidget {
+  final String code;
+  final VoidCallback onCopy;
+
+  const _RoomCodeCard({
+    required this.code,
+    required this.onCopy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.deepPurple.withOpacity(0.18),
         ),
-        subtitle: Text(
-          ready ? 'Ready' : 'Waiting...',
-        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Código de sala',
+            style: TextStyle(
+              color: Colors.black54,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            code,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onCopy,
+              icon: const Icon(Icons.copy),
+              label: const Text('Copiar código'),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -770,6 +770,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final myName = (myData['displayName'] ?? 'Tú').toString();
     final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
 
+    final myAvatarId = (myData['avatarId'] ?? 'avatar_1').toString();
+
+    final opponentAvatarId =
+        (opponentData['avatarId'] ?? 'avatar_1').toString();
+
     final winnerUid = match['winnerUid'] as String?;
     final winReward = ((match['winReward'] ?? 0) as num).toInt();
     final affectsPvpRating =
@@ -868,6 +873,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       subtitle: subtitle,
       myName: myName,
       opponentName: opponentName,
+      myAvatarId: myAvatarId,
+      opponentAvatarId: opponentAvatarId,
       myScore: myScore,
       opponentScore: opponentScore,
       coinsEarned: coinsEarned > 0 ? coinsEarned : null,

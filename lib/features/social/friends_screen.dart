@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/friend_service.dart';
 import '../../services/presence_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
-import '../../services/avatar_service.dart';
+import '../../widgets/player_avatar_widget.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -31,10 +31,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
-  }
-
-  String _avatarEmoji(String avatarId) {
-    return AvatarService.instance.avatarById(avatarId).emoji;
   }
 
   String _offlineLabel(Map<String, dynamic>? presence) {
@@ -328,11 +324,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     final username =
                         (data['username'] ?? data['displayName'] ?? 'Player')
                             .toString();
-                    final avatarId =
-                        (data['avatarId'] ?? 'avatar_1').toString();
-
                     return _UserTile(
-                      avatar: _avatarEmoji(avatarId),
+                      player: data,
                       title: username,
                       subtitle: 'Jugador encontrado',
                       statusColor: Colors.grey,
@@ -399,11 +392,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               'Player')
                           .toString();
 
-                      final avatarId =
-                          (data['targetAvatarId'] ?? 'avatar_1').toString();
+                      final targetPlayer = {
+                        'avatarId': data['targetAvatarId'] ?? 'avatar_1',
+                        'equippedFrame': data['targetEquippedFrame'],
+                        'bestLeagueId': data['targetBestLeagueId'],
+                      };
 
                       return _UserTile(
-                        avatar: _avatarEmoji(avatarId),
+                        player: targetPlayer,
                         title: targetName,
                         subtitle: 'Pendiente',
                         statusColor: Colors.orange,
@@ -468,11 +464,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               'Player')
                           .toString();
 
-                      final avatarId =
-                          (data['requesterAvatarId'] ?? 'avatar_1').toString();
+                      final requesterPlayer = {
+                        'avatarId': data['requesterAvatarId'] ?? 'avatar_1',
+                        'equippedFrame': data['requesterEquippedFrame'],
+                        'bestLeagueId': data['requesterBestLeagueId'],
+                      };
 
                       return _UserTile(
-                        avatar: _avatarEmoji(avatarId),
+                        player: requesterPlayer,
                         title: name,
                         subtitle: 'Quiere agregarte',
                         statusColor: Colors.orange,
@@ -557,9 +556,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           (data['displayName'] ?? data['username'] ?? 'Player')
                               .toString();
 
-                      final avatarId =
-                          (data['avatarId'] ?? 'avatar_1').toString();
-
                       return StreamBuilder<
                           DocumentSnapshot<Map<String, dynamic>>>(
                         stream: _presenceService.watchUserPresence(
@@ -580,7 +576,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           );
 
                           return _UserTile(
-                            avatar: _avatarEmoji(avatarId),
+                            player: data,
                             title: displayName,
                             subtitle:
                                 online ? statusText : _offlineLabel(presence),
@@ -628,14 +624,14 @@ class _FriendsScreenState extends State<FriendsScreen> {
 }
 
 class _UserTile extends StatelessWidget {
-  final String avatar;
+  final Map<String, dynamic> player;
   final String title;
   final String subtitle;
   final Widget trailing;
   final Color statusColor;
 
   const _UserTile({
-    required this.avatar,
+    required this.player,
     required this.title,
     required this.subtitle,
     required this.trailing,
@@ -652,11 +648,12 @@ class _UserTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          child: Text(avatar),
+        leading: PlayerAvatarWidget.fromPlayer(
+          player,
+          radius: 20,
         ),
         title: Text(
-          '$avatar $title',
+          title,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),

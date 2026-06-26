@@ -133,6 +133,9 @@ class FriendService {
 
       final username = (myData['username'] ?? displayName).toString();
       final avatarId = (myData['avatarId'] ?? 'avatar_1').toString();
+      final equippedFrame = (myData['equippedFrame'] ?? 'bronze').toString();
+
+      final bestLeagueId = (myData['bestLeagueId'] ?? 'bronze').toString();
 
       final targetDisplayName = (targetData['displayName'] ??
               targetData['username'] ??
@@ -143,6 +146,11 @@ class FriendService {
           (targetData['username'] ?? targetDisplayName).toString();
 
       final targetAvatarId = (targetData['avatarId'] ?? 'avatar_1').toString();
+      final targetEquippedFrame =
+          (targetData['equippedFrame'] ?? 'bronze').toString();
+
+      final targetBestLeagueId =
+          (targetData['bestLeagueId'] ?? 'bronze').toString();
 
       final now = FieldValue.serverTimestamp();
 
@@ -153,6 +161,8 @@ class FriendService {
           'requesterDisplayName': displayName,
           'requesterUsername': username,
           'requesterAvatarId': avatarId,
+          'requesterEquippedFrame': equippedFrame,
+          'requesterBestLeagueId': bestLeagueId,
           'status': 'pending',
           'createdAt': now,
           'updatedAt': now,
@@ -167,6 +177,8 @@ class FriendService {
           'targetDisplayName': targetDisplayName,
           'targetUsername': targetUsername,
           'targetAvatarId': targetAvatarId,
+          'targetEquippedFrame': targetEquippedFrame,
+          'targetBestLeagueId': targetBestLeagueId,
           'status': 'pending',
           'createdAt': now,
           'updatedAt': now,
@@ -248,7 +260,9 @@ class FriendService {
           'username':
               (requesterData['username'] ?? requesterDisplayName).toString(),
           'avatarId': (requesterData['avatarId'] ?? 'avatar_1').toString(),
+          'equippedFrame': requesterData['equippedFrame'] ?? 'bronze',
 
+          'bestLeagueId': requesterData['bestLeagueId'] ?? 'bronze',
           // PvP snapshot for future efficient friend leaderboards.
           'pvpRating': requesterData['pvpRating'] ?? 1000,
           'pvpLeagueId': requesterData['pvpLeagueId'] ?? 'bronze',
@@ -268,7 +282,9 @@ class FriendService {
           'displayName': myDisplayName,
           'username': (myData['username'] ?? myDisplayName).toString(),
           'avatarId': (myData['avatarId'] ?? 'avatar_1').toString(),
+          'equippedFrame': myData['equippedFrame'] ?? 'bronze',
 
+          'bestLeagueId': myData['bestLeagueId'] ?? 'bronze',
           // PvP snapshot for future efficient friend leaderboards.
           'pvpRating': myData['pvpRating'] ?? 1000,
           'pvpLeagueId': myData['pvpLeagueId'] ?? 'bronze',

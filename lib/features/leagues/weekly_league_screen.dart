@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../services/league_service.dart';
 import '../../services/season_service.dart';
 import '../../services/weekly_league_service.dart';
+import '../../widgets/player_avatar_widget.dart';
 import 'season_rewards_screen.dart';
 
 class WeeklyLeagueScreen extends StatefulWidget {
@@ -130,21 +131,6 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
     final minutes = duration.inMinutes % 60;
 
     return '${days}d ${hours}h ${minutes}m';
-  }
-
-  String _avatarEmoji(String avatarId) {
-    const avatars = {
-      'avatar_1': '🧠',
-      'avatar_2': '🚀',
-      'avatar_3': '🎮',
-      'avatar_4': '🔥',
-      'avatar_5': '⭐',
-      'avatar_6': '🐱',
-      'avatar_7': '🤖',
-      'avatar_8': '🏆',
-    };
-
-    return avatars[avatarId] ?? '🙂';
   }
 
   @override
@@ -294,6 +280,18 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                                   : (data['avatarId'] ?? 'avatar_1')
                                       .toString();
 
+                              final frameId = isMe
+                                  ? (userData['equippedFrame'] ??
+                                          data['equippedFrame'])
+                                      ?.toString()
+                                  : data['equippedFrame']?.toString();
+
+                              final bestLeagueId = isMe
+                                  ? (userData['bestLeagueId'] ??
+                                          data['bestLeagueId'])
+                                      ?.toString()
+                                  : data['bestLeagueId']?.toString();
+
                               final weeklyScore =
                                   ((data['weeklyScore'] ?? 0)
                                           as num)
@@ -312,8 +310,9 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                                     const EdgeInsets.only(bottom: 10),
                                 child: _WeeklyLeagueTile(
                                   rank: rank,
-                                  avatar:
-                                      _avatarEmoji(avatarId),
+                                  avatarId: avatarId,
+                                  frameId: frameId,
+                                  bestLeagueId: bestLeagueId,
                                   username: username,
                                   weeklyScore: weeklyScore,
                                   level: level,
@@ -723,7 +722,9 @@ class _RewardRow extends StatelessWidget {
 
 class _WeeklyLeagueTile extends StatelessWidget {
   final int rank;
-  final String avatar;
+  final String avatarId;
+  final String? frameId;
+  final String? bestLeagueId;
   final String username;
   final int weeklyScore;
   final int level;
@@ -732,7 +733,9 @@ class _WeeklyLeagueTile extends StatelessWidget {
 
   const _WeeklyLeagueTile({
     required this.rank,
-    required this.avatar,
+    required this.avatarId,
+    this.frameId,
+    this.bestLeagueId,
     required this.username,
     required this.weeklyScore,
     required this.level,
@@ -785,14 +788,11 @@ class _WeeklyLeagueTile extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          CircleAvatar(
-            backgroundColor:
-                Colors.white.withOpacity(0.8),
-            child: Text(
-              avatar,
-              style:
-                  const TextStyle(fontSize: 20),
-            ),
+          PlayerAvatarWidget(
+            avatarId: avatarId,
+            frameId: frameId,
+            bestLeagueId: bestLeagueId,
+            radius: 20,
           ),
 
           const SizedBox(width: 12),

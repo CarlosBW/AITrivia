@@ -4,24 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/league_service.dart';
+import '../../widgets/player_avatar_widget.dart';
 
 class DailyLeaderboardScreen extends StatelessWidget {
   const DailyLeaderboardScreen({super.key});
-
-  String _avatarEmoji(String avatarId) {
-    const avatars = {
-      'avatar_1': '🧠',
-      'avatar_2': '🚀',
-      'avatar_3': '🎮',
-      'avatar_4': '🔥',
-      'avatar_5': '⭐',
-      'avatar_6': '🐱',
-      'avatar_7': '🤖',
-      'avatar_8': '🏆',
-    };
-
-    return avatars[avatarId] ?? '🙂';
-  }
 
   LeagueInfo _leagueFromData(Map<String, dynamic> data) {
     final leagueId = (data['leagueId'] ?? 'bronze').toString();
@@ -93,7 +79,6 @@ class DailyLeaderboardScreen extends StatelessWidget {
                 _TopThreePodium(
                   players: topThree,
                   currentUid: uid,
-                  avatarBuilder: _avatarEmoji,
                   leagueBuilder: _leagueFromData,
                 ),
               const SizedBox(height: 16),
@@ -115,7 +100,6 @@ class DailyLeaderboardScreen extends StatelessWidget {
                 final displayName =
                     (data['username'] ?? data['displayName'] ?? 'Player')
                         .toString();
-                final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
                 final score = ((data['score'] ?? 0) as num).toInt();
                 final correct = ((data['correct'] ?? 0) as num).toInt();
                 final totalAnswered =
@@ -127,7 +111,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _LeaderboardTile(
                     rank: rank,
-                    avatar: _avatarEmoji(avatarId),
+                    player: data,
                     displayName: displayName,
                     score: score,
                     correct: correct,
@@ -149,13 +133,11 @@ class DailyLeaderboardScreen extends StatelessWidget {
 class _TopThreePodium extends StatelessWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> players;
   final String currentUid;
-  final String Function(String avatarId) avatarBuilder;
   final LeagueInfo Function(Map<String, dynamic> data) leagueBuilder;
 
   const _TopThreePodium({
     required this.players,
     required this.currentUid,
-    required this.avatarBuilder,
     required this.leagueBuilder,
   });
 
@@ -179,7 +161,6 @@ class _TopThreePodium extends StatelessWidget {
                 rank: 2,
                 doc: players[1],
                 isMe: players[1].id == currentUid,
-                avatarBuilder: avatarBuilder,
                 leagueBuilder: leagueBuilder,
               ),
             )
@@ -191,7 +172,6 @@ class _TopThreePodium extends StatelessWidget {
               rank: 1,
               doc: players[0],
               isMe: players[0].id == currentUid,
-              avatarBuilder: avatarBuilder,
               leagueBuilder: leagueBuilder,
               large: true,
             ),
@@ -203,7 +183,6 @@ class _TopThreePodium extends StatelessWidget {
                 rank: 3,
                 doc: players[2],
                 isMe: players[2].id == currentUid,
-                avatarBuilder: avatarBuilder,
                 leagueBuilder: leagueBuilder,
               ),
             )
@@ -220,14 +199,12 @@ class _PodiumPlayer extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> doc;
   final bool isMe;
   final bool large;
-  final String Function(String avatarId) avatarBuilder;
   final LeagueInfo Function(Map<String, dynamic> data) leagueBuilder;
 
   const _PodiumPlayer({
     required this.rank,
     required this.doc,
     required this.isMe,
-    required this.avatarBuilder,
     required this.leagueBuilder,
     this.large = false,
   });
@@ -243,7 +220,6 @@ class _PodiumPlayer extends StatelessWidget {
     final data = doc.data();
     final name =
         (data['username'] ?? data['displayName'] ?? 'Player').toString();
-    final avatar = avatarBuilder((data['avatarId'] ?? 'avatar_1').toString());
     final score = ((data['score'] ?? 0) as num).toInt();
     final league = leagueBuilder(data);
 
@@ -265,13 +241,9 @@ class _PodiumPlayer extends StatelessWidget {
             style: TextStyle(fontSize: large ? 30 : 24),
           ),
           const SizedBox(height: 6),
-          CircleAvatar(
+          PlayerAvatarWidget.fromPlayer(
+            data,
             radius: large ? 32 : 25,
-            backgroundColor: Colors.black12,
-            child: Text(
-              avatar,
-              style: TextStyle(fontSize: large ? 30 : 24),
-            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -311,7 +283,7 @@ class _PodiumPlayer extends StatelessWidget {
 
 class _LeaderboardTile extends StatelessWidget {
   final int rank;
-  final String avatar;
+  final Map<String, dynamic> player;
   final String displayName;
   final int score;
   final int correct;
@@ -322,7 +294,7 @@ class _LeaderboardTile extends StatelessWidget {
 
   const _LeaderboardTile({
     required this.rank,
-    required this.avatar,
+    required this.player,
     required this.displayName,
     required this.score,
     required this.correct,
@@ -375,12 +347,9 @@ class _LeaderboardTile extends StatelessWidget {
                   ),
           ),
           const SizedBox(width: 10),
-          CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.80),
-            child: Text(
-              avatar,
-              style: const TextStyle(fontSize: 20),
-            ),
+          PlayerAvatarWidget.fromPlayer(
+            player,
+            radius: 20,
           ),
           const SizedBox(width: 12),
           Expanded(

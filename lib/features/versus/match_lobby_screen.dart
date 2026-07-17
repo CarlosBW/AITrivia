@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
+import '../../widgets/player_avatar_widget.dart';
 import 'match_play_screen.dart';
 
 class MatchLobbyScreen extends StatefulWidget {
@@ -253,6 +254,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ),
                 const SizedBox(height: 16),
                 _PlayersCard(
+                  hostPlayer: hostPlayer,
+                  guestPlayer: guestPlayer,
                   hostName: hostName,
                   guestName: guestName,
                   hostReady: hostReady,
@@ -399,6 +402,8 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _PlayersCard extends StatelessWidget {
+  final Map<String, dynamic> hostPlayer;
+  final Map<String, dynamic> guestPlayer;
   final String hostName;
   final String guestName;
   final bool hostReady;
@@ -406,6 +411,8 @@ class _PlayersCard extends StatelessWidget {
   final bool hasGuest;
 
   const _PlayersCard({
+    required this.hostPlayer,
+    required this.guestPlayer,
     required this.hostName,
     required this.guestName,
     required this.hostReady,
@@ -418,12 +425,14 @@ class _PlayersCard extends StatelessWidget {
     return Column(
       children: [
         _PlayerStatusCard(
+          player: hostPlayer,
           name: hostName,
           ready: hostReady,
           waiting: false,
         ),
         const SizedBox(height: 12),
         _PlayerStatusCard(
+          player: guestPlayer,
           name: guestName,
           ready: hasGuest && guestReady,
           waiting: !hasGuest,
@@ -434,11 +443,13 @@ class _PlayersCard extends StatelessWidget {
 }
 
 class _PlayerStatusCard extends StatelessWidget {
+  final Map<String, dynamic> player;
   final String name;
   final bool ready;
   final bool waiting;
 
   const _PlayerStatusCard({
+    required this.player,
     required this.name,
     required this.ready,
     this.waiting = false,
@@ -472,15 +483,30 @@ class _PlayerStatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: ready
-                ? Colors.green.withOpacity(0.15)
-                : Colors.orange.withOpacity(0.15),
-            child: Icon(
-              icon,
-              color: statusColor,
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              PlayerAvatarWidget.fromPlayer(
+                waiting ? null : player,
+                radius: 26,
+              ),
+              Positioned(
+                bottom: -2,
+                right: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 14),
           Expanded(

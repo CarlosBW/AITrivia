@@ -377,6 +377,8 @@ class DailyChallengeService {
           (userData['username'] ?? userData['displayName'] ?? 'Player')
               .toString();
       final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
+      final frameId = (userData['equippedFrame'] ?? '').toString();
+      final bestLeagueId = (userData['bestLeagueId'] ?? '').toString();
 
       final currentXp = ((userData['xp'] ?? 0) as num).toInt();
       final oldLevel =
@@ -473,6 +475,8 @@ class DailyChallengeService {
             'username': username,
             'displayName': username,
             'avatarId': avatarId,
+            'equippedFrame': frameId,
+            'bestLeagueId': bestLeagueId,
             'dateId': dateId,
             'correct': correct,
             'totalAnswered': totalAnswered,
@@ -496,6 +500,8 @@ class DailyChallengeService {
           'username': username,
           'displayName': username,
           'avatarId': avatarId,
+          'equippedFrame': frameId,
+          'bestLeagueId': bestLeagueId,
           'weekId': weekId,
           'leagueId': league.id,
           'leagueName': league.name,

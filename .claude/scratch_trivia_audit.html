@@ -1,0 +1,571 @@
+<title>Diagnóstico y hoja de ruta — TriviaIA</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --bg-raised: #ffffff;
+    --ink: #241f2e;
+    --ink-soft: #5a5468;
+    --line: rgba(36, 31, 46, 0.12);
+    --accent: #6e4fce;
+    --accent-soft: rgba(110, 79, 206, 0.10);
+    --accent-ink: #ffffff;
+    --good: #2f7a52;
+    --good-soft: rgba(47, 122, 82, 0.12);
+    --warn: #9a6c1f;
+    --warn-soft: rgba(154, 108, 31, 0.13);
+    --crit: #a8412f;
+    --crit-soft: rgba(168, 65, 47, 0.12);
+    --neutral-soft: rgba(90, 84, 104, 0.10);
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18151f;
+      --bg-raised: #211d2b;
+      --ink: #ece7f5;
+      --ink-soft: #b1a9c4;
+      --line: rgba(236, 231, 245, 0.14);
+      --accent: #a488f0;
+      --accent-soft: rgba(164, 136, 240, 0.14);
+      --accent-ink: #18151f;
+      --good: #6fbf95;
+      --good-soft: rgba(111, 191, 149, 0.14);
+      --warn: #d9ab5a;
+      --warn-soft: rgba(217, 171, 90, 0.14);
+      --crit: #e18777;
+      --crit-soft: rgba(225, 135, 119, 0.16);
+      --neutral-soft: rgba(177, 169, 196, 0.12);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #18151f;
+    --bg-raised: #211d2b;
+    --ink: #ece7f5;
+    --ink-soft: #b1a9c4;
+    --line: rgba(236, 231, 245, 0.14);
+    --accent: #a488f0;
+    --accent-soft: rgba(164, 136, 240, 0.14);
+    --accent-ink: #18151f;
+    --good: #6fbf95;
+    --good-soft: rgba(111, 191, 149, 0.14);
+    --warn: #d9ab5a;
+    --warn-soft: rgba(217, 171, 90, 0.14);
+    --crit: #e18777;
+    --crit-soft: rgba(225, 135, 119, 0.16);
+    --neutral-soft: rgba(177, 169, 196, 0.12);
+  }
+
+  :root[data-theme="light"] {
+    --bg: #faf8f4;
+    --bg-raised: #ffffff;
+    --ink: #241f2e;
+    --ink-soft: #5a5468;
+    --line: rgba(36, 31, 46, 0.12);
+    --accent: #6e4fce;
+    --accent-soft: rgba(110, 79, 206, 0.10);
+    --accent-ink: #ffffff;
+    --good: #2f7a52;
+    --good-soft: rgba(47, 122, 82, 0.12);
+    --warn: #9a6c1f;
+    --warn-soft: rgba(154, 108, 31, 0.13);
+    --crit: #a8412f;
+    --crit-soft: rgba(168, 65, 47, 0.12);
+    --neutral-soft: rgba(90, 84, 104, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 24px 96px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: 38px;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+
+  .dek {
+    font-size: 16.5px;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0 0 6px;
+  }
+
+  .meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 18px;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 400;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+
+  .section {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+  }
+
+  .section-intro {
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 62ch;
+    margin-bottom: 24px;
+  }
+
+  p { margin: 0 0 14px; }
+
+  /* ---- scorecard ---- */
+  .scorecard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .stat {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+  }
+
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 27px;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+
+  /* ---- pills ---- */
+  .pill {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill-good { background: var(--good-soft); color: var(--good); }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); }
+  .pill-crit { background: var(--crit-soft); color: var(--crit); }
+  .pill-neutral { background: var(--neutral-soft); color: var(--ink-soft); }
+
+  /* ---- flow diagram ---- */
+  .flow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 22px 0 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+
+  .flow-step {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 13px;
+    color: var(--ink);
+  }
+
+  .flow-arrow {
+    color: var(--ink-soft);
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .flow-caption {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  /* ---- retention table ---- */
+  .table-wrap { overflow-x: auto; margin-top: 20px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th {
+    text-align: left;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  td {
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  td:first-child, th:first-child { padding-left: 0; }
+  td:last-child, th:last-child { padding-right: 0; }
+
+  .mech { font-weight: 700; }
+  .gap-text { color: var(--ink-soft); font-size: 13.5px; }
+
+  /* ---- debt list ---- */
+  .debt-list {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .debt-item {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 12px;
+    font-size: 14.5px;
+  }
+
+  .debt-item::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--crit);
+    margin-top: 8px;
+    justify-self: center;
+  }
+
+  .debt-item code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ---- recommendation tiers ---- */
+  .tier {
+    margin-top: 30px;
+  }
+
+  .tier-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .tier-name {
+    font-family: var(--serif);
+    font-size: 19px;
+  }
+
+  .tier-when {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .rec-list {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rec-item {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 14px;
+    font-size: 14.5px;
+  }
+
+  .rec-item b { font-weight: 700; }
+  .rec-item .why { color: var(--ink-soft); font-size: 13px; display: block; margin-top: 4px; }
+
+  /* ---- closing ---- */
+  .closing {
+    margin-top: 56px;
+    padding: 24px;
+    background: var(--accent-soft);
+    border-radius: 12px;
+  }
+
+  .closing h2 { color: var(--ink); }
+
+  .closing p { color: var(--ink); font-size: 15px; }
+
+  @media (max-width: 600px) {
+    .scorecard { grid-template-columns: 1fr; }
+    h1 { font-size: 30px; }
+    .flow { font-size: 11.5px; }
+  }
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">Auditoría de producto · TriviaIA</div>
+  <h1>Simplicidad para el jugador nuevo, ganchos para que se quede</h1>
+  <p class="dek">
+    Revisión del código actual contra los dos objetivos que planteaste: que el juego
+    se sienta intuitivo y no abrumador, y que tenga mecánicas que atraigan y retengan
+    usuarios. Esto es diagnóstico y hoja de ruta — todavía no toqué código de producto.
+  </p>
+  <div class="meta">17 jul 2026 · lib/ completo, 3 pasadas de exploración</div>
+
+  <div class="scorecard">
+    <div class="stat">
+      <div class="stat-num">3–4</div>
+      <div class="stat-label">pantallas mínimas para arrancar una partida PvP en vivo</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4/9</div>
+      <div class="stat-label">ganchos de retención con partes muertas o desconectadas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">0</div>
+      <div class="stat-label">SDKs de analítica o monetización conectados</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Por qué se siente pesado hoy</h2>
+    <p class="section-intro">
+      El motor del juego (vidas, monedas, XP, ligas, logros) ya está casi todo construido.
+      El problema no es que falte contenido — es que se le muestra todo al jugador a la vez,
+      desde el primer segundo, sin ninguna guía.
+    </p>
+
+    <h3>Primer uso: cero guía</h3>
+    <p>
+      <code style="font-family:var(--mono); font-size:12.5px; background:var(--accent-soft); color:var(--accent); padding:1px 5px; border-radius:4px;">auth_gate.dart</code>
+      hace login anónimo en silencio y
+      <code style="font-family:var(--mono); font-size:12.5px; background:var(--accent-soft); color:var(--accent); padding:1px 5px; border-radius:4px;">user_bootstrap.dart</code>
+      siembra de una vez vidas, monedas, rating PvP, liga y streak. No hay pantalla de bienvenida,
+      ni un tutorial, ni una explicación de qué son las vidas o por qué existe un ranking.
+      Un usuario nuevo entra directo a la misma pantalla que vería un jugador de tres meses.
+    </p>
+
+    <h3>Home: cuatro botones compitiendo por atención</h3>
+    <p>
+      La pantalla de inicio muestra 6 métricas (vidas, contador de próxima media vida, monedas, XP,
+      temas libres, streak) y 4 botones de modo con peso visual casi idéntico: Daily Challenge,
+      Weekly Topic, Weekly Challenge/Liga y Tema libre (IA). Ninguno se lee como "el botón para
+      empezar" — todos compiten en igualdad de condiciones.
+    </p>
+
+    <h3>PvP: demasiadas bifurcaciones para una sola decisión</h3>
+    <div class="flow">
+      <div class="flow-step">Hub PvP</div><span class="flow-arrow">→</span>
+      <div class="flow-step">Buscar rival</div><span class="flow-arrow">→</span>
+      <div class="flow-step">Menú En vivo / Asíncrono</div><span class="flow-arrow">→</span>
+      <div class="flow-step">Matchmaking</div>
+    </div>
+    <p class="flow-caption">
+      ...y un camino paralelo casi idéntico vía "Jugar con amigos". Existen 22 archivos en
+      <code style="font-family:var(--mono); font-size:12px;">features/versus/</code>, incluido un
+      <code style="font-family:var(--mono); font-size:12px;">versus_menu_screen.dart</code> que
+      duplica la misma decisión En vivo/Asíncrono que ya resuelven otras dos pantallas. Además,
+      el toggle "modo IA" dentro de los menús En vivo/Asíncrono hoy solo muestra un aviso de
+      "no implementado" — una opción visible que no hace nada.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>Ganchos de retención: qué hay y qué falta</h2>
+    <p class="section-intro">
+      La buena noticia es que la mayoría de los mecanismos clásicos de retención ya están
+      modelados en el código. La mala es que varios están a medio conectar — el jugador nunca
+      llega a verlos.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Mecánica</th><th>Estado</th><th>Brecha concreta</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mech">Daily Challenge + streak</td>
+            <td><span class="pill pill-good">Implementado</span></td>
+            <td class="gap-text">Sin recordatorio antes de perder la racha; solo hay una notificación fija a las 19:00.</td>
+          </tr>
+          <tr>
+            <td class="mech">Liga semanal / temporada</td>
+            <td><span class="pill pill-good">Implementado</span></td>
+            <td class="gap-text">Las recompensas quedan esperando a que el usuario abra la pantalla; no hay push que avise.</td>
+          </tr>
+          <tr>
+            <td class="mech">Logros</td>
+            <td><span class="pill pill-warn">Parcial</span></td>
+            <td class="gap-text">El logro de racha diaria nunca se sincroniza — código muerto, imposible de completar.</td>
+          </tr>
+          <tr>
+            <td class="mech">Economía de monedas</td>
+            <td><span class="pill pill-warn">Desbalanceada</span></td>
+            <td class="gap-text">Muchas fuentes de ingreso, casi ningún gasto (solo recomprar vida y crear temas IA). No hay tienda.</td>
+          </tr>
+          <tr>
+            <td class="mech">Nivel / XP</td>
+            <td><span class="pill pill-warn">Débil</span></td>
+            <td class="gap-text">Subir de nivel no desbloquea nada visible más allá de un bono puntual de monedas.</td>
+          </tr>
+          <tr>
+            <td class="mech">Amigos</td>
+            <td><span class="pill pill-neutral">Sin gancho de crecimiento</span></td>
+            <td class="gap-text">Solo búsqueda por username. No hay invitar amigo ni incentivo por traer gente nueva.</td>
+          </tr>
+          <tr>
+            <td class="mech">Notificaciones push</td>
+            <td><span class="pill pill-crit">Casi ausentes</span></td>
+            <td class="gap-text">El token de FCM se obtiene pero nunca se guarda. Invitaciones, logros y recompensas son solo avisos dentro de la app.</td>
+          </tr>
+          <tr>
+            <td class="mech">Cosméticos (avatares/marcos)</td>
+            <td><span class="pill pill-crit">Mayoría inalcanzable</span></td>
+            <td class="gap-text">Los avatares por tema semanal, por preguntas respondidas y por temas IA existen en código pero nunca se desbloquean.</td>
+          </tr>
+          <tr>
+            <td class="mech">Monetización / analítica</td>
+            <td><span class="pill pill-crit">Ausente</span></td>
+            <td class="gap-text">Sin IAP, sin ads, sin Firebase Analytics — hoy no hay forma de medir qué gancho retiene de verdad.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Deuda técnica que vale la pena resolver ahora</h2>
+    <p class="section-intro">Nada bloqueante, pero afecta directamente los dos puntos de arriba.</p>
+    <ul class="debt-list">
+      <li class="debt-item">"Tema libre (IA)" no usa IA real: genera preguntas de plantilla fija
+        (<code>generateMockTopic</code>) — ningún LLM está conectado. Es honestidad de marca, no solo código.</li>
+      <li class="debt-item">Sincronizar logros PvP tras ganar/perder está envuelto en
+        <code>catch (_) {}</code> — si falla, el progreso de logros no se actualiza y nadie se entera.</li>
+      <li class="debt-item"><code>match_service.dart</code> (2200+ líneas) duplica la construcción del
+        jugador y la liquidación de partida entre los flujos en vivo y asíncrono.</li>
+      <li class="debt-item">Dependencias de Firebase 2–3 versiones mayores atrás de las actuales.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Recomendaciones, en orden</h2>
+    <p class="section-intro">
+      Agrupadas por cuánto esfuerzo piden y cuánto mueven la aguja en "simple" y "pega".
+    </p>
+
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-name">Nivel 1 — Arreglos rápidos</span>
+        <span class="tier-when">bajo riesgo, cambios acotados</span>
+      </div>
+      <ul class="rec-list">
+        <li class="rec-item"><b>Un solo CTA dominante en Home.</b> Daily Challenge como botón principal grande; Weekly Topic, Liga y Tema IA pasan a una fila secundaria "Más formas de jugar".
+          <span class="why">Por qué: hoy los 4 botones pesan igual — nadie sabe por dónde empezar.</span></li>
+        <li class="rec-item"><b>Reconectar los logros y avatares que ya existen</b> (racha diaria, avatares por tema semanal / preguntas / IA) en vez de dejarlos como código muerto.
+          <span class="why">Por qué: es contenido ya construido que hoy no le llega a nadie — el retorno es inmediato.</span></li>
+        <li class="rec-item"><b>Quitar o etiquetar como "próximamente" el toggle de modo IA</b> en los menús En vivo/Asíncrono en vez de dejarlo tocable sin efecto.
+          <span class="why">Por qué: una opción que parece válida y no hace nada rompe la confianza del jugador.</span></li>
+      </ul>
+    </div>
+
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-name">Nivel 2 — Rediseño de estructura</span>
+        <span class="tier-when">2–4 semanas</span>
+      </div>
+      <ul class="rec-list">
+        <li class="rec-item"><b>Onboarding de 2-3 pasos</b> la primera vez que se abre la app: qué son las vidas, qué son las monedas, y una invitación directa a jugar el Daily Challenge.
+          <span class="why">Por qué: hoy el jugador choca con el muro de "sin vidas" antes de entender que existe.</span></li>
+        <li class="rec-item"><b>Colapsar el árbol de PvP a máximo 2 taps</b> para iniciar una partida: fusionar <code>versus_menu_screen</code> con el par Live/Async menu y unificar "Buscar rival" y "Jugar con amigos" en una sola pantalla con dos pestañas.
+          <span class="why">Por qué: es la sección con más pantallas y más caminos duplicados de todo el juego.</span></li>
+        <li class="rec-item"><b>Notificaciones push reales</b> guardando por fin el token de FCM: aviso de racha en riesgo, recompensa de temporada esperando, invitación de partida recibida.
+          <span class="why">Por qué: hoy solo existe un push fijo a las 19:00 — el resto de los avisos mueren si la app está cerrada.</span></li>
+      </ul>
+    </div>
+
+    <div class="tier">
+      <div class="tier-head">
+        <span class="tier-name">Nivel 3 — Apuestas de retención más grandes</span>
+        <span class="tier-when">próximo trimestre</span>
+      </div>
+      <ul class="rec-list">
+        <li class="rec-item"><b>Tienda de monedas</b> con cosméticos comprables, no solo desbloqueables por rango.
+          <span class="why">Por qué: hoy casi todo lo que genera monedas no tiene dónde gastarse.</span></li>
+        <li class="rec-item"><b>Recompensa de racha de inicio de sesión</b>, separada del streak del Daily Challenge, para dar una razón de volver incluso en días de poco tiempo.</li>
+        <li class="rec-item"><b>Sistema de referidos</b> con recompensa compartida al invitar amigos reales.</li>
+        <li class="rec-item"><b>Firebase Analytics</b> antes de seguir invirtiendo en más mecánicas — hoy no hay forma de saber cuál de ellas realmente funciona.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="closing">
+    <h2 style="font-size:20px;">¿Por dónde arrancamos?</h2>
+    <p>
+      Ninguno de estos cambios está hecho todavía — es intencional, dado el alcance.
+      Dime con cuál empezamos (por ejemplo: simplificar Home, reconectar logros muertos,
+      o achicar el árbol de PvP) y lo llevamos a un plan concreto de implementación.
+    </p>
+  </div>
+
+</div>

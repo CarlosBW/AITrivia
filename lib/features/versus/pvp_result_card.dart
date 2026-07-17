@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/avatar_service.dart';
+import '../../widgets/player_avatar_widget.dart';
 
 enum PvpResultState {
   victory,
@@ -17,6 +17,10 @@ class PvpResultCard extends StatelessWidget {
   final String opponentName;
   final String? myAvatarId;
   final String? opponentAvatarId;
+  final String? myFrameId;
+  final String? myBestLeagueId;
+  final String? opponentFrameId;
+  final String? opponentBestLeagueId;
   final int myScore;
   final int? opponentScore;
 
@@ -59,6 +63,10 @@ class PvpResultCard extends StatelessWidget {
     this.onSecondaryPressed,
     this.myAvatarId,
     this.opponentAvatarId,
+    this.myFrameId,
+    this.myBestLeagueId,
+    this.opponentFrameId,
+    this.opponentBestLeagueId,
   });
 
   IconData get _icon {
@@ -213,6 +221,8 @@ class PvpResultCard extends StatelessWidget {
                         child: _ScoreColumn(
                           label: myName,
                           avatarId: myAvatarId,
+                          frameId: myFrameId,
+                          bestLeagueId: myBestLeagueId,
                           score: myScore,
                           highlight: true,
                         ),
@@ -239,6 +249,8 @@ class PvpResultCard extends StatelessWidget {
                             ? _ScoreColumn(
                                 label: opponentName,
                                 avatarId: opponentAvatarId,
+                                frameId: opponentFrameId,
+                                bestLeagueId: opponentBestLeagueId,
                                 score: opponentScore!,
                               )
                             : const SizedBox.shrink(),
@@ -322,23 +334,35 @@ class _ScoreColumn extends StatelessWidget {
   final int score;
   final bool highlight;
   final String? avatarId;
+  final String? frameId;
+  final String? bestLeagueId;
 
   const _ScoreColumn({
     required this.label,
     required this.score,
     this.highlight = false,
     this.avatarId,
+    this.frameId,
+    this.bestLeagueId,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = highlight ? Colors.deepPurple : Colors.black87;
-    final avatar =
-        avatarId == null ? null : AvatarService.instance.avatarById(avatarId);
+
     return Column(
       children: [
+        if (avatarId != null) ...[
+          PlayerAvatarWidget(
+            avatarId: avatarId,
+            frameId: frameId,
+            bestLeagueId: bestLeagueId,
+            radius: 28,
+          ),
+          const SizedBox(height: 8),
+        ],
         Text(
-          avatar == null ? label : '${avatar.emoji} $label',
+          label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(

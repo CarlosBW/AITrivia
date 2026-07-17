@@ -771,9 +771,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
 
     final myAvatarId = (myData['avatarId'] ?? 'avatar_1').toString();
+    final myFrameId = myData['equippedFrame']?.toString();
+    final myBestLeagueId = myData['bestLeagueId']?.toString();
 
     final opponentAvatarId =
         (opponentData['avatarId'] ?? 'avatar_1').toString();
+    final opponentFrameId = opponentData['equippedFrame']?.toString();
+    final opponentBestLeagueId = opponentData['bestLeagueId']?.toString();
 
     final winnerUid = match['winnerUid'] as String?;
     final winReward = ((match['winReward'] ?? 0) as num).toInt();
@@ -875,6 +879,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       opponentName: opponentName,
       myAvatarId: myAvatarId,
       opponentAvatarId: opponentAvatarId,
+      myFrameId: myFrameId,
+      myBestLeagueId: myBestLeagueId,
+      opponentFrameId: opponentFrameId,
+      opponentBestLeagueId: opponentBestLeagueId,
       myScore: myScore,
       opponentScore: opponentScore,
       coinsEarned: coinsEarned > 0 ? coinsEarned : null,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/daily_challenge_service.dart';
+import '../../theme/app_theme.dart';
 import 'daily_challenge_result_screen.dart';
 
 class DailyChallengeScreen extends StatefulWidget {
@@ -474,7 +475,7 @@ class _HeaderCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: Colors.black12,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         children: [

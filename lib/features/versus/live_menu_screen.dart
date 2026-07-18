@@ -125,29 +125,6 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             },
           ),
           const SizedBox(height: 18),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Modo de juego',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const Text(
-                'Con IA (próximamente)',
-                style: TextStyle(color: Colors.black45, fontSize: 12),
-              ),
-              const SizedBox(width: 8),
-              Switch(
-                value: false,
-                onChanged: null,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           const Text(
             'Tema fijo',
             style: TextStyle(fontWeight: FontWeight.bold),

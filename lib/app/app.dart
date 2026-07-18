@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../features/auth/auth_gate.dart';
+import '../theme/app_theme.dart';
 
 class TriviaIAApp extends StatelessWidget {
   const TriviaIAApp({super.key});
@@ -9,7 +10,7 @@ class TriviaIAApp extends StatelessWidget {
     return MaterialApp(
       title: 'TriviaIA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true),
+      theme: buildAppTheme(),
       home: const AuthGate(),
     );
   }

@@ -8,6 +8,8 @@ import '../../services/league_service.dart';
 import '../../services/season_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../widgets/tier_badge.dart';
+import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
 
 class WeeklyLeagueScreen extends StatefulWidget {
@@ -441,20 +443,17 @@ class _LeagueHeader extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: color.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: color.withOpacity(0.55),
         ),
       ),
       child: Column(
         children: [
-          Text(
-            '${league.emoji} ${league.name} Tier',
-            style: TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          TierBadge(
+            emoji: league.emoji,
+            name: '${league.name} Tier',
+            colorValue: league.colorValue,
           ),
           const SizedBox(height: 8),
           Text(

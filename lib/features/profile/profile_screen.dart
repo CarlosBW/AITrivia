@@ -9,6 +9,7 @@ import '../../services/weekly_league_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
 import '../../services/avatar_service.dart';
+import '../achievements/achievements_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -398,10 +399,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.10),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.deepPurple.withOpacity(0.25),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
                     ),
                   ),
                   child: Row(
@@ -817,10 +818,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.10),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Colors.deepPurple.withOpacity(0.25),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
                   ),
                 ),
                 child: Column(
@@ -1143,15 +1144,35 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 10),
               _RecentMatchHistory(uid: uid),
               const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.black12,
+              Material(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(18),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Text(
-                  'Coming soon: achievements, unlockable avatars, weekly events and AI rewards.',
-                  textAlign: TextAlign.center,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AchievementsScreen(),
+                      ),
+                    );
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.emoji_events_outlined),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Logros',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

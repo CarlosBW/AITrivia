@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
+import '../../widgets/tier_badge.dart';
+import '../../theme/app_theme.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
   const PvpSeasonScreen({super.key});
@@ -137,19 +139,16 @@ class _SeasonOverviewTab extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: color.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: color.withOpacity(0.35)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${league.emoji} ${league.name} League',
-                style: TextStyle(
-                  color: color,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              TierBadge(
+                emoji: league.emoji,
+                name: '${league.name} League',
+                colorValue: league.colorValue,
               ),
               const SizedBox(height: 6),
               Row(

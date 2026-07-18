@@ -14,6 +14,8 @@ import '../../services/season_service.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
+import '../../widgets/stat_chip.dart';
+import '../../widgets/section_label.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -382,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: _StatCard(
+                                          child: StatChip(
                                             icon: Icons.favorite,
                                             label: 'Vidas',
                                             value:
@@ -391,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
-                                          child: _StatCard(
+                                          child: StatChip(
                                             icon: Icons.timer,
                                             label: 'Próx. media vida',
                                             value: _lifeState!['lifeUnits'] >=
@@ -411,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: _StatCard(
+                                child: StatChip(
                                   icon: Icons.monetization_on,
                                   label: 'Monedas',
                                   value: '$coins',
@@ -419,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: _StatCard(
+                                child: StatChip(
                                   icon: Icons.auto_awesome,
                                   label: 'XP',
                                   value: '$xp',
@@ -428,7 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _StatCard(
+                          StatChip(
                             icon: Icons.style,
                             label: 'Tema libre',
                             value: '$passes',
@@ -537,15 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                const Text(
-                  'Más formas de jugar',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black54,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+                const SectionLabel('Más formas de jugar'),
                 const SizedBox(height: 10),
                 _WeeklyTopicCard(
                   isBusy: _isNavigating || _buyingLife,
@@ -973,50 +967,6 @@ class _WeeklyButtonIcon extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool fullWidth;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.fullWidth = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.45),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment:
-            fullWidth ? MainAxisAlignment.center : MainAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$label: $value',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

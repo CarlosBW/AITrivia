@@ -375,7 +375,47 @@ class AiTopicService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      await _refundAiTopicCostIfNeeded(topicId: topicId);
+
       rethrow;
+    }
+  }
+
+  /// Refunds the coins/free pass spent creating a topic if its generation
+  /// failed, so a failed AI call never leaves the player charged for
+  /// nothing. Guarded by `costRefunded` since a user can retry generation
+  /// on a failed topic (see ai_topics_screen.dart), which must not refund
+  /// twice.
+  Future<void> _refundAiTopicCostIfNeeded({required String topicId}) async {
+    try {
+      final topicRef = _topicsCol(uid).doc(topicId);
+      final topicSnap = await topicRef.get();
+      final topicData = topicSnap.data();
+
+      if (topicData == null) return;
+      if (topicData['costRefunded'] == true) return;
+
+      final usedFreePass = topicData['usedFreePass'] == true;
+      final cost = ((topicData['generationCostCoins'] ?? 0) as num).toInt();
+
+      if (!usedFreePass && cost <= 0) return;
+
+      await _db.collection('users').doc(uid).set(
+        {
+          if (usedFreePass) 'freeTopicPasses': FieldValue.increment(1),
+          if (!usedFreePass && cost > 0) 'coins': FieldValue.increment(cost),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      await topicRef.set(
+        {'costRefunded': true},
+        SetOptions(merge: true),
+      );
+    } catch (_) {
+      // Best-effort refund — don't let a refund failure mask the original
+      // generation error via rethrow above.
     }
   }
 
@@ -420,12 +460,26 @@ class AiTopicService {
       return ((topicData['generatedLevels'] ?? 0) as num).toInt();
     });
 
-    for (var level = 1; level <= generatedLevels; level++) {
-      await generateMockLevel(
-        topicId: topicId,
-        levelNumber: level,
-        force: true,
-      );
+    try {
+      for (var level = 1; level <= generatedLevels; level++) {
+        await generateMockLevel(
+          topicId: topicId,
+          levelNumber: level,
+          force: true,
+        );
+      }
+    } catch (e) {
+      try {
+        await userRef.set(
+          {
+            'coins': FieldValue.increment(cost),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+      } catch (_) {}
+
+      rethrow;
     }
   }
 

@@ -47,6 +47,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _presenceInitialized = false;
   bool _leavingScreen = false;
   bool _resultLogged = false;
+  bool _requestingRematch = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -200,6 +201,56 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     }
   }
 
+  Future<void> _requestRematch({
+    required BuildContext context,
+    required String opponentUid,
+    required String myName,
+    required String opponentName,
+    required String categoryId,
+    required int difficulty,
+    required int totalQuestions,
+    required int timePerQuestionSec,
+    required int winReward,
+  }) async {
+    if (_requestingRematch) return;
+
+    setState(() => _requestingRematch = true);
+
+    try {
+      final newMatchId = await _service.createAsyncFixedMatch(
+        challengedUid: opponentUid,
+        categoryId: categoryId,
+        difficulty: difficulty,
+        totalQuestions: totalQuestions,
+        timePerQuestionSec: timePerQuestionSec,
+        winReward: winReward,
+        challengerDisplayName: myName,
+        challengedDisplayName: opponentName,
+      );
+
+      if (!context.mounted) return;
+
+      _leavingScreen = true;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AsyncMatchPlayScreen(asyncMatchId: newMatchId),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _requestingRematch = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -294,9 +345,13 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           if (myStatus == 'finished') {
             _timer?.cancel();
 
+            final opponentUid =
+                myRole == 'challenger' ? challengedUid : challengerUid;
+
             return _buildResultCard(
               context,
               uid: uid,
+              opponentUid: opponentUid,
               status: status,
               winnerUid: winnerUid,
               myName: myName,
@@ -304,6 +359,11 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               myScore: mySavedScore,
               opponentScore: opponentSavedScore,
               opponentFinished: opponentStatus == 'finished',
+              categoryId: (data['categoryId'] ?? 'random').toString(),
+              difficulty: ((data['difficulty'] ?? 1) as num).toInt(),
+              totalQuestions: ((data['totalQuestions'] ?? 10) as num).toInt(),
+              timePerQuestionSec: timePerQ,
+              winReward: ((data['winReward'] ?? 2) as num).toInt(),
             );
           }
 
@@ -554,6 +614,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   Widget _buildResultCard(
     BuildContext context, {
     required String uid,
+    required String opponentUid,
     required String status,
     required String? winnerUid,
     required String myName,
@@ -561,6 +622,11 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     required int myScore,
     required int opponentScore,
     required bool opponentFinished,
+    required String categoryId,
+    required int difficulty,
+    required int totalQuestions,
+    required int timePerQuestionSec,
+    required int winReward,
   }) {
     if (status != 'completed') {
       return PvpResultCard(
@@ -643,14 +709,21 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
         Navigator.popUntil(context, (route) => route.isFirst);
       },
-      secondaryButtonText: 'Revancha',
-      onSecondaryPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('La revancha será el siguiente paso.'),
-          ),
-        );
-      },
+      secondaryButtonText:
+          _requestingRematch ? 'Enviando revancha...' : 'Revancha',
+      onSecondaryPressed: _requestingRematch
+          ? null
+          : () => _requestRematch(
+                context: context,
+                opponentUid: opponentUid,
+                myName: myName,
+                opponentName: opponentName,
+                categoryId: categoryId,
+                difficulty: difficulty,
+                totalQuestions: totalQuestions,
+                timePerQuestionSec: timePerQuestionSec,
+                winReward: winReward,
+              ),
     );
   }
 }

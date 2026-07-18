@@ -1,0 +1,379 @@
+<title>Antes de conectar la IA — TriviaIA</title>
+<style>
+  :root {
+    --bg: #faf8f4;
+    --bg-raised: #ffffff;
+    --ink: #241f2e;
+    --ink-soft: #5a5468;
+    --line: rgba(36, 31, 46, 0.12);
+    --accent: #6e4fce;
+    --accent-soft: rgba(110, 79, 206, 0.10);
+    --good: #2f7a52;
+    --good-soft: rgba(47, 122, 82, 0.12);
+    --warn: #9a6c1f;
+    --warn-soft: rgba(154, 108, 31, 0.13);
+    --crit: #a8412f;
+    --crit-soft: rgba(168, 65, 47, 0.12);
+    --neutral-soft: rgba(90, 84, 104, 0.10);
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18151f;
+      --bg-raised: #211d2b;
+      --ink: #ece7f5;
+      --ink-soft: #b1a9c4;
+      --line: rgba(236, 231, 245, 0.14);
+      --accent: #a488f0;
+      --accent-soft: rgba(164, 136, 240, 0.14);
+      --good: #6fbf95;
+      --good-soft: rgba(111, 191, 149, 0.14);
+      --warn: #d9ab5a;
+      --warn-soft: rgba(217, 171, 90, 0.14);
+      --crit: #e18777;
+      --crit-soft: rgba(225, 135, 119, 0.16);
+      --neutral-soft: rgba(177, 169, 196, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #18151f; --bg-raised: #211d2b; --ink: #ece7f5; --ink-soft: #b1a9c4;
+    --line: rgba(236, 231, 245, 0.14); --accent: #a488f0; --accent-soft: rgba(164, 136, 240, 0.14);
+    --good: #6fbf95; --good-soft: rgba(111, 191, 149, 0.14); --warn: #d9ab5a; --warn-soft: rgba(217, 171, 90, 0.14);
+    --crit: #e18777; --crit-soft: rgba(225, 135, 119, 0.16); --neutral-soft: rgba(177, 169, 196, 0.12);
+  }
+  :root[data-theme="light"] {
+    --bg: #faf8f4; --bg-raised: #ffffff; --ink: #241f2e; --ink-soft: #5a5468;
+    --line: rgba(36, 31, 46, 0.12); --accent: #6e4fce; --accent-soft: rgba(110, 79, 206, 0.10);
+    --good: #2f7a52; --good-soft: rgba(47, 122, 82, 0.12); --warn: #9a6c1f; --warn-soft: rgba(154, 108, 31, 0.13);
+    --crit: #a8412f; --crit-soft: rgba(168, 65, 47, 0.12); --neutral-soft: rgba(90, 84, 104, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
+  .page { max-width: 780px; margin: 0 auto; padding: 56px 24px 96px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-family: var(--serif); font-size: 36px; font-weight: 400; line-height: 1.15; margin: 10px 0 14px; text-wrap: balance; }
+  .dek { font-size: 16px; color: var(--ink-soft); max-width: 62ch; margin: 0 0 6px; }
+  h2 { font-family: var(--serif); font-size: 23px; font-weight: 400; margin: 0 0 6px; text-wrap: balance; }
+  h3 { font-family: var(--sans); font-size: 14.5px; font-weight: 700; margin: 0 0 8px; }
+  .section { margin-top: 52px; padding-top: 30px; border-top: 1px solid var(--line); }
+  .section-intro { color: var(--ink-soft); font-size: 15px; max-width: 62ch; margin-bottom: 20px; }
+  p { margin: 0 0 14px; }
+  code { font-family: var(--mono); font-size: 12.5px; background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; }
+
+  .scorecard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 30px; }
+  .stat { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px; padding: 16px 16px 14px; }
+  .stat-num { font-family: var(--serif); font-size: 25px; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 12.5px; color: var(--ink-soft); margin-top: 8px; }
+
+  .pill { display: inline-block; font-family: var(--sans); font-size: 11px; font-weight: 700; letter-spacing: 0.02em; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill-crit { background: var(--crit-soft); color: var(--crit); }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); }
+  .pill-good { background: var(--good-soft); color: var(--good); }
+  .pill-neutral { background: var(--neutral-soft); color: var(--ink-soft); }
+
+  .punch-list { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .punch-item { background: var(--bg-raised); border: 1px solid var(--line); border-left: 3px solid var(--crit); border-radius: 0 10px 10px 0; padding: 13px 15px; }
+  .punch-item.warn { border-left-color: var(--warn); }
+  .punch-item.minor { border-left-color: var(--ink-soft); }
+  .punch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .punch-title { font-weight: 700; font-size: 14.5px; }
+  .punch-item p { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; padding: 0 12px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child, th:first-child { padding-left: 0; }
+  td:last-child, th:last-child { padding-right: 0; }
+  .verdict { font-weight: 700; }
+
+  .rec-box { background: var(--accent-soft); border-radius: 12px; padding: 16px 18px; margin-top: 14px; font-size: 14px; }
+  .rec-box b { display: block; margin-bottom: 4px; }
+
+  /* ---- game design preview (proposed tokens, own namespace) ---- */
+  .game-preview {
+    --g-bg: #201a33;
+    --g-surface: #2b2347;
+    --g-ink: #f3effc;
+    --g-ink-soft: #b7abd6;
+    --g-primary: #7c5cf0;
+    --g-primary-ink: #ffffff;
+    --g-reward: #f5a623;
+    --g-good: #3ec37a;
+    --g-warn: #d98a2b;
+    --g-crit: #ef5b4e;
+    --g-bronze: #cd7f32;
+    --g-silver: #c0c0c0;
+    --g-gold: #ffd700;
+    --g-platinum: #4db6ac;
+    --g-diamond: #6ec6ff;
+    --g-master: #9c27b0;
+    background: var(--g-bg);
+    color: var(--g-ink);
+    border-radius: 20px;
+    padding: 28px;
+    margin-top: 22px;
+  }
+  .game-preview .gp-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-ink-soft); margin-bottom: 16px; }
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+  .swatch { width: 74px; }
+  .swatch-chip { height: 44px; border-radius: 10px; margin-bottom: 6px; }
+  .swatch-name { font-size: 10.5px; color: var(--g-ink-soft); font-family: var(--mono); }
+  .gp-components { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+  .gp-card {
+    background: var(--g-surface);
+    border-radius: 18px;
+    padding: 16px;
+    width: 220px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .gp-card-title { font-family: var(--sans); font-weight: 700; font-size: 14px; color: var(--g-ink); margin-bottom: 4px; }
+  .gp-card-sub { font-size: 12px; color: var(--g-ink-soft); margin-bottom: 12px; }
+  .gp-cta {
+    background: var(--g-primary);
+    color: var(--g-primary-ink);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    display: inline-block;
+  }
+  .gp-stat-chip {
+    background: var(--g-surface);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .gp-stat-chip b { color: var(--g-reward); }
+  .gp-tier-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .gp-tier {
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #1a1420;
+  }
+
+  .closing { margin-top: 52px; padding: 22px; background: var(--accent-soft); border-radius: 12px; }
+  .closing p { color: var(--ink); font-size: 15px; margin: 0; }
+
+  @media (max-width: 600px) {
+    .scorecard { grid-template-columns: 1fr; }
+    h1 { font-size: 28px; }
+  }
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">Antes de conectar la IA · TriviaIA</div>
+  <h1>Cerrar lo pendiente y definir un sistema visual antes del último paso</h1>
+  <p class="dek">
+    Dos cosas separadas, como pediste: (1) qué queda inconcluso en el juego — sin tocar la conexión
+    a un modelo real — y (2) una propuesta concreta de sistema visual para que todas las pantallas
+    se sientan de la misma app, con recomendaciones sobre qué simplificar o cortar.
+  </p>
+
+  <div class="scorecard">
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">huecos que sí importan antes de la IA (no cosméticos)</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">theme central — 441 usos sueltos de <code style="background:none;color:inherit;padding:0;">Colors.*</code> en 40 archivos</div></div>
+    <div class="stat"><div class="stat-num">11</div><div class="stat-label">valores de radio de esquina distintos, sin ninguno compartido</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Parte 1 — Qué falta antes de conectar la IA</h2>
+    <p class="section-intro">
+      Separado en dos grupos: lo que de verdad debería resolverse antes (porque una IA real falla
+      distinto a un mock), y pulido general que quedó pendiente de sesiones anteriores.
+    </p>
+
+    <h3 style="margin-top:4px;">Antes de la IA — esto sí importa</h3>
+    <ul class="punch-list">
+      <li class="punch-item">
+        <div class="punch-head">
+          <span class="punch-title">Sin red de seguridad si falla una generación pagada</span>
+          <span class="pill pill-crit">Crítico</span>
+        </div>
+        <p>
+          <code>createAiTopic</code>, <code>regenerateTopicQuestions</code> y <code>expandTopic</code>
+          (<code>ai_topic_service.dart</code>) cobran monedas primero y generan después. Hoy la generación
+          mock con <code>Future.delayed(2s)</code> prácticamente nunca falla, así que esto es invisible.
+          Un modelo de IA real sí va a fallar (rate limits, timeouts, contenido rechazado) — y ahora mismo,
+          si eso pasa, el tema queda en <code>status: 'failed'</code> y el jugador se queda sin sus monedas
+          y sin nada a cambio. Esto hay que arreglarlo <b>antes</b>, no después, porque una vez conectada
+          la IA real los fallos van a empezar a ocurrir de verdad.
+        </p>
+      </li>
+      <li class="punch-item">
+        <div class="punch-head">
+          <span class="punch-title">No existe archivo de reglas de Firestore en el repo</span>
+          <span class="pill pill-crit">Crítico</span>
+        </div>
+        <p>
+          No hay <code>firestore.rules</code> en ningún lado, y <code>firebase.json</code> no referencia
+          ninguno. Antes de exponer un endpoint que cueste dinero real por llamada (la IA), vale la pena
+          confirmar en la consola de Firebase qué reglas están corriendo hoy y traerlas al repo — sin eso,
+          no hay forma de saber si alguien podría, por ejemplo, escribirse monedas directamente o disparar
+          generaciones sin pagar.
+        </p>
+      </li>
+    </ul>
+
+    <h3 style="margin-top:22px;">Pulido pendiente — no bloquea la IA, pero quedó abierto</h3>
+    <ul class="punch-list">
+      <li class="punch-item warn">
+        <div class="punch-head"><span class="punch-title">Revancha asíncrona es solo un snackbar</span><span class="pill pill-warn">Abierto</span></div>
+        <p><code>async_match_play_screen.dart</code> — el botón "Revancha" muestra "será el siguiente paso" y no hace nada. El modo en vivo sí tiene revancha completa; el asíncrono no.</p>
+      </li>
+      <li class="punch-item warn">
+        <div class="punch-head"><span class="punch-title">Logros: cero puntos de entrada</span><span class="pill pill-warn">Abierto</span></div>
+        <p>La única forma de llegar a la pantalla de Logros es tocando una notificación de tipo <code>achievement_completed</code>. No hay botón en Home, Perfil ni el nav — un sistema que reconectamos esta sesión sigue siendo invisible si nunca te llega esa notificación puntual.</p>
+      </li>
+      <li class="punch-item minor">
+        <div class="punch-head"><span class="punch-title">Tarjeta "Coming soon" en Perfil ya no es verdad</span><span class="pill pill-neutral">Menor</span></div>
+        <p><code>profile_screen.dart:1153</code> — dice "logros, avatares desbloqueables, eventos semanales e IA próximamente", pero los cuatro ya están funcionando. Confunde más de lo que ayuda.</p>
+      </li>
+      <li class="punch-item minor">
+        <div class="punch-head"><span class="punch-title">Un tipo de notificación fantasma, otro sin ícono</span><span class="pill pill-neutral">Menor</span></div>
+        <p><code>notifications_screen.dart</code> tiene un caso para <code>'daily_available'</code> que nadie crea nunca (código muerto), y le falta el caso para <code>rematch_request</code> (cae al ícono genérico aunque sí navega bien al tocarla).</p>
+      </li>
+    </ul>
+
+    <div class="rec-box">
+      <b>Mi recomendación de orden</b>
+      Arregla los dos críticos primero (son baratos: uno es envolver la generación en manejo de error +
+      reembolso, el otro es solo verificar y versionar lo que ya existe en la consola). El resto de pulido
+      puede ir en paralelo con el rediseño visual de la Parte 2, no antes.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Qué simplificar (y qué no tocar)</h2>
+    <p class="section-intro">
+      Contando los sistemas reales que existen hoy: Solo, Daily Challenge, Weekly Topic, Weekly League,
+      PvP Season, PvP en vivo, PvP asíncrono, Temas IA, Logros, Amigos — más 7 números distintos que le
+      pertenecen al jugador (monedas, XP/nivel, racha diaria, racha de sesión, <code>leagueScore</code>,
+      <code>pvpRating</code>, progreso de logros).
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Observación</th><th>Veredicto</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Weekly League y PvP Season son, estructuralmente, la misma idea (ladder por niveles + leaderboard + recompensas por tier) alimentada por dos fuentes distintas (jugar Daily Challenge vs. ganar rankeds).</td>
+            <td class="verdict" style="color:var(--warn);">Mantener ambos, pero dejar de tratarlos como si fueran cosas distintas visualmente. Un jugador nuevo no debería tener que aprender dos ladders con nombres y colores de tier diferentes para lo que es el mismo concepto.</td>
+          </tr>
+          <tr>
+            <td>Weekly Topic, Solo y Temas IA usan exactamente la misma pantalla de niveles (<code>LevelSelectScreen</code>) — solo cambia cómo eliges el tema y el envoltorio de recompensa.</td>
+            <td class="verdict" style="color:var(--good);">No cortar nada — pero re-enmarcar Weekly Topic como "una categoría destacada de Solo con recompensa por tiempo limitado" en vez de un botón separado en Home. Reduce de 3 "modos" a 1 modo con variantes.</td>
+          </tr>
+          <tr>
+            <td>El toggle "Modo IA (próximamente)" sigue visible, solo deshabilitado, en los menús de PvP en vivo y asíncrono.</td>
+            <td class="verdict" style="color:var(--crit);">Ocultar del todo en vez de mostrar deshabilitado. Un control que no hace nada sigue restando confianza aunque esté grisado.</td>
+          </tr>
+          <tr>
+            <td>21 pantallas bajo <code>features/versus/</code> — la mayor superficie de todo el juego fuera de Solo/Perfil/Amigos.</td>
+            <td class="verdict" style="color:var(--good);">No es hinchazón real: cada pantalla cubre un paso genuino (lobby, resultado, invitaciones, bandeja). No recomiendo recortar aquí — el problema de PvP ya lo resolvimos (navegación a 2 toques). Es simplemente un sistema con más partes móviles por naturaleza.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Parte 2 — Un sistema visual, no 40 estilos sueltos</h2>
+    <p class="section-intro">
+      Hoy <code>app.dart</code> define exactamente una línea de tema: <code>ThemeData(useMaterial3: true)</code>.
+      Todo lo demás — 441 referencias a <code>Colors.*</code>, 11 valores de radio distintos, cada tarjeta de
+      estadística reconstruida desde cero por pantalla — se decide pantalla por pantalla. <code>deepPurple</code>
+      y <code>amber</code> ya actúan como colores de marca informales; la propuesta es formalizarlos, no
+      reinventar la identidad del juego.
+    </p>
+
+    <div class="game-preview">
+      <div class="gp-label">Propuesta — paleta y componentes compartidos</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-primary);"></div><div class="swatch-name">primary<br>#7C5CF0</div></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-reward);"></div><div class="swatch-name">reward<br>#F5A623</div></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-good);"></div><div class="swatch-name">success<br>#3EC37A</div></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-warn);"></div><div class="swatch-name">warning<br>#D98A2B</div></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-crit);"></div><div class="swatch-name">danger<br>#EF5B4E</div></div>
+        <div class="swatch"><div class="swatch-chip" style="background:var(--g-surface);"></div><div class="swatch-name">surface<br>#2B2347</div></div>
+      </div>
+
+      <div class="gp-components">
+        <div class="gp-card">
+          <div class="gp-card-title">📅 Daily Challenge</div>
+          <div class="gp-card-sub">Juega hoy y mantén tu racha</div>
+          <span class="gp-cta">Jugar ahora</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div class="gp-stat-chip">🪙 Monedas <b>&nbsp;480</b></div>
+          <div class="gp-stat-chip">🔥 Racha <b>&nbsp;12 días</b></div>
+        </div>
+        <div class="gp-card" style="width:auto;">
+          <div class="gp-card-title" style="margin-bottom:8px;">Tiers — un solo mapa de color para toda liga o ranking</div>
+          <div class="gp-tier-row">
+            <span class="gp-tier" style="background:var(--g-bronze);">🥉 Bronze</span>
+            <span class="gp-tier" style="background:var(--g-silver);">🥈 Silver</span>
+            <span class="gp-tier" style="background:var(--g-gold);">🥇 Gold</span>
+            <span class="gp-tier" style="background:var(--g-platinum);">💎 Platinum</span>
+            <span class="gp-tier" style="background:var(--g-diamond);">🔷 Diamond</span>
+            <span class="gp-tier" style="background:var(--g-master); color:#fff;">👑 Master</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:16px; font-size:13px; color:var(--ink-soft);">
+      Los 6 colores de tier de arriba no son nuevos — ya existen exactamente así en
+      <code>frame_service.dart</code>. Hoy Weekly League los ignora y usa <code>Colors.amber</code>/
+      <code>blueGrey</code>/<code>brown</code> por su cuenta para rank 1/2/3. Reusarlos en todas partes
+      (leaderboards, marcos, ligas) es gratis — ya están definidos, solo no se comparten.
+    </p>
+
+    <h3 style="margin-top:26px;">Tipografía</h3>
+    <p>
+      El juego no declara ninguna fuente propia — corre 100% sobre la tipografía por defecto de Material.
+      Propongo una pareja con más carácter para un trivia casual: una display redondeada y amigable para
+      títulos, marcadores y CTAs (algo como <b>Baloo 2</b>, que ya viene empaquetada vía <code>google_fonts</code>),
+      y mantener la sans por defecto para el cuerpo de las preguntas — ahí la prioridad es que se lea rápido
+      bajo presión de tiempo, no personalidad.
+    </p>
+
+    <h3 style="margin-top:22px;">Escala de radios y componentes compartidos</h3>
+    <p>
+      Colapsar los 11 valores de radio actuales a 4: <code>12</code> (chips/insignias), <code>18</code>
+      (tarjeta estándar — ya es el valor más usado hoy, así que casi nada visual cambia), <code>24</code>
+      (tarjeta destacada/hero) y <code>999</code> (píldora). Y construir 4 widgets compartidos en
+      <code>lib/widgets/</code> que hoy no existen — <code>AppCard</code>, <code>StatChip</code>,
+      <code>TierBadge</code>, <code>SectionLabel</code> — para que cada pantalla deje de reconstruir su
+      propia tarjeta desde cero.
+    </p>
+
+    <h3 style="margin-top:22px;">Cómo lo llevaríamos a todas las pantallas sin un rediseño arriesgado de una sola vez</h3>
+    <p>
+      Fase 1: definir <code>ColorScheme.fromSeed</code> + <code>TextTheme</code> en <code>app.dart</code> y
+      construir los 4 widgets compartidos — cero riesgo, no toca ninguna pantalla todavía.
+      Fase 2: migrar las pantallas de más tráfico primero (Home, Perfil, Daily Challenge, hub de PvP).
+      Fase 3: el resto (Ligas, Weekly, subpantallas de Versus, Logros, Amigos, Notificaciones).
+    </p>
+  </div>
+
+  <div class="closing">
+    <p>
+      Nada de esto está implementado todavía — es intencional, dado el alcance. Dime por dónde
+      arrancamos: los dos huecos críticos antes de la IA, la limpieza de pulido menor, o la Fase 1
+      del sistema visual (tema central + los 4 widgets compartidos).
+    </p>
+  </div>
+
+</div>

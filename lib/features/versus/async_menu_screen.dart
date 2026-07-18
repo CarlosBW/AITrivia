@@ -71,23 +71,6 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Modo IA: deshabilitado hasta que exista soporte real.
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Con IA (próximamente)',
-                    style: TextStyle(fontSize: 16, color: Colors.black45),
-                  ),
-                ),
-                const Switch(
-                  value: false,
-                  onChanged: null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
             const Text(
               'Temas fijos',
               style: TextStyle(fontWeight: FontWeight.bold),

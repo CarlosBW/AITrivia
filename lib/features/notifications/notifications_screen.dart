@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/notification_service.dart';
@@ -9,6 +10,7 @@ import '../versus/match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
 import '../achievements/achievements_screen.dart';
 import '../versus/match_play_screen.dart';
+import '../daily/daily_challenge_screen.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 
@@ -41,8 +43,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.emoji_events;
       case 'season_reward':
         return Icons.card_giftcard;
-      case 'daily_available':
-        return Icons.calendar_today;
+      case 'rematch_request':
+        return Icons.replay;
+      case 'streak_at_risk':
+        return Icons.local_fire_department;
       case 'realtime_invite':
         return Icons.bolt;
       case 'realtime_invite_accepted':
@@ -68,6 +72,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Colors.orange;
       case 'achievement_completed':
         return Colors.teal;
+      case 'rematch_request':
+        return Colors.deepPurple;
+      case 'streak_at_risk':
+        return Colors.deepOrange;
       default:
         return Colors.deepPurple;
     }
@@ -87,6 +95,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return 'Claim';
       case 'achievement_completed':
         return 'View';
+      case 'rematch_request':
+        return 'View';
+      case 'streak_at_risk':
+        return 'Play now';
       case 'realtime_invite':
         return 'Open';
       case 'realtime_invite_accepted':
@@ -272,6 +284,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           MaterialPageRoute(
             builder: (_) => MatchPlayScreen(
               matchId: matchId,
+            ),
+          ),
+        );
+        return;
+
+      case 'streak_at_risk':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DailyChallengeScreen(
+              uid: FirebaseAuth.instance.currentUser!.uid,
             ),
           ),
         );

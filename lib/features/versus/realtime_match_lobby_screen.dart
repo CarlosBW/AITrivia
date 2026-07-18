@@ -200,10 +200,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.10),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(26),
                     border: Border.all(
-                      color: Colors.deepPurple.withOpacity(0.22),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
                     ),
                   ),
                   child: Column(
@@ -381,7 +381,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: Colors.deepPurple),
+          Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -565,10 +565,10 @@ class _RoomCodeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: Colors.deepPurple.withOpacity(0.18),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
         ),
       ),
       child: Column(

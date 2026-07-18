@@ -757,13 +757,13 @@ class _WeeklyLeagueTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isMe
-            ? Colors.deepPurple.withOpacity(0.14)
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
             : Colors.black12,
         borderRadius:
             BorderRadius.circular(16),
         border: Border.all(
           color: isMe
-              ? Colors.deepPurple
+              ? Theme.of(context).colorScheme.primary
               : Colors.transparent,
           width: isMe ? 2 : 1,
         ),

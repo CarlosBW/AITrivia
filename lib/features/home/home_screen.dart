@@ -448,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 18),
                 Material(
-                  color: Colors.deepPurple,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(20),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
@@ -607,10 +607,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.08),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.deepPurple.withOpacity(0.18),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
                     ),
                   ),
                   child: const Text(
@@ -697,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.deepPurple.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(

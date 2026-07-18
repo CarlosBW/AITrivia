@@ -203,10 +203,10 @@ class _FriendLeaderboardScreenState extends State<FriendLeaderboardScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.10),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: Colors.deepPurple.withOpacity(0.25),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
               ),
             ),
             child: const Column(
@@ -275,11 +275,11 @@ class _LeaderboardTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: item.isMe
-            ? Colors.deepPurple.withOpacity(0.15)
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
             : Colors.black12,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: item.isMe ? Colors.deepPurple : Colors.transparent,
+          color: item.isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: item.isMe ? 2 : 1,
         ),
       ),

@@ -61,7 +61,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     switch (type) {
       case 'match_invite':
-        return Colors.deepPurple;
+        return Theme.of(context).colorScheme.primary;
       case 'match_turn':
         return Colors.green;
       case 'match_result':
@@ -73,11 +73,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'achievement_completed':
         return Colors.teal;
       case 'rematch_request':
-        return Colors.deepPurple;
+        return Theme.of(context).colorScheme.primary;
       case 'streak_at_risk':
         return Colors.deepOrange;
       default:
-        return Colors.deepPurple;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 
@@ -463,7 +463,7 @@ class _NotificationTile extends StatelessWidget {
         ? Colors.black12
         : isPvp
             ? accentColor.withOpacity(0.14)
-            : Colors.deepPurple.withOpacity(0.14);
+            : Theme.of(context).colorScheme.primary.withOpacity(0.14);
 
     return Card(
       elevation: 0,

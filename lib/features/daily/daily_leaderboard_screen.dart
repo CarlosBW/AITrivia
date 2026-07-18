@@ -146,10 +146,10 @@ class _TopThreePodium extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
       decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.10),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: Colors.deepPurple.withOpacity(0.22),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
         ),
       ),
       child: Row(
@@ -227,10 +227,12 @@ class _PodiumPlayer extends StatelessWidget {
       duration: const Duration(milliseconds: 240),
       padding: EdgeInsets.all(large ? 14 : 10),
       decoration: BoxDecoration(
-        color: isMe ? Colors.deepPurple.withOpacity(0.20) : Colors.white70,
+        color: isMe
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.20)
+            : Colors.white70,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isMe ? Colors.deepPurple : Colors.transparent,
+          color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: 2,
         ),
       ),
@@ -271,7 +273,7 @@ class _PodiumPlayer extends StatelessWidget {
             '$score pts',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: Colors.deepPurple,
+              color: Theme.of(context).colorScheme.primary,
               fontSize: large ? 14 : 12,
             ),
           ),
@@ -325,10 +327,12 @@ class _LeaderboardTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isMe ? Colors.deepPurple.withOpacity(0.14) : Colors.black12,
+        color: isMe
+            ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
+            : Colors.black12,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isMe ? Colors.deepPurple : Colors.transparent,
+          color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: isMe ? 2 : 1,
         ),
       ),

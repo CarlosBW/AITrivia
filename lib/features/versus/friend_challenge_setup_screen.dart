@@ -140,10 +140,10 @@ class _FriendChallengeSetupScreenState
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.10),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Colors.deepPurple.withOpacity(0.25),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
                   ),
                 ),
                 child: Column(

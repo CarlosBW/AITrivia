@@ -480,14 +480,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.deepPurple.withOpacity(0.16)
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.16)
                               : isUnlocked
                                   ? Colors.black12
                                   : Colors.black.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: isSelected
-                                ? Colors.deepPurple
+                                ? Theme.of(context).colorScheme.primary
                                 : isUnlocked
                                     ? Colors.black12
                                     : Colors.black.withOpacity(0.08),
@@ -550,13 +550,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ),
                               ),
                             if (isSelected)
-                              const Positioned(
+                              Positioned(
                                 right: 2,
                                 top: 2,
                                 child: Icon(
                                   Icons.check_circle,
                                   size: 20,
-                                  color: Colors.deepPurple,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                           ],

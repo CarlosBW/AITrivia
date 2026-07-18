@@ -133,11 +133,11 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
 
                   return Card(
                     elevation: 0,
-                    color: Colors.deepPurple.withOpacity(0.12),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
-                        color: Colors.deepPurple.withOpacity(0.45),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.45),
                       ),
                     ),
                     child: Padding(
@@ -148,8 +148,10 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                           Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor:
-                                    Colors.deepPurple.withOpacity(0.18),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.18),
                                 child: const Icon(Icons.bolt),
                               ),
                               const SizedBox(width: 12),

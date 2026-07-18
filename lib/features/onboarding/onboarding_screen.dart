@@ -155,7 +155,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: active ? 22 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: active ? Colors.deepPurple : Colors.black26,
+                    color: active
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.black26,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 );

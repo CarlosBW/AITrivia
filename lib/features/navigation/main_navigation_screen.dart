@@ -98,14 +98,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         final body = (notification['body'] ?? '').toString();
 
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(
                 Icons.sports_esports,
-                color: Colors.deepPurple,
+                color: Theme.of(dialogContext).colorScheme.primary,
               ),
-              SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 8),
+              const Expanded(
                 child: Text('Reto aceptado'),
               ),
             ],

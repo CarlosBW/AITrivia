@@ -348,7 +348,8 @@ class _ScoreColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? Colors.deepPurple : Colors.black87;
+    final color =
+        highlight ? Theme.of(context).colorScheme.primary : Colors.black87;
 
     return Column(
       children: [

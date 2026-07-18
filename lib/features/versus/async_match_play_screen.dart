@@ -9,6 +9,7 @@ import '../../services/sfx_service.dart';
 import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
 import '../../services/notification_service.dart';
+import '../../services/analytics_service.dart';
 
 class AsyncMatchPlayScreen extends StatefulWidget {
   final String asyncMatchId;
@@ -45,6 +46,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _submittedFinal = false;
   bool _presenceInitialized = false;
   bool _leavingScreen = false;
+  bool _resultLogged = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -602,6 +604,23 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       state = PvpResultState.defeat;
       title = 'Perdiste';
       subtitle = 'Estuviste cerca. Intenta una revancha.';
+    }
+
+    if (!_resultLogged) {
+      _resultLogged = true;
+
+      final resultLabel =
+          winnerUid == null ? 'draw' : (winnerUid == uid ? 'win' : 'loss');
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await AnalyticsService.instance.logPvpMatchComplete(
+            mode: 'async',
+            result: resultLabel,
+            ranked: false,
+          );
+        } catch (_) {}
+      });
     }
 
     return PvpResultCard(

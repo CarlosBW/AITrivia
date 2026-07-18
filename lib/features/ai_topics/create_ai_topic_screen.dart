@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/ai_topic_service.dart';
@@ -122,25 +124,8 @@ class _CreateAiTopicScreenState
 
             const SizedBox(height: 20),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.auto_awesome),
-                  const SizedBox(height: 10),
-                  Text(
-                    'First AI topic is free.\n'
-                    'Additional topics cost '
-                    '${EconomyService.createAiTopicCost} coins.',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            _PricingCard(
+              uid: FirebaseAuth.instance.currentUser!.uid,
             ),
 
             const SizedBox(height: 24),
@@ -168,6 +153,76 @@ class _CreateAiTopicScreenState
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PricingCard extends StatelessWidget {
+  final String uid;
+
+  const _PricingCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: userRef.snapshots(),
+      builder: (context, snap) {
+        final data = snap.data?.data() ?? {};
+        final coins = ((data['coins'] ?? 0) as num).toInt();
+        final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
+        final hasFreePass = freePasses > 0;
+        final cost = EconomyService.createAiTopicCost;
+        final canAfford = hasFreePass || coins >= cost;
+
+        final accentColor = canAfford ? Colors.green : Colors.redAccent;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accentColor.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.auto_awesome),
+              const SizedBox(height: 10),
+              Text(
+                'Tienes $coins monedas',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                hasFreePass
+                    ? '🎉 Tu primer tema es gratis'
+                    : 'Este tema cuesta $cost monedas',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: accentColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (!hasFreePass && !canAfford) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Te faltan ${cost - coins} monedas',
+                  style: TextStyle(color: accentColor, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 10),
+              const Text(
+                'Incluye 10 niveles con 10 preguntas cada uno, '
+                'preparados de a poco mientras juegas.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

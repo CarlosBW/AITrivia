@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'notification_service.dart';
+import 'analytics_service.dart';
 
 class AchievementInfo {
   final String id;
@@ -179,6 +180,10 @@ class AchievementService {
             'achievementId': achievement.id,
           },
         );
+
+        await AnalyticsService.instance.logAchievementUnlocked(
+          achievementId: achievement.id,
+        );
       }
     } catch (_) {}
   }
@@ -246,6 +251,10 @@ class AchievementService {
           data: {
             'achievementId': achievement.id,
           },
+        );
+
+        await AnalyticsService.instance.logAchievementUnlocked(
+          achievementId: achievement.id,
         );
       }
     } catch (_) {}

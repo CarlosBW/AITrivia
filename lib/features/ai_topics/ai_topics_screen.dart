@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/ai_topic_service.dart';
+import '../../services/economy_service.dart';
 import 'create_ai_topic_screen.dart';
 import '../solo/level_select_screen.dart';
 
@@ -47,6 +48,119 @@ class AiTopicsScreen extends StatelessWidget {
         builder: (_) => const CreateAiTopicScreen(),
       ),
     );
+  }
+
+  Widget _statusCostColumn({
+    required Color color,
+    required String status,
+    required bool usedFreePass,
+    required int cost,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          _statusLabel(status),
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          usedFreePass ? 'Free' : '$cost coins',
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmAndRun({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required Future<void> Function() action,
+    required String successMessage,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await action();
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(successMessage)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onTopicMenuAction({
+    required BuildContext context,
+    required String action,
+    required String topicId,
+    required String topicTitle,
+  }) async {
+    final uid = AiTopicService.instance.uid;
+    final userSnap =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final coins = ((userSnap.data()?['coins'] ?? 0) as num).toInt();
+
+    if (!context.mounted) return;
+
+    if (action == 'regenerate') {
+      await _confirmAndRun(
+        context: context,
+        title: 'Regenerar preguntas',
+        message: 'Esto reemplaza las preguntas de "$topicTitle" por otras '
+            'nuevas.\n\n'
+            'Costo: ${EconomyService.regenerateAiQuestionsCost} monedas\n'
+            'Tienes: $coins monedas',
+        action: () => AiTopicService.instance.regenerateTopicQuestions(
+          topicId: topicId,
+        ),
+        successMessage: 'Preguntas regeneradas',
+      );
+    } else if (action == 'expand') {
+      await _confirmAndRun(
+        context: context,
+        title: 'Ampliar tema',
+        message: 'Agrega 10 niveles más a "$topicTitle".\n\n'
+            'Costo: ${EconomyService.expandAiTopicCost} monedas\n'
+            'Tienes: $coins monedas',
+        action: () => AiTopicService.instance.expandTopic(topicId: topicId),
+        successMessage: 'Tema ampliado',
+      );
+    }
   }
 
   @override
@@ -187,24 +301,48 @@ class AiTopicsScreen extends StatelessWidget {
                                   ? 'This topic needs to be regenerated.'
                                   : 'Tap to continue preparing this topic.'),
                     ),
-                    trailing: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          _statusLabel(status),
-                          style: TextStyle(
+                    trailing: status == 'ready'
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _statusCostColumn(
+                                color: color,
+                                status: status,
+                                usedFreePass: usedFreePass,
+                                cost: cost,
+                              ),
+                              PopupMenuButton<String>(
+                                onSelected: (action) => _onTopicMenuAction(
+                                  context: context,
+                                  action: action,
+                                  topicId: doc.id,
+                                  topicTitle: title,
+                                ),
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'regenerate',
+                                    child: Text(
+                                      'Regenerar preguntas — '
+                                      '${EconomyService.regenerateAiQuestionsCost} monedas',
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'expand',
+                                    child: Text(
+                                      'Ampliar tema (+10 niveles) — '
+                                      '${EconomyService.expandAiTopicCost} monedas',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                        : _statusCostColumn(
                             color: color,
-                            fontWeight: FontWeight.bold,
+                            status: status,
+                            usedFreePass: usedFreePass,
+                            cost: cost,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          usedFreePass ? 'Free' : '$cost coins',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
                     onTap: () async {
                       if (status == 'pending_generation' ||
                           status == 'failed' ||

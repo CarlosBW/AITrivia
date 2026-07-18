@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../auth/user_bootstrap.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../navigation/main_navigation_screen.dart';
+import '../../services/analytics_service.dart';
 
 class _OnboardingPageData {
   final String emoji;
@@ -67,6 +68,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (_) {
       // No bloquear la entrada al juego si falla marcar el flag.
     }
+
+    try {
+      await AnalyticsService.instance.logOnboardingComplete(
+        skipped: !goToDailyChallenge,
+      );
+    } catch (_) {}
 
     if (!mounted) return;
 

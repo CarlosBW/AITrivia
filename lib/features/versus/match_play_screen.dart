@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/presence_service.dart';
+import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
 
@@ -50,6 +51,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _navigatedToRematch = false;
   bool _presenceInitialized = false;
   bool _leavingMatch = false;
+  bool _resultLogged = false;
 
   Timer? _disconnectWatchTimer;
   DateTime? _opponentUnavailableSince;
@@ -832,6 +834,23 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     if (rematchMatchId.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _goToRematch(rematchMatchId);
+      });
+    }
+
+    if (!_resultLogged) {
+      _resultLogged = true;
+
+      final resultLabel =
+          winnerUid == null ? 'draw' : (winnerUid == uid ? 'win' : 'loss');
+
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await AnalyticsService.instance.logPvpMatchComplete(
+            mode: 'live',
+            result: resultLabel,
+            ranked: affectsPvpRating,
+          );
+        } catch (_) {}
       });
     }
 

@@ -68,7 +68,8 @@ class AiTopicService {
 
     final questionsCount = ((data['questionsCount'] ?? 0) as num).toInt();
 
-    if (targetLevels != EconomyService.aiLevelsPerTopic) {
+    if (targetLevels < EconomyService.aiLevelsPerTopic ||
+        targetLevels % EconomyService.aiLevelsPerTopic != 0) {
       return false;
     }
 
@@ -246,10 +247,9 @@ class AiTopicService {
   Future<void> generateMockLevel({
     required String topicId,
     required int levelNumber,
+    bool force = false,
   }) async {
-    if (levelNumber < 1 || levelNumber > EconomyService.aiLevelsPerTopic) {
-      return;
-    }
+    if (levelNumber < 1) return;
 
     final topicRef = _topicsCol(uid).doc(topicId);
     final topicSnap = await topicRef.get();
@@ -262,7 +262,7 @@ class AiTopicService {
     final levelRef = topicRef.collection('levels').doc('level_$levelNumber');
     final levelSnap = await levelRef.get();
 
-    if (levelSnap.exists) return;
+    if (levelSnap.exists && !force) return;
 
     final batch = _db.batch();
 
@@ -360,6 +360,7 @@ class AiTopicService {
       await topicRef.set({
         'status': 'ready',
         'targetLevels': EconomyService.aiLevelsPerTopic,
+        'levelCount': EconomyService.aiLevelsPerTopic,
         'levelsCount': EconomyService.aiLevelsPerTopic,
         'generatedLevels': EconomyService.aiInitialGeneratedLevels,
         'questionsCount': EconomyService.aiInitialGeneratedLevels *
@@ -376,5 +377,109 @@ class AiTopicService {
 
       rethrow;
     }
+  }
+
+  Future<void> regenerateTopicQuestions({
+    required String topicId,
+  }) async {
+    final topicRef = _topicsCol(uid).doc(topicId);
+    final userRef = _db.collection('users').doc(uid);
+    const cost = EconomyService.regenerateAiQuestionsCost;
+
+    final generatedLevels = await _db.runTransaction<int>((tx) async {
+      final topicSnap = await tx.get(topicRef);
+      final topicData = topicSnap.data();
+
+      if (topicData == null) {
+        throw Exception('Este tema ya no existe.');
+      }
+
+      if ((topicData['status'] ?? '') != 'ready') {
+        throw Exception('El tema todavía se está preparando.');
+      }
+
+      final userSnap = await tx.get(userRef);
+      final userData = userSnap.data() ?? {};
+      final coins = ((userData['coins'] ?? 0) as num).toInt();
+
+      if (coins < cost) {
+        throw Exception(
+          'Necesitas $cost monedas para regenerar las preguntas.',
+        );
+      }
+
+      tx.set(
+        userRef,
+        {
+          'coins': FieldValue.increment(-cost),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      return ((topicData['generatedLevels'] ?? 0) as num).toInt();
+    });
+
+    for (var level = 1; level <= generatedLevels; level++) {
+      await generateMockLevel(
+        topicId: topicId,
+        levelNumber: level,
+        force: true,
+      );
+    }
+  }
+
+  Future<void> expandTopic({
+    required String topicId,
+  }) async {
+    final topicRef = _topicsCol(uid).doc(topicId);
+    final userRef = _db.collection('users').doc(uid);
+    const cost = EconomyService.expandAiTopicCost;
+
+    await _db.runTransaction((tx) async {
+      final topicSnap = await tx.get(topicRef);
+      final topicData = topicSnap.data();
+
+      if (topicData == null) {
+        throw Exception('Este tema ya no existe.');
+      }
+
+      if ((topicData['status'] ?? '') != 'ready') {
+        throw Exception('El tema todavía se está preparando.');
+      }
+
+      final userSnap = await tx.get(userRef);
+      final userData = userSnap.data() ?? {};
+      final coins = ((userData['coins'] ?? 0) as num).toInt();
+
+      if (coins < cost) {
+        throw Exception('Necesitas $cost monedas para ampliar este tema.');
+      }
+
+      final currentTarget = ((topicData['targetLevels'] ??
+              EconomyService.aiLevelsPerTopic) as num)
+          .toInt();
+      final newTarget = currentTarget + EconomyService.aiLevelsPerTopic;
+
+      tx.set(
+        topicRef,
+        {
+          'targetLevels': newTarget,
+          'levelCount': newTarget,
+          'levelsCount': newTarget,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      tx.set(
+        userRef,
+        {
+          'coins': FieldValue.increment(-cost),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    });
   }
 }

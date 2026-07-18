@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
+import '../../services/analytics_service.dart';
 
 Future<bool> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
@@ -69,6 +70,12 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    try {
+      await AnalyticsService.instance.logSignUp();
+    } catch (_) {
+      // No bloquear el bootstrap si falla el registro de analítica.
+    }
 
     return false;
   }

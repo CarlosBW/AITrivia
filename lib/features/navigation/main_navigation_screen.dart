@@ -11,6 +11,7 @@ import '../versus/match_lobby_screen.dart';
 import '../solo/solo_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
+import '../../services/analytics_service.dart';
 import '../../widgets/notification_bell_button.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -35,6 +36,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final Set<int> _visitedTabs = {0};
 
+  static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'profile'];
+
   void _selectTab(int index) {
     if (_index == index) return;
 
@@ -42,6 +45,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _index = index;
       _visitedTabs.add(index);
     });
+
+    final tabName = index >= 0 && index < _tabNames.length
+        ? _tabNames[index]
+        : 'unknown';
+
+    AnalyticsService.instance
+        .logNavTabSelected(tab: tabName)
+        .catchError((_) {});
   }
 
   Widget _lazyTab({

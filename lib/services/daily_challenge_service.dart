@@ -10,6 +10,7 @@ import 'weekly_league_service.dart';
 import 'economy_service.dart';
 import 'achievement_service.dart';
 import 'avatar_service.dart';
+import 'analytics_service.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -575,6 +576,7 @@ class DailyChallengeService {
       unawaited(_syncDailyRetentionHooks(
         uid: uid,
         dailyStreak: result.streak,
+        score: result.score,
         totalQuestionsAnswered: totalQuestionsAnswered,
       ));
     }
@@ -585,12 +587,18 @@ class DailyChallengeService {
   Future<void> _syncDailyRetentionHooks({
     required String uid,
     required int dailyStreak,
+    required int score,
     required int totalQuestionsAnswered,
   }) async {
     try {
       await AchievementService.instance.syncDailyAchievements(
         uid: uid,
         dailyStreak: dailyStreak,
+      );
+
+      await AnalyticsService.instance.logDailyChallengeComplete(
+        streak: dailyStreak,
+        score: score,
       );
 
       if (totalQuestionsAnswered >= 1000) {

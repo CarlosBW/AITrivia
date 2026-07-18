@@ -15,8 +15,6 @@ class LiveMenuScreen extends StatefulWidget {
 }
 
 class _LiveMenuScreenState extends State<LiveMenuScreen> {
-  bool _useAi = false;
-
   final List<String> _fixedCategories = const [
     'cine',
     'historia',
@@ -27,15 +25,6 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
   String _selectedCategoryId = 'cine';
 
   void _goMatchmaking() {
-    if (_useAi) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Matchmaking con IA aún no está implementado.'),
-        ),
-      );
-      return;
-    }
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -116,12 +105,10 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Tiempo real')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             stream: userRef.snapshots(),
             builder: (context, snap) {
               final data = snap.data?.data() ?? {};
@@ -149,43 +136,37 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
                   ),
                 ),
               ),
-              Text(_useAi ? 'Con IA' : 'Sin IA'),
+              const Text(
+                'Con IA (próximamente)',
+                style: TextStyle(color: Colors.black45, fontSize: 12),
+              ),
+              const SizedBox(width: 8),
               Switch(
-                value: _useAi,
-                onChanged: (v) => setState(() => _useAi = v),
+                value: false,
+                onChanged: null,
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (!_useAi) ...[
-            const Text(
-              'Tema fijo',
-              style: TextStyle(fontWeight: FontWeight.bold),
+          const Text(
+            'Tema fijo',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedCategoryId,
+            items: _fixedCategories
+                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() => _selectedCategoryId = v);
+            },
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategoryId,
-              items: _fixedCategories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() => _selectedCategoryId = v);
-              },
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ] else ...[
-            const Text(
-              '⚡ Modo IA seleccionado (próximamente)',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
-          ],
+          ),
           const SizedBox(height: 22),
           const Text(
             'Matchmaking público',
@@ -240,8 +221,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             style: TextStyle(color: Colors.black54),
             textAlign: TextAlign.center,
           ),
-        ],
-      ),
+      ],
     );
   }
 }

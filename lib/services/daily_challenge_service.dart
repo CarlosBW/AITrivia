@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import 'player_level_service.dart';
 import 'league_service.dart';
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
+import 'achievement_service.dart';
+import 'avatar_service.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -336,8 +340,9 @@ class DailyChallengeService {
         .collection('weekly_participation')
         .doc(weekId);
     final coinsEarned = calculateCoinsEarned(correct);
+    int totalQuestionsAnswered = 0;
 
-    return _db.runTransaction((tx) async {
+    final result = await _db.runTransaction((tx) async {
       final dailySnap = await tx.get(dailyRef);
       final userSnap = await tx.get(userRef);
 
@@ -422,6 +427,15 @@ class DailyChallengeService {
       );
 
       final wrongAnswers = max(totalAnswered - correct, 0);
+
+      final previousCorrectAnswers =
+          ((userData['correctAnswers'] ?? 0) as num).toInt();
+      final previousWrongAnswers =
+          ((userData['wrongAnswers'] ?? 0) as num).toInt();
+      totalQuestionsAnswered = previousCorrectAnswers +
+          previousWrongAnswers +
+          correct +
+          wrongAnswers;
 
       tx.set(
           dailyRef,
@@ -556,5 +570,44 @@ class DailyChallengeService {
         xpEarned: xpEarned,
       );
     });
+
+    if (result.saved) {
+      unawaited(_syncDailyRetentionHooks(
+        uid: uid,
+        dailyStreak: result.streak,
+        totalQuestionsAnswered: totalQuestionsAnswered,
+      ));
+    }
+
+    return result;
+  }
+
+  Future<void> _syncDailyRetentionHooks({
+    required String uid,
+    required int dailyStreak,
+    required int totalQuestionsAnswered,
+  }) async {
+    try {
+      await AchievementService.instance.syncDailyAchievements(
+        uid: uid,
+        dailyStreak: dailyStreak,
+      );
+
+      if (totalQuestionsAnswered >= 1000) {
+        await AvatarService.instance.unlockAvatar(
+          uid: uid,
+          avatarId: 'achievement_1000_questions',
+          reason: 'Answered 1000 questions',
+        );
+      } else if (totalQuestionsAnswered >= 100) {
+        await AvatarService.instance.unlockAvatar(
+          uid: uid,
+          avatarId: 'achievement_100_questions',
+          reason: 'Answered 100 questions',
+        );
+      }
+    } catch (e) {
+      debugPrint('Daily retention hook sync failed: $e');
+    }
   }
 }

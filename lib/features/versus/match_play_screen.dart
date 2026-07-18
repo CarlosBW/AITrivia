@@ -8,7 +8,7 @@ import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/presence_service.dart';
 import 'pvp_result_card.dart';
-import 'versus_menu_screen.dart';
+import 'find_opponent_screen.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
@@ -169,7 +169,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const VersusMenuScreen(),
+        builder: (_) => const FindOpponentScreen(),
       ),
       (route) => route.isFirst,
     );

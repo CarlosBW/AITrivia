@@ -399,10 +399,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _isNavigating || _buyingLife
+                Material(
+                  color: Colors.deepPurple,
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _isNavigating || _buyingLife
                         ? null
                         : () {
                             _safeNavigate(() async {
@@ -435,11 +437,70 @@ class _HomeScreenState extends State<HomeScreen> {
                               await _refreshHome();
                             });
                           },
-                    icon: const Icon(Icons.calendar_today),
-                    label: const Text('Daily Challenge'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_today,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Daily Challenge',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 3),
+                                Text(
+                                  'Juega hoy y mantén tu racha',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 22),
+                const Text(
+                  'Más formas de jugar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black54,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 _WeeklyTopicCard(
                   isBusy: _isNavigating || _buyingLife,
                   onOpen: (topicData) {
@@ -451,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -483,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -614,10 +675,10 @@ class _WeeklyTopicCard extends StatelessWidget {
         if (!snap.hasData) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.amber.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: Colors.amber.withOpacity(0.30),
               ),
@@ -625,15 +686,15 @@ class _WeeklyTopicCard extends StatelessWidget {
             child: const Row(
               children: [
                 SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Loading Weekly Topic...',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                 ),
               ],
@@ -658,12 +719,12 @@ class _WeeklyTopicCard extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(18),
+            color: Colors.amber.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.amber.withOpacity(0.45),
+              color: Colors.amber.withOpacity(0.35),
             ),
           ),
           child: Column(
@@ -671,13 +732,13 @@ class _WeeklyTopicCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.star_rounded, color: Colors.amber, size: 30),
-                  const SizedBox(width: 10),
+                  const Icon(Icons.star_rounded, color: Colors.amber, size: 22),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -685,8 +746,8 @@ class _WeeklyTopicCard extends StatelessWidget {
                   if (rewardCoins > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.amber.withOpacity(0.25),
@@ -694,22 +755,25 @@ class _WeeklyTopicCard extends StatelessWidget {
                       ),
                       child: Text(
                         '+$rewardCoins coins',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 description,
-                style: const TextStyle(color: Colors.black54),
+                style: const TextStyle(color: Colors.black54, fontSize: 12),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: isBusy ? null : () => onOpen(data),
-                  icon: const Icon(Icons.play_arrow),
+                  icon: const Icon(Icons.play_arrow, size: 18),
                   label: const Text('Open Weekly Topic'),
                 ),
               ),

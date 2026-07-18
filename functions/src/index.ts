@@ -1,6 +1,10 @@
 import * as admin from "firebase-admin";
 import {setGlobalOptions} from "firebase-functions/v2";
-import {onDocumentUpdated} from "firebase-functions/v2/firestore";
+import {
+  onDocumentCreated,
+  onDocumentUpdated,
+} from "firebase-functions/v2/firestore";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 
 setGlobalOptions({maxInstances: 10});
 
@@ -151,6 +155,95 @@ function resultFor(userId: string, winnerUid: string | null): string {
   return winnerUid === userId ? "victory" : "defeat";
 }
 
+type PvpAchievementDef = {
+  id: string;
+  title: string;
+  target: number;
+};
+
+// Mirrors the PvP-related entries in lib/services/achievement_service.dart's
+// `achievements` list. Keep these two in sync.
+const PVP_ACHIEVEMENTS: PvpAchievementDef[] = [
+  {id: "first_pvp_win", title: "First Duel Win", target: 1},
+  {id: "pvp_wins_10", title: "Duelist", target: 10},
+  {id: "pvp_streak_5", title: "On Fire", target: 5},
+];
+
+/**
+ * Reads a player's PvP-related achievement docs inside a transaction.
+ * @param {FirebaseFirestore.Transaction} tx Active transaction.
+ * @param {string} uid Player id.
+ * @return {Promise<FirebaseFirestore.DocumentSnapshot[]>} Snapshots, in
+ * PVP_ACHIEVEMENTS order.
+ */
+async function readPvpAchievementSnaps(
+  tx: FirebaseFirestore.Transaction,
+  uid: string
+): Promise<FirebaseFirestore.DocumentSnapshot[]> {
+  const col = db.collection("users").doc(uid).collection("achievements");
+  return Promise.all(PVP_ACHIEVEMENTS.map((a) => tx.get(col.doc(a.id))));
+}
+
+/**
+ * Applies progress to a single PvP achievement doc, mirroring
+ * lib/services/achievement_service.dart's setProgress schema, and queues an
+ * in-app notification the first time it completes.
+ * @param {FirebaseFirestore.Transaction} tx Active transaction.
+ * @param {string} uid Player id.
+ * @param {PvpAchievementDef} achievement Achievement definition.
+ * @param {number} progress New progress value.
+ * @param {FirebaseFirestore.DocumentSnapshot} snap Previously-read
+ * achievement doc.
+ */
+function applyPvpAchievementProgress(
+  tx: FirebaseFirestore.Transaction,
+  uid: string,
+  achievement: PvpAchievementDef,
+  progress: number,
+  snap: FirebaseFirestore.DocumentSnapshot
+): void {
+  const data = snap.data() || {};
+
+  if (data.claimed === true) return;
+
+  const currentProgress = safeInt(data.progress, 0);
+  if (progress <= currentProgress) return;
+
+  const completed = progress >= achievement.target;
+  const alreadyNotified = data.notificationSent === true;
+
+  const update: Record<string, unknown> = {
+    id: achievement.id,
+    progress: Math.min(progress, achievement.target),
+    target: achievement.target,
+    completed,
+    claimed: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  if (completed) {
+    update.completedAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  if (completed && !alreadyNotified) {
+    update.notificationSent = true;
+    update.notificationSentAt = admin.firestore.FieldValue.serverTimestamp();
+  }
+
+  tx.set(snap.ref, update, {merge: true});
+
+  if (completed && !alreadyNotified) {
+    tx.set(db.collection("users").doc(uid).collection("notifications").doc(), {
+      type: "achievement_completed",
+      title: "Achievement completed",
+      body: `You completed "${achievement.title}". Claim your reward.`,
+      data: {achievementId: achievement.id},
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+}
+
 export const finalizePvpMatch = onDocumentUpdated(
   "matches/{matchId}",
   async (event) => {
@@ -227,6 +320,63 @@ export const finalizePvpMatch = onDocumentUpdated(
       const guestBestStreak = Math.max(
         safeInt(guestUser.bestWinStreak1v1, 0),
         guestNewStreak
+      );
+
+      const hostNewWins = safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0);
+      const guestNewWins = safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0);
+
+      const [hostAchSnaps, guestAchSnaps] = await Promise.all([
+        readPvpAchievementSnaps(tx, hostUid),
+        readPvpAchievementSnaps(tx, guestUid),
+      ]);
+
+      const [hostFirstWinSnap, hostWins10Snap, hostStreak5Snap] =
+        hostAchSnaps;
+      const [guestFirstWinSnap, guestWins10Snap, guestStreak5Snap] =
+        guestAchSnaps;
+
+      applyPvpAchievementProgress(
+        tx,
+        hostUid,
+        PVP_ACHIEVEMENTS[0],
+        hostNewWins,
+        hostFirstWinSnap
+      );
+      applyPvpAchievementProgress(
+        tx,
+        hostUid,
+        PVP_ACHIEVEMENTS[1],
+        hostNewWins,
+        hostWins10Snap
+      );
+      applyPvpAchievementProgress(
+        tx,
+        hostUid,
+        PVP_ACHIEVEMENTS[2],
+        hostNewStreak,
+        hostStreak5Snap
+      );
+
+      applyPvpAchievementProgress(
+        tx,
+        guestUid,
+        PVP_ACHIEVEMENTS[0],
+        guestNewWins,
+        guestFirstWinSnap
+      );
+      applyPvpAchievementProgress(
+        tx,
+        guestUid,
+        PVP_ACHIEVEMENTS[1],
+        guestNewWins,
+        guestWins10Snap
+      );
+      applyPvpAchievementProgress(
+        tx,
+        guestUid,
+        PVP_ACHIEVEMENTS[2],
+        guestNewStreak,
+        guestStreak5Snap
       );
 
       const ratingResults: Record<string, Record<string, unknown>> = {};
@@ -415,5 +565,76 @@ export const finalizePvpMatch = onDocumentUpdated(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
+  }
+);
+
+/**
+ * Relays every newly created in-app notification (friend requests,
+ * achievements, season rewards, match invites/results, streak reminders...)
+ * as a push notification, if the target user has a saved FCM token.
+ */
+export const sendPushOnNotificationCreated = onDocumentCreated(
+  "users/{uid}/notifications/{notificationId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const uid = event.params.uid;
+    const userSnap = await db.collection("users").doc(uid).get();
+    const token = userSnap.data()?.fcmToken;
+
+    if (!token || typeof token !== "string") return;
+
+    const title = String(data.title || "TriviaIA");
+    const body = String(data.body || "");
+
+    try {
+      await admin.messaging().send({
+        token,
+        notification: {title, body},
+        data: {type: String(data.type || "")},
+      });
+    } catch (e) {
+      console.warn(`Push send failed for user ${uid}: ${e}`);
+    }
+  }
+);
+
+/**
+ * Once a day, reminds users with an active Daily Challenge streak who
+ * haven't played yet today, so they don't lose it silently.
+ */
+export const notifyStreakAtRisk = onSchedule(
+  {schedule: "0 19 * * *", timeZone: "America/Lima"},
+  async () => {
+    const now = new Date();
+    const dateId = `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const snap = await db
+      .collection("users")
+      .where("dailyStreak", ">", 0)
+      .get();
+
+    await Promise.all(
+      snap.docs.map(async (doc) => {
+        const data = doc.data();
+        if (data.lastDailyPlayed === dateId) return;
+
+        const streak = safeInt(data.dailyStreak, 0);
+
+        await doc.ref.collection("notifications").add({
+          type: "streak_at_risk",
+          title: "Tu racha está en riesgo",
+          body:
+            `Tienes una racha de ${streak} días. Juega el Daily ` +
+            "Challenge de hoy antes de perderla.",
+          data: {streak},
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      })
+    );
   }
 );

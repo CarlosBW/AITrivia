@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
 
-Future<void> bootstrapUserDoc(String uid) async {
+Future<bool> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
   final ref = db.collection('users').doc(uid);
 
@@ -64,11 +64,13 @@ Future<void> bootstrapUserDoc(String uid) async {
       'lifeRegenSeconds': 150,
       'lastLifeTickAt': FieldValue.serverTimestamp(),
 
+      'hasSeenOnboarding': false,
+
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    return;
+    return false;
   }
 
   final data = snap.data() ?? {};
@@ -101,6 +103,9 @@ Future<void> bootstrapUserDoc(String uid) async {
 
   final unlockedAvatars = data['unlockedAvatars'] ??
       AvatarService.instance.defaultUnlockedAvatarIds();
+
+  // Existing accounts predate onboarding — treat them as already onboarded.
+  final hasSeenOnboarding = data['hasSeenOnboarding'] ?? true;
 
   await ref.set(
     {
@@ -153,8 +158,19 @@ Future<void> bootstrapUserDoc(String uid) async {
       'lifeRegenSeconds': data['lifeRegenSeconds'] ?? 150,
       'lastLifeTickAt': data['lastLifeTickAt'] ?? FieldValue.serverTimestamp(),
 
+      'hasSeenOnboarding': hasSeenOnboarding,
+
       'updatedAt': FieldValue.serverTimestamp(),
     },
+    SetOptions(merge: true),
+  );
+
+  return hasSeenOnboarding == true;
+}
+
+Future<void> markOnboardingSeen(String uid) async {
+  await FirebaseFirestore.instance.collection('users').doc(uid).set(
+    {'hasSeenOnboarding': true},
     SetOptions(merge: true),
   );
 }

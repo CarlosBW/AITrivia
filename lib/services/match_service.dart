@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'achievement_service.dart';
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
@@ -888,7 +889,9 @@ class MatchService {
             wins: loserWins,
             currentWinStreak: 0,
           );
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('PvP achievement sync failed: $e');
+        }
       });
     }
 
@@ -1601,7 +1604,9 @@ class MatchService {
           wins: ((loserData['wins1v1'] ?? 0) as num).toInt(),
           currentWinStreak: 0,
         );
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('PvP achievement sync failed: $e');
+      }
     });
 
     return {

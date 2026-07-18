@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'app/app.dart';
 import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
+import 'services/notification_service.dart';
 
 const AndroidNotificationChannel triviaChannel = AndroidNotificationChannel(
   'triviaia_channel',
@@ -180,8 +181,10 @@ Future<void> _setupNotifications() async {
       final token = await messaging.getToken();
       debugPrint('🔥 FCM TOKEN: $token');
 
-      if (token != null) {
-        // Más adelante aquí guardaremos el token en Firestore.
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (token != null && uid != null) {
+        await NotificationService.instance.saveFcmToken(uid, token);
       }
     } catch (e) {
       debugPrint('FCM token unavailable: $e');

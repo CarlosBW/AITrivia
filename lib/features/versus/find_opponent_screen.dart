@@ -8,40 +8,22 @@ class FindOpponentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Find Opponent'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Buscar rival'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Tiempo real'),
+              Tab(text: 'Asíncrono'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
           children: [
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LiveMenuScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.bolt),
-              label: const Text('Real-time Matchmaking'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AsyncMenuScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.schedule),
-              label: const Text('Async Challenge'),
-            ),
+            LiveMenuScreen(),
+            AsyncMenuScreen(),
           ],
         ),
       ),

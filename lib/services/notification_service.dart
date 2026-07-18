@@ -15,6 +15,13 @@ class NotificationService {
     return _db.collection('users').doc(userId).collection('notifications');
   }
 
+  Future<void> saveFcmToken(String userId, String token) async {
+    await _db.collection('users').doc(userId).set(
+      {'fcmToken': token},
+      SetOptions(merge: true),
+    );
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyNotifications({
     int limit = 50,
   }) {

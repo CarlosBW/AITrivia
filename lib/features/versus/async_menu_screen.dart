@@ -24,19 +24,7 @@ class AsyncMenuScreen extends StatefulWidget {
 }
 
 class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
-  bool _useAi = false;
-
-  // Fixed
   String? _selectedCategoryId;
-
-  // IA (placeholder por ahora)
-  final TextEditingController _aiTopicCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _aiTopicCtrl.dispose();
-    super.dispose();
-  }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _fixedCategoriesStream() {
     return FirebaseFirestore.instance
@@ -67,26 +55,15 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
     );
   }
 
-  void _goFindPlayersAi() {
-    // Placeholder: todavía no implementamos async con IA en MatchService
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Modo IA (asíncrono) aún no implementado. Usa “Sin IA” por ahora.'),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final canStart = _useAi ? true : (_selectedCategoryId != null);
+    final canStart = _selectedCategoryId != null;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Reto asíncrono')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
             const SizedBox(height: 8),
             const Text(
               'Configuración',
@@ -94,106 +71,72 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Switch IA / Fixed
+            // Modo IA: deshabilitado hasta que exista soporte real.
             Row(
               children: [
                 const Expanded(
                   child: Text(
-                    'Con IA',
-                    style: TextStyle(fontSize: 16),
+                    'Con IA (próximamente)',
+                    style: TextStyle(fontSize: 16, color: Colors.black45),
                   ),
                 ),
-                Switch(
-                  value: _useAi,
-                  onChanged: (v) {
-                    setState(() {
-                      _useAi = v;
-                      // Si cambia a IA, no necesitamos fixed category
-                      // Si cambia a fixed, se selecciona desde lista
-                    });
-                  },
+                const Switch(
+                  value: false,
+                  onChanged: null,
                 ),
               ],
             ),
             const SizedBox(height: 10),
 
-            if (_useAi) ...[
-              const Text(
-                'Tema libre (IA)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _aiTopicCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Escribe el tema (placeholder)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Nota: Este modo está pendiente. Por ahora usa “Sin IA”.',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ] else ...[
-              const Text(
-                'Temas fijos (Sin IA)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
+            const Text(
+              'Temas fijos',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
 
-              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _fixedCategoriesStream(),
-                builder: (context, snap) {
-                  if (!snap.hasData) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-
-                  final docs = snap.data!.docs;
-                  if (docs.isEmpty) {
-                    return const Text('No hay categorías activas.');
-                  }
-
-                  // Set default si aún no hay seleccionado
-                  _selectedCategoryId ??= docs.first.id;
-
-                  return DropdownButtonFormField<String>(
-                    initialValue: _selectedCategoryId,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Selecciona un tema fijo',
+            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _fixedCategoriesStream(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(),
                     ),
-                    items: docs.map((d) {
-                      final data = d.data();
-                      final name = (data['name'] ?? d.id).toString();
-                      return DropdownMenuItem(
-                        value: d.id,
-                        child: Text(name),
-                      );
-                    }).toList(),
-                    onChanged: (v) => setState(() => _selectedCategoryId = v),
                   );
-                },
-              ),
-            ],
+                }
+
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) {
+                  return const Text('No hay categorías activas.');
+                }
+
+                // Set default si aún no hay seleccionado
+                _selectedCategoryId ??= docs.first.id;
+
+                return DropdownButtonFormField<String>(
+                  initialValue: _selectedCategoryId,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Selecciona un tema fijo',
+                  ),
+                  items: docs.map((d) {
+                    final data = d.data();
+                    final name = (data['name'] ?? d.id).toString();
+                    return DropdownMenuItem(
+                      value: d.id,
+                      child: Text(name),
+                    );
+                  }).toList(),
+                  onChanged: (v) => setState(() => _selectedCategoryId = v),
+                );
+              },
+            ),
 
             const SizedBox(height: 16),
 
             FilledButton(
-              onPressed: canStart
-                  ? () {
-                      if (_useAi) {
-                        _goFindPlayersAi();
-                      } else {
-                        _goFindPlayersFixed();
-                      }
-                    }
-                  : null,
+              onPressed: canStart ? _goFindPlayersFixed : null,
               child: const Text('Buscar jugador para retar'),
             ),
 
@@ -228,8 +171,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
               style: TextStyle(color: Colors.black54),
               textAlign: TextAlign.center,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

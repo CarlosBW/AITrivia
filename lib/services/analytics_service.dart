@@ -52,4 +52,14 @@ class AnalyticsService {
       parameters: {'tab': tab},
     );
   }
+
+  Future<void> logLoginStreak({
+    required int streak,
+    required int coinsEarned,
+  }) async {
+    await _analytics.logEvent(
+      name: 'login_streak',
+      parameters: {'streak': streak, 'coins_earned': coinsEarned},
+    );
+  }
 }

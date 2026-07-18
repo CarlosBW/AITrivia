@@ -53,6 +53,14 @@ class EconomyService {
   static const int dailyLevelUpCoins = 15;
 
   // ============================================================
+  // LOGIN STREAK (separate from the Daily Challenge streak)
+  // ============================================================
+
+  static const int loginStreak3DaysCoins = 3;
+  static const int loginStreak7DaysCoins = 8;
+  static const int loginStreak14DaysCoins = 15;
+
+  // ============================================================
   // PVP
   // ============================================================
 

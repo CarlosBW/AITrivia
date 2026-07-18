@@ -37,6 +37,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showStreakPopup = false;
   bool _streakGlow = false;
 
+  bool _loginPopupHandled = false;
+  bool _showLoginPopup = false;
+  int _loginStreakForPopup = 0;
+  int _loginCoinsForPopup = 0;
+
   static const int _buyLifeCost = 10;
 
   late final String uid;
@@ -190,6 +195,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _showLoginStreakCelebration(int streak, int coins) {
+    if (_loginPopupHandled) return;
+    _loginPopupHandled = true;
+
+    HapticFeedback.mediumImpact();
+
+    setState(() {
+      _showLoginPopup = true;
+      _loginStreakForPopup = streak;
+      _loginCoinsForPopup = coins;
+    });
+
+    FirebaseFirestore.instance.collection('users').doc(uid).set(
+      {'loginStreakCelebrationPending': false},
+      SetOptions(merge: true),
+    );
+
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (!mounted) return;
+
+      setState(() => _showLoginPopup = false);
+    });
+  }
+
   Future<void> _buyLifeFromDialog(BuildContext dialogContext) async {
     if (_buyingLife) return;
 
@@ -313,8 +342,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     final xp = data['xp'] ?? 0;
                     final streak = ((data['dailyStreak'] ?? 0) as num).toInt();
 
+                    final loginStreak =
+                        ((data['loginStreak'] ?? 0) as num).toInt();
+                    final loginCelebrationPending =
+                        data['loginStreakCelebrationPending'] == true;
+                    final loginCelebrationCoins =
+                        ((data['loginStreakCelebrationCoins'] ?? 0) as num)
+                            .toInt();
+
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) _handleStreakChange(streak);
+                      if (!mounted) return;
+
+                      _handleStreakChange(streak);
+
+                      if (loginCelebrationPending) {
+                        _showLoginStreakCelebration(
+                          loginStreak,
+                          loginCelebrationCoins,
+                        );
+                      }
                     });
 
                     return Container(
@@ -640,6 +686,63 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (_showLoginPopup)
+            Center(
+              child: AnimatedScale(
+                scale: _showLoginPopup ? 1.0 : 0.7,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '📅 ¡Volviste!',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Racha de sesión: $_loginStreakForPopup días',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if (_loginCoinsForPopup > 0) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '+$_loginCoinsForPopup monedas',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amberAccent,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

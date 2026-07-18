@@ -3,6 +3,36 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/economy_service.dart';
+
+String _todayDateId([DateTime? now]) {
+  final d = now ?? DateTime.now();
+  final y = d.year.toString().padLeft(4, '0');
+  final m = d.month.toString().padLeft(2, '0');
+  final day = d.day.toString().padLeft(2, '0');
+  return '$y-$m-$day';
+}
+
+bool _wasYesterday(String? dateId) {
+  if (dateId == null || dateId.isEmpty) return false;
+
+  final lastDate = DateTime.tryParse(dateId);
+  if (lastDate == null) return false;
+
+  final today = DateTime.now();
+  final todayOnly = DateTime(today.year, today.month, today.day);
+  final yesterday = todayOnly.subtract(const Duration(days: 1));
+
+  final normalizedLast = DateTime(lastDate.year, lastDate.month, lastDate.day);
+  return normalizedLast == yesterday;
+}
+
+int _loginStreakBonusCoins(int streak) {
+  if (streak > 0 && streak % 14 == 0) return EconomyService.loginStreak14DaysCoins;
+  if (streak > 0 && streak % 7 == 0) return EconomyService.loginStreak7DaysCoins;
+  if (streak > 0 && streak % 3 == 0) return EconomyService.loginStreak3DaysCoins;
+  return 0;
+}
 
 Future<bool> bootstrapUserDoc(String uid) async {
   final db = FirebaseFirestore.instance;
@@ -60,6 +90,9 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'dailyStreak': 0,
       'maxDailyStreak': 0,
 
+      'loginStreak': 1,
+      'lastLoginDate': _todayDateId(),
+
       'lifeUnits': 10,
       'maxLifeUnits': 10,
       'lifeRegenSeconds': 150,
@@ -114,10 +147,22 @@ Future<bool> bootstrapUserDoc(String uid) async {
   // Existing accounts predate onboarding — treat them as already onboarded.
   final hasSeenOnboarding = data['hasSeenOnboarding'] ?? true;
 
+  final today = _todayDateId();
+  final lastLoginDate = data['lastLoginDate']?.toString();
+  final previousLoginStreak = ((data['loginStreak'] ?? 0) as num).toInt();
+  final loginStreakIncreased = lastLoginDate != today;
+
+  final newLoginStreak = loginStreakIncreased
+      ? (_wasYesterday(lastLoginDate) ? previousLoginStreak + 1 : 1)
+      : previousLoginStreak;
+
+  final loginCelebrationCoins =
+      loginStreakIncreased ? _loginStreakBonusCoins(newLoginStreak) : 0;
+
   await ref.set(
     {
       'xp': data['xp'] ?? 0,
-      'coins': data['coins'] ?? 0,
+      'coins': (data['coins'] ?? 0) + loginCelebrationCoins,
       'freeTopicPasses': data['freeTopicPasses'] ?? 1,
 
       'username': username,
@@ -160,6 +205,11 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'dailyStreak': data['dailyStreak'] ?? 0,
       'maxDailyStreak': data['maxDailyStreak'] ?? data['dailyStreak'] ?? 0,
 
+      'loginStreak': newLoginStreak,
+      'lastLoginDate': today,
+      if (loginStreakIncreased) 'loginStreakCelebrationPending': true,
+      if (loginStreakIncreased) 'loginStreakCelebrationCoins': loginCelebrationCoins,
+
       'lifeUnits': data['lifeUnits'] ?? inferredUnits,
       'maxLifeUnits': data['maxLifeUnits'] ?? 10,
       'lifeRegenSeconds': data['lifeRegenSeconds'] ?? 150,
@@ -171,6 +221,17 @@ Future<bool> bootstrapUserDoc(String uid) async {
     },
     SetOptions(merge: true),
   );
+
+  if (loginStreakIncreased) {
+    try {
+      await AnalyticsService.instance.logLoginStreak(
+        streak: newLoginStreak,
+        coinsEarned: loginCelebrationCoins,
+      );
+    } catch (_) {
+      // No bloquear el bootstrap si falla el registro de analítica.
+    }
+  }
 
   return hasSeenOnboarding == true;
 }

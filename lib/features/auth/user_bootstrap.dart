@@ -159,10 +159,16 @@ Future<bool> bootstrapUserDoc(String uid) async {
   final loginCelebrationCoins =
       loginStreakIncreased ? _loginStreakBonusCoins(newLoginStreak) : 0;
 
+  // Note: coins/xp/pvpRating/wins1v1/... are now server-owned (Cloud
+  // Functions write them via the Admin SDK) and protected in
+  // firestore.rules, so this routine per-launch bootstrap must not touch
+  // them at all anymore — it only maintains genuinely client-owned
+  // profile/cosmetic fields. The login-streak coin bonus itself moves to
+  // the `claimLoginStreakBonus` Cloud Function (see Phase 7); for now
+  // `loginStreakCelebrationCoins` is computed for the celebration popup's
+  // copy but no longer paid out here.
   await ref.set(
     {
-      'xp': data['xp'] ?? 0,
-      'coins': (data['coins'] ?? 0) + loginCelebrationCoins,
       'freeTopicPasses': data['freeTopicPasses'] ?? 1,
 
       'username': username,
@@ -176,30 +182,11 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'lastUnlockedAvatarAt': data['lastUnlockedAvatarAt'],
 
       'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
-      'bestLeagueId': bestLeague.id,
-      'bestLeagueName': data['bestLeagueName'] ?? bestLeague.name,
-      'bestLeagueEmoji': data['bestLeagueEmoji'] ?? bestLeague.emoji,
-      'bestLeagueColorValue':
-          data['bestLeagueColorValue'] ?? bestLeague.colorValue,
 
       'gamesPlayed': data['gamesPlayed'] ?? 0,
       'dailyGamesPlayed': data['dailyGamesPlayed'] ?? 0,
       'correctAnswers': data['correctAnswers'] ?? 0,
       'wrongAnswers': data['wrongAnswers'] ?? 0,
-
-      'pvpRating': currentPvpRating,
-      'pvpRatingDelta': data['pvpRatingDelta'] ?? 0,
-      'pvpLeagueId': data['pvpLeagueId'] ?? currentPvpLeague.id,
-      'pvpLeagueName': data['pvpLeagueName'] ?? currentPvpLeague.name,
-      'pvpAbandonCount': data['pvpAbandonCount'] ?? 0,
-      'pvpCooldownUntil': data['pvpCooldownUntil'],
-      'lastPvpPenaltyReason': data['lastPvpPenaltyReason'],
-      'wins1v1': data['wins1v1'] ?? 0,
-      'losses1v1': data['losses1v1'] ?? 0,
-      'draws1v1': data['draws1v1'] ?? 0,
-      'matches1v1': data['matches1v1'] ?? 0,
-      'currentWinStreak1v1': data['currentWinStreak1v1'] ?? 0,
-      'bestWinStreak1v1': data['bestWinStreak1v1'] ?? 0,
 
       'bestDailyScore': data['bestDailyScore'] ?? 0,
       'dailyStreak': data['dailyStreak'] ?? 0,
@@ -207,8 +194,9 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
       'loginStreak': newLoginStreak,
       'lastLoginDate': today,
-      if (loginStreakIncreased) 'loginStreakCelebrationPending': true,
-      if (loginStreakIncreased) 'loginStreakCelebrationCoins': loginCelebrationCoins,
+      // The celebration popup is suppressed until claimLoginStreakBonus
+      // (Phase 7) actually grants these coins server-side — showing it now
+      // would claim a reward the player doesn't receive.
 
       'lifeUnits': data['lifeUnits'] ?? inferredUnits,
       'maxLifeUnits': data['maxLifeUnits'] ?? 10,

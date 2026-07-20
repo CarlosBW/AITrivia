@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'pvp_league_service.dart';
 
@@ -337,109 +338,37 @@ class PvpSeasonService {
     return result.rewards.first;
   }
 
+  /// Claims all pending PvP season rewards via the `claimPvpSeasonRewards`
+  /// Cloud Function. The reward source data (pvp_season_stats /
+  /// pvp_season_history) is already server-only, so this only exists
+  /// because writing `coins` directly from the client is no longer allowed
+  /// once that field is protected in firestore.rules.
   Future<PvpSeasonClaimAllResult> claimAllPendingPvpSeasonRewards({
     required String uid,
   }) async {
-    final userRef = _db.collection('users').doc(uid);
-    final currentSeasonId = currentSeason().id;
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('claimPvpSeasonRewards');
+    final response = await callable.call();
+    final data = Map<String, dynamic>.from(response.data as Map);
 
-    return _db.runTransaction((tx) async {
-      final statsSnap = await userRef.collection('pvp_season_stats').get();
-      final historySnap = await userRef.collection('pvp_season_history').get();
+    final rewards = ((data['rewards'] as List?) ?? [])
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .map((r) => PvpSeasonClaimResult(
+              seasonId: (r['seasonId'] ?? '').toString(),
+              leagueId: (r['leagueId'] ?? '').toString(),
+              leagueName: (r['leagueName'] ?? '').toString(),
+              finalRating: ((r['finalRating'] ?? 0) as num).toInt(),
+              bestRating: ((r['bestRating'] ?? 0) as num).toInt(),
+              rewardCoins: ((r['rewardCoins'] ?? 0) as num).toInt(),
+              alreadyClaimed: r['alreadyClaimed'] == true,
+            ))
+        .toList();
 
-      final claimedSeasonIds = historySnap.docs.map((doc) => doc.id).toSet();
-      final pending = <PendingPvpSeasonReward>[];
-
-      for (final doc in statsSnap.docs) {
-        final seasonId = doc.id;
-
-        if (seasonId.compareTo(currentSeasonId) >= 0) continue;
-        if (claimedSeasonIds.contains(seasonId)) continue;
-
-        pending.add(
-          _pendingRewardFromStats(
-            seasonId: seasonId,
-            statsData: doc.data(),
-          ),
-        );
-      }
-
-      pending.sort((a, b) => b.seasonId.compareTo(a.seasonId));
-
-      if (pending.isEmpty) {
-        return const PvpSeasonClaimAllResult(
-          claimedCount: 0,
-          totalCoins: 0,
-          rewards: [],
-        );
-      }
-
-      var totalCoins = 0;
-      final results = <PvpSeasonClaimResult>[];
-
-      for (final reward in pending) {
-        totalCoins += reward.rewardCoins;
-
-        final finalLeague =
-            PvpLeagueService.instance.leagueForRating(reward.finalRating);
-
-        final historyRef =
-            userRef.collection('pvp_season_history').doc(reward.seasonId);
-
-        tx.set(
-            historyRef,
-            {
-              'seasonId': reward.seasonId,
-              'finalRating': reward.finalRating,
-              'finalLeagueId': finalLeague.id,
-              'finalLeagueName': finalLeague.name,
-              'finalLeagueEmoji': finalLeague.emoji,
-              'bestRating': reward.bestRating,
-              'bestLeagueId': reward.leagueId,
-              'bestLeagueName': reward.leagueName,
-              'bestLeagueEmoji': reward.leagueEmoji,
-              'matchesPlayed': reward.matchesPlayed,
-              'wins': reward.wins,
-              'losses': reward.losses,
-              'draws': reward.draws,
-              'rewardCoins': reward.rewardCoins,
-              'rewardBasedOn': 'bestRating',
-              'claimedAt': FieldValue.serverTimestamp(),
-              'createdAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
-
-        results.add(
-          PvpSeasonClaimResult(
-            seasonId: reward.seasonId,
-            leagueId: reward.leagueId,
-            leagueName: reward.leagueName,
-            finalRating: reward.finalRating,
-            bestRating: reward.bestRating,
-            rewardCoins: reward.rewardCoins,
-            alreadyClaimed: false,
-          ),
-        );
-      }
-
-      tx.set(
-          userRef,
-          {
-            'coins': FieldValue.increment(totalCoins),
-            'lastClaimedPvpSeasonId': pending.first.seasonId,
-            'lastPvpSeasonRewardCoins': totalCoins,
-            'lastPvpSeasonRewardCount': pending.length,
-            'lastPvpSeasonRewardClaimedAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      return PvpSeasonClaimAllResult(
-        claimedCount: results.length,
-        totalCoins: totalCoins,
-        rewards: results,
-      );
-    });
+    return PvpSeasonClaimAllResult(
+      claimedCount: ((data['claimedCount'] ?? 0) as num).toInt(),
+      totalCoins: ((data['totalCoins'] ?? 0) as num).toInt(),
+      rewards: rewards,
+    );
   }
 
   String formatTimeLeft(Duration duration) {

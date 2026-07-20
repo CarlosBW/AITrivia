@@ -27,11 +27,43 @@ service cloud.firestore {
         && resource.data.uid == request.auth.uid;
     }
 
+    // PvP-related economy fields (coins/xp/rating/streaks/season tracking)
+    // are now computed and written server-side by Cloud Functions
+    // (finalizePvpMatch, finalizeAsyncPvpMatch, claimPvpSeasonRewards) —
+    // the client may no longer write them directly. Everything else on
+    // this doc (profile fields, cosmetics, etc.) stays client-writable.
+    // More fields move into this list as later phases land.
+    function pvpProtectedFields() {
+      return [
+        'coins', 'xp',
+        'pvpRating', 'pvpRatingDelta', 'pvpLeagueId', 'pvpLeagueName',
+        'bestLeagueId', 'bestLeagueName', 'bestLeagueEmoji',
+        'bestLeagueColorValue',
+        'currentPvpSeasonId', 'pvpSeasonBestRating',
+        'pvpSeasonBestLeagueId', 'pvpSeasonBestLeagueName',
+        'pvpSeasonFinalRating', 'pvpSeasonFinalLeagueId',
+        'pvpSeasonFinalLeagueName',
+        'pvpAbandonCount', 'pvpCooldownUntil', 'lastPvpPenaltyReason',
+        'wins1v1', 'losses1v1', 'draws1v1', 'matches1v1',
+        'currentWinStreak1v1', 'bestWinStreak1v1',
+        'lastRankedXpEarned', 'lastRankedCoinsEarned',
+        'lastClaimedPvpSeasonId', 'lastPvpSeasonRewardCoins',
+        'lastPvpSeasonRewardCount', 'lastPvpSeasonRewardClaimedAt'
+      ];
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null;
 
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.coins == 0
+        && request.resource.data.xp == 0;
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(pvpProtectedFields());
 
       match /ai_topics/{topicId} {
         allow read, create, update, delete: if request.auth != null

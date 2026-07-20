@@ -1320,6 +1320,8 @@ class MatchService {
     return b.toString();
   }
 
+  static const Duration _questionFetchTimeout = Duration(seconds: 15);
+
   Future<List<Map<String, dynamic>>> _generateFixedQuestions({
     required String categoryId,
     required int difficulty,
@@ -1339,7 +1341,12 @@ class MatchService {
         .doc('pool')
         .collection('questions');
 
-    final snap = await col.get();
+    final snap = await col.get().timeout(
+          _questionFetchTimeout,
+          onTimeout: () => throw Exception(
+            'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
+          ),
+        );
     final docs = snap.docs;
     if (docs.isEmpty) throw Exception('Pool vacío para $categoryId');
 
@@ -1354,7 +1361,13 @@ class MatchService {
     final catsSnap = await _db
         .collection('fixed_categories')
         .where('isActive', isEqualTo: true)
-        .get();
+        .get()
+        .timeout(
+          _questionFetchTimeout,
+          onTimeout: () => throw Exception(
+            'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
+          ),
+        );
 
     final categories = catsSnap.docs.map((d) => d.id).toList();
     if (categories.isEmpty) throw Exception('No hay categorías activas');
@@ -1373,7 +1386,12 @@ class MatchService {
           .doc('pool')
           .collection('questions');
 
-      final snap = await col.get();
+      final snap = await col.get().timeout(
+            _questionFetchTimeout,
+            onTimeout: () => throw Exception(
+              'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
+            ),
+          );
       if (snap.docs.isEmpty) continue;
 
       final pick = snap.docs[rnd.nextInt(snap.docs.length)].data();

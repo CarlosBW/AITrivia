@@ -1807,3 +1807,975 @@ export const notifyStreakAtRisk = onSchedule(
     );
   }
 );
+
+// ============================================================
+// SOLO LEVEL REWARDS
+//
+// Mirrors level_play_screen.dart's `_saveProgress` transaction. `coins`/
+// `xp` are protected fields in firestore.rules, so the reward grant (and
+// the progress/achievement bookkeeping that determines whether a grant is
+// due) moved here in full. `levelCount` — used only to decide the
+// "completed all levels in this category" bonus — is read from the
+// authoritative fixed_categories/ai_topics doc rather than trusted from
+// the client, closing a minor "claim the completion bonus early" gap.
+// ============================================================
+
+const SOLO_PERFECT_LEVEL_COINS = 3;
+const SOLO_GREAT_LEVEL_COINS = 2;
+const SOLO_GOOD_LEVEL_COINS = 1;
+const COMPLETE_FIXED_CATEGORY_COINS = 10;
+const AI_LEVELS_PER_TOPIC = 10;
+const AI_QUESTIONS_PER_LEVEL = 10;
+const AI_INITIAL_GENERATED_LEVELS = 2;
+
+/**
+ * Mirrors level_play_screen.dart's `_calculateLevelRewards`.
+ * @param {number} correct Correct answers in this level attempt.
+ * @param {number} total Total questions in this level attempt.
+ * @return {{xp:number, coins:number}} Reward for this attempt.
+ */
+function calculateLevelRewards(
+  correct: number,
+  total: number
+): {xp: number; coins: number} {
+  const pct = total === 0 ? 0 : correct / total;
+  const xp = correct * 10;
+
+  let coins = 0;
+  if (pct >= 0.9) coins = SOLO_PERFECT_LEVEL_COINS;
+  else if (pct >= 0.7) coins = SOLO_GREAT_LEVEL_COINS;
+  else if (pct >= 0.4) coins = SOLO_GOOD_LEVEL_COINS;
+
+  return {xp, coins};
+}
+
+export const submitSoloLevelResult = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const isAiTopic = request.data?.isAiTopic === true;
+  const categoryId = String(request.data?.categoryId || "");
+  const aiTopicId = request.data?.aiTopicId ?
+    String(request.data.aiTopicId) : null;
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+  const correct = safeInt(request.data?.correct, -1);
+  const total = safeInt(request.data?.total, -1);
+
+  if (levelNumber < 1 || correct < 0 || total < 0 || correct > total) {
+    throw new HttpsError("invalid-argument", "Invalid level result.");
+  }
+  if (isAiTopic && !aiTopicId) {
+    throw new HttpsError("invalid-argument", "Missing aiTopicId.");
+  }
+  if (!isAiTopic && !categoryId) {
+    throw new HttpsError("invalid-argument", "Missing categoryId.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const progressRef = isAiTopic ?
+    userRef.collection("progress_ai").doc(aiTopicId as string) :
+    userRef.collection("progress_fixed").doc(categoryId);
+
+  let levelCount = 0;
+  if (isAiTopic) {
+    const topicSnap = await userRef
+      .collection("ai_topics").doc(aiTopicId as string).get();
+    const topicData = topicSnap.data();
+    levelCount = safeInt(
+      topicData?.targetLevels ?? topicData?.levelsCount,
+      AI_LEVELS_PER_TOPIC
+    );
+  } else {
+    const catSnap = await db
+      .collection("fixed_categories").doc(categoryId).get();
+    levelCount = safeInt(catSnap.data()?.levelCount, 0);
+  }
+
+  const percent = total === 0 ? 0 : correct / total;
+  const passedLevel = percent >= 0.4;
+  const {xp: levelXp, coins: levelCoins} =
+    calculateLevelRewards(correct, total);
+
+  return db.runTransaction(async (tx) => {
+    const progressSnap = await tx.get(progressRef);
+    const userSnap = await tx.get(userRef);
+
+    const prev = progressSnap.data();
+    const userData = userSnap.data() || {};
+    const prevUserXp = safeInt(userData.xp, 0);
+
+    const prevCompleted = new Set<number>(
+      ((prev?.completedLevels as unknown[]) || [])
+        .map((e) => safeInt(e, 0))
+    );
+
+    const prevLevelStats: Record<string, Record<string, unknown>> = {
+      ...((prev?.levelStats as Record<string, Record<string, unknown>>) ||
+        {}),
+    };
+
+    const migratedPassedLevels = new Set<number>();
+    for (const [key, stat] of Object.entries(prevLevelStats)) {
+      const level = parseInt(key, 10);
+      const statPercent = Number(stat?.percent ?? 0);
+      if (!isNaN(level) && statPercent >= 0.4) {
+        migratedPassedLevels.add(level);
+      }
+    }
+
+    const prevPassed = new Set<number>(
+      prev?.passedLevels ?
+        (prev.passedLevels as unknown[]).map((e) => safeInt(e, 0)) :
+        Array.from(migratedPassedLevels)
+    );
+
+    const wasAlreadyPlayed = prevCompleted.has(levelNumber);
+    const wasAlreadyPassed = prevPassed.has(levelNumber);
+
+    prevCompleted.add(levelNumber);
+    if (passedLevel) prevPassed.add(levelNumber);
+
+    const levelKey = String(levelNumber);
+    const oldStat = prevLevelStats[levelKey] || {};
+    const oldPercent = Number(oldStat.percent ?? -1);
+
+    if (percent >= oldPercent) {
+      prevLevelStats[levelKey] = {
+        correct,
+        total,
+        percent,
+        passed: passedLevel,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+    }
+
+    const newlyPassed = passedLevel && !wasAlreadyPassed;
+    const grantedXp = wasAlreadyPlayed ? 0 : levelXp;
+    let grantedCoins = newlyPassed ? levelCoins : 0;
+    const shouldEnsureAiBuffer = isAiTopic && newlyPassed;
+
+    const completedAll = levelCount > 0 && prevPassed.size >= levelCount;
+    const rewardGranted = prev?.categoryRewardGranted === true;
+    const categoryBonusGranted = completedAll && !rewardGranted;
+
+    if (categoryBonusGranted) {
+      grantedCoins += COMPLETE_FIXED_CATEGORY_COINS;
+    }
+
+    const progressPatch: Record<string, unknown> = {
+      completedLevels: Array.from(prevCompleted).sort((a, b) => a - b),
+      passedLevels: Array.from(prevPassed).sort((a, b) => a - b),
+      levelStats: prevLevelStats,
+      lastScore: {correct, total, percent, passed: passedLevel, levelNumber},
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (grantedXp > 0 || grantedCoins > 0) {
+      progressPatch.lastLevelReward = {
+        levelNumber,
+        xp: grantedXp,
+        coins: grantedCoins,
+        passed: passedLevel,
+        grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+    }
+
+    if (completedAll) {
+      progressPatch.completedAllLevels = true;
+      if (categoryBonusGranted) {
+        progressPatch.categoryRewardGranted = true;
+        progressPatch.rewardGrantedAt =
+          admin.firestore.FieldValue.serverTimestamp();
+      }
+    }
+
+    tx.set(progressRef, progressPatch, {merge: true});
+
+    if (grantedXp > 0 || grantedCoins > 0) {
+      tx.set(
+        userRef,
+        {
+          ...(grantedXp > 0 ?
+            {xp: admin.firestore.FieldValue.increment(grantedXp)} : {}),
+          ...(grantedCoins > 0 ?
+            {coins: admin.firestore.FieldValue.increment(grantedCoins)} : {}),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+    }
+
+    return {
+      grantedXp,
+      grantedCoins,
+      passed: passedLevel,
+      newlyPassed,
+      userTotalXp: prevUserXp + grantedXp,
+      completedAll,
+      shouldEnsureAiBuffer,
+    };
+  });
+});
+
+// ============================================================
+// ACHIEVEMENTS
+//
+// Only the final reward claim moves here — setProgress/incrementProgress
+// keep writing achievements/{id} straight from the client (not economy
+// protected). Mirrors achievement_service.dart's `achievements` list
+// exactly; keep both in sync.
+// ============================================================
+
+type AchievementRewardDef = {
+  id: string;
+  rewardCoins: number;
+  rewardXp: number;
+};
+
+const ACHIEVEMENT_REWARDS: AchievementRewardDef[] = [
+  {id: "first_pvp_win", rewardCoins: 10, rewardXp: 20},
+  {id: "pvp_wins_10", rewardCoins: 40, rewardXp: 80},
+  {id: "pvp_streak_5", rewardCoins: 50, rewardXp: 100},
+  {id: "solo_levels_10", rewardCoins: 30, rewardXp: 60},
+  {id: "daily_streak_7", rewardCoins: 50, rewardXp: 100},
+  {id: "friends_5", rewardCoins: 25, rewardXp: 50},
+];
+
+export const claimAchievementReward = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const achievementId = String(request.data?.achievementId || "");
+  const achievement = ACHIEVEMENT_REWARDS.find((a) => a.id === achievementId);
+
+  if (!achievement) {
+    throw new HttpsError("invalid-argument", "Achievement not found.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const achievementRef = userRef.collection("achievements").doc(
+    achievementId
+  );
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(achievementRef);
+    const data = snap.data();
+
+    if (!data) {
+      throw new HttpsError("failed-precondition", "Achievement not started.");
+    }
+    if (data.completed !== true) {
+      throw new HttpsError(
+        "failed-precondition", "Achievement not completed yet."
+      );
+    }
+    if (data.claimed === true) {
+      throw new HttpsError("failed-precondition", "Reward already claimed.");
+    }
+
+    tx.set(
+      userRef,
+      {
+        coins: admin.firestore.FieldValue.increment(achievement.rewardCoins),
+        xp: admin.firestore.FieldValue.increment(achievement.rewardXp),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(
+      achievementRef,
+      {
+        claimed: true,
+        claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {
+      rewardCoins: achievement.rewardCoins,
+      rewardXp: achievement.rewardXp,
+    };
+  });
+});
+
+// ============================================================
+// LIFE SYSTEM
+//
+// Only the coin-for-lifeUnits purchase moves here — lifeUnits/regen
+// ticking (tryConsumeLevelEntry, tryConsumeWrongAnswer, refreshLives)
+// don't touch `coins`/`xp` and keep working straight from the client.
+// Cost is a server constant, never trusted from the client.
+// ============================================================
+
+const BUY_FULL_LIFE_COST = 10;
+const DEFAULT_MAX_LIFE_UNITS = 10;
+const DEFAULT_LIFE_REGEN_SECONDS = 150;
+const UNITS_PER_LIFE = 2;
+
+/**
+ * Mirrors life_service.dart's `_stateFromData` (lifeUnits/maxLifeUnits
+ * portion only — buyFullLife doesn't need the countdown fields).
+ * @param {Record<string, unknown>} data User document data.
+ * @return {{lifeUnits:number, maxLifeUnits:number}} Current life state,
+ * accounting for regen elapsed since the last tick.
+ */
+function computeLifeUnits(
+  data: Record<string, unknown>
+): {lifeUnits: number; maxLifeUnits: number} {
+  const now = Date.now();
+
+  let lifeUnits = safeInt(data.lifeUnits, DEFAULT_MAX_LIFE_UNITS);
+  const maxLifeUnits = safeInt(data.maxLifeUnits, DEFAULT_MAX_LIFE_UNITS);
+  const lifeRegenSeconds = safeInt(
+    data.lifeRegenSeconds, DEFAULT_LIFE_REGEN_SECONDS
+  );
+
+  const lastTick = data.lastLifeTickAt as
+    FirebaseFirestore.Timestamp | undefined;
+  const lastTickMs = lastTick ? lastTick.toMillis() : now;
+
+  if (lifeUnits < maxLifeUnits) {
+    const elapsedSeconds = Math.floor((now - lastTickMs) / 1000);
+    if (elapsedSeconds >= lifeRegenSeconds) {
+      const recoveredUnits = Math.floor(elapsedSeconds / lifeRegenSeconds);
+      lifeUnits = Math.min(lifeUnits + recoveredUnits, maxLifeUnits);
+    }
+  } else {
+    lifeUnits = maxLifeUnits;
+  }
+
+  return {lifeUnits, maxLifeUnits};
+}
+
+export const buyFullLife = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+
+    const coins = safeInt(data.coins, 0);
+    const {lifeUnits, maxLifeUnits} = computeLifeUnits(data);
+
+    if (coins < BUY_FULL_LIFE_COST) {
+      throw new HttpsError("failed-precondition", "Not enough coins.");
+    }
+    if (lifeUnits >= maxLifeUnits) {
+      throw new HttpsError("failed-precondition", "Life is already full.");
+    }
+
+    const newLifeUnits = Math.min(lifeUnits + UNITS_PER_LIFE, maxLifeUnits);
+    const newCoins = coins - BUY_FULL_LIFE_COST;
+
+    tx.set(
+      userRef,
+      {
+        coins: newCoins,
+        lifeUnits: newLifeUnits,
+        maxLifeUnits,
+        lastLifeTickAt: admin.firestore.Timestamp.now(),
+      },
+      {merge: true}
+    );
+
+    return {lifeUnits: newLifeUnits, coins: newCoins};
+  });
+});
+
+// ============================================================
+// AI TOPICS ECONOMY
+//
+// Content generation is deterministic mock data (not a real AI call), so
+// each function generates first and only charges after the generation
+// succeeds — if generation throws, nothing was ever charged, so there's
+// no refund case to handle for new topics. `refundAiTopicCost` remains as
+// a safety net solely for topics created before this migration that may
+// still be sitting in a `failed`/`invalid` state from the old two-step
+// client flow.
+// ============================================================
+
+const CREATE_AI_TOPIC_COST = 600;
+const REGENERATE_AI_QUESTIONS_COST = 150;
+const EXPAND_AI_TOPIC_COST = 300;
+const MAX_AI_TOPICS_PER_USER = 20;
+const FIRST_AI_TOPIC_FREE_PASSES = 1;
+
+// Mirrors ai_topic_service.dart's `_reservedTopicNames` exactly.
+const RESERVED_TOPIC_NAMES = new Set([
+  "movies", "movie", "cine", "history", "historia", "science", "ciencia",
+  "geography", "geografia", "geografía", "books", "libros", "video games",
+  "videogames", "videojuegos", "sports", "deportes",
+]);
+
+/**
+ * Mirrors ai_topic_service.dart's `normalizeTopicTitle`.
+ * @param {string} title Raw title.
+ * @return {string} Normalized title.
+ */
+function normalizeTopicTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * Mirrors ai_topic_service.dart's `generateMockLevel` (mock/placeholder
+ * question content — not a real AI call).
+ * @param {FirebaseFirestore.DocumentReference} topicRef Topic document ref.
+ * @param {number} levelNumber Level to (re)generate.
+ * @param {string} title Topic title, used in the mock question text.
+ * @return {Promise<void>} Resolves once the batch commits.
+ */
+async function generateMockLevelAdmin(
+  topicRef: FirebaseFirestore.DocumentReference,
+  levelNumber: number,
+  title: string
+): Promise<void> {
+  const levelRef = topicRef.collection("levels").doc(`level_${levelNumber}`);
+  const batch = db.batch();
+
+  batch.set(levelRef, {
+    levelNumber,
+    title: `Level ${levelNumber}`,
+    questionsCount: AI_QUESTIONS_PER_LEVEL,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  for (let q = 1; q <= AI_QUESTIONS_PER_LEVEL; q++) {
+    batch.set(levelRef.collection("questions").doc(`q_${q}`), {
+      q: `Mock question ${q} about ${title} - Level ${levelNumber}?`,
+      options: [
+        "Correct answer", "Wrong answer A", "Wrong answer B", "Wrong answer C",
+      ],
+      answerIndex: 0,
+      explanation: "This is a temporary mock question.",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  await batch.commit();
+}
+
+export const createAiTopic = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const cleanTitle = String(request.data?.title || "").trim();
+
+  if (cleanTitle.length < 3) {
+    throw new HttpsError(
+      "invalid-argument", "Escribe un tema más específico."
+    );
+  }
+  if (cleanTitle.length > 60) {
+    throw new HttpsError(
+      "invalid-argument", "El tema no puede superar 60 caracteres."
+    );
+  }
+
+  const normalizedTitle = normalizeTopicTitle(cleanTitle);
+
+  if (RESERVED_TOPIC_NAMES.has(normalizedTitle)) {
+    throw new HttpsError(
+      "failed-precondition", "Ese tema ya existe como categoría oficial."
+    );
+  }
+
+  const topicsCol = db.collection("users").doc(uid).collection("ai_topics");
+
+  const existing = await topicsCol
+    .where("normalizedTitle", "==", normalizedTitle)
+    .where("status", "in", ["pending_generation", "ready"])
+    .limit(1)
+    .get();
+
+  if (!existing.empty) {
+    throw new HttpsError(
+      "already-exists", "Ya tienes un tema con ese nombre."
+    );
+  }
+
+  const activeTopicsSnap = await topicsCol
+    .where("status", "in", ["pending_generation", "ready", "failed"])
+    .limit(MAX_AI_TOPICS_PER_USER)
+    .get();
+
+  if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
+    throw new HttpsError(
+      "resource-exhausted",
+      `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+      "Delete one to create another."
+    );
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const userData = userSnap.data() || {};
+
+  const coins = safeInt(userData.coins, 0);
+  const freePasses = safeInt(
+    userData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
+  );
+  const usesFreePass = freePasses > 0;
+  const cost = usesFreePass ? 0 : CREATE_AI_TOPIC_COST;
+
+  if (!usesFreePass && coins < cost) {
+    throw new HttpsError(
+      "failed-precondition", `Necesitas ${cost} monedas para crear un tema IA.`
+    );
+  }
+
+  const topicRef = topicsCol.doc();
+
+  for (let level = 1; level <= AI_INITIAL_GENERATED_LEVELS; level++) {
+    await generateMockLevelAdmin(topicRef, level, cleanTitle);
+  }
+
+  await topicRef.set({
+    topicId: topicRef.id,
+    title: cleanTitle,
+    normalizedTitle,
+    status: "ready",
+    source: "ai",
+    targetLevels: AI_LEVELS_PER_TOPIC,
+    levelCount: AI_LEVELS_PER_TOPIC,
+    levelsCount: AI_LEVELS_PER_TOPIC,
+    generatedLevels: AI_INITIAL_GENERATED_LEVELS,
+    questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
+    generationMode: "mock_buffered",
+    generationCostCoins: cost,
+    usedFreePass: usesFreePass,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  await userRef.set(
+    {
+      ...(usesFreePass ?
+        {freeTopicPasses: admin.firestore.FieldValue.increment(-1)} :
+        {coins: admin.firestore.FieldValue.increment(-cost)}),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    {merge: true}
+  );
+
+  return {topicId: topicRef.id};
+});
+
+export const regenerateAiTopicQuestions = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  if (!topicId) {
+    throw new HttpsError("invalid-argument", "Missing topicId.");
+  }
+
+  const topicRef = db.collection("users").doc(uid)
+    .collection("ai_topics").doc(topicId);
+  const topicSnap = await topicRef.get();
+  const topicData = topicSnap.data();
+
+  if (!topicData) {
+    throw new HttpsError("not-found", "Este tema ya no existe.");
+  }
+  if (topicData.status !== "ready") {
+    throw new HttpsError(
+      "failed-precondition", "El tema todavía se está preparando."
+    );
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const coins = safeInt(userSnap.data()?.coins, 0);
+
+  if (coins < REGENERATE_AI_QUESTIONS_COST) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Necesitas ${REGENERATE_AI_QUESTIONS_COST} monedas para regenerar ` +
+      "las preguntas."
+    );
+  }
+
+  const generatedLevels = safeInt(topicData.generatedLevels, 0);
+  const title = String(topicData.title || "Custom Topic");
+
+  for (let level = 1; level <= generatedLevels; level++) {
+    await generateMockLevelAdmin(topicRef, level, title);
+  }
+
+  return db.runTransaction(async (tx) => {
+    const freshSnap = await tx.get(userRef);
+    const freshCoins = safeInt(freshSnap.data()?.coins, 0);
+
+    if (freshCoins < REGENERATE_AI_QUESTIONS_COST) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Necesitas ${REGENERATE_AI_QUESTIONS_COST} monedas para regenerar ` +
+        "las preguntas."
+      );
+    }
+
+    tx.set(
+      userRef,
+      {
+        coins: admin.firestore.FieldValue.increment(
+          -REGENERATE_AI_QUESTIONS_COST
+        ),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {success: true};
+  });
+});
+
+export const expandAiTopic = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  if (!topicId) {
+    throw new HttpsError("invalid-argument", "Missing topicId.");
+  }
+
+  const topicRef = db.collection("users").doc(uid)
+    .collection("ai_topics").doc(topicId);
+  const topicSnap = await topicRef.get();
+  const topicData = topicSnap.data();
+
+  if (!topicData) {
+    throw new HttpsError("not-found", "Este tema ya no existe.");
+  }
+  if (topicData.status !== "ready") {
+    throw new HttpsError(
+      "failed-precondition", "El tema todavía se está preparando."
+    );
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const coins = safeInt(userSnap.data()?.coins, 0);
+
+  if (coins < EXPAND_AI_TOPIC_COST) {
+    throw new HttpsError(
+      "failed-precondition",
+      `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`
+    );
+  }
+
+  const currentTarget = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
+  const newTarget = currentTarget + AI_LEVELS_PER_TOPIC;
+
+  return db.runTransaction(async (tx) => {
+    const freshSnap = await tx.get(userRef);
+    const freshCoins = safeInt(freshSnap.data()?.coins, 0);
+
+    if (freshCoins < EXPAND_AI_TOPIC_COST) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`
+      );
+    }
+
+    tx.set(
+      topicRef,
+      {
+        targetLevels: newTarget,
+        levelCount: newTarget,
+        levelsCount: newTarget,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(
+      userRef,
+      {
+        coins: admin.firestore.FieldValue.increment(-EXPAND_AI_TOPIC_COST),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {newTarget};
+  });
+});
+
+/**
+ * Safety net for topics created under the old client-side flow that may
+ * still be stuck `failed`/`invalid` from before this migration. Mirrors
+ * ai_topic_service.dart's `_refundAiTopicCostIfNeeded` exactly, including
+ * the `costRefunded` guard against a double refund on repeated retries.
+ */
+export const refundAiTopicCost = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  if (!topicId) {
+    throw new HttpsError("invalid-argument", "Missing topicId.");
+  }
+
+  const topicRef = db.collection("users").doc(uid)
+    .collection("ai_topics").doc(topicId);
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const topicSnap = await tx.get(topicRef);
+    const topicData = topicSnap.data();
+
+    if (!topicData || topicData.costRefunded === true) {
+      return {refunded: false};
+    }
+
+    const usedFreePass = topicData.usedFreePass === true;
+    const cost = safeInt(topicData.generationCostCoins, 0);
+
+    if (!usedFreePass && cost <= 0) {
+      return {refunded: false};
+    }
+
+    tx.set(
+      userRef,
+      {
+        ...(usedFreePass ?
+          {freeTopicPasses: admin.firestore.FieldValue.increment(1)} : {}),
+        ...(!usedFreePass && cost > 0 ?
+          {coins: admin.firestore.FieldValue.increment(cost)} : {}),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(topicRef, {costRefunded: true}, {merge: true});
+
+    return {refunded: true};
+  });
+});
+
+// ============================================================
+// WEEKLY TOPIC
+//
+// `users/{uid}/weekly_participation/{weekId}` is now fully
+// Cloud-Function-only (write:false) since submitDailyChallengeResult also
+// writes there for weekly-league scoring — so weekly-topic progress and
+// reward claims move here too, even though only the reward-claim half
+// actually touches `coins`.
+// ============================================================
+
+export const markWeeklyTopicLevelCompleted = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const weekId = String(request.data?.weekId || "");
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+
+  if (!weekId || levelNumber < 1) {
+    throw new HttpsError("invalid-argument", "Invalid weekId/levelNumber.");
+  }
+
+  const ref = db.collection("users").doc(uid)
+    .collection("weekly_participation").doc(weekId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.data() || {};
+
+    const completedLevels = new Set<number>(
+      ((data.completedLevels as unknown[]) || []).map((e) => safeInt(e, 0))
+    );
+
+    if (completedLevels.has(levelNumber)) {
+      return {updated: false, levelsCompleted: completedLevels.size};
+    }
+
+    completedLevels.add(levelNumber);
+    const sorted = Array.from(completedLevels).sort((a, b) => a - b);
+
+    tx.set(
+      ref,
+      {
+        weekId,
+        completedLevels: sorted,
+        levelsCompleted: sorted.length,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(snap.exists ?
+          {} : {createdAt: admin.firestore.FieldValue.serverTimestamp()}),
+      },
+      {merge: true}
+    );
+
+    return {updated: true, levelsCompleted: sorted.length};
+  });
+});
+
+export const claimWeeklyTopicCoinReward = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const weekId = String(request.data?.weekId || "");
+  if (!weekId) {
+    throw new HttpsError("invalid-argument", "Missing weekId.");
+  }
+
+  const topicSnap = await db.collection("weekly_topics").doc("current").get();
+  const topicData = topicSnap.data();
+
+  if (!topicData) {
+    throw new HttpsError("not-found", "No active weekly topic.");
+  }
+  if (String(topicData.weekId || "") !== weekId) {
+    throw new HttpsError(
+      "failed-precondition", "This weekly topic is no longer active."
+    );
+  }
+
+  const rewardCoins = safeInt(topicData.rewardCoins, 0);
+
+  const userRef = db.collection("users").doc(uid);
+  const participationRef = userRef
+    .collection("weekly_participation").doc(weekId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(participationRef);
+    const data = snap.data() || {};
+
+    const levelsCompleted = safeInt(data.levelsCompleted, 0);
+    const claimed = data.coinRewardClaimed === true;
+
+    if (levelsCompleted < 5 || claimed) {
+      return {claimed: false, rewardCoins: 0};
+    }
+
+    tx.set(
+      participationRef,
+      {
+        coinRewardClaimed: true,
+        coinRewardClaimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        coinRewardCoins: rewardCoins,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(
+      userRef,
+      {
+        coins: admin.firestore.FieldValue.increment(rewardCoins),
+        lastWeeklyTopicRewardWeekId: weekId,
+        lastWeeklyTopicRewardCoins: rewardCoins,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {claimed: true, rewardCoins};
+  });
+});
+
+export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const weekId = String(request.data?.weekId || "");
+  if (!weekId) {
+    throw new HttpsError("invalid-argument", "Missing weekId.");
+  }
+
+  const topicSnap = await db.collection("weekly_topics").doc("current").get();
+  const topicData = topicSnap.data();
+
+  if (!topicData) {
+    throw new HttpsError("not-found", "No active weekly topic.");
+  }
+  if (String(topicData.weekId || "") !== weekId) {
+    throw new HttpsError(
+      "failed-precondition", "This weekly topic is no longer active."
+    );
+  }
+
+  const rewardAvatarId = String(topicData.rewardAvatarId || "");
+  if (!rewardAvatarId) {
+    throw new HttpsError(
+      "failed-precondition", "No avatar reward configured."
+    );
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const participationRef = userRef
+    .collection("weekly_participation").doc(weekId);
+
+  return db.runTransaction(async (tx) => {
+    const participationSnap = await tx.get(participationRef);
+    const participationData = participationSnap.data() || {};
+
+    const levelsCompleted = safeInt(participationData.levelsCompleted, 0);
+    const claimed = participationData.completionRewardClaimed === true;
+
+    if (levelsCompleted < 10 || claimed) {
+      return {claimed: false};
+    }
+
+    const userSnap = await tx.get(userRef);
+    const userData = userSnap.data() || {};
+
+    const unlockedAvatars = new Set<string>(
+      ((userData.unlockedAvatars as unknown[]) || []).map((e) => String(e))
+    );
+    const alreadyUnlocked = unlockedAvatars.has(rewardAvatarId);
+    unlockedAvatars.add(rewardAvatarId);
+
+    tx.set(
+      participationRef,
+      {
+        completionRewardClaimed: true,
+        completionRewardClaimedAt: admin.firestore.FieldValue.serverTimestamp(),
+        completionRewardAvatarId: rewardAvatarId,
+        completionRewardAlreadyUnlocked: alreadyUnlocked,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(
+      userRef,
+      {
+        unlockedAvatars: Array.from(unlockedAvatars).sort(),
+        lastUnlockedAvatarId: rewardAvatarId,
+        lastUnlockedAvatarReason: "Weekly Topic completed",
+        lastUnlockedAvatarAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastWeeklyTopicCompletionRewardWeekId: weekId,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {claimed: true, rewardAvatarId, alreadyUnlocked};
+  });
+});

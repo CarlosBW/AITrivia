@@ -237,9 +237,13 @@ service cloud.firestore {
         );
     }
 
+    // The "current" weekly topic (and its rewardCoins/rewardAvatarId) is
+    // admin-authored config, read by every player — client write access
+    // here would let anyone inflate their own claimed reward via
+    // claimWeeklyTopicCoinReward/claimWeeklyTopicCompletionReward.
     match /weekly_topics/{topicId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     // Same reasoning as /matches — only the challenger and the challenged

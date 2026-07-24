@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'economy_service.dart';
@@ -87,34 +88,6 @@ class AiTopicService {
     return questionsCount >= expectedQuestions;
   }
 
-  Future<void> _validateTopicIsAvailable({
-    required String normalizedTitle,
-  }) async {
-    if (isReservedTopic(normalizedTitle)) {
-      throw Exception(
-        'Ese tema ya existe como categoría oficial.',
-      );
-    }
-
-    final existing = await _topicsCol(uid)
-        .where('normalizedTitle', isEqualTo: normalizedTitle)
-        .where(
-          'status',
-          whereIn: [
-            'pending_generation',
-            'ready',
-          ],
-        )
-        .limit(1)
-        .get();
-
-    if (existing.docs.isNotEmpty) {
-      throw Exception(
-        'Ya tienes un tema con ese nombre.',
-      );
-    }
-  }
-
   String normalizeTopicTitle(String title) {
     return title.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
@@ -122,112 +95,15 @@ class AiTopicService {
   Future<String> createAiTopic({
     required String title,
   }) async {
-    final cleanTitle = title.trim();
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('createAiTopic')
+          .call({'title': title});
 
-    if (cleanTitle.length < 3) {
-      throw Exception('Escribe un tema más específico.');
+      return (result.data as Map)['topicId'].toString();
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudo crear el tema.');
     }
-
-    if (cleanTitle.length > 60) {
-      throw Exception('El tema no puede superar 60 caracteres.');
-    }
-
-    final normalizedTitle = normalizeTopicTitle(cleanTitle);
-    await _validateTopicIsAvailable(
-      normalizedTitle: normalizedTitle,
-    );
-    final existing = await _topicsCol(uid)
-        .where(
-          'normalizedTitle',
-          isEqualTo: normalizedTitle,
-        )
-        .where(
-          'status',
-          whereIn: [
-            'pending_generation',
-            'ready',
-          ],
-        )
-        .limit(1)
-        .get();
-
-    if (existing.docs.isNotEmpty) {
-      throw Exception(
-        'Ya tienes un tema con ese nombre.',
-      );
-    }
-    final userRef = _db.collection('users').doc(uid);
-    final topicRef = _topicsCol(uid).doc();
-
-    await _db.runTransaction((tx) async {
-      final userSnap = await tx.get(userRef);
-      final userData = userSnap.data() ?? {};
-
-      final coins = ((userData['coins'] ?? 0) as num).toInt();
-      final freePasses = ((userData['freeTopicPasses'] ??
-              EconomyService.firstAiTopicFreePasses) as num)
-          .toInt();
-
-      final usesFreePass = freePasses > 0;
-      final cost = usesFreePass ? 0 : EconomyService.createAiTopicCost;
-
-      if (!usesFreePass && coins < cost) {
-        throw Exception(
-          'Necesitas $cost monedas para crear un tema IA.',
-        );
-      }
-
-      tx.set(topicRef, {
-        'topicId': topicRef.id,
-        'title': cleanTitle,
-        'normalizedTitle': normalizedTitle,
-        'status': 'pending_generation',
-        'source': 'ai',
-        'levelsCount': 0,
-        'questionsCount': 0,
-        'generationCostCoins': cost,
-        'usedFreePass': usesFreePass,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      final activeTopicsSnap = await _topicsCol(uid)
-          .where(
-            'status',
-            whereIn: [
-              'pending_generation',
-              'ready',
-              'failed',
-            ],
-          )
-          .limit(EconomyService.maxAiTopicsPerUser)
-          .get();
-
-      if (activeTopicsSnap.docs.length >= EconomyService.maxAiTopicsPerUser) {
-        throw Exception(
-          'You can have up to ${EconomyService.maxAiTopicsPerUser} AI topics. Delete one to create another.',
-        );
-      }
-
-      tx.set(
-          userRef,
-          {
-            if (usesFreePass)
-              'freeTopicPasses': FieldValue.increment(-1)
-            else
-              'coins': FieldValue.increment(-cost),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-    });
-
-    unawaited(
-      generateMockTopic(
-        topicId: topicRef.id,
-      ),
-    );
-
-    return topicRef.id;
   }
 
   Future<void> deleteAiTopic({
@@ -383,36 +259,16 @@ class AiTopicService {
 
   /// Refunds the coins/free pass spent creating a topic if its generation
   /// failed, so a failed AI call never leaves the player charged for
-  /// nothing. Guarded by `costRefunded` since a user can retry generation
-  /// on a failed topic (see ai_topics_screen.dart), which must not refund
-  /// twice.
+  /// nothing. Guarded server-side by `costRefunded` since a user can retry
+  /// generation on a failed topic (see ai_topics_screen.dart), which must
+  /// not refund twice. Only a safety net for topics created under the old
+  /// client-side flow — `createAiTopic` now only charges after generation
+  /// already succeeded, so new topics never need this.
   Future<void> _refundAiTopicCostIfNeeded({required String topicId}) async {
     try {
-      final topicRef = _topicsCol(uid).doc(topicId);
-      final topicSnap = await topicRef.get();
-      final topicData = topicSnap.data();
-
-      if (topicData == null) return;
-      if (topicData['costRefunded'] == true) return;
-
-      final usedFreePass = topicData['usedFreePass'] == true;
-      final cost = ((topicData['generationCostCoins'] ?? 0) as num).toInt();
-
-      if (!usedFreePass && cost <= 0) return;
-
-      await _db.collection('users').doc(uid).set(
-        {
-          if (usedFreePass) 'freeTopicPasses': FieldValue.increment(1),
-          if (!usedFreePass && cost > 0) 'coins': FieldValue.increment(cost),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      await topicRef.set(
-        {'costRefunded': true},
-        SetOptions(merge: true),
-      );
+      await FirebaseFunctions.instance
+          .httpsCallable('refundAiTopicCost')
+          .call({'topicId': topicId});
     } catch (_) {
       // Best-effort refund — don't let a refund failure mask the original
       // generation error via rethrow above.
@@ -422,118 +278,24 @@ class AiTopicService {
   Future<void> regenerateTopicQuestions({
     required String topicId,
   }) async {
-    final topicRef = _topicsCol(uid).doc(topicId);
-    final userRef = _db.collection('users').doc(uid);
-    const cost = EconomyService.regenerateAiQuestionsCost;
-
-    final generatedLevels = await _db.runTransaction<int>((tx) async {
-      final topicSnap = await tx.get(topicRef);
-      final topicData = topicSnap.data();
-
-      if (topicData == null) {
-        throw Exception('Este tema ya no existe.');
-      }
-
-      if ((topicData['status'] ?? '') != 'ready') {
-        throw Exception('El tema todavía se está preparando.');
-      }
-
-      final userSnap = await tx.get(userRef);
-      final userData = userSnap.data() ?? {};
-      final coins = ((userData['coins'] ?? 0) as num).toInt();
-
-      if (coins < cost) {
-        throw Exception(
-          'Necesitas $cost monedas para regenerar las preguntas.',
-        );
-      }
-
-      tx.set(
-        userRef,
-        {
-          'coins': FieldValue.increment(-cost),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      return ((topicData['generatedLevels'] ?? 0) as num).toInt();
-    });
-
     try {
-      for (var level = 1; level <= generatedLevels; level++) {
-        await generateMockLevel(
-          topicId: topicId,
-          levelNumber: level,
-          force: true,
-        );
-      }
-    } catch (e) {
-      try {
-        await userRef.set(
-          {
-            'coins': FieldValue.increment(cost),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      } catch (_) {}
-
-      rethrow;
+      await FirebaseFunctions.instance
+          .httpsCallable('regenerateAiTopicQuestions')
+          .call({'topicId': topicId});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudieron regenerar las preguntas.');
     }
   }
 
   Future<void> expandTopic({
     required String topicId,
   }) async {
-    final topicRef = _topicsCol(uid).doc(topicId);
-    final userRef = _db.collection('users').doc(uid);
-    const cost = EconomyService.expandAiTopicCost;
-
-    await _db.runTransaction((tx) async {
-      final topicSnap = await tx.get(topicRef);
-      final topicData = topicSnap.data();
-
-      if (topicData == null) {
-        throw Exception('Este tema ya no existe.');
-      }
-
-      if ((topicData['status'] ?? '') != 'ready') {
-        throw Exception('El tema todavía se está preparando.');
-      }
-
-      final userSnap = await tx.get(userRef);
-      final userData = userSnap.data() ?? {};
-      final coins = ((userData['coins'] ?? 0) as num).toInt();
-
-      if (coins < cost) {
-        throw Exception('Necesitas $cost monedas para ampliar este tema.');
-      }
-
-      final currentTarget = ((topicData['targetLevels'] ??
-              EconomyService.aiLevelsPerTopic) as num)
-          .toInt();
-      final newTarget = currentTarget + EconomyService.aiLevelsPerTopic;
-
-      tx.set(
-        topicRef,
-        {
-          'targetLevels': newTarget,
-          'levelCount': newTarget,
-          'levelsCount': newTarget,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        userRef,
-        {
-          'coins': FieldValue.increment(-cost),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    });
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('expandAiTopic')
+          .call({'topicId': topicId});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudo ampliar el tema.');
+    }
   }
 }

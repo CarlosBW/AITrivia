@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -984,28 +985,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     return hash;
   }
 
-  Map<String, int> _calculateLevelRewards({
-    required int correct,
-    required int total,
-  }) {
-    final pct = total == 0 ? 0.0 : correct / total;
-    final xp = correct * 10;
-
-    int coins = 0;
-    if (pct >= 0.9) {
-      coins = EconomyService.soloPerfectLevelCoins;
-    } else if (pct >= 0.7) {
-      coins = EconomyService.soloGreatLevelCoins;
-    } else if (pct >= 0.4) {
-      coins = EconomyService.soloGoodLevelCoins;
-    }
-
-    return {
-      'xp': xp,
-      'coins': coins,
-    };
-  }
-
   Future<void> _ensureSession({
     required FirebaseFirestore db,
     required String uid,
@@ -1111,194 +1090,44 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final db = FirebaseFirestore.instance;
 
-      final progressRef = db
-          .collection('users')
-          .doc(uid)
-          .collection(
-            widget.isAiTopic ? 'progress_ai' : 'progress_fixed',
-          )
-          .doc(
-            widget.isAiTopic ? widget.aiTopicId : widget.categoryId,
-          );
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('submitSoloLevelResult');
 
-      final userRef = db.collection('users').doc(uid);
+      final response = await callable.call({
+        'isAiTopic': widget.isAiTopic,
+        'categoryId': widget.categoryId,
+        'aiTopicId': widget.aiTopicId,
+        'levelNumber': widget.levelNumber,
+        'correct': _correct,
+        'total': total,
+      });
 
-      final percent = total == 0 ? 0.0 : (_correct / total);
-      final levelCount = _levelCount ?? 0;
+      final data = Map<String, dynamic>.from(response.data as Map);
 
-      final rewards = _calculateLevelRewards(correct: _correct, total: total);
-      final levelXp = rewards['xp']!;
-      final levelCoins = rewards['coins']!;
+      final grantedXp = ((data['grantedXp'] ?? 0) as num).toInt();
+      final grantedCoins = ((data['grantedCoins'] ?? 0) as num).toInt();
+      final newlyPassed = data['newlyPassed'] == true;
+      final shouldEnsureAiBuffer = data['shouldEnsureAiBuffer'] == true;
 
-      bool shouldEnsureAiBuffer = false;
-
-      await db.runTransaction((tx) async {
-        final progressSnap = await tx.get(progressRef);
-        final userSnap = await tx.get(userRef);
-
-        final prev = progressSnap.data();
-        final userData = userSnap.data() ?? {};
-        final prevUserXp = ((userData['xp'] ?? 0) as num).toInt();
-
-        final prevCompleted = (prev?['completedLevels'] as List<dynamic>? ?? [])
-            .map((e) => (e as num).toInt())
-            .toSet();
-
-        final prevLevelStats =
-            Map<String, dynamic>.from(prev?['levelStats'] as Map? ?? {});
-
-        final migratedPassedLevels = <int>{};
-        for (final entry in prevLevelStats.entries) {
-          final level = int.tryParse(entry.key);
-          final stat = Map<String, dynamic>.from(entry.value as Map? ?? {});
-          final statPercent = ((stat['percent'] ?? 0.0) as num).toDouble();
-
-          if (level != null && statPercent >= 0.4) {
-            migratedPassedLevels.add(level);
-          }
-        }
-
-        final prevPassed = (prev?['passedLevels'] as List<dynamic>?)
-                ?.map((e) => (e as num).toInt())
-                .toSet() ??
-            migratedPassedLevels;
-
-        final passedLevel = percent >= 0.4;
-
-        final wasAlreadyPlayed = prevCompleted.contains(widget.levelNumber);
-        final wasAlreadyPassed = prevPassed.contains(widget.levelNumber);
-
-        prevCompleted.add(widget.levelNumber);
-        if (passedLevel) {
-          prevPassed.add(widget.levelNumber);
-        }
-
-        final levelKey = widget.levelNumber.toString();
-        final oldStat = Map<String, dynamic>.from(
-          prevLevelStats[levelKey] as Map? ?? {},
-        );
-        final oldPercent = ((oldStat['percent'] ?? -1.0) as num).toDouble();
-
-        if (percent >= oldPercent) {
-          prevLevelStats[levelKey] = {
-            'correct': _correct,
-            'total': total,
-            'percent': percent,
-            'passed': passedLevel,
-            'updatedAt': FieldValue.serverTimestamp(),
-          };
-        }
-
-        tx.set(
-          progressRef,
-          {
-            'completedLevels': prevCompleted.toList()..sort(),
-            'passedLevels': prevPassed.toList()..sort(),
-            'levelStats': prevLevelStats,
-            'lastScore': {
-              'correct': _correct,
-              'total': total,
-              'percent': percent,
-              'passed': passedLevel,
-              'levelNumber': widget.levelNumber,
-            },
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-
-        int grantedXp = 0;
-        int grantedCoins = 0;
-
-        if (!wasAlreadyPlayed) {
-          grantedXp = levelXp;
-        }
-
-        if (passedLevel && !wasAlreadyPassed) {
-          grantedCoins = levelCoins;
-          shouldEnsureAiBuffer = widget.isAiTopic && widget.aiTopicId != null;
-        }
-
-        if (grantedXp > 0 || grantedCoins > 0) {
-          tx.set(
-            progressRef,
-            {
-              'lastLevelReward': {
-                'levelNumber': widget.levelNumber,
-                'xp': grantedXp,
-                'coins': grantedCoins,
-                'passed': passedLevel,
-                'grantedAt': FieldValue.serverTimestamp(),
-              },
-            },
-            SetOptions(merge: true),
-          );
-
-          tx.set(
-            userRef,
-            {
-              if (grantedXp > 0) 'xp': FieldValue.increment(grantedXp),
-              if (grantedCoins > 0)
-                'coins': FieldValue.increment(grantedCoins),
-            },
-            SetOptions(merge: true),
-          );
-        }
-
-        // =========================================================
-        // ACHIEVEMENTS
-        // =========================================================
-
-        if (passedLevel && !wasAlreadyPassed) {
-          Future.microtask(() async {
-            try {
-              await _achievementService.incrementSoloLevelCompleted(
-                uid: uid,
-              );
-            } catch (_) {}
-          });
-        }
-
-        final completedAll = levelCount > 0 && prevPassed.length >= levelCount;
-
-        if (completedAll) {
-          tx.set(
-            progressRef,
-            {'completedAllLevels': true},
-            SetOptions(merge: true),
-          );
-
-          final rewardGranted = (prev?['categoryRewardGranted'] == true);
-          if (!rewardGranted) {
-            tx.set(
-              progressRef,
-              {
-                'categoryRewardGranted': true,
-                'rewardGrantedAt': FieldValue.serverTimestamp(),
-              },
-              SetOptions(merge: true),
-            );
-
-            tx.set(
-              userRef,
-              {
-                'coins': FieldValue.increment(
-                    EconomyService.completeFixedCategoryCoins)
-              },
-              SetOptions(merge: true),
-            );
-
-            grantedCoins += EconomyService.completeFixedCategoryCoins;
-          }
-        }
-
+      setState(() {
         _earnedXp = grantedXp;
         _earnedCoins = grantedCoins;
         _rewardGrantedForLevel = grantedXp > 0 || grantedCoins > 0;
-        _userTotalXp = prevUserXp + grantedXp;
+        _userTotalXp = ((data['userTotalXp'] ?? 0) as num).toInt();
       });
+
+      // =========================================================
+      // ACHIEVEMENTS
+      // =========================================================
+
+      if (newlyPassed) {
+        Future.microtask(() async {
+          try {
+            await _achievementService.incrementSoloLevelCompleted(uid: uid);
+          } catch (_) {}
+        });
+      }
 
       if (shouldEnsureAiBuffer && widget.aiTopicId != null) {
         unawaited(
@@ -1309,6 +1138,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         );
       }
 
+      final percent = total == 0 ? 0.0 : (_correct / total);
       final passedLevel = percent >= 0.4;
 
       if (passedLevel &&

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class WeeklyTopicService {
   WeeklyTopicService._();
@@ -37,37 +38,18 @@ class WeeklyTopicService {
     return userParticipationRef(uid: uid, weekId: weekId).snapshots();
   }
 
+  /// `users/{uid}/weekly_participation/{weekId}` is fully
+  /// Cloud-Function-only (write:false) since submitDailyChallengeResult
+  /// also writes there for weekly-league scoring, so this moved server-side
+  /// entirely rather than just its coin-touching half.
   Future<void> markLevelCompleted({
     required String uid,
     required String weekId,
     required int levelNumber,
   }) async {
-    final ref = userParticipationRef(uid: uid, weekId: weekId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-
-      final completedLevels = (data['completedLevels'] as List<dynamic>? ?? [])
-          .map((e) => (e as num).toInt())
-          .toSet();
-
-      if (completedLevels.contains(levelNumber)) return;
-
-      completedLevels.add(levelNumber);
-
-      tx.set(
-        ref,
-        {
-          'weekId': weekId,
-          'completedLevels': completedLevels.toList()..sort(),
-          'levelsCompleted': completedLevels.length,
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    });
+    await FirebaseFunctions.instance
+        .httpsCallable('markWeeklyTopicLevelCompleted')
+        .call({'weekId': weekId, 'levelNumber': levelNumber});
   }
 
   bool canClaimCoinReward(Map<String, dynamic>? participationData) {
@@ -101,49 +83,26 @@ class WeeklyTopicService {
     });
   }
 
+  /// `rewardCoins` is accepted for call-site compatibility but ignored —
+  /// the Cloud Function reads the authoritative amount from
+  /// `weekly_topics/current` itself, since that doc is now locked against
+  /// client writes (a client could otherwise inflate its own claim by
+  /// editing the shared weekly topic doc first).
   Future<bool> claimCoinReward({
     required String uid,
     required String weekId,
     required int rewardCoins,
   }) async {
-    final userRef = _db.collection('users').doc(uid);
-    final participationRef = userParticipationRef(
-      uid: uid,
-      weekId: weekId,
-    );
+    final result = await FirebaseFunctions.instance
+        .httpsCallable('claimWeeklyTopicCoinReward')
+        .call({'weekId': weekId});
 
-    return _db.runTransaction((tx) async {
-      final participationSnap = await tx.get(participationRef);
-      final data = participationSnap.data() ?? {};
-
-      if (!canClaimCoinReward(data)) return false;
-
-      tx.set(
-        participationRef,
-        {
-          'coinRewardClaimed': true,
-          'coinRewardClaimedAt': FieldValue.serverTimestamp(),
-          'coinRewardCoins': rewardCoins,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        userRef,
-        {
-          'coins': FieldValue.increment(rewardCoins),
-          'lastWeeklyTopicRewardWeekId': weekId,
-          'lastWeeklyTopicRewardCoins': rewardCoins,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      return true;
-    });
+    return (result.data as Map)['claimed'] == true;
   }
 
+  /// `rewardAvatarId` is accepted for call-site compatibility but ignored —
+  /// the Cloud Function reads the authoritative avatar id from
+  /// `weekly_topics/current` itself, same reasoning as [claimCoinReward].
   Future<bool> claimCompletionReward({
     required String uid,
     required String weekId,
@@ -151,55 +110,10 @@ class WeeklyTopicService {
   }) async {
     if (rewardAvatarId.trim().isEmpty) return false;
 
-    final userRef = _db.collection('users').doc(uid);
-    final participationRef = userParticipationRef(
-      uid: uid,
-      weekId: weekId,
-    );
+    final result = await FirebaseFunctions.instance
+        .httpsCallable('claimWeeklyTopicCompletionReward')
+        .call({'weekId': weekId});
 
-    return _db.runTransaction((tx) async {
-      final participationSnap = await tx.get(participationRef);
-      final participationData = participationSnap.data() ?? {};
-
-      if (!canClaimCompletionReward(participationData)) return false;
-
-      final userSnap = await tx.get(userRef);
-      final userData = userSnap.data() ?? {};
-
-      final unlockedAvatars =
-          (userData['unlockedAvatars'] as List<dynamic>? ?? [])
-              .map((e) => e.toString())
-              .toSet();
-
-      final alreadyUnlocked = unlockedAvatars.contains(rewardAvatarId);
-      unlockedAvatars.add(rewardAvatarId);
-
-      tx.set(
-        participationRef,
-        {
-          'completionRewardClaimed': true,
-          'completionRewardClaimedAt': FieldValue.serverTimestamp(),
-          'completionRewardAvatarId': rewardAvatarId,
-          'completionRewardAlreadyUnlocked': alreadyUnlocked,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        userRef,
-        {
-          'unlockedAvatars': unlockedAvatars.toList()..sort(),
-          'lastUnlockedAvatarId': rewardAvatarId,
-          'lastUnlockedAvatarReason': 'Weekly Topic completed',
-          'lastUnlockedAvatarAt': FieldValue.serverTimestamp(),
-          'lastWeeklyTopicCompletionRewardWeekId': weekId,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      return true;
-    });
+    return (result.data as Map)['claimed'] == true;
   }
 }

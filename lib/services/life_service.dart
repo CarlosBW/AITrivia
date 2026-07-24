@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class LifeService {
   LifeService._();
@@ -234,33 +235,19 @@ class LifeService {
     });
   }
 
+  /// `uid`/`cost` are kept for call-site compatibility but ignored — the
+  /// exchange now happens server-side (Cloud Function `buyFullLife`) since
+  /// `coins` is a protected field the client can no longer write directly.
+  /// The server uses its own mirrored cost constant, never this argument.
   Future<bool> buyFullLife({
     required String uid,
     required int cost,
   }) async {
-    final ref = _db.collection('users').doc(uid);
-
-    return _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-      final state = _stateFromData(data);
-
-      int coins = ((data['coins'] ?? 0) as num).toInt();
-      int lifeUnits = state['lifeUnits'] as int;
-      final int maxLifeUnits = state['maxLifeUnits'] as int;
-
-      if (coins < cost) return false;
-      if (lifeUnits >= maxLifeUnits) return false;
-
-      lifeUnits = (lifeUnits + unitsPerLife).clamp(0, maxLifeUnits);
-
-      tx.set(ref, {
-        'coins': coins - cost,
-        'lifeUnits': lifeUnits,
-        'lastLifeTickAt': Timestamp.now(),
-      }, SetOptions(merge: true));
-
+    try {
+      await FirebaseFunctions.instance.httpsCallable('buyFullLife').call();
       return true;
-    });
+    } on FirebaseFunctionsException {
+      return false;
+    }
   }
 }

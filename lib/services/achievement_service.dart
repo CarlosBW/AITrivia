@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'notification_service.dart';
 import 'analytics_service.dart';
 
@@ -264,56 +265,17 @@ class AchievementService {
     required String uid,
     required String achievementId,
   }) async {
-    final achievement = getAchievementById(achievementId);
-    if (achievement == null) {
+    if (getAchievementById(achievementId) == null) {
       throw Exception('Achievement not found.');
     }
 
-    final userRef = _db.collection('users').doc(uid);
-    final achievementRef = _achievementRef(
-      uid: uid,
-      achievementId: achievementId,
-    );
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(achievementRef);
-      final data = snap.data();
-
-      if (data == null) {
-        throw Exception('Achievement not started.');
-      }
-
-      final completed = data['completed'] == true;
-      final claimed = data['claimed'] == true;
-
-      if (!completed) {
-        throw Exception('Achievement not completed yet.');
-      }
-
-      if (claimed) {
-        throw Exception('Reward already claimed.');
-      }
-
-      tx.set(
-        userRef,
-        {
-          'coins': FieldValue.increment(achievement.rewardCoins),
-          'xp': FieldValue.increment(achievement.rewardXp),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        achievementRef,
-        {
-          'claimed': true,
-          'claimedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    });
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('claimAchievementReward')
+          .call({'achievementId': achievementId});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudo reclamar la recompensa.');
+    }
   }
 
   Future<void> syncPvpAchievements({

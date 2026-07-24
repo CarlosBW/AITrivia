@@ -183,14 +183,7 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
       'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
 
-      'gamesPlayed': data['gamesPlayed'] ?? 0,
       'dailyGamesPlayed': data['dailyGamesPlayed'] ?? 0,
-      'correctAnswers': data['correctAnswers'] ?? 0,
-      'wrongAnswers': data['wrongAnswers'] ?? 0,
-
-      'bestDailyScore': data['bestDailyScore'] ?? 0,
-      'dailyStreak': data['dailyStreak'] ?? 0,
-      'maxDailyStreak': data['maxDailyStreak'] ?? data['dailyStreak'] ?? 0,
 
       'loginStreak': newLoginStreak,
       'lastLoginDate': today,

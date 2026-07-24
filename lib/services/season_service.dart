@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'league_service.dart';
 import 'weekly_league_service.dart';
@@ -249,113 +250,22 @@ class SeasonService {
     return pending;
   }
 
-  Future<void> saveSeasonReward({
-    required String uid,
-    required String seasonId,
-    required LeagueInfo league,
-    required int rank,
-    required int weeklyScore,
-  }) async {
-    final historyRef = seasonHistoryRef(
-      uid: uid,
-      seasonId: seasonId,
-    );
-
-    final userRef = _db.collection('users').doc(uid);
-    final reward = rewardForLeague(league, rank);
-
-    await _db.runTransaction((tx) async {
-      final historySnap = await tx.get(historyRef);
-
-      if (historySnap.exists && historySnap.data()?['claimed'] == true) {
-        return;
-      }
-
-      tx.set(
-          historyRef,
-          {
-            'seasonId': seasonId,
-            'leagueId': league.id,
-            'leagueName': league.name,
-            'rank': rank,
-            'weeklyScore': weeklyScore,
-            'rewardCoins': reward.coins,
-            'rewardMessage': reward.message,
-            'claimed': true,
-            'claimedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      if (reward.coins > 0) {
-        tx.set(
-            userRef,
-            {
-              'coins': FieldValue.increment(reward.coins),
-              'lastSeasonRewardClaimed': seasonId,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
-      }
-    });
-  }
-
+  /// Claims all pending weekly-league season rewards via the
+  /// `claimWeeklySeasonRewards` Cloud Function. The rank/score source data
+  /// (weekly_leagues / weekly_participation) is now Cloud-Function-only
+  /// writable, so this only exists because the `coins` grant itself must
+  /// move server-side once that field is protected in firestore.rules.
   Future<ClaimSeasonRewardsResult> claimAllPendingRewards({
     required String uid,
   }) async {
-    final pendingRewards = await getPendingSeasonRewards(uid: uid);
-
-    if (pendingRewards.isEmpty) {
-      return const ClaimSeasonRewardsResult(
-        claimedCount: 0,
-        totalCoins: 0,
-      );
-    }
-
-    final userRef = _db.collection('users').doc(uid);
-    final batch = _db.batch();
-
-    int totalCoins = 0;
-
-    for (final reward in pendingRewards) {
-      final historyRef = seasonHistoryRef(
-        uid: uid,
-        seasonId: reward.seasonId,
-      );
-
-      batch.set(
-          historyRef,
-          {
-            'seasonId': reward.seasonId,
-            'leagueId': reward.leagueId,
-            'leagueName': reward.leagueName,
-            'rank': reward.rank,
-            'weeklyScore': reward.weeklyScore,
-            'rewardCoins': reward.rewardCoins,
-            'rewardMessage': reward.rewardMessage,
-            'claimed': true,
-            'claimedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      totalCoins += reward.rewardCoins;
-    }
-
-    if (totalCoins > 0) {
-      batch.set(
-          userRef,
-          {
-            'coins': FieldValue.increment(totalCoins),
-            'lastSeasonRewardClaimed': pendingRewards.last.seasonId,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-    }
-
-    await batch.commit();
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('claimWeeklySeasonRewards');
+    final response = await callable.call();
+    final data = Map<String, dynamic>.from(response.data as Map);
 
     return ClaimSeasonRewardsResult(
-      claimedCount: pendingRewards.length,
-      totalCoins: totalCoins,
+      claimedCount: ((data['claimedCount'] ?? 0) as num).toInt(),
+      totalCoins: ((data['totalCoins'] ?? 0) as num).toInt(),
     );
   }
 

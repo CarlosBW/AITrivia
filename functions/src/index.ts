@@ -225,6 +225,26 @@ function resultFor(userId: string, winnerUid: string | null): string {
 }
 
 /**
+ * Mirrors lib/services/weekly_league_service.dart's `currentWeekId` —
+ * the Monday of the current week, as yyyy-MM-dd. Used both as a
+ * `weekly_leagues`/`weekly_participation` bucket key and as the weekly
+ * "season" id in season_service.dart.
+ * @return {string} Week id.
+ */
+function currentWeekId(): string {
+  const now = new Date();
+  const jsDay = now.getDay(); // 0=Sun..6=Sat
+  const dartWeekday = jsDay === 0 ? 7 : jsDay; // 1=Mon..7=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (dartWeekday - 1));
+
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth() + 1).padStart(2, "0");
+  const d = String(monday.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * Computes the current PvP season id/start/end for "now", mirroring
  * lib/services/pvp_season_service.dart's `currentSeason()` (calendar-month
  * seasons).
@@ -1179,6 +1199,542 @@ export const claimPvpSeasonRewards = onCall(async (request) => {
       rewards: results,
     };
   });
+});
+
+// ============================================================
+// DAILY CHALLENGE
+// ============================================================
+
+const DAILY_COINS_PER_BLOCK = 5;
+const DAILY_CORRECT_PER_COIN_BLOCK = 10;
+const DAILY_STREAK_3_DAYS_COINS = 5;
+const DAILY_STREAK_7_DAYS_COINS = 15;
+const DAILY_STREAK_14_DAYS_COINS = 30;
+const DAILY_LEVEL_UP_COINS = 15;
+const DAILY_QUESTION_LIMIT = 60;
+
+type LeagueInfo = {
+  id: string;
+  name: string;
+  emoji: string;
+  minScore: number;
+  colorValue: number;
+};
+
+// Mirrors lib/services/league_service.dart's `leagues` list exactly.
+const LEAGUES: LeagueInfo[] = [
+  {
+    id: "bronze", name: "Bronze", emoji: "🥉", minScore: 0,
+    colorValue: 0xFFCD7F32,
+  },
+  {
+    id: "silver", name: "Silver", emoji: "🥈", minScore: 300,
+    colorValue: 0xFFC0C0C0,
+  },
+  {
+    id: "gold", name: "Gold", emoji: "🥇", minScore: 700,
+    colorValue: 0xFFFFD700,
+  },
+  {
+    id: "diamond", name: "Diamond", emoji: "💎", minScore: 1200,
+    colorValue: 0xFF6EC6FF,
+  },
+  {
+    id: "master", name: "Master", emoji: "👑", minScore: 2000,
+    colorValue: 0xFF9C27B0,
+  },
+];
+
+/**
+ * Mirrors lib/services/league_service.dart's `getLeagueFromScore`.
+ * @param {number} score Player's league score.
+ * @return {LeagueInfo} Matching league.
+ */
+function getLeagueFromScore(score: number): LeagueInfo {
+  let current = LEAGUES[0];
+  for (const league of LEAGUES) {
+    if (score >= league.minScore) current = league;
+  }
+  return current;
+}
+
+/**
+ * Mirrors lib/services/player_level_service.dart's `xpRequiredForLevel`.
+ * @param {number} level Player level.
+ * @return {number} XP required to complete that level.
+ */
+function xpRequiredForLevel(level: number): number {
+  if (level <= 1) return 100;
+  return Math.round(100 * (1.18 * (level - 1)));
+}
+
+/**
+ * Mirrors lib/services/player_level_service.dart's `getLevelInfo` — only
+ * the `level` field is needed here.
+ * @param {number} totalXp Player's total XP.
+ * @return {number} Player level for that XP total.
+ */
+function levelForXp(totalXp: number): number {
+  let level = 1;
+  let remainingXp = totalXp;
+
+  for (;;) {
+    const needed = xpRequiredForLevel(level);
+    if (remainingXp < needed) return level;
+    remainingXp -= needed;
+    level++;
+  }
+}
+
+/**
+ * Mirrors DailyChallengeService's `calculateCoinsEarned`.
+ * @param {number} correct Correct answers.
+ * @return {number} Coins earned.
+ */
+function calculateDailyCoinsEarned(correct: number): number {
+  return Math.floor(correct / DAILY_CORRECT_PER_COIN_BLOCK) *
+    DAILY_COINS_PER_BLOCK;
+}
+
+/**
+ * Mirrors DailyChallengeService's `calculateXpEarned`.
+ * @param {number} correct Correct answers.
+ * @param {number} totalAnswered Total questions answered.
+ * @return {number} XP earned.
+ */
+function calculateDailyXpEarned(
+  correct: number,
+  totalAnswered: number
+): number {
+  const wrong = Math.max(totalAnswered - correct, 0);
+  const baseXp = correct * 2;
+  const participationXp = totalAnswered > 0 ? 5 : 0;
+  const accuracyBonus = totalAnswered > 0 && wrong === 0 ? 5 : 0;
+  return baseXp + participationXp + accuracyBonus;
+}
+
+/**
+ * Mirrors DailyChallengeService's `calculateScore`.
+ * @param {number} correct Correct answers.
+ * @param {number} totalAnswered Total questions answered.
+ * @param {number} streak Daily streak after this play.
+ * @return {number} Daily score.
+ */
+function calculateDailyScore(
+  correct: number,
+  totalAnswered: number,
+  streak: number
+): number {
+  const accuracyBonus = totalAnswered <= 0 ?
+    0 : Math.round((correct / totalAnswered) * 100);
+  const streakBonus = Math.min(streak, 30) * 2;
+  return correct * 10 + accuracyBonus + streakBonus;
+}
+
+/**
+ * Mirrors DailyChallengeService's `calculateStreakBonusCoins`.
+ * @param {number} streak Daily streak after this play.
+ * @return {number} Bonus coins for hitting a streak milestone.
+ */
+function calculateDailyStreakBonusCoins(streak: number): number {
+  if (streak > 0 && streak % 14 === 0) return DAILY_STREAK_14_DAYS_COINS;
+  if (streak > 0 && streak % 7 === 0) return DAILY_STREAK_7_DAYS_COINS;
+  if (streak > 0 && streak % 3 === 0) return DAILY_STREAK_3_DAYS_COINS;
+  return 0;
+}
+
+/**
+ * Checks whether `dateId` (yyyy-MM-dd) is exactly one day before `today`.
+ * @param {string} dateId Previous play date.
+ * @param {string} today Today's date id.
+ * @return {boolean} True if dateId is yesterday relative to today.
+ */
+function isYesterday(dateId: string, today: string): boolean {
+  const last = new Date(`${dateId}T00:00:00Z`);
+  const todayDate = new Date(`${today}T00:00:00Z`);
+  if (isNaN(last.getTime()) || isNaN(todayDate.getTime())) return false;
+  const diffDays = Math.round(
+    (todayDate.getTime() - last.getTime()) / (24 * 60 * 60 * 1000)
+  );
+  return diffDays === 1;
+}
+
+/**
+ * Server-authoritative Daily Challenge reward grant, replacing
+ * DailyChallengeService.saveResult's client-side transaction.
+ * `dateId`/`weekId` are accepted from the client (they're just bucket
+ * keys matching what createTodaySession already computed locally — not
+ * economically sensitive), but `correct`/`totalAnswered` only ever
+ * determine the reward through this function's own math, never through a
+ * client-supplied coins/xp value.
+ */
+export const submitDailyChallengeResult = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const correct = safeInt(request.data?.correct, -1);
+  const totalAnswered = safeInt(request.data?.totalAnswered, -1);
+  const dateId = String(request.data?.dateId || "");
+  const weekId = String(request.data?.weekId || "");
+
+  if (
+    correct < 0 || totalAnswered < 0 || correct > totalAnswered ||
+    totalAnswered > DAILY_QUESTION_LIMIT
+  ) {
+    throw new HttpsError("invalid-argument", "Invalid answer counts.");
+  }
+
+  const dateIdPattern = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateIdPattern.test(dateId) || !dateIdPattern.test(weekId)) {
+    throw new HttpsError("invalid-argument", "Invalid dateId/weekId.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const dailyRef = userRef.collection("daily_challenges").doc(dateId);
+  const leaderboardRef = db
+    .collection("daily_leaderboards").doc(dateId)
+    .collection("players").doc(uid);
+  const weeklyParticipationRef = userRef
+    .collection("weekly_participation").doc(weekId);
+  const coinsEarned = calculateDailyCoinsEarned(correct);
+
+  return db.runTransaction(async (tx) => {
+    const dailySnap = await tx.get(dailyRef);
+    const userSnap = await tx.get(userRef);
+
+    const alreadyPlayed = dailySnap.data()?.played === true;
+
+    if (alreadyPlayed) {
+      const data = dailySnap.data() || {};
+      const userData = userSnap.data() || {};
+      const userXp = safeInt(userData.xp, 0);
+      const level = levelForXp(userXp);
+
+      return {
+        saved: false,
+        alreadyPlayed: true,
+        correct: safeInt(data.correct, correct),
+        totalAnswered: safeInt(data.totalAnswered, totalAnswered),
+        coinsEarned: safeInt(data.coinsEarned, 0),
+        streak: safeInt(data.streak ?? userData.dailyStreak, 0),
+        streakBonusCoins: safeInt(data.streakBonusCoins, 0),
+        levelUpBonusCoins: safeInt(data.levelUpBonusCoins, 0),
+        score: safeInt(data.score, 0),
+        leveledUp: false,
+        oldLevel: level,
+        newLevel: level,
+        xpEarned: safeInt(data.xpEarned, 0),
+      };
+    }
+
+    const userData = userSnap.data() || {};
+
+    const previousStreak = safeInt(userData.dailyStreak, 0);
+    const lastDailyPlayed = userData.lastDailyPlayed ?
+      String(userData.lastDailyPlayed) : null;
+
+    const username = String(
+      userData.username || userData.displayName || "Player"
+    );
+    const avatarId = String(userData.avatarId || "avatar_1");
+    const frameId = String(userData.equippedFrame || "");
+    const bestLeagueId = String(userData.bestLeagueId || "");
+
+    const currentXp = safeInt(userData.xp, 0);
+    const oldLevel = levelForXp(currentXp);
+
+    const xpEarned = calculateDailyXpEarned(correct, totalAnswered);
+    const newXp = currentXp + xpEarned;
+    const newLevel = levelForXp(newXp);
+    const leveledUp = newLevel > oldLevel;
+
+    const levelUpBonusCoins = leveledUp ?
+      (newLevel - oldLevel) * DAILY_LEVEL_UP_COINS : 0;
+
+    const newStreak = lastDailyPlayed && isYesterday(lastDailyPlayed, dateId) ?
+      previousStreak + 1 : 1;
+
+    const streakBonusCoins = calculateDailyStreakBonusCoins(newStreak);
+    const totalCoinsToAdd = coinsEarned + streakBonusCoins + levelUpBonusCoins;
+
+    const score = calculateDailyScore(correct, totalAnswered, newStreak);
+    const totalLeagueScore = safeInt(userData.leagueScore, 0) + score;
+    const league = getLeagueFromScore(totalLeagueScore);
+
+    const weeklyRef = db
+      .collection("weekly_leagues").doc(weekId)
+      .collection(league.id).doc(uid);
+
+    const wrongAnswers = Math.max(totalAnswered - correct, 0);
+    const totalQuestionsAnswered = safeInt(userData.correctAnswers, 0) +
+      safeInt(userData.wrongAnswers, 0) + correct + wrongAnswers;
+
+    tx.set(dailyRef, {
+      dateId,
+      played: true,
+      correct,
+      totalAnswered,
+      coinsEarned,
+      streak: newStreak,
+      streakBonusCoins,
+      levelUpBonusCoins,
+      totalCoinsEarned: totalCoinsToAdd,
+      score,
+      xpEarned,
+      oldLevel,
+      newLevel,
+      leveledUp,
+      finishedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    const userPatch: Record<string, unknown> = {
+      username,
+      displayName: username,
+      avatarId,
+      dailyStreak: newStreak,
+      maxDailyStreak: Math.max(previousStreak, newStreak),
+      lastDailyPlayed: dateId,
+      gamesPlayed: admin.firestore.FieldValue.increment(1),
+      correctAnswers: admin.firestore.FieldValue.increment(correct),
+      wrongAnswers: admin.firestore.FieldValue.increment(wrongAnswers),
+      xp: admin.firestore.FieldValue.increment(xpEarned),
+      level: newLevel,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      leagueScore: totalLeagueScore,
+      leagueId: league.id,
+      leagueName: league.name,
+    };
+
+    if (totalCoinsToAdd > 0) {
+      userPatch.coins = admin.firestore.FieldValue.increment(totalCoinsToAdd);
+    }
+
+    const userBestDailyScore = safeInt(userData.bestDailyScore, 0);
+    if (score > userBestDailyScore) {
+      userPatch.bestDailyScore = score;
+    }
+
+    tx.set(userRef, userPatch, {merge: true});
+
+    tx.set(leaderboardRef, {
+      uid,
+      username,
+      displayName: username,
+      avatarId,
+      equippedFrame: frameId,
+      bestLeagueId,
+      dateId,
+      correct,
+      totalAnswered,
+      score,
+      streak: newStreak,
+      coinsEarned,
+      streakBonusCoins,
+      levelUpBonusCoins,
+      xpEarned,
+      level: newLevel,
+      finishedAt: admin.firestore.FieldValue.serverTimestamp(),
+      leagueId: league.id,
+      leagueName: league.name,
+    }, {merge: true});
+
+    tx.set(weeklyRef, {
+      uid,
+      username,
+      displayName: username,
+      avatarId,
+      equippedFrame: frameId,
+      bestLeagueId,
+      weekId,
+      leagueId: league.id,
+      leagueName: league.name,
+      weeklyScore: admin.firestore.FieldValue.increment(score),
+      level: newLevel,
+      streak: newStreak,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    tx.set(weeklyParticipationRef, {
+      weekId,
+      leagueId: league.id,
+      leagueName: league.name,
+      weeklyScore: admin.firestore.FieldValue.increment(score),
+      lastDailyScore: score,
+      level: newLevel,
+      streak: newStreak,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    return {
+      saved: true,
+      alreadyPlayed: false,
+      correct,
+      totalAnswered,
+      totalQuestionsAnswered,
+      coinsEarned,
+      streak: newStreak,
+      streakBonusCoins,
+      levelUpBonusCoins,
+      score,
+      leveledUp,
+      oldLevel,
+      newLevel,
+      xpEarned,
+    };
+  });
+});
+
+// ============================================================
+// WEEKLY LEAGUE SEASON REWARDS
+// ============================================================
+
+/**
+ * Mirrors lib/services/season_service.dart's `rewardForLeague`.
+ * @param {string} leagueId Weekly league id.
+ * @param {number} rank Player's rank within that league for the season.
+ * @return {{coins:number, message:string}} Reward for that placement.
+ */
+function weeklySeasonRewardForLeague(
+  leagueId: string,
+  rank: number
+): {coins: number; message: string} {
+  const baseCoins = ((): number => {
+    switch (leagueId) {
+    case "bronze": return 20;
+    case "silver": return 40;
+    case "gold": return 80;
+    case "diamond": return 150;
+    case "master": return 300;
+    default: return 20;
+    }
+  })();
+
+  let bonus = 0;
+  if (rank === 1) bonus = baseCoins;
+  else if (rank <= 3) bonus = Math.round(baseCoins * 0.5);
+  else if (rank <= 10) bonus = Math.round(baseCoins * 0.25);
+
+  const message = rank === 1 ?
+    "Champion bonus!" :
+    rank <= 3 ? "Top 3 bonus!" : rank <= 10 ? "Top 10 bonus!" :
+      "Weekly league reward";
+
+  return {coins: baseCoins + bonus, message};
+}
+
+/**
+ * Server-authoritative weekly-league season reward claim, replacing
+ * SeasonService.claimAllPendingRewards's client-side batch writes. Reads
+ * `weekly_participation`/`weekly_leagues` — both now Cloud-Function-only
+ * writable (via submitDailyChallengeResult), so the rank/score used here
+ * can no longer be forged by the client.
+ */
+export const claimWeeklySeasonRewards = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const currentSeasonId = currentWeekId();
+
+  const participationSnap = await userRef
+    .collection("weekly_participation")
+    .orderBy("weekId", "desc")
+    .limit(8)
+    .get();
+
+  const historySnap = await userRef.collection("season_history").get();
+  const claimedSeasonIds = new Set(
+    historySnap.docs
+      .filter((d) => d.data().claimed === true)
+      .map((d) => d.id)
+  );
+
+  type Pending = {
+    seasonId: string;
+    leagueId: string;
+    leagueName: string;
+    rank: number;
+    weeklyScore: number;
+    rewardCoins: number;
+    rewardMessage: string;
+  };
+
+  const pending: Pending[] = [];
+
+  for (const doc of participationSnap.docs) {
+    const data = doc.data();
+    const seasonId = String(data.weekId || doc.id);
+
+    if (seasonId === currentSeasonId) continue;
+    if (claimedSeasonIds.has(seasonId)) continue;
+
+    const leagueId = String(data.leagueId || "bronze");
+    const leagueName = String(data.leagueName || "Bronze");
+    const weeklyScore = safeInt(data.weeklyScore, 0);
+    if (weeklyScore <= 0) continue;
+
+    const betterPlayersSnap = await db
+      .collection("weekly_leagues").doc(seasonId)
+      .collection(leagueId)
+      .where("weeklyScore", ">", weeklyScore)
+      .count().get();
+    const rank = (betterPlayersSnap.data().count || 0) + 1;
+
+    const reward = weeklySeasonRewardForLeague(leagueId, rank);
+
+    pending.push({
+      seasonId,
+      leagueId,
+      leagueName,
+      rank,
+      weeklyScore,
+      rewardCoins: reward.coins,
+      rewardMessage: reward.message,
+    });
+  }
+
+  if (pending.length === 0) {
+    return {claimedCount: 0, totalCoins: 0};
+  }
+
+  const batch = db.batch();
+  let totalCoins = 0;
+
+  for (const reward of pending) {
+    const historyRef = userRef.collection("season_history").doc(
+      reward.seasonId
+    );
+
+    batch.set(historyRef, {
+      seasonId: reward.seasonId,
+      leagueId: reward.leagueId,
+      leagueName: reward.leagueName,
+      rank: reward.rank,
+      weeklyScore: reward.weeklyScore,
+      rewardCoins: reward.rewardCoins,
+      rewardMessage: reward.rewardMessage,
+      claimed: true,
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    totalCoins += reward.rewardCoins;
+  }
+
+  if (totalCoins > 0) {
+    batch.set(userRef, {
+      coins: admin.firestore.FieldValue.increment(totalCoins),
+      lastSeasonRewardClaimed: pending[pending.length - 1].seasonId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+
+  await batch.commit();
+
+  return {claimedCount: pending.length, totalCoins};
 });
 
 /**

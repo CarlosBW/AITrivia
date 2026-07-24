@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
-import 'player_level_service.dart';
-import 'league_service.dart';
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
 import 'achievement_service.dart';
@@ -103,76 +102,12 @@ class DailyChallengeService {
         .doc(dateId);
   }
 
-  DocumentReference<Map<String, dynamic>> _leaderboardPlayerRef({
-    required String uid,
-    required String dateId,
-  }) {
-    return _db
-        .collection('daily_leaderboards')
-        .doc(dateId)
-        .collection('players')
-        .doc(uid);
-  }
-
+  /// Display-only preview of coins earned so far while the challenge is in
+  /// progress (daily_challenge_screen.dart's live "+X coins" indicator) —
+  /// the actual grant is computed authoritatively by the
+  /// `submitDailyChallengeResult` Cloud Function in `saveResult`.
   int calculateCoinsEarned(int correct) {
     return (correct ~/ correctPerCoinBlock) * coinsPerBlock;
-  }
-
-  int calculateXpEarned({
-    required int correct,
-    required int totalAnswered,
-  }) {
-    final wrong = max(totalAnswered - correct, 0);
-    final baseXp = correct * 2;
-    final participationXp = totalAnswered > 0 ? 5 : 0;
-    final accuracyBonus = totalAnswered > 0 && wrong == 0 ? 5 : 0;
-
-    return baseXp + participationXp + accuracyBonus;
-  }
-
-  int calculateScore({
-    required int correct,
-    required int totalAnswered,
-    required int streak,
-  }) {
-    final accuracyBonus =
-        totalAnswered <= 0 ? 0 : ((correct / totalAnswered) * 100).round();
-
-    final streakBonus = min(streak, 30) * 2;
-
-    return (correct * 10) + accuracyBonus + streakBonus;
-  }
-
-  int calculateStreakBonusCoins(int streak) {
-    if (streak > 0 && streak % 14 == 0) return EconomyService.dailyStreak14DaysCoins;
-    if (streak > 0 && streak % 7 == 0) return EconomyService.dailyStreak7DaysCoins;
-    if (streak > 0 && streak % 3 == 0) return EconomyService.dailyStreak3DaysCoins;
-    return 0;
-  }
-
-  int calculateLevelUpBonusCoins({
-    required int oldLevel,
-    required int newLevel,
-  }) {
-    if (newLevel <= oldLevel) return 0;
-    return (newLevel - oldLevel) * EconomyService.dailyLevelUpCoins;
-  }
-
-  DateTime _dateOnly(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
-
-  bool _isYesterday(String? dateId) {
-    if (dateId == null || dateId.isEmpty) return false;
-
-    final lastDate = DateTime.tryParse(dateId);
-    if (lastDate == null) return false;
-
-    final today = _dateOnly(DateTime.now());
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    final normalizedLast = _dateOnly(lastDate);
-    return normalizedLast == yesterday;
   }
 
   Future<bool> hasPlayedToday(String uid) async {
@@ -325,254 +260,47 @@ class DailyChallengeService {
     return all.take(min(limit, all.length)).toList();
   }
 
+  /// Grants the Daily Challenge result via the `submitDailyChallengeResult`
+  /// Cloud Function — coins/xp/streak/level/league are now computed and
+  /// written server-side; the client only reports `correct`/`totalAnswered`.
   Future<DailyChallengeSaveResult> saveResult({
     required String uid,
     required int correct,
     required int totalAnswered,
   }) async {
     final dateId = todayDateId();
-    final dailyRef = _dailyRef(uid: uid, dateId: dateId);
-    final userRef = _db.collection('users').doc(uid);
-    final leaderboardRef = _leaderboardPlayerRef(uid: uid, dateId: dateId);
     final weekId = WeeklyLeagueService.instance.currentWeekId();
-    final weeklyParticipationRef = _db
-        .collection('users')
-        .doc(uid)
-        .collection('weekly_participation')
-        .doc(weekId);
-    final coinsEarned = calculateCoinsEarned(correct);
-    int totalQuestionsAnswered = 0;
 
-    final result = await _db.runTransaction((tx) async {
-      final dailySnap = await tx.get(dailyRef);
-      final userSnap = await tx.get(userRef);
-
-      final alreadyPlayed = dailySnap.data()?['played'] == true;
-
-      if (alreadyPlayed) {
-        final data = dailySnap.data() ?? {};
-        final userData = userSnap.data() ?? {};
-        final userXp = ((userData['xp'] ?? 0) as num).toInt();
-        final level = PlayerLevelService.instance.getLevelInfo(userXp).level;
-
-        return DailyChallengeSaveResult(
-          saved: false,
-          alreadyPlayed: true,
-          correct: ((data['correct'] ?? correct) as num).toInt(),
-          totalAnswered:
-              ((data['totalAnswered'] ?? totalAnswered) as num).toInt(),
-          coinsEarned: ((data['coinsEarned'] ?? 0) as num).toInt(),
-          streak:
-              ((data['streak'] ?? userData['dailyStreak'] ?? 0) as num).toInt(),
-          streakBonusCoins: ((data['streakBonusCoins'] ?? 0) as num).toInt(),
-          levelUpBonusCoins: ((data['levelUpBonusCoins'] ?? 0) as num).toInt(),
-          score: ((data['score'] ?? 0) as num).toInt(),
-          leveledUp: false,
-          oldLevel: level,
-          newLevel: level,
-          xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
-        );
-      }
-
-      final userData = userSnap.data() ?? {};
-
-      final previousStreak = ((userData['dailyStreak'] ?? 0) as num).toInt();
-      final lastDailyPlayed = userData['lastDailyPlayed']?.toString();
-
-      final username =
-          (userData['username'] ?? userData['displayName'] ?? 'Player')
-              .toString();
-      final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
-      final frameId = (userData['equippedFrame'] ?? '').toString();
-      final bestLeagueId = (userData['bestLeagueId'] ?? '').toString();
-
-      final currentXp = ((userData['xp'] ?? 0) as num).toInt();
-      final oldLevel =
-          PlayerLevelService.instance.getLevelInfo(currentXp).level;
-
-      final xpEarned = calculateXpEarned(
-        correct: correct,
-        totalAnswered: totalAnswered,
-      );
-
-      final newXp = currentXp + xpEarned;
-      final newLevel = PlayerLevelService.instance.getLevelInfo(newXp).level;
-      final leveledUp = newLevel > oldLevel;
-
-      final levelUpBonusCoins = calculateLevelUpBonusCoins(
-        oldLevel: oldLevel,
-        newLevel: newLevel,
-      );
-
-      final newStreak = _isYesterday(lastDailyPlayed) ? previousStreak + 1 : 1;
-
-      final streakBonusCoins = calculateStreakBonusCoins(newStreak);
-      final totalCoinsToAdd =
-          coinsEarned + streakBonusCoins + levelUpBonusCoins;
-
-      final score = calculateScore(
-        correct: correct,
-        totalAnswered: totalAnswered,
-        streak: newStreak,
-      );
-      final totalLeagueScore =
-          ((userData['leagueScore'] ?? 0) as num).toInt() + score;
-
-      final league =
-          LeagueService.instance.getLeagueFromScore(totalLeagueScore);
-
-      final weeklyRef = WeeklyLeagueService.instance.weeklyPlayerRef(
-        uid: uid,
-        weekId: weekId,
-        leagueId: league.id,
-      );
-
-      final wrongAnswers = max(totalAnswered - correct, 0);
-
-      final previousCorrectAnswers =
-          ((userData['correctAnswers'] ?? 0) as num).toInt();
-      final previousWrongAnswers =
-          ((userData['wrongAnswers'] ?? 0) as num).toInt();
-      totalQuestionsAnswered = previousCorrectAnswers +
-          previousWrongAnswers +
-          correct +
-          wrongAnswers;
-
-      tx.set(
-          dailyRef,
-          {
-            'dateId': dateId,
-            'played': true,
-            'correct': correct,
-            'totalAnswered': totalAnswered,
-            'coinsEarned': coinsEarned,
-            'streak': newStreak,
-            'streakBonusCoins': streakBonusCoins,
-            'levelUpBonusCoins': levelUpBonusCoins,
-            'totalCoinsEarned': totalCoinsToAdd,
-            'score': score,
-            'xpEarned': xpEarned,
-            'oldLevel': oldLevel,
-            'newLevel': newLevel,
-            'leveledUp': leveledUp,
-            'finishedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      tx.set(
-          userRef,
-          {
-            'username': username,
-            'displayName': username,
-            'avatarId': avatarId,
-            'dailyStreak': newStreak,
-            'maxDailyStreak': max(previousStreak, newStreak),
-            'lastDailyPlayed': dateId,
-            'bestDailyScore': FieldValue.increment(0),
-            'gamesPlayed': FieldValue.increment(1),
-            'correctAnswers': FieldValue.increment(correct),
-            'wrongAnswers': FieldValue.increment(wrongAnswers),
-            'xp': FieldValue.increment(xpEarned),
-            'level': newLevel,
-            if (totalCoinsToAdd > 0)
-              'coins': FieldValue.increment(totalCoinsToAdd),
-            'updatedAt': FieldValue.serverTimestamp(),
-            'leagueScore': totalLeagueScore,
-            'leagueId': league.id,
-            'leagueName': league.name,
-          },
-          SetOptions(merge: true));
-
-      tx.set(
-          leaderboardRef,
-          {
-            'uid': uid,
-            'username': username,
-            'displayName': username,
-            'avatarId': avatarId,
-            'equippedFrame': frameId,
-            'bestLeagueId': bestLeagueId,
-            'dateId': dateId,
-            'correct': correct,
-            'totalAnswered': totalAnswered,
-            'score': score,
-            'streak': newStreak,
-            'coinsEarned': coinsEarned,
-            'streakBonusCoins': streakBonusCoins,
-            'levelUpBonusCoins': levelUpBonusCoins,
-            'xpEarned': xpEarned,
-            'level': newLevel,
-            'finishedAt': FieldValue.serverTimestamp(),
-            'leagueId': league.id,
-            'leagueName': league.name,
-          },
-          SetOptions(merge: true));
-
-      tx.set(
-        weeklyRef,
-        {
-          'uid': uid,
-          'username': username,
-          'displayName': username,
-          'avatarId': avatarId,
-          'equippedFrame': frameId,
-          'bestLeagueId': bestLeagueId,
-          'weekId': weekId,
-          'leagueId': league.id,
-          'leagueName': league.name,
-          'weeklyScore': FieldValue.increment(score),
-          'level': newLevel,
-          'streak': newStreak,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        weeklyParticipationRef,
-        {
-          'weekId': weekId,
-          'leagueId': league.id,
-          'leagueName': league.name,
-          'weeklyScore': FieldValue.increment(score),
-          'lastDailyScore': score,
-          'level': newLevel,
-          'streak': newStreak,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      final userBestDailyScore =
-          ((userData['bestDailyScore'] ?? 0) as num).toInt();
-
-      if (score > userBestDailyScore) {
-        tx.set(
-            userRef,
-            {
-              'bestDailyScore': score,
-            },
-            SetOptions(merge: true));
-      }
-
-      return DailyChallengeSaveResult(
-        saved: true,
-        alreadyPlayed: false,
-        correct: correct,
-        totalAnswered: totalAnswered,
-        coinsEarned: coinsEarned,
-        streak: newStreak,
-        streakBonusCoins: streakBonusCoins,
-        levelUpBonusCoins: levelUpBonusCoins,
-        score: score,
-        leveledUp: leveledUp,
-        oldLevel: oldLevel,
-        newLevel: newLevel,
-        xpEarned: xpEarned,
-      );
+    final callable =
+        FirebaseFunctions.instance.httpsCallable('submitDailyChallengeResult');
+    final response = await callable.call({
+      'correct': correct,
+      'totalAnswered': totalAnswered,
+      'dateId': dateId,
+      'weekId': weekId,
     });
+    final data = Map<String, dynamic>.from(response.data as Map);
+
+    final result = DailyChallengeSaveResult(
+      saved: data['saved'] == true,
+      alreadyPlayed: data['alreadyPlayed'] == true,
+      correct: ((data['correct'] ?? correct) as num).toInt(),
+      totalAnswered: ((data['totalAnswered'] ?? totalAnswered) as num).toInt(),
+      coinsEarned: ((data['coinsEarned'] ?? 0) as num).toInt(),
+      streak: ((data['streak'] ?? 0) as num).toInt(),
+      streakBonusCoins: ((data['streakBonusCoins'] ?? 0) as num).toInt(),
+      levelUpBonusCoins: ((data['levelUpBonusCoins'] ?? 0) as num).toInt(),
+      score: ((data['score'] ?? 0) as num).toInt(),
+      leveledUp: data['leveledUp'] == true,
+      oldLevel: ((data['oldLevel'] ?? 1) as num).toInt(),
+      newLevel: ((data['newLevel'] ?? 1) as num).toInt(),
+      xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
+    );
 
     if (result.saved) {
+      final totalQuestionsAnswered =
+          ((data['totalQuestionsAnswered'] ?? 0) as num).toInt();
+
       unawaited(_syncDailyRetentionHooks(
         uid: uid,
         dailyStreak: result.streak,

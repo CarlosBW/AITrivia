@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'play_with_friends_screen.dart';
+import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
 import 'active_matches_screen.dart';
 import 'pvp_season_screen.dart';
@@ -15,6 +15,16 @@ class PvPScreen extends StatelessWidget {
         .collection('async_matches')
         .where('challengedUid', isEqualTo: uid)
         .where('challengedStatus', isEqualTo: 'pending')
+        .limit(1)
+        .snapshots()
+        .map((snap) => snap.docs.isNotEmpty);
+  }
+
+  Stream<bool> _hasPendingRealtimeInvites(String uid) {
+    return FirebaseFirestore.instance
+        .collection('realtime_invites')
+        .where('toUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
         .limit(1)
         .snapshots()
         .map((snap) => snap.docs.isNotEmpty);
@@ -67,16 +77,29 @@ class PvPScreen extends StatelessWidget {
               );
             },
           ),
-          _PvpCard(
-            icon: Icons.group,
-            title: 'Play with Friends',
-            subtitle: 'Challenge your friends in real-time or async mode.',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PlayWithFriendsScreen(),
-                ),
+          StreamBuilder<bool>(
+            stream: _hasPendingRealtimeInvites(uid),
+            builder: (context, snap) {
+              final hasPending = snap.data == true;
+
+              return _PvpCard(
+                icon: Icons.bolt,
+                title: hasPending
+                    ? 'Realtime Invites • New!'
+                    : 'Realtime Invites',
+                subtitle: hasPending
+                    ? 'You have live challenges waiting.'
+                    : 'Accept or decline live challenges. '
+                        'Para retar a un amigo, ve a la pestaña Friends.',
+                alert: hasPending,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RealtimeInvitesScreen(),
+                    ),
+                  );
+                },
               );
             },
           ),

@@ -67,6 +67,8 @@ class PresenceService {
     _startHeartbeat();
   }
 
+  static const Duration _presenceWriteTimeout = Duration(seconds: 8);
+
   Future<void> _setPresence({
     required String status,
     required bool inMatch,
@@ -81,7 +83,7 @@ class PresenceService {
         'updatedAt': FieldValue.serverTimestamp(),
       },
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    }, SetOptions(merge: true)).timeout(_presenceWriteTimeout);
   }
 
   void _startHeartbeat() {
@@ -114,7 +116,7 @@ class PresenceService {
 
 
   Future<Map<String, dynamic>?> getMyPresence() async {
-    final snap = await _userRef(uid).get();
+    final snap = await _userRef(uid).get().timeout(_presenceWriteTimeout);
     final data = snap.data();
     final presence = data?['presence'];
 

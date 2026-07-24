@@ -76,7 +76,13 @@ class FriendService {
         .where('usernameLower', isGreaterThanOrEqualTo: q)
         .where('usernameLower', isLessThan: '$q\uf8ff')
         .limit(limit)
-        .get();
+        .get()
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw Exception(
+            'No se pudo conectar. Revisa tu conexi\u00f3n e int\u00e9ntalo de nuevo.',
+          ),
+        );
   }
 
   Future<void> sendFriendRequest({

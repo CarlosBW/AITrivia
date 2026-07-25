@@ -38,7 +38,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   bool _buyingLife = false;
 
   bool _loading = true;
-  bool _refreshing = false;
   String? _loadError;
 
   Map<String, dynamic> _categoryData = {};
@@ -84,8 +83,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       setState(() {
         if (showLoading) {
           _loading = true;
-        } else {
-          _refreshing = true;
         }
         _loadError = null;
       });
@@ -131,7 +128,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
         _categoryData = categorySnap.data() ?? {};
         _progressData = progressSnap.data() ?? {};
         _loading = false;
-        _refreshing = false;
         _loadError = null;
       });
     } catch (e) {
@@ -139,7 +135,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
       setState(() {
         _loading = false;
-        _refreshing = false;
         _loadError = e.toString();
       });
     }

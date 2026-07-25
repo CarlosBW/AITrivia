@@ -93,7 +93,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
               final totalCoins = pending.fold<int>(
                 0,
-                (sum, reward) => sum + reward.rewardCoins,
+                (total, reward) => total + reward.rewardCoins,
               );
 
               return _PendingRewardsCard(

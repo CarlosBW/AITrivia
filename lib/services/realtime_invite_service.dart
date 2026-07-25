@@ -306,12 +306,12 @@ class RealtimeInviteService {
   }) async {
     final questions = <Map<String, dynamic>>[];
 
-    final difficulties = <int>[
+    final difficulties = <int>{
       difficulty,
       1,
       2,
       3,
-    ].toSet().toList();
+    }.toList();
 
     QuerySnapshot<Map<String, dynamic>>? poolSnap;
 

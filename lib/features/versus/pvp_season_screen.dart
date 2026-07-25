@@ -731,6 +731,8 @@ class _RewardsTabState extends State<_RewardsTab> {
 
       await _refreshPendingRewards();
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -970,7 +972,7 @@ class _PendingRewardsCard extends StatelessWidget {
 
   int get _totalCoins => pendingRewards.fold<int>(
         0,
-        (sum, reward) => sum + reward.rewardCoins,
+        (total, reward) => total + reward.rewardCoins,
       );
 
   @override

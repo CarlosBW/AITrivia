@@ -233,7 +233,7 @@ class _FriendChallengeSetupScreenState
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
-                value: _categoryId,
+                initialValue: _categoryId,
                 decoration: const InputDecoration(
                   labelText: 'Categoría',
                   border: OutlineInputBorder(),
@@ -257,7 +257,7 @@ class _FriendChallengeSetupScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                value: _difficulty,
+                initialValue: _difficulty,
                 decoration: const InputDecoration(
                   labelText: 'Dificultad',
                   border: OutlineInputBorder(),
@@ -276,7 +276,7 @@ class _FriendChallengeSetupScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                value: _totalQuestions,
+                initialValue: _totalQuestions,
                 decoration: const InputDecoration(
                   labelText: 'Cantidad de preguntas',
                   border: OutlineInputBorder(),
@@ -295,7 +295,7 @@ class _FriendChallengeSetupScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                value: _timePerQuestionSec,
+                initialValue: _timePerQuestionSec,
                 decoration: const InputDecoration(
                   labelText: 'Tiempo por pregunta',
                   border: OutlineInputBorder(),

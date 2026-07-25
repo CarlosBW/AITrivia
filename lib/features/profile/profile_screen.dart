@@ -213,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
     );
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     if (newUsername == null) return;
 
     final username = newUsername.trim();
@@ -327,14 +327,14 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
       await _loadProfile(showLoading: false);
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil actualizado')),
       );
     } catch (e) {
       debugPrint('PROFILE UPDATE ERROR: $e');
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -595,7 +595,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       await _syncLeaderboardProfiles(avatarId: selectedAvatarId);
       await _loadProfile(showLoading: false);
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       final selectedAvatar =
           AvatarService.instance.avatarById(selectedAvatarId);
 
@@ -606,7 +606,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error actualizando avatar: $e')),
       );
@@ -686,7 +686,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       await _loadProfile(showLoading: false);
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       final frame = FrameService.instance.frameById(
         selectedFrameId,
@@ -810,9 +810,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     final level = levelInfo.level;
     final leagueScore = ((data['leagueScore'] ?? 0) as num).toInt();
 
-    final league = LeagueService.instance.getLeagueFromScore(
-      leagueScore,
-    );
     final levelXp = levelInfo.currentLevelXp;
     final xpRequired = levelInfo.xpRequired;
     final progress = levelInfo.progress;

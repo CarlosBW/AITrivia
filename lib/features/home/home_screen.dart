@@ -12,7 +12,6 @@ import '../leagues/weekly_league_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
-import '../../widgets/no_lives_dialog.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/stat_chip.dart';
@@ -33,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _lifeTimer;
 
   bool _isNavigating = false;
-  bool _buyingLife = false;
+  final bool _buyingLife = false;
 
   bool _hasPendingSeasonRewards = false;
   bool _checkingPendingSeasonRewards = false;
@@ -46,8 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showLoginPopup = false;
   int _loginStreakForPopup = 0;
   int _loginCoinsForPopup = 0;
-
-  static const int _buyLifeCost = 10;
 
   late final String uid;
 
@@ -224,47 +221,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _buyLifeFromDialog(BuildContext dialogContext) async {
-    if (_buyingLife) return;
-
-    Navigator.pop(dialogContext);
-
-    setState(() => _buyingLife = true);
-
-    try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: uid,
-        cost: _buyLifeCost,
-      );
-
-      await _syncLivesFromFirestore();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success ? '❤️ Vida recuperada' : '❌ No tienes suficientes monedas',
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _buyingLife = false);
-      }
-    }
-  }
-
   @override
   void dispose() {
     _lifeTimer?.cancel();
@@ -278,43 +234,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final seconds = totalSeconds % 60;
 
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _showNoLivesDialog({
-    required BuildContext context,
-    required int lifeUnits,
-    required int maxLifeUnits,
-    required int? secondsToNextHalfLife,
-  }) async {
-    final currentLivesText =
-        '${LifeService.instance.formatLives(lifeUnits)} / ${LifeService.instance.formatLives(maxLifeUnits)}';
-
-    final nextHalfLifeText = secondsToNextHalfLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToNextHalfLife);
-
-    final needOneMoreHalf = lifeUnits == 1;
-    final secondsToFullLife = secondsToNextHalfLife == null
-        ? null
-        : needOneMoreHalf
-            ? secondsToNextHalfLife
-            : secondsToNextHalfLife + 150;
-
-    final nextFullLifeText = secondsToFullLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToFullLife);
-
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) => NoLivesDialog(
-        currentLivesText: currentLivesText,
-        nextHalfLifeText: nextHalfLifeText,
-        nextFullLifeText: nextFullLifeText,
-        cost: _buyLifeCost,
-        onBuyLife: _buyingLife ? null : () => _buyLifeFromDialog(dialogContext),
-      ),
-    );
   }
 
   @override

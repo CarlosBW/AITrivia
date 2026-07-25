@@ -778,35 +778,48 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Widget _buildLivesHeader() {
     final lifeText =
         '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
+    final isFull = _lifeUnits >= _maxLifeUnits;
+
+    const iconColor = Color(0xFFFF6B5B);
+    const valueColor = Color(0xFFB23A2C);
+    const labelColor = Color(0xFFD9695B);
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.dangerBg,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         children: [
-          const Icon(Icons.favorite),
-          const SizedBox(width: 8),
+          const Icon(Icons.favorite_border, size: 22, color: iconColor),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Vidas: $lifeText',
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
+                color: valueColor,
               ),
             ),
           ),
+          Icon(
+            isFull ? Icons.check_circle_outline : Icons.timer_outlined,
+            size: 16,
+            color: labelColor,
+          ),
+          const SizedBox(width: 4),
           Text(
-            _lifeUnits >= _maxLifeUnits
+            isFull
                 ? 'MAX'
                 : '+0.5 en ${_formatSeconds(_secondsToNextHalfLife)}',
             style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: labelColor,
             ),
           ),
         ],
@@ -911,16 +924,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: colorScheme.surface,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
+                ),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 qText,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 21,
                   fontWeight: FontWeight.w700,
                   height: 1.35,
-                  color: colorScheme.onSurface,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -1398,22 +1415,33 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     children: [
                       Expanded(
                         child: _RewardCard(
-                          icon: Icons.auto_awesome,
+                          icon: Icons.auto_awesome_outlined,
                           label: 'XP',
+                          accent: Theme.of(context).colorScheme.primary,
+                          background:
+                              Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: _AnimatedRewardNumber(
                             value: _earnedXp,
                             prefix: '+',
+                            color: Color.lerp(
+                              Theme.of(context).colorScheme.primary,
+                              Colors.black,
+                              0.35,
+                            )!,
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _RewardCard(
-                          icon: Icons.monetization_on,
+                          icon: Icons.monetization_on_outlined,
                           label: 'Monedas',
+                          accent: AppColors.reward,
+                          background: AppColors.rewardBg,
                           child: _AnimatedRewardNumber(
                             value: _earnedCoins,
                             prefix: '+',
+                            color: Color.lerp(AppColors.reward, Colors.black, 0.35)!,
                           ),
                         ),
                       ),
@@ -1469,22 +1497,22 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _isNavigating
-                        ? null
-                        : () {
-                            _safeNavigate(() async {
-                              _timer?.cancel();
-                              _shuffledCache.clear();
-                              Navigator.pop(context);
-                            });
-                          },
-                    child: const Text('Volver'),
+                if (!hasNext)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isNavigating
+                          ? null
+                          : () {
+                              _safeNavigate(() async {
+                                _timer?.cancel();
+                                _shuffledCache.clear();
+                                Navigator.pop(context);
+                              });
+                            },
+                      child: const Text('Volver'),
+                    ),
                   ),
-                ),
                 if (hasNext) ...[
-                  const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
                       onPressed: _isNavigating
@@ -1683,29 +1711,36 @@ class _InfoRow extends StatelessWidget {
 class _RewardCard extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color accent;
+  final Color background;
   final Widget child;
 
   const _RewardCard({
     required this.icon,
     required this.label,
+    required this.accent,
+    required this.background,
     required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Color.lerp(accent, Colors.black, 0.25)!;
+    final labelColor = Color.lerp(accent, Colors.black, 0.10)!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: background,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 26),
+          Icon(icon, size: 22, color: iconColor),
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(fontWeight: FontWeight.w700, color: labelColor),
           ),
           const SizedBox(height: 8),
           child,
@@ -1718,9 +1753,11 @@ class _RewardCard extends StatelessWidget {
 class _AnimatedRewardNumber extends StatelessWidget {
   final int value;
   final String prefix;
+  final Color color;
 
   const _AnimatedRewardNumber({
     required this.value,
+    required this.color,
     this.prefix = '',
   });
 
@@ -1736,6 +1773,7 @@ class _AnimatedRewardNumber extends StatelessWidget {
           style: GoogleFonts.baloo2(
             fontSize: 24,
             fontWeight: FontWeight.w800,
+            color: color,
           ),
         );
       },
@@ -1750,11 +1788,19 @@ class _BigStarsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const gradientStart = Color(0xFF8A6BFF);
+    const gradientEnd = Color(0xFFFF5C93);
+    final unfilledColor = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
+
     return Wrap(
       alignment: WrapAlignment.center,
       spacing: 6,
       children: List.generate(3, (i) {
         final filled = i < count;
+        final color = filled
+            ? Color.lerp(gradientStart, gradientEnd, i / 2)!
+            : unfilledColor;
+
         return TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.7, end: 1),
           duration: Duration(milliseconds: 300 + (i * 140)),
@@ -1768,6 +1814,7 @@ class _BigStarsRow extends StatelessWidget {
           child: Icon(
             filled ? Icons.star_rounded : Icons.star_border_rounded,
             size: 42,
+            color: color,
           ),
         );
       }),

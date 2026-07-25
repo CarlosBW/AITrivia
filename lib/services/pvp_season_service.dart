@@ -285,7 +285,7 @@ class PvpSeasonService {
     if (pending.isNotEmpty) {
       final totalCoins = pending.fold<int>(
         0,
-        (sum, item) => sum + item.rewardCoins,
+        (total, item) => total + item.rewardCoins,
       );
 
       return PvpSeasonClaimStatus(

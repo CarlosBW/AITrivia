@@ -11,6 +11,7 @@ import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/stat_chip.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
@@ -551,6 +552,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               answerIndex: answerIndex,
               total: questions.length,
               myScore: myScore,
+              timePerQ: timePerQ,
             ),
           );
         },
@@ -565,52 +567,128 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     required int answerIndex,
     required int total,
     required int myScore,
+    required int timePerQ,
   }) {
     final absorbing = _locked || _answerSubmitting;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final progress = total == 0 ? 0.0 : (_index / total).clamp(0.0, 1.0);
+
+    final timeFraction =
+        timePerQ == 0 ? 0.0 : (_secondsLeft / timePerQ).clamp(0.0, 1.0);
+
+    final timerColor = timeFraction > 0.5
+        ? AppColors.success
+        : timeFraction > 0.2
+            ? AppColors.reward
+            : AppColors.danger;
 
     return AbsorbPointer(
       key: key,
       absorbing: absorbing,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Pregunta ${_index + 1} / $total'),
-            const SizedBox(height: 8),
-            Text(
-              'Tiempo: $_secondsLeft s',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pregunta ${_index + 1} de $total',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          valueColor:
+                              AlwaysStoppedAnimation(colorScheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: timerColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: timerColor.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer_outlined, size: 16, color: timerColor),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${_secondsLeft}s',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: timerColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Tu puntaje: $myScore',
-              style: const TextStyle(fontSize: 16),
+            const SizedBox(height: 10),
+            StatChip(
+              icon: Icons.emoji_events_outlined,
+              label: 'Tu puntaje',
+              value: '$myScore',
+              fullWidth: true,
             ),
-            const SizedBox(height: 12),
-            Text(
-              qText,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 22),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                qText,
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
-
-              final colorScheme = Theme.of(context).colorScheme;
+              final letter = String.fromCharCode(65 + i);
 
               Color? fillColor;
 
               if (_locked && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = AppColors.success.withOpacity(0.2);
+                  fillColor = AppColors.success.withOpacity(0.16);
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withOpacity(0.2);
+                  fillColor = AppColors.danger.withOpacity(0.16);
                 }
               } else if (!_locked && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
@@ -639,10 +717,35 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 borderWidth = 2;
               }
 
+              final badgeColor = (_locked && isCorrect)
+                  ? AppColors.success
+                  : (_locked && isSelected && !isCorrect)
+                      ? AppColors.danger
+                      : (!_locked && isSelected)
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest;
+
+              final badgeTextColor =
+                  badgeColor == colorScheme.surfaceContainerHighest
+                      ? colorScheme.onSurfaceVariant
+                      : Colors.white;
+
+              IconData? trailingIcon;
+              Color? trailingIconColor;
+              if (_locked && !_timedOut) {
+                if (isCorrect) {
+                  trailingIcon = Icons.check_circle;
+                  trailingIconColor = AppColors.success;
+                } else if (isSelected) {
+                  trailingIcon = Icons.cancel;
+                  trailingIconColor = AppColors.danger;
+                }
+              }
+
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   onTap: () => _onTapAnswer(
                     tappedIndex: i,
                     answerIndex: answerIndex,
@@ -650,10 +753,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: fillColor ?? colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: borderColor,
                         width: borderWidth,
@@ -668,9 +774,40 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                             ]
                           : [],
                     ),
-                    child: Text(
-                      options[i],
-                      style: const TextStyle(fontSize: 16),
+                    child: Row(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            letter,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: badgeTextColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            options[i],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (trailingIcon != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(trailingIcon, color: trailingIconColor),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -690,7 +827,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       ),
                     ),
             ),
-            const Spacer(),
           ],
         ),
       ),

@@ -348,7 +348,7 @@ class _AsyncMatchTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _statusColor().withOpacity(0.18),
+          backgroundColor: _statusColor().withValues(alpha: 0.18),
           child: Icon(_icon(), color: _statusColor()),
         ),
         title: Text(
@@ -466,10 +466,10 @@ class _SoftStatusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.reward.withOpacity(0.12),
+        color: AppColors.reward.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.reward.withOpacity(0.35),
+          color: AppColors.reward.withValues(alpha: 0.35),
         ),
       ),
       child: Row(

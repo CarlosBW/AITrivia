@@ -196,10 +196,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(26),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
                     ),
                   ),
                   child: Column(
@@ -479,8 +479,8 @@ class _PlayerStatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ready
-            ? AppColors.success.withOpacity(0.10)
-            : AppColors.reward.withOpacity(0.10),
+            ? AppColors.success.withValues(alpha: 0.10)
+            : AppColors.reward.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: borderColor,
@@ -557,10 +557,10 @@ class _RoomCodeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
         ),
       ),
       child: Column(

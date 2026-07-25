@@ -135,15 +135,15 @@ class PvpResultCard extends StatelessWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: resultColor.withOpacity(0.16),
+                color: resultColor.withValues(alpha: 0.16),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: resultColor.withOpacity(0.55),
+                  color: resultColor.withValues(alpha: 0.55),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: resultColor.withOpacity(0.22),
+                    color: resultColor.withValues(alpha: 0.22),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -181,10 +181,10 @@ class PvpResultCard extends StatelessWidget {
                   vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: resultColor.withOpacity(0.12),
+                  color: resultColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: resultColor.withOpacity(0.35),
+                    color: resultColor.withValues(alpha: 0.35),
                   ),
                 ),
                 child: Text(
@@ -564,10 +564,10 @@ class _RatingChangeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withOpacity(0.35),
+          color: color.withValues(alpha: 0.35),
         ),
       ),
       child: Column(

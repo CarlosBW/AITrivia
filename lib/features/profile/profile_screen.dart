@@ -400,10 +400,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                     ),
                   ),
                   child: Row(
@@ -483,13 +483,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.16)
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.16)
                               : isUnlocked
                                   ? Theme.of(context).colorScheme.surface
                                   : Theme.of(context)
                                       .colorScheme
                                       .surface
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: isSelected
@@ -825,10 +825,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Column(
@@ -853,7 +853,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Color(frame.colorValue).withOpacity(0.30),
+                              color: Color(frame.colorValue).withValues(alpha: 0.30),
                               blurRadius: 12,
                             ),
                           ],
@@ -919,10 +919,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Color(frame.colorValue).withOpacity(0.12),
+                          color: Color(frame.colorValue).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: Color(frame.colorValue).withOpacity(0.40),
+                            color: Color(frame.colorValue).withValues(alpha: 0.40),
                           ),
                         ),
                         child: Text(
@@ -1033,10 +1033,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Color(pvpLeague.colorValue).withOpacity(0.10),
+                  color: Color(pvpLeague.colorValue).withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Color(pvpLeague.colorValue).withOpacity(0.35),
+                    color: Color(pvpLeague.colorValue).withValues(alpha: 0.35),
                   ),
                 ),
                 child: Column(
@@ -1190,7 +1190,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           if (_saving)
             Container(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1261,10 +1261,10 @@ class _AvatarCategoryBadge extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: _color.withOpacity(0.12),
+        color: _color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: _color.withOpacity(0.35),
+          color: _color.withValues(alpha: 0.35),
         ),
       ),
       child: Text(
@@ -1392,10 +1392,10 @@ class _RecentMatchHistory extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: color.withOpacity(0.30),
+                  color: color.withValues(alpha: 0.30),
                 ),
               ),
               child: Column(
@@ -1426,7 +1426,7 @@ class _RecentMatchHistory extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
+                            color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(

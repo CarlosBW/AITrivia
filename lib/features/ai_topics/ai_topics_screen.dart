@@ -266,7 +266,7 @@ class AiTopicsScreen extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.85),
+                    color: Colors.redAccent.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Icon(
@@ -276,15 +276,15 @@ class AiTopicsScreen extends StatelessWidget {
                 ),
                 child: Card(
                   elevation: 0,
-                  color: color.withOpacity(0.10),
+                  color: color.withValues(alpha: 0.10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: color.withOpacity(0.35)),
+                    side: BorderSide(color: color.withValues(alpha: 0.35)),
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(14),
                     leading: CircleAvatar(
-                      backgroundColor: color.withOpacity(0.16),
+                      backgroundColor: color.withValues(alpha: 0.16),
                       child: const Icon(Icons.auto_awesome),
                     ),
                     title: Text(

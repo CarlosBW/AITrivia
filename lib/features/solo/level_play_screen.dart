@@ -694,7 +694,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -884,9 +884,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: timerColor.withOpacity(0.15),
+                    color: timerColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: timerColor.withOpacity(0.5)),
+                    border: Border.all(color: timerColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -931,9 +931,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
               Color? fillColor;
               if (_locked && !_timedOut) {
-                if (isCorrect) fillColor = AppColors.success.withOpacity(0.16);
+                if (isCorrect) fillColor = AppColors.success.withValues(alpha: 0.16);
                 if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withOpacity(0.16);
+                  fillColor = AppColors.danger.withValues(alpha: 0.16);
                 }
               } else if (!_locked && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
@@ -1011,7 +1011,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -1282,8 +1282,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: counted
-            ? Colors.green.withOpacity(0.12)
-            : Colors.orange.withOpacity(0.12),
+            ? Colors.green.withValues(alpha: 0.12)
+            : Colors.orange.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: counted ? Colors.green : Colors.orange,
@@ -1562,7 +1562,7 @@ class _NoLivesCard extends StatelessWidget {
                 width: 78,
                 height: 78,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.10),
+                  color: Colors.red.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1591,7 +1591,7 @@ class _NoLivesCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.45),
+                  color: Colors.white.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -1695,7 +1695,7 @@ class _RewardCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -2060,11 +2060,11 @@ class _XpSegmentViewState extends State<_XpSegmentView>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.95),
+                          color: Colors.amber.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.amber.withOpacity(0.35),
+                              color: Colors.amber.withValues(alpha: 0.35),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -2166,7 +2166,7 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
                     child: Icon(
                       Icons.star_rounded,
                       size: p.size,
-                      color: Colors.amber.withOpacity(0.9),
+                      color: Colors.amber.withValues(alpha: 0.9),
                     ),
                   ),
                 ),
@@ -2181,11 +2181,11 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.95),
+                  color: Colors.amber.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.35),
+                      color: Colors.amber.withValues(alpha: 0.35),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),

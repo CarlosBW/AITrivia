@@ -143,10 +143,10 @@ class _FriendChallengeSetupScreenState
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Column(
@@ -346,7 +346,7 @@ class _FriendChallengeSetupScreenState
           ),
           if (_loading)
             Container(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),

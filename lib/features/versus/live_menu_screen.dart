@@ -50,10 +50,10 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: color.withOpacity(0.28),
+          color: color.withValues(alpha: 0.28),
         ),
       ),
       child: Row(

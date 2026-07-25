@@ -321,7 +321,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             _buildContent(context: context, uid: uid),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -512,13 +512,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             String subtitle;
 
             if (isCompleted) {
-              tileColor = AppColors.success.withOpacity(0.15);
+              tileColor = AppColors.success.withValues(alpha: 0.15);
               icon = Icons.check_circle_outline;
               subtitle = 'Completado';
             } else if (isUnlocked) {
               tileColor = isPlayed
-                  ? AppColors.reward.withOpacity(0.12)
-                  : Theme.of(context).colorScheme.primary.withOpacity(0.12);
+                  ? AppColors.reward.withValues(alpha: 0.12)
+                  : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
               icon = isPlayed ? Icons.refresh : Icons.play_circle_outline;
               subtitle = isPlayed ? 'Reintentar' : 'Disponible';
             } else {
@@ -544,7 +544,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                 boxShadow: showRecommended
                     ? [
                         BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -591,7 +591,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.12),
+                            color: Colors.blue.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: const Text(

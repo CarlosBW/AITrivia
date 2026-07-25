@@ -134,8 +134,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     setState(() {
       _flashColor = isCorrect
-          ? AppColors.success.withOpacity(0.18)
-          : AppColors.danger.withOpacity(0.18);
+          ? AppColors.success.withValues(alpha: 0.18)
+          : AppColors.danger.withValues(alpha: 0.18);
       _selectedIndex = index;
       _lastCorrect = isCorrect;
       _totalAnswered++;
@@ -255,7 +255,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   Widget _savingOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.45),
+      color: Colors.black.withValues(alpha: 0.45),
       child: Center(
         child: Container(
           width: double.infinity,
@@ -266,7 +266,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.25),
+                color: Colors.black.withValues(alpha: 0.25),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -430,7 +430,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),

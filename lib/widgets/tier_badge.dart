@@ -32,9 +32,9 @@ class TierBadge extends StatelessWidget {
         vertical: compact ? 4 : 6,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: color.withOpacity(0.45)),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

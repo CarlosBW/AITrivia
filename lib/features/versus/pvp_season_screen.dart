@@ -138,9 +138,9 @@ class _SeasonOverviewTab extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.10),
+            color: color.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: color.withOpacity(0.35)),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +495,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isMe
-                      ? color.withOpacity(0.14)
+                      ? color.withValues(alpha: 0.14)
                       : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -623,7 +623,7 @@ class _LeaderboardList extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isMe
-                    ? color.withOpacity(0.14)
+                    ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
@@ -814,7 +814,7 @@ class _RewardsTabState extends State<_RewardsTab> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isCurrent
-                    ? color.withOpacity(0.14)
+                    ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
@@ -882,9 +882,9 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.45)),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(
         children: [
@@ -1001,9 +1001,9 @@ class _PendingRewardsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withOpacity(0.10),
+          color: Colors.redAccent.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1043,9 +1043,9 @@ class _PendingRewardsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.blueGrey.withOpacity(0.10),
+          color: Colors.blueGrey.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.blueGrey.withOpacity(0.35)),
+          border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.35)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1081,9 +1081,9 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.12),
+        color: Colors.amber.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.amber.withOpacity(0.55)),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.55)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

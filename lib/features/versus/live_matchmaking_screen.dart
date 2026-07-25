@@ -99,9 +99,9 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Color(league.colorValue).withOpacity(0.10),
+        color: Color(league.colorValue).withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Color(league.colorValue).withOpacity(0.35)),
+        border: Border.all(color: Color(league.colorValue).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

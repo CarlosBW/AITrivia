@@ -133,11 +133,11 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
 
                   return Card(
                     elevation: 0,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                       side: BorderSide(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.45),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.45),
                       ),
                     ),
                     child: Padding(
@@ -151,7 +151,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                                 backgroundColor: Theme.of(context)
                                     .colorScheme
                                     .primary
-                                    .withOpacity(0.18),
+                                    .withValues(alpha: 0.18),
                                 child: const Icon(Icons.bolt_outlined),
                               ),
                               const SizedBox(width: 12),
@@ -215,7 +215,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
           ),
           if (_loadingAction)
             Container(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),

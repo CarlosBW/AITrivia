@@ -516,9 +516,9 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: timerColor.withOpacity(0.15),
+                    color: timerColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: timerColor.withOpacity(0.5)),
+                    border: Border.all(color: timerColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -572,11 +572,11 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
               if (_locked && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = AppColors.success.withOpacity(0.16);
+                  fillColor = AppColors.success.withValues(alpha: 0.16);
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withOpacity(0.16);
+                  fillColor = AppColors.danger.withValues(alpha: 0.16);
                 }
               } else if (!_locked && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
@@ -655,7 +655,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
+                                color: Colors.black.withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

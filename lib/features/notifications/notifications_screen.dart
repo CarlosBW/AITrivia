@@ -463,8 +463,8 @@ class _NotificationTile extends StatelessWidget {
     final cardColor = read
         ? Theme.of(context).colorScheme.surface
         : isPvp
-            ? accentColor.withOpacity(0.14)
-            : Theme.of(context).colorScheme.primary.withOpacity(0.14);
+            ? accentColor.withValues(alpha: 0.14)
+            : Theme.of(context).colorScheme.primary.withValues(alpha: 0.14);
 
     return Card(
       elevation: 0,

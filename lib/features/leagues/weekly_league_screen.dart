@@ -442,10 +442,10 @@ class _LeagueHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: color.withOpacity(0.55),
+          color: color.withValues(alpha: 0.55),
         ),
       ),
       child: Column(
@@ -758,7 +758,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isMe
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
         borderRadius:
             BorderRadius.circular(16),
@@ -773,7 +773,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor:
-                rankColor.withOpacity(0.18),
+                rankColor.withValues(alpha: 0.18),
             child: Text(
               '#$rank',
               style: TextStyle(

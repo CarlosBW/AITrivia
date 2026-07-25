@@ -146,10 +146,10 @@ class _TopThreePodium extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.22),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
         ),
       ),
       child: Row(
@@ -228,7 +228,7 @@ class _PodiumPlayer extends StatelessWidget {
       padding: EdgeInsets.all(large ? 14 : 10),
       decoration: BoxDecoration(
         color: isMe
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.20)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.20)
             : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
@@ -328,7 +328,7 @@ class _LeaderboardTile extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isMe
-            ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
@@ -339,7 +339,7 @@ class _LeaderboardTile extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: rankColor.withOpacity(0.18),
+            backgroundColor: rankColor.withValues(alpha: 0.18),
             child: rank <= 3
                 ? Icon(
                     _rankIcon(),

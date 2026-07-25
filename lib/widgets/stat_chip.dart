@@ -30,7 +30,7 @@ class StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
-    final bg = background ?? color.withOpacity(0.18);
+    final bg = background ?? color.withValues(alpha: 0.18);
     final valueColor = Color.lerp(color, Colors.white, 0.7)!;
     final labelColor = Color.lerp(color, Colors.white, 0.25)!;
 

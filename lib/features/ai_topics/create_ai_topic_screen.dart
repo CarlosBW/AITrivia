@@ -182,9 +182,9 @@ class _PricingCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.08),
+            color: accentColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: accentColor.withOpacity(0.3)),
+            border: Border.all(color: accentColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             children: [

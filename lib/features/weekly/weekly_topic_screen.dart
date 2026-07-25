@@ -187,7 +187,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           color: AppColors.rewardBg,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: AppColors.reward.withOpacity(0.5),
+                            color: AppColors.reward.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Column(
@@ -246,7 +246,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.10),
+                          color: AppColors.success.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Column(
@@ -353,7 +353,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                   ),
                   if (_claimingCoins || _claimingCompletion)
                     Container(
-                      color: Colors.black.withOpacity(0.25),
+                      color: Colors.black.withValues(alpha: 0.25),
                       child: const Center(
                         child: CircularProgressIndicator(),
                       ),

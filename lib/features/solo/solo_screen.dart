@@ -321,7 +321,7 @@ class _SoloScreenState extends State<SoloScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -534,7 +534,7 @@ class _CategoryCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: item.statusColor.withOpacity(0.16),
+                      color: item.statusColor.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(

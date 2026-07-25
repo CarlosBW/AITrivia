@@ -517,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: const Icon(
@@ -630,10 +630,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
                     ),
                   ),
                   child: const Text(
@@ -647,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -678,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -724,7 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -868,7 +868,7 @@ class _WeeklyTopicCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.reward.withOpacity(0.25),
+                        color: AppColors.reward.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -1033,16 +1033,16 @@ class _StreakCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(glow ? 0.30 : 0.15),
+        color: color.withValues(alpha: glow ? 0.30 : 0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(glow ? 0.9 : 0.35),
+          color: color.withValues(alpha: glow ? 0.9 : 0.35),
           width: glow ? 2 : 1,
         ),
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.45),
+                  color: color.withValues(alpha: 0.45),
                   blurRadius: 18,
                   spreadRadius: 2,
                 ),

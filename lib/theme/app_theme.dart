@@ -18,19 +18,19 @@ class AppRadius {
 class AppColors {
   AppColors._();
 
-  static const Color pageBackground = Color(0xFF16101F);
+  static const Color pageBackground = Color(0xFFFFFBF5);
 
-  static const Color reward = Color(0xFFEF9F27);
-  static const Color rewardBg = Color(0xFF2E2712);
+  static const Color reward = Color(0xFFF2A93B);
+  static const Color rewardBg = Color(0xFFFFF3D6);
 
-  static const Color success = Color(0xFF1D9E75);
-  static const Color successBg = Color(0xFF04342C);
+  static const Color success = Color(0xFF0F6E56);
+  static const Color successBg = Color(0xFFE1F5EE);
 
-  static const Color warning = Color(0xFFEF9F27);
-  static const Color warningBg = Color(0xFF2E2712);
+  static const Color warning = Color(0xFFF2A93B);
+  static const Color warningBg = Color(0xFFFFF3D6);
 
-  static const Color danger = Color(0xFFE24B4A);
-  static const Color dangerBg = Color(0xFF4A1B0C);
+  static const Color danger = Color(0xFFB3392C);
+  static const Color dangerBg = Color(0xFFFFEDE9);
 }
 
 /// One (icon-on-tint, tint bg, progress) triad for a category-style card —
@@ -48,33 +48,33 @@ class CategoryAccent {
 
   static const List<CategoryAccent> _cycle = [
     CategoryAccent(
-      foreground: Color(0xFFF0997B),
-      background: Color(0xFF4A1B0C),
+      foreground: Color(0xFFD85A30),
+      background: Color(0xFFFAECE7),
       progress: Color(0xFFD85A30),
     ),
     CategoryAccent(
-      foreground: Color(0xFF5DCAA5),
-      background: Color(0xFF04342C),
+      foreground: Color(0xFF0F6E56),
+      background: Color(0xFFE1F5EE),
       progress: Color(0xFF1D9E75),
     ),
     CategoryAccent(
-      foreground: Color(0xFF85B7EB),
-      background: Color(0xFF042C53),
+      foreground: Color(0xFF185FA5),
+      background: Color(0xFFE6F1FB),
       progress: Color(0xFF378ADD),
     ),
     CategoryAccent(
-      foreground: Color(0xFFED93B1),
-      background: Color(0xFF4B1528),
+      foreground: Color(0xFF993556),
+      background: Color(0xFFFBEAF0),
       progress: Color(0xFFD4537E),
     ),
     CategoryAccent(
-      foreground: Color(0xFFEF9F27),
-      background: Color(0xFF2E2712),
+      foreground: Color(0xFF854F0B),
+      background: Color(0xFFFAEEDA),
       progress: Color(0xFFBA7517),
     ),
     CategoryAccent(
-      foreground: Color(0xFFAFA9EC),
-      background: Color(0xFF211E33),
+      foreground: Color(0xFF534AB7),
+      background: Color(0xFFEEEDFE),
       progress: Color(0xFF7F77DD),
     ),
   ];
@@ -86,36 +86,35 @@ class CategoryAccent {
   }
 }
 
-/// TriviaIA's app-wide theme: a dark, saturated "game app" look (deep
-/// violet surfaces, color-blocked accents) replacing the earlier
-/// Material-default seed theme. Baloo 2 carries headings/scores; Manrope
-/// carries body/UI text — swapped in for the previous default Roboto for a
-/// cleaner, more deliberate look.
+/// TriviaIA's app-wide theme: a light, vibrant "game app" look (warm cream
+/// page, saturated purple/amber/coral accents) replacing the earlier dark
+/// violet theme — the dark theme read as serious/professional rather than
+/// playful. Baloo 2 carries headings/scores; Manrope carries body/UI text.
 ThemeData buildAppTheme() {
   const colorScheme = ColorScheme(
-    brightness: Brightness.dark,
-    primary: Color(0xFF7F77DD),
+    brightness: Brightness.light,
+    primary: Color(0xFF6C4FF2),
     onPrimary: Colors.white,
-    primaryContainer: Color(0xFF4A3792),
-    onPrimaryContainer: Color(0xFFF3EEFF),
-    secondary: Color(0xFFAFA9EC),
-    onSecondary: Color(0xFF211E33),
-    secondaryContainer: Color(0xFF211E33),
-    onSecondaryContainer: Color(0xFFE4E0F9),
-    tertiary: Color(0xFFEF9F27),
-    onTertiary: Color(0xFF2E2712),
-    surface: Color(0xFF1F1B2E),
-    onSurface: Color(0xFFF3EEFF),
-    surfaceContainerHighest: Color(0xFF2E2740),
-    onSurfaceVariant: Color(0xFF9C93C9),
-    outline: Color(0xFF3A3350),
-    outlineVariant: Color(0xFF2E2740),
-    error: Color(0xFFE24B4A),
+    primaryContainer: Color(0xFFE4DBFF),
+    onPrimaryContainer: Color(0xFF2B1A66),
+    secondary: Color(0xFFB4A8F5),
+    onSecondary: Color(0xFF2B1A66),
+    secondaryContainer: Color(0xFFF1EEFF),
+    onSecondaryContainer: Color(0xFF2B1A66),
+    tertiary: Color(0xFFF2A93B),
+    onTertiary: Color(0xFF4A3200),
+    surface: Colors.white,
+    onSurface: Color(0xFF241A38),
+    surfaceContainerHighest: Color(0xFFF1EEFF),
+    onSurfaceVariant: Color(0xFF6B6280),
+    outline: Color(0xFFE3DFF2),
+    outlineVariant: Color(0xFFEDEAFF),
+    error: Color(0xFFB3392C),
     onError: Colors.white,
-    errorContainer: Color(0xFF4A1B0C),
-    onErrorContainer: Color(0xFFF5DCD2),
-    inverseSurface: Color(0xFFF3EEFF),
-    onInverseSurface: Color(0xFF1F1B2E),
+    errorContainer: Color(0xFFFFEDE9),
+    onErrorContainer: Color(0xFF7A2A20),
+    inverseSurface: Color(0xFF2B2140),
+    onInverseSurface: Colors.white,
     shadow: Colors.black,
     scrim: Colors.black,
   );

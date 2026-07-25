@@ -239,6 +239,15 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     return Theme.of(context).colorScheme.surfaceContainerHighest;
   }
 
+  Color _buttonTextColor(int index, int correctIndex) {
+    if (_selectedIndex != null &&
+        index != correctIndex &&
+        index != _selectedIndex) {
+      return Theme.of(context).colorScheme.onSurfaceVariant;
+    }
+    return Colors.white;
+  }
+
   String _formatTime(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -389,7 +398,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _buttonColor(i, correctIndex),
-                              foregroundColor: Colors.white,
+                              foregroundColor:
+                                  _buttonTextColor(i, correctIndex),
                               padding: const EdgeInsets.symmetric(
                                 vertical: 14,
                                 horizontal: 16,

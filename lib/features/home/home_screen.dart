@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../daily/daily_challenge_screen.dart';
@@ -16,6 +17,7 @@ import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
+import '../../widgets/buy_coins_button.dart';
 import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -331,6 +333,19 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
+                _AiTopicCta(
+                  onTap: _isNavigating || _buyingLife
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AiTopicsScreen(),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 18),
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: userRef.snapshots(),
                   builder: (context, snap) {
@@ -381,35 +396,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? const LinearProgressIndicator()
                               : Column(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: StatChip(
-                                            icon: Icons.favorite_border,
-                                            label: 'Vidas',
-                                            accent: const Color(0xFFF0997B),
-                                            background: AppColors.dangerBg,
-                                            value:
-                                                '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])} / ${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: StatChip(
-                                            icon: Icons.timer_outlined,
-                                            label: 'Próx. media vida',
-                                            accent: const Color(0xFFF0997B),
-                                            background: AppColors.dangerBg,
-                                            value: _lifeState!['lifeUnits'] >=
-                                                    _lifeState!['maxLifeUnits']
-                                                ? 'MAX'
-                                                : _formatCountdown(
-                                                    _lifeState![
-                                                        'secondsToNextHalfLife'],
-                                                  ),
-                                          ),
-                                        ),
-                                      ],
+                                    _LivesCard(
+                                      livesText:
+                                          '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])}/${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
+                                      isFull: _lifeState!['lifeUnits'] >=
+                                          _lifeState!['maxLifeUnits'],
+                                      countdownText: _formatCountdown(
+                                        _lifeState!['secondsToNextHalfLife'],
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                   ],
@@ -430,8 +424,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: StatChip(
                                   icon: Icons.auto_awesome_outlined,
                                   label: 'XP',
-                                  accent: const Color(0xFFAFA9EC),
-                                  background: const Color(0xFF211E33),
+                                  accent: Theme.of(context).colorScheme.primary,
+                                  background: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
                                   value: '$xp',
                                 ),
                               ),
@@ -441,125 +437,67 @@ class _HomeScreenState extends State<HomeScreen> {
                           StatChip(
                             icon: Icons.style_outlined,
                             label: 'Tema libre',
-                            accent: const Color(0xFFAFA9EC),
-                            background: const Color(0xFF211E33),
+                            accent: Theme.of(context).colorScheme.primary,
+                            background: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             value: '$passes',
                             fullWidth: true,
                           ),
                           const SizedBox(height: 14),
-                          _StreakCard(
-                            streak: streak,
-                            glow: _streakGlow,
-                          ),
+                          const BuyCoinsButton(),
                         ],
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 18),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.primaryContainer,
-                      ],
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: _isNavigating || _buyingLife
-                        ? null
-                        : () {
-                            _safeNavigate(() async {
-                              final alreadyPlayed = await DailyChallengeService
-                                  .instance
-                                  .hasPlayedToday(uid);
+                StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: userRef.snapshots(),
+                  builder: (context, snap) {
+                    final streak = ((snap.data?.data()?['dailyStreak'] ?? 0)
+                            as num)
+                        .toInt();
 
-                              if (!context.mounted) return;
+                    return _DailyChallengeCard(
+                      streak: streak,
+                      glow: _streakGlow,
+                      onTap: _isNavigating || _buyingLife
+                          ? null
+                          : () {
+                              _safeNavigate(() async {
+                                final alreadyPlayed =
+                                    await DailyChallengeService.instance
+                                        .hasPlayedToday(uid);
 
-                              if (alreadyPlayed) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Ya jugaste el Daily Challenge de hoy.',
+                                if (!context.mounted) return;
+
+                                if (alreadyPlayed) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Ya jugaste el Daily Challenge de '
+                                        'hoy.',
+                                      ),
                                     ),
+                                  );
+                                  return;
+                                }
+
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DailyChallengeScreen(uid: uid),
                                   ),
                                 );
-                                return;
-                              }
 
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      DailyChallengeScreen(uid: uid),
-                                ),
-                              );
-
-                              if (!mounted) return;
-                              await _refreshHome();
-                            });
-                          },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 20,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.calendar_today_outlined,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Daily Challenge',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 3),
-                                Text(
-                                  'Juega hoy y mantén tu racha',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                    ),
-                  ),
+                                if (!mounted) return;
+                                await _refreshHome();
+                              });
+                            },
+                    );
+                  },
                 ),
                 const SizedBox(height: 22),
                 const SectionLabel('Más formas de jugar'),
@@ -605,24 +543,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? 'Weekly Challenge • Reward!'
                           : 'Weekly Challenge',
                     ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isNavigating || _buyingLife
-                        ? null
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AiTopicsScreen(),
-                              ),
-                            );
-                          },
-                    icon: const Icon(Icons.auto_awesome_outlined),
-                    label: const Text('Tema libre (IA)'),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -766,6 +686,189 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+// Vidas + tiempo de regeneración are one system, so they read as one card
+// instead of two separate stat chips.
+class _LivesCard extends StatelessWidget {
+  final String livesText;
+  final bool isFull;
+  final String countdownText;
+
+  const _LivesCard({
+    required this.livesText,
+    required this.isFull,
+    required this.countdownText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const iconColor = Color(0xFFFF6B5B);
+    const valueColor = Color(0xFFB23A2C);
+    const labelColor = Color(0xFFD9695B);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.dangerBg,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.favorite_border, size: 22, color: iconColor),
+          const SizedBox(width: 10),
+          Text(
+            '$livesText vidas',
+            style: GoogleFonts.baloo2(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
+          ),
+          const Spacer(),
+          Icon(
+            isFull ? Icons.check_circle_outline : Icons.timer_outlined,
+            size: 16,
+            color: labelColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isFull ? 'Vidas al máximo' : countdownText,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: labelColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// The AI-topic flow is the game's differentiator and the main sink for
+// coins earned elsewhere, so this CTA gets its own glowing pulse to draw
+// the eye — the only element on Home that animates on a loop.
+class _AiTopicCta extends StatefulWidget {
+  final VoidCallback? onTap;
+
+  const _AiTopicCta({required this.onTap});
+
+  @override
+  State<_AiTopicCta> createState() => _AiTopicCtaState();
+}
+
+class _AiTopicCtaState extends State<_AiTopicCta>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final t = reduceMotion ? 0.0 : _controller.value;
+
+            return Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 20,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.reward.withValues(
+                      alpha: 0.25 + t * 0.30,
+                    ),
+                    blurRadius: 14 + t * 12,
+                    spreadRadius: t * 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Transform.scale(
+                    scale: 1.0 + t * 0.10,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: AppColors.reward,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome,
+                        color: Color(0xFF412402),
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tema libre (IA)',
+                          style: GoogleFonts.baloo2(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'Crea tu propio tema y juega con tus monedas',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -1002,105 +1105,140 @@ class _WeeklyButtonIcon extends StatelessWidget {
   }
 }
 
-class _StreakCard extends StatelessWidget {
+// Daily Challenge + streak used to be two separate cards, but the streak
+// only exists because of the Daily Challenge, so the count now lives
+// inline in this card's subtitle instead of its own block below it.
+class _DailyChallengeCard extends StatelessWidget {
   final int streak;
   final bool glow;
+  final VoidCallback? onTap;
 
-  const _StreakCard({
+  const _DailyChallengeCard({
     required this.streak,
     required this.glow,
+    required this.onTap,
   });
 
-  Color _color(BuildContext context) {
+  Color _streakColor(BuildContext context) {
     if (streak >= 7) return AppColors.danger;
-    if (streak >= 3) return AppColors.reward;
-    return Theme.of(context).colorScheme.onSurfaceVariant;
-  }
-
-  String _subtitle() {
-    if (streak >= 14) return 'Legendary streak!';
-    if (streak >= 7) return 'On fire!';
-    if (streak >= 3) return 'Keep it going!';
-    return 'Start your streak today';
+    return const Color(0xFFE5622C);
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _color(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final streakColor = _streakColor(context);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: glow ? 0.30 : 0.15),
-        borderRadius: BorderRadius.circular(12),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: color.withValues(alpha: glow ? 0.9 : 0.35),
-          width: glow ? 2 : 1,
+          color: streakColor.withValues(alpha: glow ? 0.8 : 0.25),
+          width: glow ? 1.6 : 1,
         ),
         boxShadow: glow
             ? [
                 BoxShadow(
-                  color: color.withValues(alpha: 0.45),
-                  blurRadius: 18,
-                  spreadRadius: 2,
+                  color: streakColor.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  spreadRadius: 1,
                 ),
               ]
             : [],
       ),
-      child: Row(
-        children: [
-          AnimatedScale(
-            scale: glow ? 1.25 : 1.0,
-            duration: const Duration(milliseconds: 300),
-            child: Icon(
-              Icons.local_fire_department_outlined,
-              color: color,
-              size: 30,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Streak: $streak días',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontSize: 16,
+                AnimatedScale(
+                  scale: glow ? 1.15 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: streakColor.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.local_fire_department,
+                      color: streakColor,
+                      size: 26,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _subtitle(),
-                  style: const TextStyle(fontSize: 12),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Daily Challenge',
+                        style: GoogleFonts.baloo2(
+                          color: colorScheme.onSurface,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Racha: $streak días',
+                              style: TextStyle(
+                                color: streakColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (streak > 0 && streak % 3 == 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.reward,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                'Reward!',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 16,
                 ),
               ],
             ),
           ),
-          if (streak > 0 && streak % 3 == 0)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.reward,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'Reward!',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

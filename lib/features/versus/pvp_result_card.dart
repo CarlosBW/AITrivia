@@ -90,7 +90,7 @@ class PvpResultCard extends StatelessWidget {
       case PvpResultState.defeat:
         return AppColors.danger;
       case PvpResultState.draw:
-        return const Color(0xFF9C93C9);
+        return Theme.of(context).colorScheme.onSurfaceVariant;
       case PvpResultState.waiting:
         return Theme.of(context).colorScheme.primary;
     }
@@ -552,7 +552,7 @@ class _RatingChangeCard extends StatelessWidget {
     final neutral = ratingDelta == 0;
 
     final color = neutral
-        ? const Color(0xFF9C93C9)
+        ? Theme.of(context).colorScheme.onSurfaceVariant
         : positive
             ? AppColors.success
             : AppColors.danger;

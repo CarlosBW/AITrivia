@@ -326,14 +326,14 @@ class _AsyncMatchTile extends StatelessWidget {
     }
   }
 
-  Color _statusColor() {
+  Color _statusColor(BuildContext context) {
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
         return AppColors.success;
       case _AsyncSectionMode.waitingOpponent:
         return AppColors.reward;
       case _AsyncSectionMode.finished:
-        return const Color(0xFF9C93C9);
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -348,8 +348,8 @@ class _AsyncMatchTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _statusColor().withValues(alpha: 0.18),
-          child: Icon(_icon(), color: _statusColor()),
+          backgroundColor: _statusColor(context).withValues(alpha: 0.18),
+          child: Icon(_icon(), color: _statusColor(context)),
         ),
         title: Text(
           'vs $opponent',

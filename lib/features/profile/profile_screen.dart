@@ -10,7 +10,8 @@ import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
 import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
-import '../shop/coin_shop_screen.dart';
+import '../../widgets/buy_coins_button.dart';
+import '../../widgets/stat_chip.dart';
 import '../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -959,53 +960,49 @@ class _ProfileScreenState extends State<ProfileScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _ProfileStatCard(
+                    child: StatChip(
                       icon: Icons.monetization_on_outlined,
                       label: 'Coins',
+                      accent: AppColors.reward,
+                      background: AppColors.rewardBg,
                       value: '$coins',
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _ProfileStatCard(
+                    child: StatChip(
                       icon: Icons.style_outlined,
                       label: 'Free topics',
+                      accent: Theme.of(context).colorScheme.primary,
+                      background: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
                       value: '$freeTopicPasses',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CoinShopScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Comprar monedas'),
-                ),
-              ),
+              const BuyCoinsButton(),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: _ProfileStatCard(
+                    child: StatChip(
                       icon: Icons.local_fire_department_outlined,
                       label: 'Streak',
+                      accent: const Color(0xFFFF6B5B),
+                      background: AppColors.dangerBg,
                       value: '$dailyStreak',
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _ProfileStatCard(
+                    child: StatChip(
                       icon: Icons.whatshot_outlined,
                       label: 'Best streak',
+                      accent: AppColors.reward,
+                      background: AppColors.rewardBg,
                       value: '$maxDailyStreak',
                     ),
                   ),
@@ -1252,7 +1249,7 @@ class _AvatarCategoryBadge extends StatelessWidget {
     }
   }
 
-  Color get _color {
+  Color _color(BuildContext context) {
     switch (category) {
       case 'base':
         return Colors.blueGrey;
@@ -1266,22 +1263,24 @@ class _AvatarCategoryBadge extends StatelessWidget {
       case 'ai_dynamic':
         return Colors.pinkAccent;
       default:
-        return const Color(0xFF9C93C9);
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final color = _color(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 7,
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: _color.withValues(alpha: 0.35),
+          color: color.withValues(alpha: 0.35),
         ),
       ),
       child: Text(
@@ -1289,7 +1288,7 @@ class _AvatarCategoryBadge extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: _color,
+          color: color,
           fontSize: 9,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.2,
@@ -1330,16 +1329,15 @@ class _RecentMatchHistory extends StatelessWidget {
     }
   }
 
-  Color _resultColor(String result) {
+  Color _resultColor(BuildContext context, String result) {
     switch (result) {
       case 'victory':
         return AppColors.success;
       case 'defeat':
         return AppColors.danger;
       case 'draw':
-        return const Color(0xFF9C93C9);
       default:
-        return const Color(0xFF9C93C9);
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -1403,7 +1401,7 @@ class _RecentMatchHistory extends StatelessWidget {
             final opponentScore = ((data['opponentScore'] ?? 0) as num).toInt();
             final ranked = data['ranked'] == true;
             final deltaText = ranked ? _deltaText(data['ratingDelta']) : '';
-            final color = _resultColor(result);
+            final color = _resultColor(context, result);
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -1536,47 +1534,6 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-class _ProfileStatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _ProfileStatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 25),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _WideStatTile extends StatelessWidget {

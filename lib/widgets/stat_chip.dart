@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 
@@ -31,8 +32,9 @@ class StatChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
     final bg = background ?? color.withValues(alpha: 0.18);
-    final valueColor = Color.lerp(color, Colors.white, 0.7)!;
-    final labelColor = Color.lerp(color, Colors.white, 0.25)!;
+    final iconColor = Color.lerp(color, Colors.black, 0.25)!;
+    final valueColor = Color.lerp(color, Colors.black, 0.35)!;
+    final labelColor = Color.lerp(color, Colors.black, 0.10)!;
 
     if (fullWidth) {
       return Container(
@@ -45,13 +47,13 @@ class StatChip extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 20, color: color),
+            Icon(icon, size: 20, color: iconColor),
             const SizedBox(width: 8),
             Text(
               '$label: $value',
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: valueColor,
               ),
               overflow: TextOverflow.ellipsis,
@@ -70,13 +72,13 @@ class StatChip extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 20, color: color),
+          Icon(icon, size: 22, color: iconColor),
           const SizedBox(height: 6),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
+            style: GoogleFonts.baloo2(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
               color: valueColor,
             ),
             maxLines: 1,
@@ -87,7 +89,7 @@ class StatChip extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: labelColor,
             ),
             maxLines: 1,

@@ -425,7 +425,7 @@ class _AppIconFab extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF7F77DD), Color(0xFF4A3792)],
+            colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
           ),
           border: Border.all(
             color: selected ? const Color(0xFFEF9F27) : Colors.transparent,
@@ -756,14 +756,14 @@ class _NewNotificationOverlay extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.notifications_active,
-                    color: Colors.white,
+                    color: Color(0xFF412402),
                     size: 58,
                   ),
                   SizedBox(height: 10),
                   Text(
                     'Nueva notificación',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF412402),
                       fontSize: 23,
                       fontWeight: FontWeight.bold,
                     ),
@@ -772,7 +772,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                   Text(
                     'Revisa la campana',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Color(0xFF412402),
                       fontSize: 14,
                     ),
                   ),

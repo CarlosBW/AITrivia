@@ -59,8 +59,8 @@ class PvPScreen extends StatelessWidget {
 
               return _PvpCard(
                 icon: Icons.flash_on_outlined,
-                accent: const Color(0xFF85B7EB),
-                accentBg: const Color(0xFF042C53),
+                accent: const Color(0xFF185FA5),
+                accentBg: const Color(0xFFE6F1FB),
                 title: hasPendingTurn
                     ? 'Active Matches • Your Turn!'
                     : 'Active Matches',
@@ -86,8 +86,8 @@ class PvPScreen extends StatelessWidget {
 
               return _PvpCard(
                 icon: Icons.bolt_outlined,
-                accent: const Color(0xFFED93B1),
-                accentBg: const Color(0xFF4B1528),
+                accent: const Color(0xFF993556),
+                accentBg: const Color(0xFFFBEAF0),
                 title: hasPending
                     ? 'Realtime Invites • New!'
                     : 'Realtime Invites',
@@ -109,8 +109,8 @@ class PvPScreen extends StatelessWidget {
           ),
           _PvpCard(
             icon: Icons.public_outlined,
-            accent: const Color(0xFF5DCAA5),
-            accentBg: const Color(0xFF04342C),
+            accent: const Color(0xFF0F6E56),
+            accentBg: const Color(0xFFE1F5EE),
             title: 'Find Opponent',
             subtitle: 'Play against any available challenger.',
             onTap: () {
@@ -166,68 +166,88 @@ class _PvpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final iconColor = alert ? AppColors.danger : accent;
-    final iconBg = alert ? AppColors.dangerBg : accentBg;
+    final color = alert ? AppColors.danger : accent;
+    final bg = alert ? AppColors.dangerBg : accentBg;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: bg,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(
-          color: alert ? AppColors.danger : Colors.transparent,
-          width: alert ? 1.5 : 0,
+        border: Border.all(
+          color: color.withValues(alpha: alert ? 0.7 : 0.35),
+          width: alert ? 1.6 : 1.2,
         ),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            CircleAvatar(
-              backgroundColor: iconBg,
-              child: Icon(icon, color: iconColor),
-            ),
-            if (alert)
-              Positioned(
-                right: -1,
-                top: -1,
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: AppColors.danger,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      width: 1.4,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: color,
+                      child: Icon(icon, color: Colors.white),
                     ),
+                    if (alert)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 11,
+                          height: 11,
+                          decoration: BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: alert ? color : colorScheme.onSurfaceVariant,
+                          fontWeight:
+                              alert ? FontWeight.w600 : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-          ],
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: alert ? AppColors.danger : null,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            subtitle,
-            style: TextStyle(
-              color: alert ? AppColors.danger : colorScheme.onSurfaceVariant,
-              fontWeight: alert ? FontWeight.w600 : FontWeight.normal,
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, color: color),
+              ],
             ),
           ),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: alert ? AppColors.danger : null,
-        ),
-        onTap: onTap,
       ),
     );
   }

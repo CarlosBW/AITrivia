@@ -13,6 +13,7 @@ import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
 import '../../widgets/notification_bell_button.dart';
+import '../../theme/app_theme.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -348,7 +349,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                 vertical: 22,
               ),
               decoration: BoxDecoration(
-                color: Colors.amber.shade700,
+                color: AppColors.reward,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(

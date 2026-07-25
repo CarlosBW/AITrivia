@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class NotificationBellButton extends StatefulWidget {
   final int unreadCount;
   final VoidCallback onPressed;
@@ -82,6 +84,7 @@ class _NotificationBellButtonState
   @override
   Widget build(BuildContext context) {
     final hasUnread = widget.unreadCount > 0;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -99,22 +102,32 @@ class _NotificationBellButtonState
         icon: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(
-              Icons.notifications_rounded,
-              size: 30,
-              color: hasUnread ? Colors.amber.shade700 : Colors.black87,
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.notifications_rounded,
+                size: 20,
+                color: hasUnread
+                    ? colorScheme.tertiary
+                    : colorScheme.onSurfaceVariant,
+              ),
             ),
             if (hasUnread)
               Positioned(
-                right: -8,
-                top: -8,
+                right: -4,
+                top: -4,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 5,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.danger,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,

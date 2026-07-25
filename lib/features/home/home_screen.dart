@@ -16,6 +16,7 @@ import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
+import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -321,7 +322,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('TriviaIA'),
-        centerTitle: true,
       ),
       body: Stack(
         children: [
@@ -372,8 +372,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black12,
-                        borderRadius: BorderRadius.circular(14),
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Column(
                         children: [
@@ -385,8 +385,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       children: [
                                         Expanded(
                                           child: StatChip(
-                                            icon: Icons.favorite,
+                                            icon: Icons.favorite_border,
                                             label: 'Vidas',
+                                            accent: const Color(0xFFF0997B),
+                                            background: AppColors.dangerBg,
                                             value:
                                                 '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])} / ${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
                                           ),
@@ -394,8 +396,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: StatChip(
-                                            icon: Icons.timer,
+                                            icon: Icons.timer_outlined,
                                             label: 'Próx. media vida',
+                                            accent: const Color(0xFFF0997B),
+                                            background: AppColors.dangerBg,
                                             value: _lifeState!['lifeUnits'] >=
                                                     _lifeState!['maxLifeUnits']
                                                 ? 'MAX'
@@ -414,16 +418,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               Expanded(
                                 child: StatChip(
-                                  icon: Icons.monetization_on,
+                                  icon: Icons.monetization_on_outlined,
                                   label: 'Monedas',
+                                  accent: AppColors.reward,
+                                  background: AppColors.rewardBg,
                                   value: '$coins',
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: StatChip(
-                                  icon: Icons.auto_awesome,
+                                  icon: Icons.auto_awesome_outlined,
                                   label: 'XP',
+                                  accent: const Color(0xFFAFA9EC),
+                                  background: const Color(0xFF211E33),
                                   value: '$xp',
                                 ),
                               ),
@@ -431,8 +439,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 12),
                           StatChip(
-                            icon: Icons.style,
+                            icon: Icons.style_outlined,
                             label: 'Tema libre',
+                            accent: const Color(0xFFAFA9EC),
+                            background: const Color(0xFF211E33),
                             value: '$passes',
                             fullWidth: true,
                           ),
@@ -448,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 18),
                 Material(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(20),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
@@ -598,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             );
                           },
-                    icon: const Icon(Icons.auto_awesome),
+                    icon: const Icon(Icons.auto_awesome_outlined),
                     label: const Text('Tema libre (IA)'),
                   ),
                 ),
@@ -651,7 +661,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.deepOrange.withOpacity(0.95),
+                    color: AppColors.danger,
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -697,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -774,11 +784,8 @@ class _WeeklyTopicCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.10),
+              color: AppColors.rewardBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.amber.withOpacity(0.30),
-              ),
             ),
             child: const Row(
               children: [
@@ -818,18 +825,19 @@ class _WeeklyTopicCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.10),
+            color: AppColors.rewardBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.amber.withOpacity(0.35),
-            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.star_rounded, color: Colors.amber, size: 22),
+                  const Icon(
+                    Icons.star_border_rounded,
+                    color: AppColors.reward,
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -847,7 +855,7 @@ class _WeeklyTopicCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.25),
+                        color: AppColors.reward.withOpacity(0.25),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
@@ -863,12 +871,19 @@ class _WeeklyTopicCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 description,
-                style: const TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.reward,
+                    foregroundColor: const Color(0xFF412402),
+                  ),
                   onPressed: isBusy ? null : () => onOpen(data),
                   icon: const Icon(Icons.play_arrow, size: 18),
                   label: const Text('Open Weekly Topic'),
@@ -897,12 +912,12 @@ class _WeeklyTopicUnavailableCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
-          const Icon(Icons.event_busy),
+          const Icon(Icons.event_busy_outlined),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -915,7 +930,10 @@ class _WeeklyTopicUnavailableCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   detail,
-                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -942,7 +960,7 @@ class _WeeklyButtonIcon extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        const Icon(Icons.workspace_premium),
+        const Icon(Icons.workspace_premium_outlined),
         if (checking)
           const Positioned(
             right: -5,
@@ -961,7 +979,7 @@ class _WeeklyButtonIcon extends StatelessWidget {
               width: 10,
               height: 10,
               decoration: const BoxDecoration(
-                color: Colors.red,
+                color: AppColors.danger,
                 shape: BoxShape.circle,
               ),
             ),
@@ -980,10 +998,10 @@ class _StreakCard extends StatelessWidget {
     required this.glow,
   });
 
-  Color _color() {
-    if (streak >= 7) return Colors.red;
-    if (streak >= 3) return Colors.orange;
-    return Colors.grey;
+  Color _color(BuildContext context) {
+    if (streak >= 7) return AppColors.danger;
+    if (streak >= 3) return AppColors.reward;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   String _subtitle() {
@@ -995,7 +1013,7 @@ class _StreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _color();
+    final color = _color(context);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -1024,7 +1042,7 @@ class _StreakCard extends StatelessWidget {
             scale: glow ? 1.25 : 1.0,
             duration: const Duration(milliseconds: 300),
             child: Icon(
-              Icons.local_fire_department,
+              Icons.local_fire_department_outlined,
               color: color,
               size: 30,
             ),
@@ -1057,7 +1075,7 @@ class _StreakCard extends StatelessWidget {
                 vertical: 6,
               ),
               decoration: BoxDecoration(
-                color: Colors.amber,
+                color: AppColors.reward,
                 borderRadius: BorderRadius.circular(999),
               ),
               child: const Text(

@@ -10,6 +10,7 @@ import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
 import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
+import '../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -390,8 +391,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Text(
                   'Unlocked $unlockedCount / ${avatars.length}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.black54,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -409,7 +410,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: Colors.white.withOpacity(0.75),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: Text(
                           currentAvatar.emoji,
                           style: const TextStyle(fontSize: 30),
@@ -420,10 +422,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Currently equipped',
                               style: TextStyle(
-                                color: Colors.black54,
+                                color:
+                                    Theme.of(context).colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -482,15 +485,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                           color: isSelected
                               ? Theme.of(context).colorScheme.primary.withOpacity(0.16)
                               : isUnlocked
-                                  ? Colors.black12
-                                  : Colors.black.withOpacity(0.06),
+                                  ? Theme.of(context).colorScheme.surface
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .surface
+                                      .withOpacity(0.5),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
-                                : isUnlocked
-                                    ? Colors.black12
-                                    : Colors.black.withOpacity(0.08),
+                                : Colors.transparent,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -516,8 +520,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: isUnlocked
-                                        ? Colors.black87
-                                        : Colors.black45,
+                                        ? Theme.of(context).colorScheme.onSurface
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -531,22 +537,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 10,
-                                      color: Colors.black45,
+                                      color:
+                                          Theme.of(context).colorScheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                               ],
                             ),
                             if (!isUnlocked)
-                              const Positioned(
+                              Positioned(
                                 right: 2,
                                 top: 2,
                                 child: Icon(
-                                  Icons.lock,
+                                  Icons.lock_outline,
                                   size: 18,
-                                  color: Colors.black54,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             if (isSelected)
@@ -643,7 +650,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 trailing: frame.id == equippedFrame
                     ? const Icon(
                         Icons.check_circle,
-                        color: Colors.green,
+                        color: AppColors.success,
                       )
                     : null,
                 onTap: () {
@@ -853,7 +860,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                         child: CircleAvatar(
                           radius: 48,
-                          backgroundColor: Colors.white.withOpacity(0.75),
+                          backgroundColor:
+                              Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: Text(
                             avatar,
                             style: const TextStyle(fontSize: 44),
@@ -883,7 +891,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     context: context,
                                     currentUsername: username,
                                   ),
-                          icon: const Icon(Icons.edit),
+                          icon: const Icon(Icons.edit_outlined),
                         ),
                       ],
                     ),
@@ -951,7 +959,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 children: [
                   Expanded(
                     child: _ProfileStatCard(
-                      icon: Icons.monetization_on,
+                      icon: Icons.monetization_on_outlined,
                       label: 'Coins',
                       value: '$coins',
                     ),
@@ -959,7 +967,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ProfileStatCard(
-                      icon: Icons.style,
+                      icon: Icons.style_outlined,
                       label: 'Free topics',
                       value: '$freeTopicPasses',
                     ),
@@ -971,7 +979,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 children: [
                   Expanded(
                     child: _ProfileStatCard(
-                      icon: Icons.local_fire_department,
+                      icon: Icons.local_fire_department_outlined,
                       label: 'Streak',
                       value: '$dailyStreak',
                     ),
@@ -979,7 +987,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ProfileStatCard(
-                      icon: Icons.whatshot,
+                      icon: Icons.whatshot_outlined,
                       label: 'Best streak',
                       value: '$maxDailyStreak',
                     ),
@@ -996,17 +1004,17 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 10),
               _WideStatTile(
-                icon: Icons.sports_esports,
+                icon: Icons.sports_esports_outlined,
                 label: 'Games played',
                 value: '$gamesPlayed',
               ),
               _WideStatTile(
-                icon: Icons.check_circle,
+                icon: Icons.check_circle_outline,
                 label: 'Correct answers',
                 value: '$correctAnswers',
               ),
               _WideStatTile(
-                icon: Icons.cancel,
+                icon: Icons.cancel_outlined,
                 label: 'Wrong answers',
                 value: '$wrongAnswers',
               ),
@@ -1016,7 +1024,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 value: '$accuracy%',
               ),
               _WideStatTile(
-                icon: Icons.emoji_events,
+                icon: Icons.emoji_events_outlined,
                 label: 'Best Daily score',
                 value: '$bestDailyScore',
               ),
@@ -1075,9 +1083,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.',
-                      style: TextStyle(color: Colors.black54, fontSize: 12),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -1092,14 +1103,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 10),
               _WideStatTile(
-                icon: Icons.leaderboard,
+                icon: Icons.leaderboard_outlined,
                 label: 'Ranked MMR',
                 value: pvpRatingDelta == 0
                     ? '$pvpRating'
                     : '$pvpRating (${pvpRatingDelta > 0 ? '+' : ''}$pvpRatingDelta)',
               ),
               _WideStatTile(
-                icon: Icons.emoji_events,
+                icon: Icons.emoji_events_outlined,
                 label: 'Victories',
                 value: '$wins1v1',
               ),
@@ -1124,12 +1135,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 value: '$winrate1v1%',
               ),
               _WideStatTile(
-                icon: Icons.local_fire_department,
+                icon: Icons.local_fire_department_outlined,
                 label: 'Current streak',
                 value: '$currentWinStreak1v1',
               ),
               _WideStatTile(
-                icon: Icons.whatshot,
+                icon: Icons.whatshot_outlined,
                 label: 'Best streak',
                 value: '$bestWinStreak1v1',
               ),
@@ -1145,7 +1156,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               _RecentMatchHistory(uid: uid),
               const SizedBox(height: 18),
               Material(
-                color: Colors.black12,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
@@ -1238,7 +1249,7 @@ class _AvatarCategoryBadge extends StatelessWidget {
       case 'ai_dynamic':
         return Colors.pinkAccent;
       default:
-        return Colors.black54;
+        return const Color(0xFF9C93C9);
     }
   }
 
@@ -1305,13 +1316,13 @@ class _RecentMatchHistory extends StatelessWidget {
   Color _resultColor(String result) {
     switch (result) {
       case 'victory':
-        return Colors.green;
+        return AppColors.success;
       case 'defeat':
-        return Colors.redAccent;
+        return AppColors.danger;
       case 'draw':
-        return Colors.blueGrey;
+        return const Color(0xFF9C93C9);
       default:
-        return Colors.black54;
+        return const Color(0xFF9C93C9);
     }
   }
 
@@ -1356,7 +1367,7 @@ class _RecentMatchHistory extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.black12,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Text(
@@ -1443,16 +1454,16 @@ class _RecentMatchHistory extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.70),
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Column(
                             children: [
-                              const Text(
+                              Text(
                                 'Score',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.black54,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -1474,7 +1485,7 @@ class _RecentMatchHistory extends StatelessWidget {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.70),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
@@ -1526,7 +1537,7 @@ class _ProfileStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -1565,8 +1576,6 @@ class _WideStatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      color: Colors.black12,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),

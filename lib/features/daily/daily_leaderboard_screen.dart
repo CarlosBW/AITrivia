@@ -229,7 +229,7 @@ class _PodiumPlayer extends StatelessWidget {
       decoration: BoxDecoration(
         color: isMe
             ? Theme.of(context).colorScheme.primary.withOpacity(0.20)
-            : Colors.white70,
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
@@ -329,7 +329,7 @@ class _LeaderboardTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: isMe
             ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
-            : Colors.black12,
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,

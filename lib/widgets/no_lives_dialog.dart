@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class NoLivesDialog extends StatelessWidget {
   final String currentLivesText;
   final String nextHalfLifeText;
@@ -22,6 +24,8 @@ class NoLivesDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
@@ -32,14 +36,14 @@ class NoLivesDialog extends StatelessWidget {
             Container(
               width: 74,
               height: 74,
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.10),
+              decoration: const BoxDecoration(
+                color: AppColors.dangerBg,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.favorite_border,
                 size: 38,
-                color: Colors.red,
+                color: AppColors.danger,
               ),
             ),
             const SizedBox(height: 16),
@@ -57,7 +61,7 @@ class NoLivesDialog extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.black.withOpacity(0.75),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 18),
@@ -65,7 +69,7 @@ class NoLivesDialog extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.black12,
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(

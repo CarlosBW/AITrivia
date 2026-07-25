@@ -6,6 +6,7 @@ import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../../theme/app_theme.dart';
 
 class SoloScreen extends StatefulWidget {
   const SoloScreen({super.key});
@@ -102,13 +103,13 @@ class _SoloScreenState extends State<SoloScreen> {
 
           if (completedAll) {
             statusText = 'Completado';
-            statusColor = Colors.green;
+            statusColor = AppColors.success;
           } else if (completedCount > 0) {
             statusText = 'En curso';
-            statusColor = Colors.orange;
+            statusColor = AppColors.reward;
           } else {
             statusText = 'Nuevo';
-            statusColor = Colors.blue;
+            statusColor = const Color(0xFF85B7EB);
           }
 
           return _SoloCategoryItem(
@@ -311,7 +312,6 @@ class _SoloScreenState extends State<SoloScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Solo'),
-        centerTitle: true,
       ),
       body: Stack(
         children: [
@@ -407,6 +407,7 @@ class _SoloScreenState extends State<SoloScreen> {
 
         return _CategoryCard(
           item: item,
+          accent: CategoryAccent.forIndex(i - 1),
           disabled: _isNavigating || _buyingLife,
           onOpenLevels: () {
             _safeNavigate(() => _openLevelSelect(item));
@@ -444,14 +445,48 @@ class _SoloCategoryItem {
   });
 }
 
+/// Best-effort icon per known category name/id, falling back to a generic
+/// quiz icon for AI-generated or unrecognized categories.
+IconData _iconForCategory(String categoryId, String name) {
+  final key = '$categoryId $name'.toLowerCase();
+
+  if (key.contains('cine') || key.contains('movie')) {
+    return Icons.movie_outlined;
+  }
+  if (key.contains('historia') || key.contains('history')) {
+    return Icons.account_balance_outlined;
+  }
+  if (key.contains('ciencia') || key.contains('science')) {
+    return Icons.science_outlined;
+  }
+  if (key.contains('geografia') ||
+      key.contains('geografía') ||
+      key.contains('geography')) {
+    return Icons.public_outlined;
+  }
+  if (key.contains('libro') || key.contains('book')) {
+    return Icons.menu_book_outlined;
+  }
+  if (key.contains('videojuego') || key.contains('video game')) {
+    return Icons.sports_esports_outlined;
+  }
+  if (key.contains('deporte') || key.contains('sport')) {
+    return Icons.sports_soccer_outlined;
+  }
+
+  return Icons.quiz_outlined;
+}
+
 class _CategoryCard extends StatelessWidget {
   final _SoloCategoryItem item;
+  final CategoryAccent accent;
   final bool disabled;
   final VoidCallback onOpenLevels;
   final VoidCallback onContinue;
 
   const _CategoryCard({
     required this.item,
+    required this.accent,
     required this.disabled,
     required this.onOpenLevels,
     required this.onContinue,
@@ -460,13 +495,8 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      color: Colors.black12,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: disabled ? null : onOpenLevels,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -475,6 +505,20 @@ class _CategoryCard extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accent.background,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Icon(
+                      _iconForCategory(item.categoryId, item.name),
+                      color: accent.foreground,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       item.name,
@@ -490,7 +534,7 @@ class _CategoryCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: item.statusColor.withOpacity(0.12),
+                      color: item.statusColor.withOpacity(0.16),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
@@ -504,7 +548,7 @@ class _CategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'Progreso: ${item.completedCount} / ${item.levelCount} niveles',
                 style: const TextStyle(fontSize: 14),
@@ -514,7 +558,10 @@ class _CategoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
                   value: item.progress,
-                  minHeight: 10,
+                  minHeight: 8,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation(accent.progress),
                 ),
               ),
               const SizedBox(height: 14),
@@ -533,7 +580,7 @@ class _CategoryCard extends StatelessWidget {
                       onPressed: disabled ? null : onContinue,
                       icon: Icon(
                         item.completedAll
-                            ? Icons.check_circle
+                            ? Icons.check_circle_outline
                             : Icons.play_arrow,
                       ),
                       label: Text(

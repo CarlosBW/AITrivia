@@ -12,6 +12,7 @@ import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/weekly_topic_service.dart';
+import '../../theme/app_theme.dart';
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
@@ -782,7 +783,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -812,31 +813,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     );
   }
 
-  Widget _buildProgressBar(int total) {
-    final progress = total == 0 ? 0.0 : (_index / total).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Progreso: $_index / $total',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 10,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildQuestionView({
     required Key key,
     required String qText,
@@ -847,74 +823,173 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final absorbing =
         _locked || _answerSubmitting || _isNavigating || _endedByNoLives;
 
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final progress = total == 0 ? 0.0 : (_index / total).clamp(0.0, 1.0);
+
+    final timeFraction = _defaultTimePerQ == 0
+        ? 0.0
+        : (_secondsLeft / _defaultTimePerQ).clamp(0.0, 1.0);
+
+    final timerColor = timeFraction > 0.5
+        ? AppColors.success
+        : timeFraction > 0.2
+            ? AppColors.reward
+            : AppColors.danger;
+
     return AbsorbPointer(
       key: key,
       absorbing: absorbing,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildLivesHeader(),
-            Text(
-              'Pregunta ${_index + 1} / $total',
-              style: const TextStyle(fontSize: 16),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pregunta ${_index + 1} de $total',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 8,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          valueColor:
+                              AlwaysStoppedAnimation(colorScheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: timerColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: timerColor.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.timer_outlined, size: 16, color: timerColor),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${_secondsLeft}s',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: timerColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            _buildProgressBar(total),
-            const SizedBox(height: 10),
-            Text(
-              'Tiempo: $_secondsLeft s',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              qText,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 22),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                qText,
+                style: TextStyle(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
+              final letter = String.fromCharCode(65 + i);
 
               Color? fillColor;
               if (_locked && !_timedOut) {
-                if (isCorrect) fillColor = Colors.green.withOpacity(0.2);
+                if (isCorrect) fillColor = AppColors.success.withOpacity(0.16);
                 if (isSelected && !isCorrect) {
-                  fillColor = Colors.red.withOpacity(0.2);
+                  fillColor = AppColors.danger.withOpacity(0.16);
                 }
               } else if (!_locked && isSelected) {
-                fillColor = Colors.black12;
+                fillColor = colorScheme.surfaceContainerHighest;
               }
 
-              Color borderColor = Colors.black26;
+              Color borderColor = colorScheme.outline;
               double borderWidth = 1;
 
               if (_timedOut && _timeoutAnswerIndex != null) {
                 if (i == _timeoutAnswerIndex) {
-                  borderColor = Colors.amber;
+                  borderColor = AppColors.reward;
                   borderWidth = 3;
                 }
               } else if (_locked) {
                 if (isCorrect) {
-                  borderColor = Colors.green;
+                  borderColor = AppColors.success;
                   borderWidth = 2;
                 }
                 if (isSelected && !isCorrect) {
-                  borderColor = Colors.red;
+                  borderColor = AppColors.danger;
                   borderWidth = 2;
                 }
               } else if (isSelected) {
-                borderColor = Colors.black54;
+                borderColor = colorScheme.primary;
                 borderWidth = 2;
               }
 
+              final badgeColor = (_locked && isCorrect)
+                  ? AppColors.success
+                  : (_locked && isSelected && !isCorrect)
+                      ? AppColors.danger
+                      : (!_locked && isSelected)
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest;
+
+              final badgeTextColor =
+                  badgeColor == colorScheme.surfaceContainerHighest
+                      ? colorScheme.onSurfaceVariant
+                      : Colors.white;
+
+              IconData? trailingIcon;
+              Color? trailingIconColor;
+              if (_locked && !_timedOut) {
+                if (isCorrect) {
+                  trailingIcon = Icons.check_circle;
+                  trailingIconColor = AppColors.success;
+                } else if (isSelected) {
+                  trailingIcon = Icons.cancel;
+                  trailingIconColor = AppColors.danger;
+                }
+              }
+
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
                   onTap: () => _onTapAnswer(
                     tappedIndex: i,
                     answerIndex: answerIndex,
@@ -922,10 +997,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
-                      color: fillColor ?? Colors.black12,
-                      borderRadius: BorderRadius.circular(12),
+                      color: fillColor ?? colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: borderColor,
                         width: borderWidth,
@@ -940,9 +1018,40 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             ]
                           : [],
                     ),
-                    child: Text(
-                      options[i],
-                      style: const TextStyle(fontSize: 16),
+                    child: Row(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            letter,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: badgeTextColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            options[i],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (trailingIcon != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(trailingIcon, color: trailingIconColor),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -956,13 +1065,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       child: Text(
                         _statusMsg!,
                         style: const TextStyle(
-                          color: Colors.orange,
+                          color: AppColors.reward,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
             ),
-            const Spacer(),
           ],
         ),
       ),
@@ -1272,9 +1380,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.black12,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.black12),
               ),
               child: Column(
                 children: [
@@ -1445,7 +1552,7 @@ class _NoLivesCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.black12,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
@@ -1754,9 +1861,8 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/season_service.dart';
+import '../../theme/app_theme.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
   const SeasonRewardsScreen({super.key});
@@ -181,7 +182,7 @@ class _LoadingCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Row(
@@ -208,12 +209,12 @@ class _NoPendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Column(
         children: [
-          Icon(Icons.verified, size: 38),
+          Icon(Icons.verified_outlined, size: 38),
           SizedBox(height: 10),
           Text(
             'No pending weekly rewards',
@@ -252,13 +253,17 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.20),
+        color: AppColors.rewardBg,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.amber),
+        border: Border.all(color: AppColors.reward),
       ),
       child: Column(
         children: [
-          const Icon(Icons.card_giftcard, size: 42),
+          const Icon(
+            Icons.card_giftcard_outlined,
+            color: AppColors.reward,
+            size: 42,
+          ),
           const SizedBox(height: 10),
           Text(
             '${pending.length} pending reward${pending.length == 1 ? '' : 's'}',
@@ -315,12 +320,12 @@ class _PendingRewardMiniTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          const Icon(Icons.emoji_events),
+          const Icon(Icons.emoji_events_outlined),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -348,7 +353,7 @@ class _EmptyHistoryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Text(
@@ -379,14 +384,12 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
-      color: Colors.black12,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: const Icon(Icons.workspace_premium),
+        leading: const Icon(Icons.workspace_premium_outlined),
         title: Text(
           '$seasonId • $leagueName',
           style: const TextStyle(fontWeight: FontWeight.bold),

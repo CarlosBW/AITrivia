@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../theme/app_theme.dart';
 import 'match_play_screen.dart';
 
 class MatchLobbyScreen extends StatefulWidget {
@@ -220,7 +221,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         statusMessage,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.black.withOpacity(0.65),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 14,
                         ),
                       ),
@@ -231,22 +232,22 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 _InfoCard(
                   children: [
                     _InfoRow(
-                      icon: Icons.category,
+                      icon: Icons.category_outlined,
                       label: 'Tema',
                       value: _displayCategory(categoryId),
                     ),
                     _InfoRow(
-                      icon: Icons.auto_awesome,
+                      icon: Icons.auto_awesome_outlined,
                       label: 'Modo',
                       value: mode == 'fixed' ? 'Sin IA' : 'Con IA',
                     ),
                     _InfoRow(
-                      icon: Icons.quiz,
+                      icon: Icons.quiz_outlined,
                       label: 'Preguntas',
                       value: '$totalQuestions',
                     ),
                     _InfoRow(
-                      icon: Icons.timer,
+                      icon: Icons.timer_outlined,
                       label: 'Tiempo',
                       value: '$timePerQuestionSec s por pregunta',
                     ),
@@ -294,7 +295,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                               );
                             },
                       icon: Icon(
-                        myReady ? Icons.hourglass_top : Icons.check_circle,
+                        myReady
+                            ? Icons.hourglass_top
+                            : Icons.check_circle_outline,
                       ),
                       label: Text(
                         !hasGuest
@@ -324,7 +327,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   Center(
                     child: Text(
                       'Estado de la sala: $status',
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -349,7 +354,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.06),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
@@ -457,10 +462,10 @@ class _PlayerStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color borderColor =
-        ready ? Colors.green.shade300 : Colors.orange.shade300;
+    final Color borderColor = ready ? AppColors.success : AppColors.reward;
 
-    final IconData icon = ready ? Icons.check_circle : Icons.access_time;
+    final IconData icon =
+        ready ? Icons.check_circle_outline : Icons.access_time;
 
     final String statusText = waiting
         ? 'Esperando rival...'
@@ -468,14 +473,14 @@ class _PlayerStatusCard extends StatelessWidget {
             ? 'Listo'
             : 'Esperando...';
 
-    final Color statusColor = ready ? Colors.green : Colors.orange;
+    final Color statusColor = ready ? AppColors.success : AppColors.reward;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ready
-            ? Colors.green.withOpacity(0.08)
-            : Colors.orange.withOpacity(0.08),
+            ? AppColors.success.withOpacity(0.10)
+            : AppColors.reward.withOpacity(0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: borderColor,
@@ -495,8 +500,8 @@ class _PlayerStatusCard extends StatelessWidget {
                 right: -2,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -561,10 +566,10 @@ class _RoomCodeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Código de sala',
             style: TextStyle(
-              color: Colors.black54,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -582,7 +587,7 @@ class _RoomCodeCard extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: onCopy,
-              icon: const Icon(Icons.copy),
+              icon: const Icon(Icons.copy_outlined),
               label: const Text('Copiar código'),
             ),
           ),

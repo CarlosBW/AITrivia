@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../../theme/app_theme.dart';
 
 class LevelSelectScreen extends StatefulWidget {
   final String categoryId;
@@ -306,7 +307,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.categoryName),
-        centerTitle: true,
       ),
       body: Stack(
         children: [
@@ -428,7 +428,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.black12,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -512,18 +512,18 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             String subtitle;
 
             if (isCompleted) {
-              tileColor = Colors.green.withOpacity(0.15);
-              icon = Icons.check_circle;
+              tileColor = AppColors.success.withOpacity(0.15);
+              icon = Icons.check_circle_outline;
               subtitle = 'Completado';
             } else if (isUnlocked) {
               tileColor = isPlayed
-                  ? Colors.orange.withOpacity(0.12)
-                  : Colors.blue.withOpacity(0.12);
-              icon = isPlayed ? Icons.refresh : Icons.play_circle_fill;
+                  ? AppColors.reward.withOpacity(0.12)
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.12);
+              icon = isPlayed ? Icons.refresh : Icons.play_circle_outline;
               subtitle = isPlayed ? 'Reintentar' : 'Disponible';
             } else {
-              tileColor = Colors.black12;
-              icon = Icons.lock;
+              tileColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+              icon = Icons.lock_outline;
               subtitle = 'Bloqueado';
             }
 
@@ -536,13 +536,15 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                 color: tileColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: showRecommended ? Colors.blueAccent : Colors.black12,
+                  color: showRecommended
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.transparent,
                   width: showRecommended ? 2 : 1,
                 ),
                 boxShadow: showRecommended
                     ? [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.08),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

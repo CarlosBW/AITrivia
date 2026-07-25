@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'async_match_play_screen.dart';
+import '../../theme/app_theme.dart';
 
 class AsyncInboxScreen extends StatelessWidget {
   const AsyncInboxScreen({super.key});
@@ -28,7 +29,7 @@ class AsyncInboxScreen extends StatelessWidget {
                 child: Text(
                   'Error cargando retos recibidos:\n${snap.error}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: AppColors.danger),
                 ),
               ),
             );
@@ -85,8 +86,7 @@ class AsyncInboxScreen extends StatelessWidget {
               }
 
               return Card(
-                elevation: 0,
-                color: Colors.black12,
+                color: Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

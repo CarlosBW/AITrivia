@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/pvp_league_service.dart';
+import '../../theme/app_theme.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
 import 'live_matchmaking_screen.dart';
@@ -77,11 +78,11 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
                 const SizedBox(height: 4),
                 Text('$rating MMR'),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Buscar rival afecta tu MMR y tu liga PvP.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black54,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -92,7 +93,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               delta > 0 ? '+$delta' : '$delta',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: delta > 0 ? Colors.green : Colors.red,
+                color: delta > 0 ? AppColors.success : AppColors.danger,
               ),
             ),
         ],
@@ -152,13 +153,16 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _goMatchmaking,
-            icon: const Icon(Icons.emoji_events),
+            icon: const Icon(Icons.emoji_events_outlined),
             label: const Text('Buscar rival'),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Buscar rival afecta tu MMR, liga y estadísticas PvP.',
-            style: TextStyle(color: Colors.black54, fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -193,9 +197,11 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             label: const Text('Unirme con código'),
           ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'Las partidas privadas son amistosas y no afectan tu ranking.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
       ],

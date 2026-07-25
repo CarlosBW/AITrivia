@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
+import '../../theme/app_theme.dart';
 import 'async_match_play_screen.dart';
 
 class FriendChallengeSetupScreen extends StatefulWidget {
@@ -121,7 +122,9 @@ class _FriendChallengeSetupScreenState
   @override
   Widget build(BuildContext context) {
     final onlineText = widget.isOnline ? 'Online' : 'Offline';
-    final onlineColor = widget.isOnline ? Colors.green : Colors.grey;
+    final onlineColor = widget.isOnline
+        ? AppColors.success
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     final canSendRealtime = widget.isOnline;
     final sendButtonText =
@@ -148,7 +151,7 @@ class _FriendChallengeSetupScreenState
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.sports_esports, size: 42),
+                    const Icon(Icons.sports_esports_outlined, size: 42),
                     const SizedBox(height: 12),
                     Text(
                       widget.friendName,
@@ -194,13 +197,15 @@ class _FriendChallengeSetupScreenState
                   ButtonSegment(
                     value: 'realtime',
                     icon: Icon(
-                      widget.isOnline ? Icons.bolt : Icons.lock,
+                      widget.isOnline
+                          ? Icons.bolt_outlined
+                          : Icons.lock_outline,
                     ),
                     label: const Text('Tiempo real'),
                   ),
                   const ButtonSegment(
                     value: 'async',
-                    icon: Icon(Icons.schedule),
+                    icon: Icon(Icons.schedule_outlined),
                     label: Text('Asíncrono'),
                   ),
                 ],
@@ -213,9 +218,11 @@ class _FriendChallengeSetupScreenState
               ),
               if (_challengeType == 'realtime' && !canSendRealtime) ...[
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Tu amigo debe estar online para jugar en tiempo real.',
-                  style: TextStyle(color: Colors.black54),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
               const SizedBox(height: 20),
@@ -308,7 +315,7 @@ class _FriendChallengeSetupScreenState
                 const SizedBox(height: 14),
                 Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: const TextStyle(color: AppColors.danger),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -320,8 +327,8 @@ class _FriendChallengeSetupScreenState
                         : _sendChallenge,
                 icon: Icon(
                   _challengeType == 'realtime'
-                      ? Icons.bolt
-                      : Icons.schedule,
+                      ? Icons.bolt_outlined
+                      : Icons.schedule_outlined,
                 ),
                 label: Text(sendButtonText),
               ),
@@ -331,7 +338,9 @@ class _FriendChallengeSetupScreenState
                     ? 'Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.'
                     : 'Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black54),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),

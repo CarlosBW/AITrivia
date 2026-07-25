@@ -10,6 +10,7 @@ import '../../services/presence_service.dart';
 import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
+import '../../theme/app_theme.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
@@ -599,40 +600,42 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               final isSelected = _selected == i;
               final isCorrect = i == answerIndex;
 
+              final colorScheme = Theme.of(context).colorScheme;
+
               Color? fillColor;
 
               if (_locked && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = Colors.green.withOpacity(0.2);
+                  fillColor = AppColors.success.withOpacity(0.2);
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = Colors.red.withOpacity(0.2);
+                  fillColor = AppColors.danger.withOpacity(0.2);
                 }
               } else if (!_locked && isSelected) {
-                fillColor = Colors.black12;
+                fillColor = colorScheme.surfaceContainerHighest;
               }
 
-              Color borderColor = Colors.black26;
+              Color borderColor = colorScheme.outline;
               double borderWidth = 1;
 
               if (_timedOut && _timeoutAnswerIndex != null) {
                 if (i == _timeoutAnswerIndex) {
-                  borderColor = Colors.amber;
+                  borderColor = AppColors.reward;
                   borderWidth = 3;
                 }
               } else if (_locked) {
                 if (isCorrect) {
-                  borderColor = Colors.green;
+                  borderColor = AppColors.success;
                   borderWidth = 2;
                 }
 
                 if (isSelected && !isCorrect) {
-                  borderColor = Colors.red;
+                  borderColor = AppColors.danger;
                   borderWidth = 2;
                 }
               } else if (isSelected) {
-                borderColor = Colors.black54;
+                borderColor = colorScheme.primary;
                 borderWidth = 2;
               }
 
@@ -649,7 +652,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                     curve: Curves.easeOut,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: fillColor ?? Colors.black12,
+                      color: fillColor ?? colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: borderColor,
@@ -681,7 +684,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       child: Text(
                         _statusMsg!,
                         style: const TextStyle(
-                          color: Colors.orange,
+                          color: AppColors.reward,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

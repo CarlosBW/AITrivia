@@ -134,8 +134,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     setState(() {
       _flashColor = isCorrect
-          ? Colors.green.withOpacity(0.18)
-          : Colors.red.withOpacity(0.18);
+          ? AppColors.success.withOpacity(0.18)
+          : AppColors.danger.withOpacity(0.18);
       _selectedIndex = index;
       _lastCorrect = isCorrect;
       _totalAnswered++;
@@ -228,15 +228,15 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   }
 
   Color _buttonColor(int index, int correctIndex) {
-    if (_selectedIndex == null) return Colors.blue;
+    if (_selectedIndex == null) return Theme.of(context).colorScheme.primary;
 
-    if (index == correctIndex) return Colors.green;
+    if (index == correctIndex) return AppColors.success;
 
     if (index == _selectedIndex) {
-      return _lastCorrect == true ? Colors.green : Colors.red;
+      return _lastCorrect == true ? AppColors.success : AppColors.danger;
     }
 
-    return Colors.grey;
+    return Theme.of(context).colorScheme.surfaceContainerHighest;
   }
 
   String _formatTime(int seconds) {
@@ -276,7 +276,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.emoji_events,
+                Icons.emoji_events_outlined,
                 size: 54,
               ),
               SizedBox(height: 16),
@@ -341,7 +341,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       children: [
                         Expanded(
                           child: _HeaderCard(
-                            icon: Icons.timer,
+                            icon: Icons.timer_outlined,
                             label: 'Time',
                             value: _formatTime(_timeLeft),
                           ),
@@ -349,7 +349,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _HeaderCard(
-                            icon: Icons.star,
+                            icon: Icons.star_border,
                             label: 'Score',
                             value: '$_correct',
                           ),
@@ -357,7 +357,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: _HeaderCard(
-                            icon: Icons.monetization_on,
+                            icon: Icons.monetization_on_outlined,
                             label: 'Coins',
                             value: '+$_liveCoinsEarned',
                           ),
@@ -426,7 +426,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.95),
+                      color: AppColors.reward,
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
@@ -474,7 +474,7 @@ class _HeaderCard extends StatelessWidget {
         horizontal: 8,
       ),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(

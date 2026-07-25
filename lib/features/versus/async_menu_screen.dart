@@ -149,9 +149,11 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
 
             const Spacer(),
 
-            const Text(
+            Text(
               'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego.',
-              style: TextStyle(color: Colors.black54),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
         ],

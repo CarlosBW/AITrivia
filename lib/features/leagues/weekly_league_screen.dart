@@ -146,11 +146,11 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
           controller: _tabController,
           tabs: const [
             Tab(
-              icon: Icon(Icons.leaderboard),
+              icon: Icon(Icons.leaderboard_outlined),
               text: 'Ranking',
             ),
             Tab(
-              icon: Icon(Icons.card_giftcard),
+              icon: Icon(Icons.card_giftcard_outlined),
               text: 'Rewards',
             ),
           ],
@@ -482,7 +482,7 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Row(
@@ -516,7 +516,7 @@ class _RewardsHistoryButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: const Icon(Icons.workspace_premium),
+        icon: const Icon(Icons.workspace_premium_outlined),
         label: const Text('Reward history'),
       ),
     );
@@ -540,14 +540,15 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.20),
+        color: AppColors.rewardBg,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.amber),
+        border: Border.all(color: AppColors.reward),
       ),
       child: Column(
         children: [
           const Icon(
-            Icons.card_giftcard,
+            Icons.card_giftcard_outlined,
+            color: AppColors.reward,
             size: 36,
           ),
           const SizedBox(height: 8),
@@ -572,7 +573,7 @@ class _PendingRewardsCard extends StatelessWidget {
                   onPressed: claiming
                       ? null
                       : onOpenRewards,
-                  icon: const Icon(Icons.visibility),
+                  icon: const Icon(Icons.visibility_outlined),
                   label: const Text('View details'),
                 ),
               ),
@@ -623,7 +624,7 @@ class _RewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -632,7 +633,7 @@ class _RewardsCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.card_giftcard),
+              Icon(Icons.card_giftcard_outlined),
               SizedBox(width: 8),
               Text(
                 'Weekly Rewards',
@@ -758,7 +759,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: isMe
             ? Theme.of(context).colorScheme.primary.withOpacity(0.14)
-            : Colors.black12,
+            : Theme.of(context).colorScheme.surface,
         borderRadius:
             BorderRadius.circular(16),
         border: Border.all(

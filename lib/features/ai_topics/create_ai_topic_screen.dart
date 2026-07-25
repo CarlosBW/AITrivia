@@ -213,11 +213,14 @@ class _PricingCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Incluye 10 niveles con 10 preguntas cada uno, '
                 'preparados de a poco mientras juegas.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),

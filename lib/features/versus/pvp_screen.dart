@@ -6,6 +6,7 @@ import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
 import 'active_matches_screen.dart';
 import 'pvp_season_screen.dart';
+import '../../theme/app_theme.dart';
 
 class PvPScreen extends StatelessWidget {
   const PvPScreen({super.key});
@@ -37,7 +38,6 @@ class PvPScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('PvP'),
-        centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -47,9 +47,9 @@ class PvPScreen extends StatelessWidget {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Choose how you want to compete.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 18),
           StreamBuilder<bool>(
@@ -58,7 +58,9 @@ class PvPScreen extends StatelessWidget {
               final hasPendingTurn = snap.data == true;
 
               return _PvpCard(
-                icon: Icons.flash_on,
+                icon: Icons.flash_on_outlined,
+                accent: const Color(0xFF85B7EB),
+                accentBg: const Color(0xFF042C53),
                 title: hasPendingTurn
                     ? 'Active Matches • Your Turn!'
                     : 'Active Matches',
@@ -83,7 +85,9 @@ class PvPScreen extends StatelessWidget {
               final hasPending = snap.data == true;
 
               return _PvpCard(
-                icon: Icons.bolt,
+                icon: Icons.bolt_outlined,
+                accent: const Color(0xFFED93B1),
+                accentBg: const Color(0xFF4B1528),
                 title: hasPending
                     ? 'Realtime Invites • New!'
                     : 'Realtime Invites',
@@ -104,7 +108,9 @@ class PvPScreen extends StatelessWidget {
             },
           ),
           _PvpCard(
-            icon: Icons.public,
+            icon: Icons.public_outlined,
+            accent: const Color(0xFF5DCAA5),
+            accentBg: const Color(0xFF04342C),
             title: 'Find Opponent',
             subtitle: 'Play against any available challenger.',
             onTap: () {
@@ -117,7 +123,9 @@ class PvPScreen extends StatelessWidget {
             },
           ),
           _PvpCard(
-            icon: Icons.workspace_premium,
+            icon: Icons.workspace_premium_outlined,
+            accent: AppColors.reward,
+            accentBg: AppColors.rewardBg,
             title: 'PvP Season',
             subtitle:
                 'View your ranked league, season progress, leaderboard and rewards.',
@@ -138,6 +146,8 @@ class PvPScreen extends StatelessWidget {
 
 class _PvpCard extends StatelessWidget {
   final IconData icon;
+  final Color accent;
+  final Color accentBg;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -145,6 +155,8 @@ class _PvpCard extends StatelessWidget {
 
   const _PvpCard({
     required this.icon,
+    required this.accent,
+    required this.accentBg,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -153,16 +165,16 @@ class _PvpCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = alert ? Colors.redAccent : Colors.black54;
+    final colorScheme = Theme.of(context).colorScheme;
+    final iconColor = alert ? AppColors.danger : accent;
+    final iconBg = alert ? AppColors.dangerBg : accentBg;
 
     return Card(
-      elevation: 0,
-      color: alert ? Colors.redAccent.withOpacity(0.12) : Colors.black12,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: BorderSide(
-          color: alert ? Colors.redAccent : Colors.transparent,
+          color: alert ? AppColors.danger : Colors.transparent,
           width: alert ? 1.5 : 0,
         ),
       ),
@@ -172,12 +184,8 @@ class _PvpCard extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             CircleAvatar(
-              backgroundColor:
-                  alert ? Colors.redAccent.withOpacity(0.18) : null,
-              child: Icon(
-                icon,
-                color: alert ? Colors.redAccent : null,
-              ),
+              backgroundColor: iconBg,
+              child: Icon(icon, color: iconColor),
             ),
             if (alert)
               Positioned(
@@ -187,7 +195,7 @@ class _PvpCard extends StatelessWidget {
                   width: 11,
                   height: 11,
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.danger,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,
@@ -202,7 +210,7 @@ class _PvpCard extends StatelessWidget {
           title,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: alert ? Colors.redAccent : null,
+            color: alert ? AppColors.danger : null,
           ),
         ),
         subtitle: Padding(
@@ -210,14 +218,14 @@ class _PvpCard extends StatelessWidget {
           child: Text(
             subtitle,
             style: TextStyle(
-              color: alert ? accentColor : null,
+              color: alert ? AppColors.danger : colorScheme.onSurfaceVariant,
               fontWeight: alert ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
         ),
         trailing: Icon(
           Icons.chevron_right,
-          color: alert ? Colors.redAccent : null,
+          color: alert ? AppColors.danger : null,
         ),
         onTap: onTap,
       ),

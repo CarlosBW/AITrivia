@@ -152,7 +152,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                                     .colorScheme
                                     .primary
                                     .withOpacity(0.18),
-                                child: const Icon(Icons.bolt),
+                                child: const Icon(Icons.bolt_outlined),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -169,8 +169,8 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Realtime 1 vs 1 • Category: $categoryId',
-                            style: const TextStyle(
-                              color: Colors.black54,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 14),

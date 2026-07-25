@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../theme/app_theme.dart';
 
 enum PvpResultState {
   victory,
@@ -82,16 +83,16 @@ class PvpResultCard extends StatelessWidget {
     }
   }
 
-  Color get _color {
+  Color _colorFor(BuildContext context) {
     switch (state) {
       case PvpResultState.victory:
-        return Colors.amber;
+        return AppColors.reward;
       case PvpResultState.defeat:
-        return Colors.redAccent;
+        return AppColors.danger;
       case PvpResultState.draw:
-        return Colors.blueGrey;
+        return const Color(0xFF9C93C9);
       case PvpResultState.waiting:
-        return Colors.deepPurple;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 
@@ -118,6 +119,7 @@ class PvpResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resultColor = _colorFor(context);
     final hasOpponentScore = opponentScore != null;
     final hasRatingChange =
         oldRating != null && newRating != null && ratingDelta != null;
@@ -133,15 +135,15 @@ class PvpResultCard extends StatelessWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: _color.withOpacity(0.16),
+                color: resultColor.withOpacity(0.16),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _color.withOpacity(0.55),
+                  color: resultColor.withOpacity(0.55),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _color.withOpacity(0.22),
+                    color: resultColor.withOpacity(0.22),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -150,7 +152,7 @@ class PvpResultCard extends StatelessWidget {
               child: Icon(
                 _icon,
                 size: 52,
-                color: _color,
+                color: resultColor,
               ),
             ),
             const SizedBox(height: 18),
@@ -168,7 +170,7 @@ class PvpResultCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
-                color: Colors.black.withOpacity(0.68),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (_scoreDifferenceText.isNotEmpty) ...[
@@ -179,16 +181,16 @@ class PvpResultCard extends StatelessWidget {
                   vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: _color.withOpacity(0.12),
+                  color: resultColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: _color.withOpacity(0.35),
+                    color: resultColor.withOpacity(0.35),
                   ),
                 ),
                 child: Text(
                   _scoreDifferenceText,
                   style: TextStyle(
-                    color: _color,
+                    color: resultColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -199,11 +201,8 @@ class PvpResultCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.06),
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.black.withOpacity(0.08),
-                ),
               ),
               child: Column(
                 children: [
@@ -233,14 +232,14 @@ class PvpResultCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        child: const Text(
+                        child: Text(
                           'VS',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black54,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -270,7 +269,7 @@ class PvpResultCard extends StatelessWidget {
                         if (xpEarned != null)
                           Expanded(
                             child: _RewardMiniCard(
-                              icon: Icons.auto_awesome,
+                              icon: Icons.auto_awesome_outlined,
                               label: 'XP',
                               value: '+$xpEarned',
                             ),
@@ -280,7 +279,7 @@ class PvpResultCard extends StatelessWidget {
                         if (coinsEarned != null)
                           Expanded(
                             child: _RewardMiniCard(
-                              icon: Icons.monetization_on,
+                              icon: Icons.monetization_on_outlined,
                               label: 'Monedas',
                               value: '+$coinsEarned',
                             ),
@@ -348,8 +347,9 @@ class _ScoreColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        highlight ? Theme.of(context).colorScheme.primary : Colors.black87;
+    final color = highlight
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurface;
 
     return Column(
       children: [
@@ -406,7 +406,7 @@ class _MatchSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.70),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -476,9 +476,9 @@ class _SummaryItem extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Colors.black54,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -502,7 +502,7 @@ class _RewardMiniCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.70),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -552,10 +552,10 @@ class _RatingChangeCard extends StatelessWidget {
     final neutral = ratingDelta == 0;
 
     final color = neutral
-        ? Colors.blueGrey
+        ? const Color(0xFF9C93C9)
         : positive
-            ? Colors.green
-            : Colors.redAccent;
+            ? AppColors.success
+            : AppColors.danger;
 
     final hasLeague = (oldLeagueName != null && oldLeagueName!.isNotEmpty) ||
         (newLeagueName != null && newLeagueName!.isNotEmpty);
@@ -671,16 +671,18 @@ class _MmrBox extends StatelessWidget {
         horizontal: 8,
       ),
       decoration: BoxDecoration(
-        color: highlight ? Colors.white.withOpacity(0.85) : Colors.white54,
+        color: highlight
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.black54,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 3),

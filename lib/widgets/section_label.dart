@@ -11,10 +11,10 @@ class SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
-        color: Colors.black54,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         letterSpacing: 0.3,
       ),
     );

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/achievement_service.dart';
+import '../../theme/app_theme.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -111,7 +112,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
@@ -216,9 +217,9 @@ class _AchievementCard extends StatelessWidget {
     Color borderColor;
 
     if (claimed) {
-      borderColor = Colors.green;
+      borderColor = AppColors.success;
     } else if (completed) {
-      borderColor = Colors.amber;
+      borderColor = AppColors.reward;
     } else {
       borderColor = Colors.transparent;
     }
@@ -228,7 +229,7 @@ class _AchievementCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: borderColor,
@@ -303,21 +304,21 @@ class _AchievementCard extends StatelessWidget {
           if (claimed)
             const _StatusChip(
               text: 'Claimed',
-              color: Colors.green,
+              color: AppColors.success,
             )
           else if (completed)
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: claiming ? null : onClaim,
-                icon: const Icon(Icons.card_giftcard),
+                icon: const Icon(Icons.card_giftcard_outlined),
                 label: const Text('Claim Reward'),
               ),
             )
           else
             const _StatusChip(
               text: 'In progress',
-              color: Colors.orange,
+              color: AppColors.reward,
             ),
         ],
       ),

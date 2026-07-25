@@ -122,7 +122,9 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
           const SizedBox(height: 4),
           Text(
             window.description,
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -341,7 +343,9 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                     widget.ranked
                         ? 'Primero busca rivales cercanos a tu MMR; si tarda, amplía el rango automáticamente.'
                         : 'Casual no afecta tu MMR. Se prioriza encontrar rival rápido.',
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(

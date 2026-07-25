@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'async_match_play_screen.dart';
+import '../../theme/app_theme.dart';
 
 class ActiveMatchesScreen extends StatefulWidget {
   const ActiveMatchesScreen({super.key});
@@ -328,11 +329,11 @@ class _AsyncMatchTile extends StatelessWidget {
   Color _statusColor() {
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return Colors.green;
+        return AppColors.success;
       case _AsyncSectionMode.waitingOpponent:
-        return Colors.orange;
+        return AppColors.reward;
       case _AsyncSectionMode.finished:
-        return Colors.blueGrey;
+        return const Color(0xFF9C93C9);
     }
   }
 
@@ -341,8 +342,6 @@ class _AsyncMatchTile extends StatelessWidget {
     final opponent = _opponentName();
 
     return Card(
-      elevation: 0,
-      color: Colors.black12,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -412,7 +411,7 @@ class _LoadingLine extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: const Row(
@@ -443,7 +442,7 @@ class _EmptyLine extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
@@ -467,10 +466,10 @@ class _SoftStatusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.12),
+        color: AppColors.reward.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.35),
+          color: AppColors.reward.withOpacity(0.35),
         ),
       ),
       child: Row(

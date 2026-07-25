@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
 import '../solo/level_select_screen.dart';
+import '../../theme/app_theme.dart';
 
 class WeeklyTopicScreen extends StatefulWidget {
   const WeeklyTopicScreen({super.key});
@@ -183,10 +184,10 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.12),
+                          color: AppColors.rewardBg,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: Colors.amber.withOpacity(0.35),
+                            color: AppColors.reward.withOpacity(0.5),
                           ),
                         ),
                         child: Column(
@@ -194,7 +195,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.star, color: Colors.amber),
+                                Icon(Icons.star_border, color: AppColors.reward),
                                 SizedBox(width: 8),
                                 Text(
                                   'Weekly Featured Topic',
@@ -221,7 +222,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.black12,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Column(
@@ -245,7 +246,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.08),
+                          color: AppColors.success.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Column(
@@ -270,7 +271,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                           rewardCoins: rewardCoins,
                                         )
                                     : null,
-                                icon: const Icon(Icons.monetization_on),
+                                icon: const Icon(Icons.monetization_on_outlined),
                                 label: Text(
                                   coinRewardClaimed
                                       ? 'Coin reward claimed'
@@ -291,7 +292,9 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                   : levelsCompleted >= 10
                                       ? 'Exclusive reward ready to claim.'
                                       : 'Complete all 10 levels to unlock this reward.',
-                              style: const TextStyle(color: Colors.black54),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             SizedBox(
@@ -304,7 +307,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                           rewardAvatarId: rewardAvatarId,
                                         )
                                     : null,
-                                icon: const Icon(Icons.card_giftcard),
+                                icon: const Icon(Icons.card_giftcard_outlined),
                                 label: Text(
                                   completionRewardClaimed
                                       ? 'Exclusive reward claimed'

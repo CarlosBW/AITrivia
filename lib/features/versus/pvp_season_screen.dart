@@ -190,9 +190,12 @@ class _SeasonOverviewTab extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Ranked uses flexible matchmaking: first it looks near your league, then expands the range so players are not left waiting.',
-                style: TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -201,7 +204,7 @@ class _SeasonOverviewTab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.black12,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
           ),
           child: const Column(
@@ -438,7 +441,11 @@ class _FriendsLeaderboardList extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.group_add, size: 44, color: Colors.black54),
+                  Icon(
+                    Icons.group_add_outlined,
+                    size: 44,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(height: 12),
                   const Text(
                     'No friends in leaderboard yet',
@@ -454,7 +461,9 @@ class _FriendsLeaderboardList extends StatelessWidget {
                         ? 'Play Ranked Matches and add friends to compare your PvP rating.'
                         : 'Add friends to compare your PvP rating with people you know.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -485,7 +494,9 @@ class _FriendsLeaderboardList extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isMe ? color.withOpacity(0.14) : Colors.black12,
+                  color: isMe
+                      ? color.withOpacity(0.14)
+                      : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isMe ? color : Colors.transparent,
@@ -611,7 +622,9 @@ class _LeaderboardList extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isMe ? color.withOpacity(0.14) : Colors.black12,
+                color: isMe
+                    ? color.withOpacity(0.14)
+                    : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isMe ? color : Colors.transparent,
@@ -757,9 +770,11 @@ class _RewardsTabState extends State<_RewardsTab> {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Rewards are based on your best PvP league from each finished season.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           FutureBuilder<List<PendingPvpSeasonReward>>(
@@ -798,7 +813,9 @@ class _RewardsTabState extends State<_RewardsTab> {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isCurrent ? color.withOpacity(0.14) : Colors.black12,
+                color: isCurrent
+                    ? color.withOpacity(0.14)
+                    : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: isCurrent ? color : Colors.transparent,
@@ -822,11 +839,11 @@ class _RewardsTabState extends State<_RewardsTab> {
                           style: const TextStyle(fontSize: 12),
                         ),
                         if (isCurrent)
-                          const Text(
+                          Text(
                             'Current projected reward',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.black54,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                       ],
@@ -880,11 +897,11 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Current projected reward',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.black54,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -962,7 +979,7 @@ class _PendingRewardsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.black12,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
         ),
         child: const Row(
@@ -1006,7 +1023,9 @@ class _PendingRewardsCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               errorMessage!,
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -1028,23 +1047,25 @@ class _PendingRewardsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.blueGrey.withOpacity(0.35)),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.lock_clock, color: Colors.blueGrey),
-            SizedBox(width: 10),
+            const Icon(Icons.lock_clock, color: Colors.blueGrey),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'No reward available yet',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     'Play Ranked Matches this season. When the season ends, your PvP reward will appear here.',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -1115,7 +1136,10 @@ class _PendingRewardsCard extends StatelessWidget {
           if (pendingRewards.length > 3)
             Text(
               '+${pendingRewards.length - 3} more pending season(s)',
-              style: const TextStyle(color: Colors.black54, fontSize: 12),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
           const SizedBox(height: 12),
           SizedBox(

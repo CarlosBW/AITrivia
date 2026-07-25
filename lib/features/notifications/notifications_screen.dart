@@ -13,6 +13,7 @@ import '../versus/match_play_screen.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
+import '../../theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -32,32 +33,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   IconData _iconForType(String type) {
     switch (type) {
       case 'friend_request':
-        return Icons.person_add;
+        return Icons.person_add_outlined;
       case 'match_invite':
-        return Icons.sports_esports;
+        return Icons.sports_esports_outlined;
       case 'match_turn':
-        return Icons.play_circle;
+        return Icons.play_circle_outline;
       case 'match_result':
-        return Icons.emoji_events;
+        return Icons.emoji_events_outlined;
       case 'achievement_completed':
-        return Icons.emoji_events;
+        return Icons.emoji_events_outlined;
       case 'season_reward':
-        return Icons.card_giftcard;
+        return Icons.card_giftcard_outlined;
       case 'rematch_request':
         return Icons.replay;
       case 'streak_at_risk':
-        return Icons.local_fire_department;
+        return Icons.local_fire_department_outlined;
       case 'realtime_invite':
-        return Icons.bolt;
+        return Icons.bolt_outlined;
       case 'realtime_invite_accepted':
-        return Icons.check_circle;
+        return Icons.check_circle_outline;
       default:
-        return Icons.notifications;
+        return Icons.notifications_outlined;
     }
   }
 
   Color _colorForType(String type, bool read) {
-    if (read) return Colors.black54;
+    if (read) return Theme.of(context).colorScheme.onSurfaceVariant;
 
     switch (type) {
       case 'match_invite':
@@ -372,11 +373,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 18),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.85),
+                    color: AppColors.danger,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
-                    Icons.delete,
+                    Icons.delete_outline,
                     color: Colors.white,
                   ),
                 ),
@@ -460,7 +461,7 @@ class _NotificationTile extends StatelessWidget {
 
     final showMatchDetails = cta == 'Play now' && categoryId.isNotEmpty;
     final cardColor = read
-        ? Colors.black12
+        ? Theme.of(context).colorScheme.surface
         : isPvp
             ? accentColor.withOpacity(0.14)
             : Theme.of(context).colorScheme.primary.withOpacity(0.14);
@@ -478,10 +479,14 @@ class _NotificationTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: read ? Colors.white.withOpacity(0.8) : accentColor,
+          backgroundColor: read
+              ? Theme.of(context).colorScheme.surfaceContainerHighest
+              : accentColor,
           child: Icon(
             icon,
-            color: read ? Colors.black87 : Colors.white,
+            color: read
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Colors.white,
           ),
         ),
         title: Text(
@@ -518,7 +523,9 @@ class _NotificationTile extends StatelessWidget {
                   child: Text(
                     cta,
                     style: TextStyle(
-                      color: read ? Colors.black54 : accentColor,
+                      color: read
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : accentColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -547,7 +554,7 @@ class _NotificationTile extends StatelessWidget {
                 width: 10,
                 height: 10,
                 decoration: const BoxDecoration(
-                  color: Colors.red,
+                  color: AppColors.danger,
                   shape: BoxShape.circle,
                 ),
               ),

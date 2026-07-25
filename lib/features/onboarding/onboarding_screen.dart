@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../auth/user_bootstrap.dart';
 import '../daily/daily_challenge_screen.dart';
@@ -124,9 +125,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           page.title,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: GoogleFonts.baloo2(
                             fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 14),

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
 import '../../services/achievement_service.dart';
@@ -536,11 +537,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Error creando sesión',
-                                style: TextStyle(
+                                style: GoogleFonts.baloo2(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -1348,9 +1349,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           children: [
             Text(
               pct >= 0.4 ? '¡Nivel aprobado!' : 'Nivel finalizado',
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 28,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1365,9 +1366,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             const SizedBox(height: 6),
             Text(
               'Rango: $label',
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1385,11 +1386,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Recompensas',
-                    style: TextStyle(
+                    style: GoogleFonts.baloo2(
                       fontSize: 19,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -1575,9 +1576,9 @@ class _NoLivesCard extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
@@ -1732,9 +1733,9 @@ class _AnimatedRewardNumber extends StatelessWidget {
       builder: (context, animatedValue, _) {
         return Text(
           '$prefix$animatedValue',
-          style: const TextStyle(
+          style: GoogleFonts.baloo2(
             fontSize: 24,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
         );
       },
@@ -1869,9 +1870,9 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
         children: [
           Text(
             'Nivel de jugador $currentLevel',
-            style: const TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),

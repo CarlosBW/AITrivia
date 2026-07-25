@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/economy_service.dart';
@@ -106,9 +107,9 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             const SizedBox(height: 16),
             Text(
               'Próximamente',
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 color: colorScheme.onSurface,
               ),
             ),
@@ -162,9 +163,9 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                   children: [
                     Text(
                       '${pack.coins} monedas',
-                      style: const TextStyle(
+                      style: GoogleFonts.baloo2(
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),

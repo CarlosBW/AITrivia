@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../theme/app_theme.dart';
 
@@ -159,9 +160,9 @@ class PvpResultCard extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 30,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
@@ -206,11 +207,11 @@ class PvpResultCard extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Resultado final',
-                    style: TextStyle(
+                    style: GoogleFonts.baloo2(
                       fontSize: 19,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -377,9 +378,9 @@ class _ScoreColumn extends StatelessWidget {
           child: Text(
             '$score',
             key: ValueKey(score),
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 38,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
@@ -411,14 +412,14 @@ class _MatchSummaryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.analytics_outlined, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.analytics_outlined, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Resumen del match',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
+                style: GoogleFonts.baloo2(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -467,8 +468,8 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.baloo2(
+            fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
         ),
@@ -513,8 +514,8 @@ class _RewardMiniCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.baloo2(
+              fontWeight: FontWeight.w800,
               fontSize: 17,
             ),
           ),
@@ -583,20 +584,20 @@ class _RatingChangeCard extends StatelessWidget {
                 color: color,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Ranked MMR',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.baloo2(
+                    fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
                 ),
               ),
               Text(
                 _deltaText,
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   color: color,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                   fontSize: 18,
                 ),
               ),
@@ -688,8 +689,8 @@ class _MmrBox extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             '$value',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.baloo2(
+              fontWeight: FontWeight.w800,
               fontSize: highlight ? 18 : 16,
             ),
           ),

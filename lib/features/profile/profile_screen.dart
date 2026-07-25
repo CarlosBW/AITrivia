@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
@@ -381,12 +382,12 @@ class _ProfileScreenState extends State<ProfileScreen>
               controller: scrollController,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
-                const Text(
+                Text(
                   'Avatar Collection',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: GoogleFonts.baloo2(
                     fontSize: 21,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -632,12 +633,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text(
+            Text(
               'Choose Frame',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 20),
@@ -957,6 +958,78 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(height: 18),
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AchievementsScreen(),
+                      ),
+                    );
+                  },
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.22),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.emoji_events,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Logros',
+                                style: GoogleFonts.baloo2(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Revisa tu progreso y recompensas',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
@@ -1009,11 +1082,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Stats',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
@@ -1108,11 +1181,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 '1 vs 1 Stats',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
@@ -1159,47 +1232,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                 value: '$bestWinStreak1v1',
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Recent PvP matches',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
               _RecentMatchHistory(uid: uid),
-              const SizedBox(height: 18),
-              Material(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AchievementsScreen(),
-                      ),
-                    );
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(Icons.emoji_events_outlined),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Logros',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Icon(Icons.chevron_right),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
           if (_saving)
@@ -1484,9 +1525,9 @@ class _RecentMatchHistory extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 '$myScore - $opponentScore',
-                                style: const TextStyle(
+                                style: GoogleFonts.baloo2(
                                   fontSize: 22,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ],

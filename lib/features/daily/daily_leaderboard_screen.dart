@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/league_service.dart';
@@ -82,11 +83,11 @@ class DailyLeaderboardScreen extends StatelessWidget {
                   leagueBuilder: _leagueFromData,
                 ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Ranking',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
@@ -395,9 +396,9 @@ class _LeaderboardTile extends StatelessWidget {
               ),
               Text(
                 '$score',
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],

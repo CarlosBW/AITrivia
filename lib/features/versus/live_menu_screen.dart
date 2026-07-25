@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/pvp_league_service.dart';
 import '../../theme/app_theme.dart';
@@ -69,9 +70,9 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               children: [
                 Text(
                   '${league.name} League',
-                  style: TextStyle(
+                  style: GoogleFonts.baloo2(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                     color: color,
                   ),
                 ),
@@ -146,9 +147,9 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             ),
           ),
           const SizedBox(height: 22),
-          const Text(
+          Text(
             'Matchmaking público',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
@@ -166,9 +167,9 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Partidas privadas',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           FilledButton.tonalIcon(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../theme/app_theme.dart';
@@ -281,24 +282,24 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
               ),
             ],
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.emoji_events_outlined,
                 size: 54,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Daily completed!',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 8),
+              const Text(
                 'Saving your results...',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16),
@@ -448,9 +449,9 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     ),
                     child: Text(
                       _coinPopupText!,
-                      style: const TextStyle(
+                      style: GoogleFonts.baloo2(
                         fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         color: Colors.black,
                       ),
                     ),

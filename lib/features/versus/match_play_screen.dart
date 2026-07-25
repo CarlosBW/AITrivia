@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
@@ -858,12 +859,12 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Esperando resultado final...',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 12),
@@ -875,9 +876,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             const SizedBox(height: 24),
             Text(
               'Tu puntaje: $myScore',
-              style: const TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 24),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
@@ -155,7 +156,7 @@ class _SeasonOverviewTab extends StatelessWidget {
                 children: [
                   Text(
                     '$rating MMR',
-                    style: const TextStyle(
+                    style: GoogleFonts.baloo2(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
                     ),
@@ -207,18 +208,18 @@ class _SeasonOverviewTab extends StatelessWidget {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(18),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'How PvP Seasons work',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 18),
               ),
-              SizedBox(height: 8),
-              Text('• Play Ranked Matches to increase your MMR.'),
-              Text('• Your league is calculated from your current MMR.'),
-              Text('• Leaderboards rank players by MMR.'),
-              Text(
+              const SizedBox(height: 8),
+              const Text('• Play Ranked Matches to increase your MMR.'),
+              const Text('• Your league is calculated from your current MMR.'),
+              const Text('• Leaderboards rank players by MMR.'),
+              const Text(
                   '• Rewards are based on your final league when the season ends.'),
             ],
           ),
@@ -447,10 +448,10 @@ class _FriendsLeaderboardList extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'No friends in leaderboard yet',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.baloo2(
+                      fontWeight: FontWeight.w800,
                       fontSize: 18,
                     ),
                     textAlign: TextAlign.center,
@@ -765,9 +766,9 @@ class _RewardsTabState extends State<_RewardsTab> {
             seasonService: widget.seasonService,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Season Rewards',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
@@ -908,9 +909,9 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${currentLeague.name} League',
-                  style: const TextStyle(
+                  style: GoogleFonts.baloo2(
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -923,9 +924,9 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
           ),
           Text(
             '+${reward.coins}',
-            style: const TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1008,14 +1009,14 @@ class _PendingRewardsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.redAccent),
-                SizedBox(width: 10),
+                const Icon(Icons.error_outline, color: Colors.redAccent),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Could not load rewards',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),
               ],
@@ -1056,9 +1057,9 @@ class _PendingRewardsCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'No reward available yet',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -1095,8 +1096,8 @@ class _PendingRewardsCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${pendingRewards.length} pending season $plural',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.baloo2(
+                    fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
                 ),

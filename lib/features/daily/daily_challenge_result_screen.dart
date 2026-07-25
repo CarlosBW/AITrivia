@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 
 class DailyChallengeResultScreen extends StatelessWidget {
@@ -28,12 +29,12 @@ class DailyChallengeResultScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            const Text(
+            Text(
               'Daily Challenge Complete!',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 26,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
 

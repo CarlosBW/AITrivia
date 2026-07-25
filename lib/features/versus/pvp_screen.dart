@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
@@ -42,9 +43,9 @@ class PvPScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Competitive Hub',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            'Competitive hub',
+            style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
@@ -59,8 +60,8 @@ class PvPScreen extends StatelessWidget {
 
               return _PvpCard(
                 icon: Icons.flash_on_outlined,
-                accent: const Color(0xFF185FA5),
-                accentBg: const Color(0xFFE6F1FB),
+                accent: const Color(0xFF6C4FF2),
+                accentBg: const Color(0xFFEEEDFE),
                 title: hasPendingTurn
                     ? 'Active Matches • Your Turn!'
                     : 'Active Matches',
@@ -85,9 +86,9 @@ class PvPScreen extends StatelessWidget {
               final hasPending = snap.data == true;
 
               return _PvpCard(
-                icon: Icons.bolt_outlined,
-                accent: const Color(0xFF993556),
-                accentBg: const Color(0xFFFBEAF0),
+                icon: Icons.flare_outlined,
+                accent: const Color(0xFFFF6B5B),
+                accentBg: const Color(0xFFFFF0EE),
                 title: hasPending
                     ? 'Realtime Invites • New!'
                     : 'Realtime Invites',
@@ -108,9 +109,9 @@ class PvPScreen extends StatelessWidget {
             },
           ),
           _PvpCard(
-            icon: Icons.public_outlined,
-            accent: const Color(0xFF0F6E56),
-            accentBg: const Color(0xFFE1F5EE),
+            icon: Icons.travel_explore_outlined,
+            accent: const Color(0xFFE5A400),
+            accentBg: const Color(0xFFFFF6DE),
             title: 'Find Opponent',
             subtitle: 'Play against any available challenger.',
             onTap: () {
@@ -124,8 +125,8 @@ class PvPScreen extends StatelessWidget {
           ),
           _PvpCard(
             icon: Icons.workspace_premium_outlined,
-            accent: AppColors.reward,
-            accentBg: AppColors.rewardBg,
+            accent: const Color(0xFFE5622C),
+            accentBg: const Color(0xFFFFE8D6),
             title: 'PvP Season',
             subtitle:
                 'View your ranked league, season progress, leaderboard and rewards.',
@@ -223,8 +224,8 @@ class _PvpCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                        style: GoogleFonts.baloo2(
+                          fontWeight: FontWeight.w800,
                           fontSize: 16,
                           color: colorScheme.onSurface,
                         ),

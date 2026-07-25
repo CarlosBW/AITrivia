@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/achievement_service.dart';
 import '../../theme/app_theme.dart';
@@ -117,11 +118,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
+                    Text(
                       'Achievements Progress',
-                      style: TextStyle(
+                      style: GoogleFonts.baloo2(
                         fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 10),

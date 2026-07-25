@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/season_service.dart';
 import '../../theme/app_theme.dart';
@@ -106,11 +107,11 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
           const SizedBox(height: 22),
 
-          const Text(
+          Text(
             'Weekly Rewards History',
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
 
@@ -212,19 +213,19 @@ class _NoPendingRewardsCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.verified_outlined, size: 38),
-          SizedBox(height: 10),
+          const Icon(Icons.verified_outlined, size: 38),
+          const SizedBox(height: 10),
           Text(
             'No pending weekly rewards',
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: 6),
-          Text(
+          const SizedBox(height: 6),
+          const Text(
             'Keep playing Weekly Challenge to earn weekly rewards.',
             textAlign: TextAlign.center,
           ),
@@ -267,9 +268,9 @@ class _PendingRewardsCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '${pending.length} pending reward${pending.length == 1 ? '' : 's'}',
-            style: const TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),

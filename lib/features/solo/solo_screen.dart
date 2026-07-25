@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
@@ -391,13 +392,13 @@ class _SoloScreenState extends State<SoloScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         if (i == 0) {
-          return const Padding(
-            padding: EdgeInsets.only(bottom: 6),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
             child: Text(
               'Temas fijos',
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
           );
@@ -522,9 +523,9 @@ class _CategoryCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item.name,
-                      style: const TextStyle(
+                      style: GoogleFonts.baloo2(
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),

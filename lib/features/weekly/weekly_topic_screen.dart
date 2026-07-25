@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
@@ -208,9 +209,9 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const SizedBox(height: 12),
                             Text(
                               title,
-                              style: const TextStyle(
+                              style: GoogleFonts.baloo2(
                                 fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -228,11 +229,11 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Progress',
-                              style: TextStyle(
+                              style: GoogleFonts.baloo2(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -252,11 +253,11 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Rewards',
-                              style: TextStyle(
+                              style: GoogleFonts.baloo2(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(height: 12),

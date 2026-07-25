@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
@@ -751,25 +752,25 @@ class _NewNotificationOverlay extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.notifications_active,
                     color: Color(0xFF412402),
                     size: 58,
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
                     'Nueva notificación',
-                    style: TextStyle(
-                      color: Color(0xFF412402),
+                    style: GoogleFonts.baloo2(
+                      color: const Color(0xFF412402),
                       fontSize: 23,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'Revisa la campana',
                     style: TextStyle(
                       color: Color(0xFF412402),

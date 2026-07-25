@@ -604,19 +604,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '🔥 STREAK UP!',
-                        style: TextStyle(
+                        style: GoogleFonts.baloo2(
                           fontSize: 26,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 6),
-                      Text(
+                      const SizedBox(height: 6),
+                      const Text(
                         'Keep coming back daily',
                         style: TextStyle(
                           fontSize: 14,
@@ -653,11 +653,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Text(
                         '📅 ¡Volviste!',
-                        style: TextStyle(
+                        style: GoogleFonts.baloo2(
                           fontSize: 26,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
                       ),
@@ -824,9 +824,9 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                     scale: 1.0 + t * 0.10,
                     child: Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.reward,
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
                         Icons.auto_awesome,
@@ -939,28 +939,41 @@ class _WeeklyTopicCard extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.rewardBg,
-            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
+            ),
+            borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.star_border_rounded,
-                    color: AppColors.reward,
-                    size: 22,
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.baloo2(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -971,12 +984,13 @@ class _WeeklyTopicCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.reward.withValues(alpha: 0.25),
+                        color: Colors.white.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
                         '+$rewardCoins coins',
                         style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
                         ),
@@ -984,21 +998,21 @@ class _WeeklyTopicCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 description,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.reward,
-                    foregroundColor: const Color(0xFF412402),
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFB35C1E),
                   ),
                   onPressed: isBusy ? null : () => onOpen(data),
                   icon: const Icon(Icons.play_arrow, size: 18),

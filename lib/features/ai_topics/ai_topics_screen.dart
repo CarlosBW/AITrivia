@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
@@ -414,12 +415,12 @@ class _EmptyAiTopics extends StatelessWidget {
           children: [
             const Icon(Icons.auto_awesome, size: 58),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               'Create your own trivia topic',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 23,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),

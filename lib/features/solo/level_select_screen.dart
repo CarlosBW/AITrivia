@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
@@ -442,9 +443,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                     : widget.isAiTopic
                         ? 'Tu progreso aprobado en este tema IA'
                         : 'Tu progreso aprobado en esta categoría',
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 17,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 8),
@@ -569,9 +570,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                       const SizedBox(height: 8),
                       Text(
                         'Nivel $level',
-                        style: const TextStyle(
+                        style: GoogleFonts.baloo2(
                           fontSize: 17,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -653,12 +654,12 @@ class _LoadErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 44),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'No se pudo cargar la categoría.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.baloo2(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),

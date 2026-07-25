@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/league_service.dart';
 import '../../services/season_service.dart';
@@ -245,11 +246,11 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                             16,
                           ),
                           children: [
-                            const Text(
+                            Text(
                               'Weekly Ranking',
-                              style: TextStyle(
+                              style: GoogleFonts.baloo2(
                                 fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
 
@@ -552,11 +553,11 @@ class _PendingRewardsCard extends StatelessWidget {
             size: 36,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Pending season rewards',
-            style: TextStyle(
+            style: GoogleFonts.baloo2(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
@@ -631,16 +632,15 @@ class _RewardsCard extends StatelessWidget {
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.card_giftcard_outlined),
-              SizedBox(width: 8),
+              const Icon(Icons.card_giftcard_outlined),
+              const SizedBox(width: 8),
               Text(
                 'Weekly Rewards',
-                style: TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 18,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -836,10 +836,9 @@ class _WeeklyLeagueTile extends StatelessWidget {
               ),
               Text(
                 '$weeklyScore',
-                style: const TextStyle(
+                style: GoogleFonts.baloo2(
                   fontSize: 20,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],

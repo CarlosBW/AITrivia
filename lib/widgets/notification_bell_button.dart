@@ -106,47 +106,28 @@ class _NotificationBellButtonState
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                Icons.notifications_rounded,
+                Icons.notifications_outlined,
                 size: 20,
-                color: hasUnread
-                    ? colorScheme.tertiary
-                    : colorScheme.onSurfaceVariant,
+                color: colorScheme.primary,
               ),
             ),
             if (hasUnread)
               Positioned(
-                right: -4,
-                top: -4,
+                right: -2,
+                top: -2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 2,
-                  ),
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.danger,
-                    borderRadius: BorderRadius.circular(999),
+                    shape: BoxShape.circle,
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,
                       width: 1.4,
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  child: Text(
-                    widget.unreadCount > 99
-                        ? '99+'
-                        : '${widget.unreadCount}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

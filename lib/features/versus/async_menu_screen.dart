@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
 import 'async_inbox_screen.dart';
@@ -65,9 +66,9 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Configuración',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
 

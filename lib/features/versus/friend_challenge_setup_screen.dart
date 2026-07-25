@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
@@ -187,9 +188,9 @@ class _FriendChallengeSetupScreenState
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Tipo de reto',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
               SegmentedButton<String>(
@@ -226,9 +227,9 @@ class _FriendChallengeSetupScreenState
                 ),
               ],
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Configuración del match',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -288,40 +289,431 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           );
         },
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _BottomNavBar(
         selectedIndex: _index,
-        onDestinationSelected: _selectTab,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Solo',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.sports_esports_outlined),
-            selectedIcon: Icon(Icons.sports_esports),
-            label: 'PvP',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            selectedIcon: Icon(Icons.group),
-            label: 'Friends',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        onSelect: _selectTab,
       ),
     );
   }
 }
+
+class _NavGlyph extends StatelessWidget {
+  final Color color;
+  final CustomPainter Function(Color color) painter;
+
+  const _NavGlyph({required this.color, required this.painter});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: CustomPaint(painter: painter(color)),
+    );
+  }
+}
+
+class _BottomNavBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  const _BottomNavBar({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  static const _soloIndex = 1;
+
+  Widget _buildItem(
+    BuildContext context,
+    int logicalIndex,
+    CustomPainter Function(Color color) painter,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final selected = logicalIndex == selectedIndex;
+    final color =
+        selected ? colorScheme.primary : colorScheme.onSurfaceVariant;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => onSelect(logicalIndex),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _NavGlyph(color: color, painter: painter),
+            const SizedBox(height: 4),
+            AnimatedOpacity(
+              opacity: selected ? 1 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: colorScheme.surfaceContainerHighest),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.topCenter,
+          children: [
+            SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  _buildItem(context, 0, (c) => _HomeIconPainter(c)),
+                  _buildItem(context, 2, (c) => _SwordsPainter(c)),
+                  const Expanded(child: SizedBox()),
+                  _buildItem(context, 3, (c) => _UsersIconPainter(c)),
+                  _buildItem(context, 4, (c) => _PersonIconPainter(c)),
+                ],
+              ),
+            ),
+            Positioned(
+              top: -6,
+              child: GestureDetector(
+                onTap: () => onSelect(_soloIndex),
+                child: _AppIconFab(selected: selectedIndex == _soloIndex),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppIconFab extends StatelessWidget {
+  final bool selected;
+
+  const _AppIconFab({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 62.0;
+
+    return AnimatedScale(
+      scale: selected ? 1.06 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF7F77DD), Color(0xFF4A3792)],
+          ),
+          border: Border.all(
+            color: selected ? const Color(0xFFEF9F27) : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const CustomPaint(painter: _AppLogoPainter()),
+      ),
+    );
+  }
+}
+
+// Mirrors the app-icon mark (assets/icon/icon.png): a "?" glyph with a
+// small sparkle accent, scaled down for the nav bar.
+class _AppLogoPainter extends CustomPainter {
+  const _AppLogoPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    const glyphColor = Color(0xFFF3EEFF);
+    const sparkColor = Color(0xFFEF9F27);
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '?',
+        style: TextStyle(
+          color: glyphColor,
+          fontSize: s * 0.64,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    textPainter.paint(
+      canvas,
+      Offset(
+        s * 0.42 - textPainter.width / 2,
+        s * 0.50 - textPainter.height / 2,
+      ),
+    );
+
+    final sparkCenter = Offset(s * 0.72, s * 0.32);
+    final sparkR = s * 0.125;
+    const points = [
+      Offset(0.50, 0.00),
+      Offset(0.61, 0.39),
+      Offset(1.00, 0.50),
+      Offset(0.61, 0.61),
+      Offset(0.50, 1.00),
+      Offset(0.39, 0.61),
+      Offset(0.00, 0.50),
+      Offset(0.39, 0.39),
+    ];
+
+    final path = Path();
+    for (var i = 0; i < points.length; i++) {
+      final p = sparkCenter +
+          Offset(
+            (points[i].dx - 0.5) * sparkR * 2,
+            (points[i].dy - 0.5) * sparkR * 2,
+          );
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, Paint()..color = sparkColor);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AppLogoPainter oldDelegate) => false;
+}
+
+class _HomeIconPainter extends CustomPainter {
+  final Color color;
+
+  _HomeIconPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = s * 0.09
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.10, s * 0.52)
+        ..lineTo(s * 0.44, s * 0.16)
+        ..quadraticBezierTo(s * 0.5, s * 0.10, s * 0.56, s * 0.16)
+        ..lineTo(s * 0.90, s * 0.52),
+      paint,
+    );
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.20, s * 0.44)
+        ..lineTo(s * 0.20, s * 0.80)
+        ..quadraticBezierTo(s * 0.20, s * 0.88, s * 0.28, s * 0.88)
+        ..lineTo(s * 0.72, s * 0.88)
+        ..quadraticBezierTo(s * 0.80, s * 0.88, s * 0.80, s * 0.80)
+        ..lineTo(s * 0.80, s * 0.44),
+      paint,
+    );
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.42, s * 0.88)
+        ..lineTo(s * 0.42, s * 0.64)
+        ..quadraticBezierTo(s * 0.42, s * 0.60, s * 0.46, s * 0.60)
+        ..lineTo(s * 0.54, s * 0.60)
+        ..quadraticBezierTo(s * 0.58, s * 0.60, s * 0.58, s * 0.64)
+        ..lineTo(s * 0.58, s * 0.88),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HomeIconPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+// Ported 1:1 from the Tabler "swords" outline icon (24x24 viewBox).
+class _SwordsPainter extends CustomPainter {
+  final Color color;
+
+  _SwordsPainter(this.color);
+
+  static const _path1 = [
+    Offset(21, 3),
+    Offset(21, 8),
+    Offset(10, 17),
+    Offset(6, 21),
+    Offset(3, 18),
+    Offset(7, 14),
+    Offset(16, 3),
+    Offset(21, 3),
+  ];
+  static const _path2 = [Offset(5, 13), Offset(11, 19)];
+  static const _path3 = [
+    Offset(14.32, 17.32),
+    Offset(18, 21),
+    Offset(21, 18),
+    Offset(17.635, 14.635),
+  ];
+  static const _path4 = [
+    Offset(10, 5.5),
+    Offset(8, 3),
+    Offset(3, 3),
+    Offset(3, 8),
+    Offset(6, 10.5),
+  ];
+
+  void _drawPolyline(
+    Canvas canvas,
+    Paint paint,
+    List<Offset> points,
+    double s,
+  ) {
+    final path = Path()
+      ..moveTo(points.first.dx / 24 * s, points.first.dy / 24 * s);
+    for (final p in points.skip(1)) {
+      path.lineTo(p.dx / 24 * s, p.dy / 24 * s);
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = s * (2 / 24)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    _drawPolyline(canvas, paint, _path1, s);
+    _drawPolyline(canvas, paint, _path2, s);
+    _drawPolyline(canvas, paint, _path3, s);
+    _drawPolyline(canvas, paint, _path4, s);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SwordsPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+class _UsersIconPainter extends CustomPainter {
+  final Color color;
+
+  _UsersIconPainter(this.color);
+
+  void _drawPerson(
+    Canvas canvas,
+    Paint paint,
+    Offset headCenter,
+    double headR,
+    Offset shoulderCenter,
+    double shoulderR,
+  ) {
+    canvas.drawCircle(headCenter, headR, paint);
+    canvas.drawArc(
+      Rect.fromCircle(center: shoulderCenter, radius: shoulderR),
+      math.pi,
+      math.pi,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = s * 0.08
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    _drawPerson(
+      canvas,
+      paint,
+      Offset(s * 0.30, s * 0.30),
+      s * 0.15,
+      Offset(s * 0.30, s * 0.80),
+      s * 0.22,
+    );
+    _drawPerson(
+      canvas,
+      paint,
+      Offset(s * 0.72, s * 0.34),
+      s * 0.12,
+      Offset(s * 0.72, s * 0.80),
+      s * 0.18,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _UsersIconPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+class _PersonIconPainter extends CustomPainter {
+  final Color color;
+
+  _PersonIconPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = s * 0.085
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawCircle(Offset(s * 0.5, s * 0.27), s * 0.15, paint);
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(s * 0.5, s * 0.78), radius: s * 0.22),
+      math.pi,
+      math.pi,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PersonIconPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
 
 class _NewNotificationOverlay extends StatelessWidget {
   const _NewNotificationOverlay();

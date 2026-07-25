@@ -1,3 +1,11 @@
+class CoinPack {
+  final String id;
+  final int coins;
+  final double usd;
+
+  const CoinPack({required this.id, required this.coins, required this.usd});
+}
+
 class EconomyService {
   EconomyService._();
 
@@ -59,20 +67,21 @@ class EconomyService {
   static const int defaultPvpWinReward = 2;
 
   // ============================================================
-  // IAP COIN PACKS - planned
+  // IAP COIN PACKS
   // ============================================================
+  //
+  // `id` must exactly match the product id configured for this pack in
+  // both the Google Play Console and App Store Connect once those are
+  // set up — PurchaseService looks products up by this id, and the
+  // verifyCoinPurchase Cloud Function maps id -> coins server-side (the
+  // client-reported coin amount is never trusted).
 
-  static const int coinPackSmallCoins = 100;
-  static const double coinPackSmallUsd = 0.99;
-
-  static const int coinPackAiTopicCoins = 600;
-  static const double coinPackAiTopicUsd = 4.99;
-
-  static const int coinPackMediumCoins = 1500;
-  static const double coinPackMediumUsd = 9.99;
-
-  static const int coinPackLargeCoins = 4000;
-  static const double coinPackLargeUsd = 19.99;
+  static const List<CoinPack> coinPacks = [
+    CoinPack(id: 'coins_pack_small', coins: 100, usd: 0.99),
+    CoinPack(id: 'coins_pack_ai_topic', coins: 600, usd: 4.99),
+    CoinPack(id: 'coins_pack_medium', coins: 1500, usd: 9.99),
+    CoinPack(id: 'coins_pack_large', coins: 4000, usd: 19.99),
+  ];
 
   String formatCoins(int coins) {
     return '$coins coins';

@@ -10,6 +10,7 @@ import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
 import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
+import '../shop/coin_shop_screen.dart';
 import '../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -973,6 +974,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CoinShopScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Comprar monedas'),
+                ),
               ),
               const SizedBox(height: 12),
               Row(

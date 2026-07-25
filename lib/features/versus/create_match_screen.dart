@@ -19,7 +19,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   int _difficulty = 1;
   int _timePerQuestionSec = 10;
   int _totalQuestions = 10;
-  int _winReward = 2;
+
+  // Fijo, igual que el matchmaking público — evita que el jugador siempre
+  // elija la recompensa máxima al crear su propia sala.
+  static const int _winReward = 2;
 
   final TextEditingController _nameCtrl =
       TextEditingController(text: 'Host');
@@ -158,41 +161,18 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             ),
             const SizedBox(height: 12),
 
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _totalQuestions,
-                    items: const [
-                      DropdownMenuItem(value: 5, child: Text('5')),
-                      DropdownMenuItem(value: 10, child: Text('10')),
-                      DropdownMenuItem(value: 15, child: Text('15')),
-                    ],
-                    onChanged: _loading ? null : (v) => setState(() => _totalQuestions = v ?? 10),
-                    decoration: const InputDecoration(
-                      labelText: 'Preguntas',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _winReward,
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('1 moneda')),
-                      DropdownMenuItem(value: 2, child: Text('2 monedas')),
-                      DropdownMenuItem(value: 3, child: Text('3 monedas')),
-                      DropdownMenuItem(value: 5, child: Text('5 monedas')),
-                    ],
-                    onChanged: _loading ? null : (v) => setState(() => _winReward = v ?? 2),
-                    decoration: const InputDecoration(
-                      labelText: 'Recompensa',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
+            DropdownButtonFormField<int>(
+              initialValue: _totalQuestions,
+              items: const [
+                DropdownMenuItem(value: 5, child: Text('5')),
+                DropdownMenuItem(value: 10, child: Text('10')),
+                DropdownMenuItem(value: 15, child: Text('15')),
               ],
+              onChanged: _loading ? null : (v) => setState(() => _totalQuestions = v ?? 10),
+              decoration: const InputDecoration(
+                labelText: 'Preguntas',
+                border: OutlineInputBorder(),
+              ),
             ),
 
             const Spacer(),

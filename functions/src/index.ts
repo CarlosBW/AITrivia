@@ -109,6 +109,55 @@ function clampWinReward(value: number): number {
   return Math.max(0, Math.min(MAX_WIN_REWARD, value));
 }
 
+// Shared daily cap on coins earned from PvP wins (live + async combined).
+// PvP match outcomes aren't fully server-validated (score is self-reported
+// by the client — see finalizePvpMatch), so this bounds the worst-case
+// coin farming regardless of match count, collusion, or a faked score.
+const MAX_DAILY_PVP_COINS = 20;
+
+/**
+ * Server-side YYYY-MM-DD bucket key (Cloud Functions clock, never
+ * client-supplied) used to rate-limit PvP coin payouts per day.
+ * @return {string} Today's date id.
+ */
+function serverDateId(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}` +
+    `-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Clamps how many of `rawCoins` a player may actually be paid right now
+ * against their shared daily PvP coin cap, resetting the bucket if the
+ * server date has rolled over since their last payout.
+ * @param {Record<string, unknown>} userData Current user doc data.
+ * @param {number} rawCoins Coins this win would otherwise pay out.
+ * @return {{payable: number, patch: Record<string, unknown>}} Payable
+ *   amount and the user-doc fields to persist the updated bucket.
+ */
+function clampDailyPvpCoins(
+  userData: Record<string, unknown>,
+  rawCoins: number
+): {payable: number; patch: Record<string, unknown>} {
+  if (rawCoins <= 0) return {payable: 0, patch: {}};
+
+  const today = serverDateId();
+  const sameDay = userData.pvpCoinsDate === today;
+  const earnedSoFar = sameDay ? safeInt(userData.pvpCoinsToday, 0) : 0;
+
+  const payable = Math.max(
+    0, Math.min(rawCoins, MAX_DAILY_PVP_COINS - earnedSoFar)
+  );
+
+  return {
+    payable,
+    patch: {
+      pvpCoinsToday: earnedSoFar + payable,
+      pvpCoinsDate: today,
+    },
+  };
+}
+
 /**
  * Returns the PvP league for a rating.
  * @param {number} rating Player rating.
@@ -656,12 +705,19 @@ export const finalizePvpMatch = onDocumentUpdated(
           guestStreak5Snap
         );
 
+        const hostCoinClamp = clampDailyPvpCoins(
+          hostUser, hostReward.coinsEarned
+        );
+        const guestCoinClamp = clampDailyPvpCoins(
+          guestUser, guestReward.coinsEarned
+        );
+
         ratingResults[hostUid] = {
           oldRating: hostOldRating,
           newRating: hostReward.newRating,
           ratingDelta: hostReward.ratingDelta,
           xpEarned: hostReward.xpEarned,
-          coinsEarned: hostReward.coinsEarned,
+          coinsEarned: hostCoinClamp.payable,
           winStreak: hostReward.newStreak,
           oldLeagueName: hostReward.oldLeague.name,
           newLeagueName: hostReward.newLeague.name,
@@ -672,7 +728,7 @@ export const finalizePvpMatch = onDocumentUpdated(
           newRating: guestReward.newRating,
           ratingDelta: guestReward.ratingDelta,
           xpEarned: guestReward.xpEarned,
-          coinsEarned: guestReward.coinsEarned,
+          coinsEarned: guestCoinClamp.payable,
           winStreak: guestReward.newStreak,
           oldLeagueName: guestReward.oldLeague.name,
           newLeagueName: guestReward.newLeague.name,
@@ -693,9 +749,12 @@ export const finalizePvpMatch = onDocumentUpdated(
             pvpLeagueName: hostReward.newLeague.name,
             ...bestLeaguePatch(hostUser, hostReward.newLeague),
             xp: admin.firestore.FieldValue.increment(hostReward.xpEarned),
-            coins: admin.firestore.FieldValue.increment(hostReward.coinsEarned),
+            coins: admin.firestore.FieldValue.increment(
+              hostCoinClamp.payable
+            ),
+            ...hostCoinClamp.patch,
             lastRankedXpEarned: hostReward.xpEarned,
-            lastRankedCoinsEarned: hostReward.coinsEarned,
+            lastRankedCoinsEarned: hostCoinClamp.payable,
             ...(isDisconnect && !hostWon ? {
               pvpAbandonCount: admin.firestore.FieldValue.increment(1),
               pvpCooldownUntil: admin.firestore.Timestamp.fromMillis(
@@ -724,10 +783,11 @@ export const finalizePvpMatch = onDocumentUpdated(
             ...bestLeaguePatch(guestUser, guestReward.newLeague),
             xp: admin.firestore.FieldValue.increment(guestReward.xpEarned),
             coins: admin.firestore.FieldValue.increment(
-              guestReward.coinsEarned
+              guestCoinClamp.payable
             ),
+            ...guestCoinClamp.patch,
             lastRankedXpEarned: guestReward.xpEarned,
-            lastRankedCoinsEarned: guestReward.coinsEarned,
+            lastRankedCoinsEarned: guestCoinClamp.payable,
             ...(isDisconnect && !guestWon ? {
               pvpAbandonCount: admin.firestore.FieldValue.increment(1),
               pvpCooldownUntil: admin.firestore.Timestamp.fromMillis(
@@ -775,6 +835,13 @@ export const finalizePvpMatch = onDocumentUpdated(
           tx, guestUid, PVP_ACHIEVEMENTS[2], guestNewStreak, guestStreak5Snap
         );
 
+        const hostCoinClamp = clampDailyPvpCoins(
+          hostUser, hostWon ? winReward : 0
+        );
+        const guestCoinClamp = clampDailyPvpCoins(
+          guestUser, guestWon ? winReward : 0
+        );
+
         tx.set(
           hostRef,
           {
@@ -785,8 +852,9 @@ export const finalizePvpMatch = onDocumentUpdated(
             currentWinStreak1v1: hostNewStreak,
             bestWinStreak1v1: Math.max(hostBestStreakSoFar, hostNewStreak),
             coins: admin.firestore.FieldValue.increment(
-              hostWon ? winReward : 0
+              hostCoinClamp.payable
             ),
+            ...hostCoinClamp.patch,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true}
@@ -802,8 +870,9 @@ export const finalizePvpMatch = onDocumentUpdated(
             currentWinStreak1v1: guestNewStreak,
             bestWinStreak1v1: Math.max(guestBestStreakSoFar, guestNewStreak),
             coins: admin.firestore.FieldValue.increment(
-              guestWon ? winReward : 0
+              guestCoinClamp.payable
             ),
+            ...guestCoinClamp.patch,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true}
@@ -941,6 +1010,13 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
       const challengedNewStreak = challengedWon ?
         challengedCurrentStreak + 1 : 0;
 
+      const challengerCoinClamp = clampDailyPvpCoins(
+        challengerUser, challengerWon ? winReward : 0
+      );
+      const challengedCoinClamp = clampDailyPvpCoins(
+        challengedUser, challengedWon ? winReward : 0
+      );
+
       tx.set(
         challengerRef,
         {
@@ -955,8 +1031,9 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
             challengerBestStreakSoFar, challengerNewStreak
           ),
           coins: admin.firestore.FieldValue.increment(
-            challengerWon ? winReward : 0
+            challengerCoinClamp.payable
           ),
+          ...challengerCoinClamp.patch,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -978,8 +1055,9 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
             challengedBestStreakSoFar, challengedNewStreak
           ),
           coins: admin.firestore.FieldValue.increment(
-            challengedWon ? winReward : 0
+            challengedCoinClamp.payable
           ),
+          ...challengedCoinClamp.patch,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -2271,6 +2349,66 @@ export const buyFullLife = onCall(async (request) => {
 
     return {lifeUnits: newLifeUnits, coins: newCoins};
   });
+});
+
+// ============================================================
+// COIN PURCHASES (IAP)
+//
+// Structure only — Google Play Console / App Store Connect aren't set up
+// yet, so there is no real receipt to verify against. This function must
+// stay fail-closed (reject every call) until that's wired up; it must
+// NEVER credit coins based on the client's say-so alone, the same way no
+// other economy path in this file trusts a client-reported amount.
+//
+// Mirrors economy_service.dart's `EconomyService.coinPacks` exactly —
+// keep both in sync. Ids must match the products configured in each
+// store once those accounts exist.
+// ============================================================
+
+const COIN_PACKS: Record<string, number> = {
+  "coins_pack_small": 100,
+  "coins_pack_ai_topic": 600,
+  "coins_pack_medium": 1500,
+  "coins_pack_large": 4000,
+};
+
+export const verifyCoinPurchase = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const productId = String(request.data?.productId || "");
+  const source = String(request.data?.source || "");
+  const verificationData = String(request.data?.verificationData || "");
+
+  const coins = COIN_PACKS[productId];
+  if (!coins) {
+    throw new HttpsError("invalid-argument", "Unknown coin pack.");
+  }
+  if (!source || !verificationData) {
+    throw new HttpsError("invalid-argument", "Missing verification data.");
+  }
+
+  // TODO(store-setup): once both store accounts exist and the packs
+  // above are configured as real products, verify `verificationData`
+  // against the actual store before granting `coins`:
+  //  - source === "google_play": call the Google Play Developer API's
+  //    purchases.products.get with a service-account credential,
+  //    confirm purchaseState is "purchased", and acknowledge/consume the
+  //    token so it can't be replayed.
+  //  - source === "app_store": call the App Store Server API (or the
+  //    legacy verifyReceipt endpoint) with the app's shared secret,
+  //    confirm the transaction is valid, and track its transaction id in
+  //    Firestore so the same receipt can't be replayed for a second
+  //    payout.
+  // Only after that check passes should this run a transaction crediting
+  // `coins` to the user doc — exactly like every other reward path in
+  // this file, never trust a client-supplied amount directly.
+  throw new HttpsError(
+    "failed-precondition",
+    "Coin purchases aren't enabled yet."
+  );
 });
 
 // ============================================================

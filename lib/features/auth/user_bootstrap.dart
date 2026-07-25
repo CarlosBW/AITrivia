@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/analytics_service.dart';
-import '../../services/economy_service.dart';
 
 String _todayDateId([DateTime? now]) {
   final d = now ?? DateTime.now();
@@ -11,27 +11,6 @@ String _todayDateId([DateTime? now]) {
   final m = d.month.toString().padLeft(2, '0');
   final day = d.day.toString().padLeft(2, '0');
   return '$y-$m-$day';
-}
-
-bool _wasYesterday(String? dateId) {
-  if (dateId == null || dateId.isEmpty) return false;
-
-  final lastDate = DateTime.tryParse(dateId);
-  if (lastDate == null) return false;
-
-  final today = DateTime.now();
-  final todayOnly = DateTime(today.year, today.month, today.day);
-  final yesterday = todayOnly.subtract(const Duration(days: 1));
-
-  final normalizedLast = DateTime(lastDate.year, lastDate.month, lastDate.day);
-  return normalizedLast == yesterday;
-}
-
-int _loginStreakBonusCoins(int streak) {
-  if (streak > 0 && streak % 14 == 0) return EconomyService.loginStreak14DaysCoins;
-  if (streak > 0 && streak % 7 == 0) return EconomyService.loginStreak7DaysCoins;
-  if (streak > 0 && streak % 3 == 0) return EconomyService.loginStreak3DaysCoins;
-  return 0;
 }
 
 Future<bool> bootstrapUserDoc(String uid) async {
@@ -149,24 +128,15 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
   final today = _todayDateId();
   final lastLoginDate = data['lastLoginDate']?.toString();
-  final previousLoginStreak = ((data['loginStreak'] ?? 0) as num).toInt();
   final loginStreakIncreased = lastLoginDate != today;
 
-  final newLoginStreak = loginStreakIncreased
-      ? (_wasYesterday(lastLoginDate) ? previousLoginStreak + 1 : 1)
-      : previousLoginStreak;
-
-  final loginCelebrationCoins =
-      loginStreakIncreased ? _loginStreakBonusCoins(newLoginStreak) : 0;
-
-  // Note: coins/xp/pvpRating/wins1v1/... are now server-owned (Cloud
-  // Functions write them via the Admin SDK) and protected in
+  // `coins`/`xp`/`pvpRating`/`wins1v1`/... (and now `loginStreak`/
+  // `lastLoginDate` themselves) are server-owned and protected in
   // firestore.rules, so this routine per-launch bootstrap must not touch
   // them at all anymore — it only maintains genuinely client-owned
-  // profile/cosmetic fields. The login-streak coin bonus itself moves to
-  // the `claimLoginStreakBonus` Cloud Function (see Phase 7); for now
-  // `loginStreakCelebrationCoins` is computed for the celebration popup's
-  // copy but no longer paid out here.
+  // profile/cosmetic fields. The login-streak bump and its coin bonus are
+  // both handled by `claimLoginStreakBonus`, which also sets the
+  // celebration-popup fields home_screen.dart watches for.
   await ref.set(
     {
       'freeTopicPasses': data['freeTopicPasses'] ?? 1,
@@ -185,12 +155,6 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
       'dailyGamesPlayed': data['dailyGamesPlayed'] ?? 0,
 
-      'loginStreak': newLoginStreak,
-      'lastLoginDate': today,
-      // The celebration popup is suppressed until claimLoginStreakBonus
-      // (Phase 7) actually grants these coins server-side — showing it now
-      // would claim a reward the player doesn't receive.
-
       'lifeUnits': data['lifeUnits'] ?? inferredUnits,
       'maxLifeUnits': data['maxLifeUnits'] ?? 10,
       'lifeRegenSeconds': data['lifeRegenSeconds'] ?? 150,
@@ -205,12 +169,21 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
   if (loginStreakIncreased) {
     try {
+      final response = await FirebaseFunctions.instance
+          .httpsCallable('claimLoginStreakBonus')
+          .call({'todayDateId': today});
+
+      final result = Map<String, dynamic>.from(response.data as Map);
+      final newLoginStreak = ((result['streak'] ?? 0) as num).toInt();
+      final loginCelebrationCoins =
+          ((result['coinsEarned'] ?? 0) as num).toInt();
+
       await AnalyticsService.instance.logLoginStreak(
         streak: newLoginStreak,
         coinsEarned: loginCelebrationCoins,
       );
     } catch (_) {
-      // No bloquear el bootstrap si falla el registro de analítica.
+      // No bloquear el bootstrap si falla el bono de racha o su analítica.
     }
   }
 

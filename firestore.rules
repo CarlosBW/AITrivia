@@ -52,7 +52,8 @@ service cloud.firestore {
         'lastPvpSeasonRewardCount', 'lastPvpSeasonRewardClaimedAt',
         'dailyStreak', 'maxDailyStreak', 'lastDailyPlayed', 'bestDailyScore',
         'leagueScore', 'leagueId', 'leagueName',
-        'gamesPlayed', 'correctAnswers', 'wrongAnswers'
+        'gamesPlayed', 'correctAnswers', 'wrongAnswers',
+        'loginStreak', 'lastLoginDate'
       ];
     }
 

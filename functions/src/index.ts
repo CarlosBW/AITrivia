@@ -1809,6 +1809,86 @@ export const notifyStreakAtRisk = onSchedule(
 );
 
 // ============================================================
+// LOGIN STREAK BONUS
+//
+// Mirrors user_bootstrap.dart's per-launch login-streak logic. `loginStreak`
+// and `lastLoginDate` are now protected fields — previously a client could
+// write them directly (e.g. rewind `lastLoginDate` to "yesterday" and bump
+// `loginStreak` by hand) to repeatedly claim the 3/7/14-day coin bonus.
+// `todayDateId` is trusted from the client only as a bucket key (same as
+// submitDailyChallengeResult's dateId/weekId) — the streak math and coin
+// amount are entirely server-computed.
+// ============================================================
+
+const LOGIN_STREAK_3_DAYS_COINS = 3;
+const LOGIN_STREAK_7_DAYS_COINS = 8;
+const LOGIN_STREAK_14_DAYS_COINS = 15;
+
+/**
+ * Mirrors user_bootstrap.dart's `_loginStreakBonusCoins`.
+ * @param {number} streak Login streak after today's login.
+ * @return {number} Bonus coins for hitting a streak milestone.
+ */
+function loginStreakBonusCoins(streak: number): number {
+  if (streak > 0 && streak % 14 === 0) return LOGIN_STREAK_14_DAYS_COINS;
+  if (streak > 0 && streak % 7 === 0) return LOGIN_STREAK_7_DAYS_COINS;
+  if (streak > 0 && streak % 3 === 0) return LOGIN_STREAK_3_DAYS_COINS;
+  return 0;
+}
+
+export const claimLoginStreakBonus = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const todayDateId = String(request.data?.todayDateId || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(todayDateId)) {
+    throw new HttpsError("invalid-argument", "Invalid todayDateId.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+
+    const lastLoginDate = data.lastLoginDate ?
+      String(data.lastLoginDate) : null;
+    const previousStreak = safeInt(data.loginStreak, 0);
+
+    if (lastLoginDate === todayDateId) {
+      return {
+        streak: previousStreak,
+        coinsEarned: 0,
+        alreadyProcessedToday: true,
+      };
+    }
+
+    const newStreak = lastLoginDate && isYesterday(lastLoginDate, todayDateId) ?
+      previousStreak + 1 : 1;
+
+    const coinsEarned = loginStreakBonusCoins(newStreak);
+
+    const patch: Record<string, unknown> = {
+      loginStreak: newStreak,
+      lastLoginDate: todayDateId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (coinsEarned > 0) {
+      patch.coins = admin.firestore.FieldValue.increment(coinsEarned);
+      patch.loginStreakCelebrationPending = true;
+      patch.loginStreakCelebrationCoins = coinsEarned;
+    }
+
+    tx.set(userRef, patch, {merge: true});
+
+    return {streak: newStreak, coinsEarned, alreadyProcessedToday: false};
+  });
+});
+
+// ============================================================
 // SOLO LEVEL REWARDS
 //
 // Mirrors level_play_screen.dart's `_saveProgress` transaction. `coins`/

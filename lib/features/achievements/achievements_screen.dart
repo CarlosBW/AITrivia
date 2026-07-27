@@ -128,7 +128,11 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     const SizedBox(height: 10),
                     Text(
                       '$completedCount / ${achievements.length} completed',
-                      style: const TextStyle(fontSize: 16),
+                      style: GoogleFonts.baloo2(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     ClipRRect(
@@ -215,14 +219,18 @@ class _AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color borderColor;
+    final Color accentColor;
+    final Color accentBg;
 
     if (claimed) {
-      borderColor = AppColors.success;
+      accentColor = AppColors.success;
+      accentBg = AppColors.successBg;
     } else if (completed) {
-      borderColor = AppColors.reward;
+      accentColor = AppColors.reward;
+      accentBg = AppColors.rewardBg;
     } else {
-      borderColor = Colors.transparent;
+      accentColor = Theme.of(context).colorScheme.primary;
+      accentBg = Theme.of(context).colorScheme.surfaceContainerHighest;
     }
 
     return AnimatedContainer(
@@ -230,10 +238,10 @@ class _AchievementCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: accentBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: borderColor,
+          color: accentColor.withValues(alpha: completed || claimed ? 1 : 0.25),
           width: 2,
         ),
       ),
@@ -241,9 +249,18 @@ class _AchievementCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                achievement.icon,
-                style: const TextStyle(fontSize: 28),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  achievement.icon,
+                  style: const TextStyle(fontSize: 24),
+                ),
               ),
               const SizedBox(width: 14),
 
@@ -253,8 +270,8 @@ class _AchievementCard extends StatelessWidget {
                   children: [
                     Text(
                       achievement.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.baloo2(
+                        fontWeight: FontWeight.w800,
                         fontSize: 17,
                       ),
                     ),
@@ -281,10 +298,19 @@ class _AchievementCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                '+${achievement.rewardCoins} coins',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.reward.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '+${achievement.rewardCoins} coins',
+                  style: GoogleFonts.baloo2(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: Color.lerp(AppColors.reward, Colors.black, 0.35),
+                  ),
                 ),
               ),
             ],

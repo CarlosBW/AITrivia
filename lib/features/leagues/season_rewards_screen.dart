@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/season_service.dart';
+import '../../services/league_service.dart';
 import '../../theme/app_theme.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
@@ -147,6 +148,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
                   final data = doc.data();
 
                   final seasonId = (data['seasonId'] ?? doc.id).toString();
+                  final leagueId = (data['leagueId'] ?? '').toString();
                   final leagueName =
                       (data['leagueName'] ?? 'League').toString();
                   final rank = ((data['rank'] ?? 0) as num).toInt();
@@ -159,6 +161,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
                   return _HistoryTile(
                     seasonId: seasonId,
+                    leagueId: leagueId,
                     leagueName: leagueName,
                     rank: rank,
                     weeklyScore: weeklyScore,
@@ -367,6 +370,7 @@ class _EmptyHistoryCard extends StatelessWidget {
 
 class _HistoryTile extends StatelessWidget {
   final String seasonId;
+  final String leagueId;
   final String leagueName;
   final int rank;
   final int weeklyScore;
@@ -375,6 +379,7 @@ class _HistoryTile extends StatelessWidget {
 
   const _HistoryTile({
     required this.seasonId,
+    required this.leagueId,
     required this.leagueName,
     required this.rank,
     required this.weeklyScore,
@@ -382,29 +387,68 @@ class _HistoryTile extends StatelessWidget {
     required this.rewardMessage,
   });
 
+  LeagueInfo? get _league {
+    for (final l in LeagueService.leagues) {
+      if (l.id == leagueId) return l;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final color = _league != null
+        ? Color(_league!.colorValue)
+        : Theme.of(context).colorScheme.primary;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: ListTile(
-        leading: const Icon(Icons.workspace_premium_outlined),
-        title: Text(
-          '$seasonId • $leagueName',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          'Rank #$rank • Score $weeklyScore • $rewardMessage',
-        ),
-        trailing: Text(
-          '+$rewardCoins',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 17,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(Icons.workspace_premium_outlined, color: color),
           ),
-        ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$seasonId • $leagueName',
+                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Rank #$rank • Score $weeklyScore • $rewardMessage',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '+$rewardCoins',
+            style: GoogleFonts.baloo2(
+              fontWeight: FontWeight.w800,
+              fontSize: 17,
+              color: Color.lerp(color, Colors.black, 0.35),
+            ),
+          ),
+        ],
       ),
     );
   }

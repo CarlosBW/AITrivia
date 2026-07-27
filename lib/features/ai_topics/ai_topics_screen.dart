@@ -286,11 +286,11 @@ class AiTopicsScreen extends StatelessWidget {
                     contentPadding: const EdgeInsets.all(14),
                     leading: CircleAvatar(
                       backgroundColor: color.withValues(alpha: 0.16),
-                      child: const Icon(Icons.auto_awesome),
+                      child: Icon(Icons.auto_awesome, color: color),
                     ),
                     title: Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 6),

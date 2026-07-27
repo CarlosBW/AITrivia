@@ -57,6 +57,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  // Uses the app's own vivid palette (matching CategoryAccent/AppColors
+  // elsewhere) instead of plain Material colors, so this list reads as
+  // part of the same design system as Home/PvP/Achievements.
   Color _colorForType(String type, bool read) {
     if (read) return Theme.of(context).colorScheme.onSurfaceVariant;
 
@@ -64,19 +67,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'match_invite':
         return Theme.of(context).colorScheme.primary;
       case 'match_turn':
-        return Colors.green;
+        return AppColors.success;
       case 'match_result':
-        return Colors.amber.shade700;
+        return AppColors.reward;
       case 'friend_request':
-        return Colors.blue;
+        return const Color(0xFF185FA5);
       case 'season_reward':
-        return Colors.orange;
+        return const Color(0xFFE5622C);
       case 'achievement_completed':
-        return Colors.teal;
+        return const Color(0xFF993556);
       case 'rematch_request':
         return Theme.of(context).colorScheme.primary;
       case 'streak_at_risk':
-        return Colors.deepOrange;
+        return AppColors.danger;
       default:
         return Theme.of(context).colorScheme.primary;
     }

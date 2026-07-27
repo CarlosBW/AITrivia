@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AvatarInfo {
   final String id;
   final String name;
@@ -266,103 +264,12 @@ class AvatarService {
   }
 
   // ============================================================
-  // UNLOCKS
-  // ============================================================
-
-  Future<bool> unlockAvatar({
-    required String uid,
-    required String avatarId,
-    String? reason,
-  }) async {
-    final ref = FirebaseFirestore.instance.collection('users').doc(uid);
-
-    return FirebaseFirestore.instance.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-
-      final unlocked = (data['unlockedAvatars'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toSet();
-
-      if (unlocked.contains(avatarId)) {
-        return false;
-      }
-
-      unlocked.add(avatarId);
-
-      tx.set(
-        ref,
-        {
-          'unlockedAvatars': unlocked.toList()..sort(),
-          'lastUnlockedAvatarId': avatarId,
-          if (reason != null) 'lastUnlockedAvatarReason': reason,
-          'lastUnlockedAvatarAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      return true;
-    });
-  }
-
-  Future<bool> unlockAiTopicAvatar({
-    required String uid,
-    required String topicId,
-    required String topicTitle,
-    required String imageUrl,
-  }) async {
-    final avatarId = aiTopicAvatarId(topicId);
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
-
-    return FirebaseFirestore.instance.runTransaction((tx) async {
-      final userSnap = await tx.get(userRef);
-      final userData = userSnap.data() ?? {};
-
-      final unlocked = (userData['unlockedAvatars'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toSet();
-
-      if (unlocked.contains(avatarId)) {
-        return false;
-      }
-
-      unlocked.add(avatarId);
-
-      final dynamicAvatars =
-          Map<String, dynamic>.from(userData['dynamicAvatars'] as Map? ?? {});
-
-      dynamicAvatars[avatarId] = {
-        'id': avatarId,
-        'name': topicTitle,
-        'emoji': '✨',
-        'category': 'ai_dynamic',
-        'unlockLabel': 'Completed AI topic: $topicTitle',
-        'imageUrl': imageUrl,
-        'topicId': topicId,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      tx.set(
-        userRef,
-        {
-          'unlockedAvatars': unlocked.toList()..sort(),
-          'dynamicAvatars': dynamicAvatars,
-          'lastUnlockedAvatarId': avatarId,
-          'lastUnlockedAvatarReason': 'Completed AI topic: $topicTitle',
-          'lastUnlockedAvatarAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      return true;
-    });
-  }
-
-  // ============================================================
   // AVAILABILITY
   // ============================================================
+  //
+  // Note: unlockedAvatars/dynamicAvatars are locked against direct client
+  // writes in firestore.rules — avatar unlocks are granted server-side
+  // (see submitDailyChallengeResult for the question-count achievements).
 
   List<String> unlockedAvatarIdsForBestLeague({
     required String bestLeagueId,

@@ -120,9 +120,6 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
   final bestLeague = PvpLeagueService.instance.leagueById(bestLeagueId);
 
-  final unlockedAvatars = data['unlockedAvatars'] ??
-      AvatarService.instance.defaultUnlockedAvatarIds();
-
   // Existing accounts predate onboarding — treat them as already onboarded.
   final hasSeenOnboarding = data['hasSeenOnboarding'] ?? true;
 
@@ -131,12 +128,16 @@ Future<bool> bootstrapUserDoc(String uid) async {
   final loginStreakIncreased = lastLoginDate != today;
 
   // `coins`/`xp`/`pvpRating`/`wins1v1`/... (and now `loginStreak`/
-  // `lastLoginDate` themselves) are server-owned and protected in
-  // firestore.rules, so this routine per-launch bootstrap must not touch
-  // them at all anymore — it only maintains genuinely client-owned
-  // profile/cosmetic fields. The login-streak bump and its coin bonus are
-  // both handled by `claimLoginStreakBonus`, which also sets the
-  // celebration-popup fields home_screen.dart watches for.
+  // `lastLoginDate`/`unlockedAvatars`/`dynamicAvatars` themselves) are
+  // server-owned and protected in firestore.rules, so this routine
+  // per-launch bootstrap must not touch them at all anymore — it only
+  // maintains genuinely client-owned profile/cosmetic fields. `avatarId`/
+  // `equippedFrame` stay here since those are the user's own equip choice
+  // (still validated against `unlockedAvatars`/`bestLeagueId` by the
+  // rules), and their fallback defaults here are always allowed values.
+  // The login-streak bump and its coin bonus are both handled by
+  // `claimLoginStreakBonus`, which also sets the celebration-popup fields
+  // home_screen.dart watches for.
   await ref.set(
     {
       'freeTopicPasses': data['freeTopicPasses'] ?? 1,
@@ -146,10 +147,6 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'displayName': displayName,
 
       'avatarId': data['avatarId'] ?? 'avatar_1',
-      'unlockedAvatars': unlockedAvatars,
-      'lastUnlockedAvatarId': data['lastUnlockedAvatarId'],
-      'lastUnlockedAvatarReason': data['lastUnlockedAvatarReason'],
-      'lastUnlockedAvatarAt': data['lastUnlockedAvatarAt'],
 
       'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
 

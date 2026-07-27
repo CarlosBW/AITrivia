@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
 import 'achievement_service.dart';
-import 'avatar_service.dart';
 import 'analytics_service.dart';
 
 class DailyChallengeSession {
@@ -298,25 +297,23 @@ class DailyChallengeService {
     );
 
     if (result.saved) {
-      final totalQuestionsAnswered =
-          ((data['totalQuestionsAnswered'] ?? 0) as num).toInt();
-
       unawaited(_syncDailyRetentionHooks(
         uid: uid,
         dailyStreak: result.streak,
         score: result.score,
-        totalQuestionsAnswered: totalQuestionsAnswered,
       ));
     }
 
     return result;
   }
 
+  // Achievement-avatar unlocking is handled server-side, inside
+  // submitDailyChallengeResult, since unlockedAvatars is now locked
+  // against direct client writes in firestore.rules.
   Future<void> _syncDailyRetentionHooks({
     required String uid,
     required int dailyStreak,
     required int score,
-    required int totalQuestionsAnswered,
   }) async {
     try {
       await AchievementService.instance.syncDailyAchievements(
@@ -328,20 +325,6 @@ class DailyChallengeService {
         streak: dailyStreak,
         score: score,
       );
-
-      if (totalQuestionsAnswered >= 1000) {
-        await AvatarService.instance.unlockAvatar(
-          uid: uid,
-          avatarId: 'achievement_1000_questions',
-          reason: 'Answered 1000 questions',
-        );
-      } else if (totalQuestionsAnswered >= 100) {
-        await AvatarService.instance.unlockAvatar(
-          uid: uid,
-          avatarId: 'achievement_100_questions',
-          reason: 'Answered 100 questions',
-        );
-      }
     } catch (e) {
       debugPrint('Daily retention hook sync failed: $e');
     }

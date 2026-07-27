@@ -1594,6 +1594,42 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       userPatch.bestDailyScore = score;
     }
 
+    // Question-count achievement avatars are granted here (rather than by
+    // a client-side follow-up write) since `unlockedAvatars` is locked
+    // against direct client writes in firestore.rules — this is the one
+    // place totalQuestionsAnswered is already computed authoritatively.
+    const existingUnlockedAvatars: string[] =
+      Array.isArray(userData.unlockedAvatars) ?
+        userData.unlockedAvatars.map((v: unknown) => String(v)) : [];
+
+    const newlyUnlockedAvatarIds: string[] = [];
+    if (
+      totalQuestionsAnswered >= 100 &&
+      !existingUnlockedAvatars.includes("achievement_100_questions")
+    ) {
+      newlyUnlockedAvatarIds.push("achievement_100_questions");
+    }
+    if (
+      totalQuestionsAnswered >= 1000 &&
+      !existingUnlockedAvatars.includes("achievement_1000_questions")
+    ) {
+      newlyUnlockedAvatarIds.push("achievement_1000_questions");
+    }
+
+    if (newlyUnlockedAvatarIds.length > 0) {
+      userPatch.unlockedAvatars =
+        admin.firestore.FieldValue.arrayUnion(...newlyUnlockedAvatarIds);
+
+      const latestUnlockedAvatarId =
+        newlyUnlockedAvatarIds[newlyUnlockedAvatarIds.length - 1];
+      userPatch.lastUnlockedAvatarId = latestUnlockedAvatarId;
+      userPatch.lastUnlockedAvatarReason =
+        latestUnlockedAvatarId === "achievement_1000_questions" ?
+          "Answered 1000 questions" : "Answered 100 questions";
+      userPatch.lastUnlockedAvatarAt =
+        admin.firestore.FieldValue.serverTimestamp();
+    }
+
     tx.set(userRef, userPatch, {merge: true});
 
     tx.set(leaderboardRef, {

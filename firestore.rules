@@ -31,9 +31,14 @@ service cloud.firestore {
     // tracking) are now computed and written server-side by Cloud
     // Functions (finalizePvpMatch, finalizeAsyncPvpMatch,
     // claimPvpSeasonRewards, submitDailyChallengeResult) — the client may
-    // no longer write them directly. Everything else on this doc (profile
-    // fields, cosmetics, etc.) stays client-writable. More fields move
-    // into this list as later phases land.
+    // no longer write them directly. `unlockedAvatars`/`dynamicAvatars`
+    // (which avatars/AI-topic avatars a player has earned) are granted the
+    // same way, so a modified client can't unlock cosmetics it never
+    // earned. Everything else on this doc (profile fields, which cosmetic
+    // is currently equipped, etc.) stays client-writable — see
+    // avatarIdFieldValid()/equippedFrameFieldValid() below for the equip
+    // actions specifically. More fields move into this list as later
+    // phases land.
     function economyProtectedFields() {
       return [
         'coins', 'xp', 'level',
@@ -54,8 +59,40 @@ service cloud.firestore {
         'leagueScore', 'leagueId', 'leagueName',
         'gamesPlayed', 'correctAnswers', 'wrongAnswers',
         'loginStreak', 'lastLoginDate',
-        'pvpCoinsToday', 'pvpCoinsDate'
+        'pvpCoinsToday', 'pvpCoinsDate',
+        'unlockedAvatars', 'dynamicAvatars'
       ];
+    }
+
+    // Mirrors FrameService.unlockedLeagueFrames() — the leagues a player
+    // has ever reached (bestLeagueId, server-protected above) unlock every
+    // frame at or below that rank.
+    function unlockedFramesForLeague(bestLeagueId) {
+      return bestLeagueId == 'master'
+        ? ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master']
+        : bestLeagueId == 'diamond'
+        ? ['bronze', 'silver', 'gold', 'platinum', 'diamond']
+        : bestLeagueId == 'platinum'
+        ? ['bronze', 'silver', 'gold', 'platinum']
+        : bestLeagueId == 'gold'
+        ? ['bronze', 'silver', 'gold']
+        : bestLeagueId == 'silver'
+        ? ['bronze', 'silver']
+        : ['bronze'];
+    }
+
+    // A client may still equip a cosmetic (avatarId/equippedFrame), just
+    // not fabricate one: avatarId must already be in the server-granted
+    // unlockedAvatars list, and equippedFrame must be unlocked for the
+    // player's own (server-protected) bestLeagueId.
+    function avatarIdFieldValid() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarId'])
+        || request.resource.data.avatarId in resource.data.unlockedAvatars;
+    }
+
+    function equippedFrameFieldValid() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['equippedFrame'])
+        || request.resource.data.equippedFrame in unlockedFramesForLeague(resource.data.bestLeagueId);
     }
 
     // The only winReward value any PvP match is ever created with today
@@ -79,7 +116,9 @@ service cloud.firestore {
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(economyProtectedFields());
+            .hasAny(economyProtectedFields())
+        && avatarIdFieldValid()
+        && equippedFrameFieldValid();
 
       match /ai_topics/{topicId} {
         allow read, create, update, delete: if request.auth != null
@@ -209,13 +248,22 @@ service cloud.firestore {
         && request.auth.uid == playerId;
     }
 
-    // weeklyScore feeds weekly-league season reward payouts
-    // (claimWeeklySeasonRewards) — only submitDailyChallengeResult (Cloud
-    // Function) may write it, so a client can no longer fabricate its own
-    // leaderboard entry to claim an inflated reward.
+    // weeklyScore/leagueId/leagueName/level/streak feed weekly-league
+    // season reward payouts (claimWeeklySeasonRewards) — only
+    // submitDailyChallengeResult (Cloud Function) may write those, so a
+    // client can no longer fabricate its own leaderboard entry to claim an
+    // inflated reward. The player may still touch their own doc's cosmetic
+    // mirror fields directly (username/displayName/avatarId), so editing
+    // your profile mid-week updates the weekly board immediately instead
+    // of waiting for the next daily-challenge play.
     match /weekly_leagues/{weekId}/{leagueId}/{playerId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow create: if false;
+      allow update: if request.auth != null
+        && request.auth.uid == playerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['username', 'displayName', 'avatarId', 'updatedAt']);
+      allow delete: if false;
     }
 
     // Matches are 1v1 — only the two players in a match may read or write

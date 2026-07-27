@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
-import 'async_inbox_screen.dart';
-import 'async_outbox_screen.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
   final int difficulty;
@@ -124,34 +122,10 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
               child: const Text('Buscar jugador para retar'),
             ),
 
-            const SizedBox(height: 12),
-
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AsyncInboxScreen()),
-                );
-              },
-              child: const Text('Retos recibidos'),
-            ),
-
-            const SizedBox(height: 12),
-
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AsyncOutboxScreen()),
-                );
-              },
-              child: const Text('Retos enviados'),
-            ),
-
             const Spacer(),
 
             Text(
-              'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego.',
+              'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

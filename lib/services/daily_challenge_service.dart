@@ -259,12 +259,18 @@ class DailyChallengeService {
   }
 
   /// Grants the Daily Challenge result via the `submitDailyChallengeResult`
-  /// Cloud Function — coins/xp/streak/level/league are now computed and
-  /// written server-side; the client only reports `correct`/`totalAnswered`.
+  /// Cloud Function — coins/xp/streak/level/league are computed
+  /// server-side, and `correct`/`totalAnswered` are now independently
+  /// recomputed there too from `answers` (this player's actual selected
+  /// option per question, keyed by that question's index in the stored
+  /// session) against the session doc's own `questions`, so a modified
+  /// client reporting an inflated correct count can no longer affect the
+  /// real result.
   Future<DailyChallengeSaveResult> saveResult({
     required String uid,
     required int correct,
     required int totalAnswered,
+    required List<Map<String, dynamic>> answers,
   }) async {
     final dateId = todayDateId();
     final weekId = WeeklyLeagueService.instance.currentWeekId();
@@ -274,6 +280,7 @@ class DailyChallengeService {
     final response = await callable.call({
       'correct': correct,
       'totalAnswered': totalAnswered,
+      'answers': answers,
       'dateId': dateId,
       'weekId': weekId,
     });

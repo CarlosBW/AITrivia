@@ -31,6 +31,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   int _index = 0;
   int _correct = 0;
+  final Map<int, int> _answers = {};
 
   bool _locked = false;
   int? _selected;
@@ -165,6 +166,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     _timer?.cancel();
 
     final correct = tappedIndex == answerIndex;
+    _answers[_index] = tappedIndex;
 
     if (correct) {
       SfxService.instance.playCorrect();
@@ -194,6 +196,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       await _service.submitAsyncResult(
         matchId: widget.asyncMatchId,
         score: _correct,
+        answers: _answers,
       );
       try {
         await _presenceService.setAvailable();

@@ -732,17 +732,18 @@ class MatchService {
     });
   }
 
+  // `score` here is still an optimistic, client-computed value used only
+  // for this player's own live in-match display — finalizePvpMatch ignores
+  // it entirely and recomputes the authoritative score itself from
+  // `players.$uid.answers` (this player's actual selected option per
+  // question) against the match's own stored `questions`, so a modified
+  // client reporting an inflated deltaScore can no longer affect the real
+  // result. The per-question `answers` map (keyed by questionIndex) also
+  // makes this a one-shot write per question, same as `score` was before.
   Future<void> submitAnswer({
     required String matchId,
-    required int deltaScore,
-  }) async {
-    final ref = _db.collection('matches').doc(matchId);
-    await ref.update({'players.$uid.score': FieldValue.increment(deltaScore)});
-  }
-
-  Future<void> submitAnswerOncePerQuestion({
-    required String matchId,
     required int questionIndex,
+    required int selectedAnswerIndex,
     required int deltaScore,
   }) async {
     final ref = _db.collection('matches').doc(matchId);
@@ -758,13 +759,13 @@ class MatchService {
       }
 
       final me = Map<String, dynamic>.from(players[uid] ?? {});
-      final answered = Map<String, dynamic>.from(me['answered'] ?? {});
+      final answers = Map<String, dynamic>.from(me['answers'] ?? {});
 
       final key = questionIndex.toString();
-      if (answered[key] == true) return;
+      if (answers.containsKey(key)) return;
 
       tx.update(ref, {
-        'players.$uid.answered.$key': true,
+        'players.$uid.answers.$key': selectedAnswerIndex,
         if (deltaScore > 0)
           'players.$uid.score': FieldValue.increment(deltaScore),
       });
@@ -1139,11 +1140,20 @@ class MatchService {
     });
   }
 
+  // `score` is still stored for this player's own live/result display
+  // (e.g. active_matches_screen.dart, result screens) but
+  // finalizeAsyncPvpMatch ignores it and recomputes the authoritative
+  // score itself from `answers` (this player's actual selected option per
+  // question, keyed by questionIndex) against the match's own stored
+  // `questions` — a modified client reporting an inflated score can no
+  // longer affect the real result.
   Future<void> submitAsyncResult({
     required String matchId,
     required int score,
+    required Map<int, int> answers,
   }) async {
     final ref = _db.collection('async_matches').doc(matchId);
+    final answersMap = answers.map((k, v) => MapEntry(k.toString(), v));
 
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
@@ -1164,6 +1174,7 @@ class MatchService {
         tx.update(ref, {
           'challengerStatus': 'finished',
           'challenger.score': score,
+          'challenger.answers': answersMap,
           'challenger.finishedAt': FieldValue.serverTimestamp(),
         });
       } else {
@@ -1173,6 +1184,7 @@ class MatchService {
         tx.update(ref, {
           'challengedStatus': 'finished',
           'challenged.score': score,
+          'challenged.answers': answersMap,
           'challenged.finishedAt': FieldValue.serverTimestamp(),
         });
       }

@@ -109,10 +109,41 @@ function clampWinReward(value: number): number {
   return Math.max(0, Math.min(MAX_WIN_REWARD, value));
 }
 
+/**
+ * Recomputes a live-PvP player's real score from their actual submitted
+ * answers, ignoring the `score` field a client wrote during play (which
+ * was only ever an unverified, optimistic live-display value — see
+ * match_service.dart's submitAnswer). `questions` lives on the match doc
+ * itself (the same data the client already reads to render the quiz), so
+ * this needs no extra fetch: a question counts only if the player's
+ * recorded answers map picked the exact stored answerIndex for it.
+ * @param {unknown} questions The match doc's `questions` array.
+ * @param {unknown} answers The player's `players.{uid}.answers` map.
+ * @return {number} The verified number of correct answers.
+ */
+function computeVerifiedPvpScore(questions: unknown, answers: unknown): number {
+  if (!Array.isArray(questions)) return 0;
+
+  const answerMap = (answers && typeof answers === "object") ?
+    answers as Record<string, unknown> : {};
+
+  let score = 0;
+  for (let i = 0; i < questions.length; i++) {
+    const correctIndex = safeInt(
+      (questions[i] as Record<string, unknown> | undefined)?.answerIndex, -1
+    );
+    const selected = answerMap[String(i)];
+    if (selected === undefined) continue;
+    if (safeInt(selected, -2) === correctIndex) score++;
+  }
+  return score;
+}
+
 // Shared daily cap on coins earned from PvP wins (live + async combined).
-// PvP match outcomes aren't fully server-validated (score is self-reported
-// by the client — see finalizePvpMatch), so this bounds the worst-case
-// coin farming regardless of match count, collusion, or a faked score.
+// Kept as defense in depth even after finalizePvpMatch/finalizeAsyncPvpMatch
+// started recomputing verified scores server-side — it still bounds the
+// worst-case from match count abuse or two colluding real accounts
+// win-trading, neither of which a per-match score check can catch.
 const MAX_DAILY_PVP_COINS = 20;
 
 /**
@@ -598,8 +629,12 @@ export const finalizePvpMatch = onDocumentUpdated(
 
       const isDisconnect = fresh.finishReason === "opponent_disconnected";
 
-      const hostScore = safeInt(freshHost.score, 0);
-      const guestScore = safeInt(freshGuest.score, 0);
+      const hostScore = computeVerifiedPvpScore(
+        fresh.questions, freshHost.answers
+      );
+      const guestScore = computeVerifiedPvpScore(
+        fresh.questions, freshGuest.answers
+      );
 
       let winnerUid: string | null = null;
 
@@ -974,8 +1009,12 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
       if (fresh.challengerStatus !== "finished") return;
       if (fresh.challengedStatus !== "finished") return;
 
-      const challengerScore = safeInt(fresh.challenger?.score, 0);
-      const challengedScore = safeInt(fresh.challenged?.score, 0);
+      const challengerScore = computeVerifiedPvpScore(
+        fresh.questions, fresh.challenger?.answers
+      );
+      const challengedScore = computeVerifiedPvpScore(
+        fresh.questions, fresh.challenged?.answers
+      );
 
       let winnerUid: string | null = null;
       if (challengerScore > challengedScore) winnerUid = challengerUid;
@@ -1437,14 +1476,79 @@ function isYesterday(dateId: string, today: string): boolean {
   return diffDays === 1;
 }
 
+type QuestionAnswer = { questionIndex: number; selectedIndex: number };
+
+/**
+ * Parses client-submitted per-question answers (Daily Challenge and Solo
+ * Levels both use this exact shape), dropping anything malformed rather
+ * than throwing — an invalid/missing entry for a given question just
+ * never counts toward correct or totalAnswered below.
+ * @param {unknown} raw The raw `request.data.answers` value.
+ * @return {QuestionAnswer[]} The well-formed entries.
+ */
+function parseQuestionAnswers(raw: unknown): QuestionAnswer[] {
+  if (!Array.isArray(raw)) return [];
+
+  const out: QuestionAnswer[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    const questionIndex = safeInt(e.questionIndex, -1);
+    const selectedIndex = safeInt(e.selectedIndex, -1);
+    if (questionIndex < 0 || selectedIndex < 0) continue;
+    out.push({questionIndex, selectedIndex});
+  }
+  return out;
+}
+
+/**
+ * Recomputes a player's real correct/totalAnswered from their actual
+ * submitted per-question answers, ignoring the `correct`/`totalAnswered`
+ * a client reports directly. `questions` lives on the same session doc
+ * the client already reads to render the quiz (Daily Challenge's
+ * createTodaySession, or Solo Levels' sessions_fixed/sessions_ai), so
+ * this needs no extra fetch beyond that doc.
+ * @param {unknown} questions The session doc's `questions` array.
+ * @param {QuestionAnswer[]} answers The player's submitted answers, in
+ * the order they were given (may repeat a questionIndex if the session's
+ * question pool wrapped around during play, as Daily Challenge allows).
+ * @param {number} maxAnswers Hard cap on how many answers count, matching
+ * the most questions this session could legitimately contain.
+ * @return {{correct: number, totalAnswered: number}} Verified counts.
+ */
+function computeVerifiedQuizResult(
+  questions: unknown, answers: QuestionAnswer[], maxAnswers: number
+): {correct: number; totalAnswered: number} {
+  const list = Array.isArray(questions) ? questions : [];
+
+  let correct = 0;
+  let totalAnswered = 0;
+
+  for (const a of answers) {
+    if (totalAnswered >= maxAnswers) break;
+
+    const q = list[a.questionIndex] as Record<string, unknown> | undefined;
+    if (!q) continue;
+
+    totalAnswered++;
+    const correctIndex = safeInt(q.answerIndex ?? q.correctIndex, -1);
+    if (a.selectedIndex === correctIndex) correct++;
+  }
+
+  return {correct, totalAnswered};
+}
+
 /**
  * Server-authoritative Daily Challenge reward grant, replacing
  * DailyChallengeService.saveResult's client-side transaction.
  * `dateId`/`weekId` are accepted from the client (they're just bucket
  * keys matching what createTodaySession already computed locally — not
- * economically sensitive), but `correct`/`totalAnswered` only ever
- * determine the reward through this function's own math, never through a
- * client-supplied coins/xp value.
+ * economically sensitive). The client's reported `correct`/`totalAnswered`
+ * are used only for a fast shape-check; the real values that determine
+ * the reward are recomputed from `answers` (this player's actual selected
+ * option per question) against the session doc's own stored `questions`,
+ * so a modified client reporting an inflated correct count can no longer
+ * affect the real result.
  */
 export const submitDailyChallengeResult = onCall(async (request) => {
   const uid = request.auth?.uid;
@@ -1452,14 +1556,19 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const correct = safeInt(request.data?.correct, -1);
-  const totalAnswered = safeInt(request.data?.totalAnswered, -1);
+  // `correct`/`totalAnswered` are only used for a fast request-shape
+  // check here — the real, reward-determining values are recomputed
+  // below from `answers` against the session's own stored `questions`.
+  const reportedCorrect = safeInt(request.data?.correct, -1);
+  const reportedTotalAnswered = safeInt(request.data?.totalAnswered, -1);
+  const answers = parseQuestionAnswers(request.data?.answers);
   const dateId = String(request.data?.dateId || "");
   const weekId = String(request.data?.weekId || "");
 
   if (
-    correct < 0 || totalAnswered < 0 || correct > totalAnswered ||
-    totalAnswered > DAILY_QUESTION_LIMIT
+    reportedCorrect < 0 || reportedTotalAnswered < 0 ||
+    reportedCorrect > reportedTotalAnswered ||
+    reportedTotalAnswered > DAILY_QUESTION_LIMIT
   ) {
     throw new HttpsError("invalid-argument", "Invalid answer counts.");
   }
@@ -1478,7 +1587,6 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     .collection("weekly_participation").doc(weekId);
   const dailyStreakAchievementRef = userRef
     .collection("achievements").doc("daily_streak_7");
-  const coinsEarned = calculateDailyCoinsEarned(correct);
 
   return db.runTransaction(async (tx) => {
     const dailySnap = await tx.get(dailyRef);
@@ -1496,8 +1604,8 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       return {
         saved: false,
         alreadyPlayed: true,
-        correct: safeInt(data.correct, correct),
-        totalAnswered: safeInt(data.totalAnswered, totalAnswered),
+        correct: safeInt(data.correct, reportedCorrect),
+        totalAnswered: safeInt(data.totalAnswered, reportedTotalAnswered),
         coinsEarned: safeInt(data.coinsEarned, 0),
         streak: safeInt(data.streak ?? userData.dailyStreak, 0),
         streakBonusCoins: safeInt(data.streakBonusCoins, 0),
@@ -1509,6 +1617,11 @@ export const submitDailyChallengeResult = onCall(async (request) => {
         xpEarned: safeInt(data.xpEarned, 0),
       };
     }
+
+    const {correct, totalAnswered} = computeVerifiedQuizResult(
+      dailySnap.data()?.questions, answers, DAILY_QUESTION_LIMIT
+    );
+    const coinsEarned = calculateDailyCoinsEarned(correct);
 
     const userData = userSnap.data() || {};
 
@@ -2066,10 +2179,17 @@ export const submitSoloLevelResult = onCall(async (request) => {
   const aiTopicId = request.data?.aiTopicId ?
     String(request.data.aiTopicId) : null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
-  const correct = safeInt(request.data?.correct, -1);
-  const total = safeInt(request.data?.total, -1);
+  // `correct`/`total` are only used for a fast request-shape check here —
+  // the real, reward-determining values are recomputed below from
+  // `answers` against the level session's own stored `questions`.
+  const reportedCorrect = safeInt(request.data?.correct, -1);
+  const reportedTotal = safeInt(request.data?.total, -1);
+  const answers = parseQuestionAnswers(request.data?.answers);
 
-  if (levelNumber < 1 || correct < 0 || total < 0 || correct > total) {
+  if (
+    levelNumber < 1 || reportedCorrect < 0 || reportedTotal < 0 ||
+    reportedCorrect > reportedTotal
+  ) {
     throw new HttpsError("invalid-argument", "Invalid level result.");
   }
   if (isAiTopic && !aiTopicId) {
@@ -2083,6 +2203,13 @@ export const submitSoloLevelResult = onCall(async (request) => {
   const progressRef = isAiTopic ?
     userRef.collection("progress_ai").doc(aiTopicId as string) :
     userRef.collection("progress_fixed").doc(categoryId);
+  const soloLevelsAchievementRef = userRef
+    .collection("achievements").doc("solo_levels_10");
+
+  const sessionId = isAiTopic ?
+    `${aiTopicId}_${levelNumber}` : `${categoryId}_${levelNumber}`;
+  const sessionRef = userRef
+    .collection(isAiTopic ? "sessions_ai" : "sessions_fixed").doc(sessionId);
 
   let levelCount = 0;
   if (isAiTopic) {
@@ -2099,14 +2226,23 @@ export const submitSoloLevelResult = onCall(async (request) => {
     levelCount = safeInt(catSnap.data()?.levelCount, 0);
   }
 
-  const percent = total === 0 ? 0 : correct / total;
-  const passedLevel = percent >= 0.4;
-  const {xp: levelXp, coins: levelCoins} =
-    calculateLevelRewards(correct, total);
-
   return db.runTransaction(async (tx) => {
     const progressSnap = await tx.get(progressRef);
     const userSnap = await tx.get(userRef);
+    const soloLevelsAchievementSnap = await tx.get(soloLevelsAchievementRef);
+    const sessionSnap = await tx.get(sessionRef);
+
+    const sessionQuestions = sessionSnap.data()?.questions;
+    const total = Array.isArray(sessionQuestions) ?
+      sessionQuestions.length : 0;
+    const {correct} = computeVerifiedQuizResult(
+      sessionQuestions, answers, total
+    );
+
+    const percent = total === 0 ? 0 : correct / total;
+    const passedLevel = percent >= 0.4;
+    const {xp: levelXp, coins: levelCoins} =
+      calculateLevelRewards(correct, total);
 
     const prev = progressSnap.data();
     const userData = userSnap.data() || {};
@@ -2161,6 +2297,21 @@ export const submitSoloLevelResult = onCall(async (request) => {
     const grantedXp = wasAlreadyPlayed ? 0 : levelXp;
     let grantedCoins = newlyPassed ? levelCoins : 0;
     const shouldEnsureAiBuffer = isAiTopic && newlyPassed;
+
+    // Progress for this achievement is written here (rather than by a
+    // client-side follow-up call) since completed/progress/claimed are
+    // locked against direct client writes for this id in firestore.rules —
+    // newlyPassed is already computed authoritatively above, from this
+    // same transaction's own tracked completedLevels/passedLevels.
+    if (newlyPassed) {
+      const currentSoloLevelsProgress = safeInt(
+        soloLevelsAchievementSnap.data()?.progress, 0
+      );
+      applyPvpAchievementProgress(
+        tx, uid, {id: "solo_levels_10", title: "Solo Explorer", target: 10},
+        currentSoloLevelsProgress + 1, soloLevelsAchievementSnap
+      );
+    }
 
     const completedAll = levelCount > 0 && prevPassed.size >= levelCount;
     const rewardGranted = prev?.categoryRewardGranted === true;
@@ -3044,4 +3195,157 @@ export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
 
     return {claimed: true, rewardAvatarId, alreadyUnlocked};
   });
+});
+
+// ============================================================
+// FRIENDS
+//
+// users/{uid}/friends/{friendId} is Cloud-Function-only (write:false) —
+// the rule that let either side of a friendship write there (needed so
+// accepting could write both mirror docs in one transaction) also let a
+// client fabricate a "friend" doc directly, with no real request/accept
+// ever happening, inflating friend counts and polluting friend lists.
+// sendFriendRequest/rejectFriendRequest stay client-side (they only touch
+// friend_requests/sent_friend_requests, which aren't part of this trust
+// boundary); only the two writes that touch `friends` itself move here.
+// ============================================================
+
+/**
+ * Recomputes and applies the friends_5 achievement's progress for a
+ * player, using their real friends subcollection count as the source of
+ * truth (rather than a client-reported number).
+ * @param {string} uid Player id.
+ */
+async function syncFriendsAchievementProgress(uid: string): Promise<void> {
+  const friendsSnap = await db
+    .collection("users").doc(uid).collection("friends").get();
+  const friendCount = friendsSnap.size;
+
+  const achRef = db.collection("users").doc(uid)
+    .collection("achievements").doc("friends_5");
+
+  await db.runTransaction(async (tx) => {
+    const achSnap = await tx.get(achRef);
+    applyPvpAchievementProgress(
+      tx, uid, {id: "friends_5", title: "Social Player", target: 5},
+      friendCount, achSnap
+    );
+  });
+}
+
+export const acceptFriendRequest = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const requesterUid = String(request.data?.requesterUid || "");
+  if (!requesterUid || requesterUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid request.");
+  }
+
+  const myRef = db.collection("users").doc(uid);
+  const requesterRef = db.collection("users").doc(requesterUid);
+  const requestRef = myRef.collection("friend_requests").doc(requesterUid);
+  const myFriendRef = myRef.collection("friends").doc(requesterUid);
+  const requesterFriendRef = requesterRef.collection("friends").doc(uid);
+  const requesterSentRequestRef = requesterRef
+    .collection("sent_friend_requests").doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    const mySnap = await tx.get(myRef);
+    const requesterSnap = await tx.get(requesterRef);
+    const requestSnap = await tx.get(requestRef);
+
+    if (!requestSnap.exists) {
+      throw new HttpsError(
+        "failed-precondition", "The request no longer exists."
+      );
+    }
+
+    const requestStatus = String(requestSnap.data()?.status || "pending");
+    if (requestStatus !== "pending") {
+      throw new HttpsError(
+        "failed-precondition", "The request was already processed."
+      );
+    }
+
+    const myData = mySnap.data() || {};
+    const requesterData = requesterSnap.data() || {};
+
+    const myDisplayName = String(
+      myData.displayName || myData.username || `Player${uid.slice(0, 4)}`
+    );
+    const requesterDisplayName = String(
+      requesterData.displayName || requesterData.username ||
+        `Player${requesterUid.slice(0, 4)}`
+    );
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    tx.set(myFriendRef, {
+      uid: requesterUid,
+      displayName: requesterDisplayName,
+      username: String(requesterData.username || requesterDisplayName),
+      avatarId: String(requesterData.avatarId || "avatar_1"),
+      equippedFrame: requesterData.equippedFrame || "bronze",
+      bestLeagueId: requesterData.bestLeagueId || "bronze",
+      pvpRating: requesterData.pvpRating || 1000,
+      pvpLeagueId: requesterData.pvpLeagueId || "bronze",
+      pvpLeagueName: requesterData.pvpLeagueName || "Bronze",
+      pvpLeagueEmoji: requesterData.pvpLeagueEmoji || "🥉",
+      createdAt: now,
+      updatedAt: now,
+    }, {merge: true});
+
+    tx.set(requesterFriendRef, {
+      uid,
+      displayName: myDisplayName,
+      username: String(myData.username || myDisplayName),
+      avatarId: String(myData.avatarId || "avatar_1"),
+      equippedFrame: myData.equippedFrame || "bronze",
+      bestLeagueId: myData.bestLeagueId || "bronze",
+      pvpRating: myData.pvpRating || 1000,
+      pvpLeagueId: myData.pvpLeagueId || "bronze",
+      pvpLeagueName: myData.pvpLeagueName || "Bronze",
+      pvpLeagueEmoji: myData.pvpLeagueEmoji || "🥉",
+      createdAt: now,
+      updatedAt: now,
+    }, {merge: true});
+
+    tx.update(requestRef, {status: "accepted", updatedAt: now});
+    tx.set(requesterSentRequestRef, {status: "accepted", updatedAt: now},
+      {merge: true});
+  });
+
+  await Promise.all([
+    syncFriendsAchievementProgress(uid),
+    syncFriendsAchievementProgress(requesterUid),
+  ]);
+
+  return {accepted: true};
+});
+
+export const removeFriend = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const friendUid = String(request.data?.friendUid || "");
+  if (!friendUid || friendUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid friend.");
+  }
+
+  const myFriendRef = db.collection("users").doc(uid)
+    .collection("friends").doc(friendUid);
+  const theirFriendRef = db.collection("users").doc(friendUid)
+    .collection("friends").doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    tx.delete(myFriendRef);
+    tx.delete(theirFriendRef);
+  });
+
+  return {removed: true};
 });

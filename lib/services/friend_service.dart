@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'achievement_service.dart';
 import 'notification_service.dart';
 
 class FriendService {
@@ -11,7 +11,6 @@ class FriendService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final _achievementService = AchievementService.instance;
   final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
@@ -206,135 +205,25 @@ class FriendService {
     } catch (_) {}
   }
 
+  // The actual friendship write (both mirror docs) is now Cloud-Function
+  // only — see acceptFriendRequest in functions/src/index.ts — since the
+  // rule that let either side write `friends/{friendId}` directly (needed
+  // for this two-sided write) also let a client fabricate a "friend" doc
+  // with no real request ever having been sent or accepted.
   Future<void> acceptFriendRequest({
     required String requesterUid,
   }) async {
-    if (requesterUid.trim().isEmpty) {
+    if (requesterUid.trim().isEmpty || requesterUid == uid) {
       throw Exception('Solicitud inválida.');
     }
 
-    if (requesterUid == uid) {
-      throw Exception('Solicitud inválida.');
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('acceptFriendRequest')
+          .call({'requesterUid': requesterUid});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudo aceptar la solicitud.');
     }
-
-    final myRef = _userRef(uid);
-    final requesterRef = _userRef(requesterUid);
-
-    final requestRef = _requestsCol(uid).doc(requesterUid);
-
-    final myFriendRef = _friendsCol(uid).doc(requesterUid);
-    final requesterFriendRef = _friendsCol(requesterUid).doc(uid);
-
-    final requesterSentRequestRef = _sentRequestsCol(requesterUid).doc(uid);
-
-    await _db.runTransaction((tx) async {
-      final mySnap = await tx.get(myRef);
-      final requesterSnap = await tx.get(requesterRef);
-      final requestSnap = await tx.get(requestRef);
-
-      if (!requestSnap.exists) {
-        throw Exception('La solicitud ya no existe.');
-      }
-
-      final requestStatus =
-          (requestSnap.data()?['status'] ?? 'pending').toString();
-
-      if (requestStatus != 'pending') {
-        throw Exception('La solicitud ya fue procesada.');
-      }
-
-      final myData = mySnap.data() ?? {};
-      final requesterData = requesterSnap.data() ?? {};
-
-      final myDisplayName = (myData['displayName'] ??
-              myData['username'] ??
-              'Player${uid.substring(0, 4)}')
-          .toString();
-
-      final requesterDisplayName = (requesterData['displayName'] ??
-              requesterData['username'] ??
-              'Player${requesterUid.substring(0, 4)}')
-          .toString();
-
-      final now = FieldValue.serverTimestamp();
-
-      tx.set(
-        myFriendRef,
-        {
-          'uid': requesterUid,
-          'displayName': requesterDisplayName,
-          'username':
-              (requesterData['username'] ?? requesterDisplayName).toString(),
-          'avatarId': (requesterData['avatarId'] ?? 'avatar_1').toString(),
-          'equippedFrame': requesterData['equippedFrame'] ?? 'bronze',
-
-          'bestLeagueId': requesterData['bestLeagueId'] ?? 'bronze',
-          // PvP snapshot for future efficient friend leaderboards.
-          'pvpRating': requesterData['pvpRating'] ?? 1000,
-          'pvpLeagueId': requesterData['pvpLeagueId'] ?? 'bronze',
-          'pvpLeagueName': requesterData['pvpLeagueName'] ?? 'Bronze',
-          'pvpLeagueEmoji': requesterData['pvpLeagueEmoji'] ?? '🥉',
-
-          'createdAt': now,
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        requesterFriendRef,
-        {
-          'uid': uid,
-          'displayName': myDisplayName,
-          'username': (myData['username'] ?? myDisplayName).toString(),
-          'avatarId': (myData['avatarId'] ?? 'avatar_1').toString(),
-          'equippedFrame': myData['equippedFrame'] ?? 'bronze',
-
-          'bestLeagueId': myData['bestLeagueId'] ?? 'bronze',
-          // PvP snapshot for future efficient friend leaderboards.
-          'pvpRating': myData['pvpRating'] ?? 1000,
-          'pvpLeagueId': myData['pvpLeagueId'] ?? 'bronze',
-          'pvpLeagueName': myData['pvpLeagueName'] ?? 'Bronze',
-          'pvpLeagueEmoji': myData['pvpLeagueEmoji'] ?? '🥉',
-
-          'createdAt': now,
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.update(requestRef, {
-        'status': 'accepted',
-        'updatedAt': now,
-      });
-
-      tx.set(
-        requesterSentRequestRef,
-        {
-          'status': 'accepted',
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-    });
-
-    Future.microtask(() async {
-      try {
-        final myFriendsSnap = await _friendsCol(uid).get();
-        final requesterFriendsSnap = await _friendsCol(requesterUid).get();
-
-        await Future.wait([
-          _achievementService.syncFriendsAchievements(
-            uid: uid,
-            friendCount: myFriendsSnap.docs.length,
-          ),
-          _achievementService.syncFriendsAchievements(
-            uid: requesterUid,
-            friendCount: requesterFriendsSnap.docs.length,
-          ),
-        ]);
-      } catch (_) {}
-    });
   }
 
   Future<void> rejectFriendRequest({
@@ -373,20 +262,16 @@ class FriendService {
   Future<void> removeFriend({
     required String friendUid,
   }) async {
-    if (friendUid.trim().isEmpty) {
+    if (friendUid.trim().isEmpty || friendUid == uid) {
       throw Exception('Amigo inválido.');
     }
 
-    if (friendUid == uid) {
-      throw Exception('No puedes eliminarte a ti mismo.');
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('removeFriend')
+          .call({'friendUid': friendUid});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? 'No se pudo eliminar al amigo.');
     }
-
-    final myFriendRef = _friendsCol(uid).doc(friendUid);
-    final theirFriendRef = _friendsCol(friendUid).doc(uid);
-
-    await _db.runTransaction((tx) async {
-      tx.delete(myFriendRef);
-      tx.delete(theirFriendRef);
-    });
   }
 }

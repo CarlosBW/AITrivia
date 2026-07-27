@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
-import '../../services/achievement_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
@@ -40,6 +39,7 @@ class LevelPlayScreen extends StatefulWidget {
 class _LevelPlayScreenState extends State<LevelPlayScreen> {
   int _index = 0;
   int _correct = 0;
+  final List<Map<String, dynamic>> _answers = [];
 
   bool _locked = false;
   int? _selected;
@@ -86,8 +86,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   bool _isNavigating = false;
   bool _buyingLife = false;
-
-  final _achievementService = AchievementService.instance;
 
   static const int _defaultTimePerQ = 10;
   static const int _buyLifeCost = EconomyService.buyFullLifeCost;
@@ -382,6 +380,23 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     final correct = tappedIndex == answerIndex;
 
+    // `tappedIndex` refers to the locally-shuffled options order, but the
+    // server only knows the original (pre-shuffle) answerIndex stored in
+    // the session doc — map back through `originalIndexByShuffled` so
+    // submitSoloLevelResult can verify this selection independently.
+    final originalIndexByShuffled =
+        (_shuffledCache[_index]?['originalIndexByShuffled'] as List?)
+            ?.cast<int>();
+    final originalSelectedIndex =
+        (originalIndexByShuffled != null && tappedIndex < originalIndexByShuffled.length)
+            ? originalIndexByShuffled[tappedIndex]
+            : tappedIndex;
+
+    _answers.add({
+      'questionIndex': _index,
+      'selectedIndex': originalSelectedIndex,
+    });
+
     if (correct) {
       SfxService.instance.playCorrect();
       setState(() => _correct++);
@@ -621,11 +636,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       List<String> options;
                       int answerIndex;
+                      List<int> originalIndexByShuffled;
 
                       final cached = _shuffledCache[_index];
                       if (cached != null) {
                         options = (cached['options'] as List).cast<String>();
                         answerIndex = cached['answerIndex'] as int;
+                        originalIndexByShuffled =
+                            (cached['originalIndexByShuffled'] as List)
+                                .cast<int>();
                       } else {
                         final rawOptions =
                             (qMap['options'] as List<dynamic>? ?? [])
@@ -638,6 +657,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           return {
                             'text': rawOptions[i],
                             'isCorrect': i == rawAnswerIndex,
+                            'originalIndex': i,
                           };
                         });
 
@@ -647,10 +667,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             paired.map((e) => e['text'] as String).toList();
                         answerIndex =
                             paired.indexWhere((e) => e['isCorrect'] == true);
+                        originalIndexByShuffled = paired
+                            .map((e) => e['originalIndex'] as int)
+                            .toList();
 
                         _shuffledCache[_index] = {
                           'options': options,
                           'answerIndex': answerIndex,
+                          'originalIndexByShuffled': originalIndexByShuffled,
                         };
                       }
 
@@ -1227,13 +1251,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         'levelNumber': widget.levelNumber,
         'correct': _correct,
         'total': total,
+        'answers': _answers,
       });
 
       final data = Map<String, dynamic>.from(response.data as Map);
 
       final grantedXp = ((data['grantedXp'] ?? 0) as num).toInt();
       final grantedCoins = ((data['grantedCoins'] ?? 0) as num).toInt();
-      final newlyPassed = data['newlyPassed'] == true;
       final shouldEnsureAiBuffer = data['shouldEnsureAiBuffer'] == true;
 
       setState(() {
@@ -1243,17 +1267,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         _userTotalXp = ((data['userTotalXp'] ?? 0) as num).toInt();
       });
 
-      // =========================================================
-      // ACHIEVEMENTS
-      // =========================================================
-
-      if (newlyPassed) {
-        Future.microtask(() async {
-          try {
-            await _achievementService.incrementSoloLevelCompleted(uid: uid);
-          } catch (_) {}
-        });
-      }
+      // The solo_levels_10 achievement's progress is now granted
+      // server-side, inside submitSoloLevelResult, since completed/
+      // progress/claimed are locked against direct client writes for this
+      // id in firestore.rules.
 
       if (shouldEnsureAiBuffer && widget.aiTopicId != null) {
         unawaited(

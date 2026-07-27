@@ -248,13 +248,16 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     if (correct) {
       SfxService.instance.playCorrect();
-      await _service.submitAnswer(
-        matchId: widget.matchId,
-        deltaScore: 1,
-      );
     } else {
       SfxService.instance.playWrong();
     }
+
+    await _service.submitAnswer(
+      matchId: widget.matchId,
+      questionIndex: _index,
+      selectedAnswerIndex: tappedIndex,
+      deltaScore: correct ? 1 : 0,
+    );
 
     if (!_autoNextScheduled) {
       _autoNextScheduled = true;

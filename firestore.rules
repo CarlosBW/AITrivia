@@ -157,9 +157,19 @@ service cloud.firestore {
           && request.auth.uid == userId;
       }
 
+      // Same reasoning as /daily_challenges — the client only ever needs
+      // to create a level's session once (LevelPlayScreen._ensureSession,
+      // no-op if it already exists); submitSoloLevelResult (Cloud
+      // Function) is the only thing that reads it afterward, so a client
+      // can't rewrite its stored `questions` to ones it already knows the
+      // answers to before finishing the level.
       match /sessions_fixed/{docId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId;
+        allow update: if false;
+        allow delete: if false;
       }
 
       match /progress_ai/{topicId} {
@@ -167,14 +177,28 @@ service cloud.firestore {
           && request.auth.uid == userId;
       }
 
+      // Same reasoning as /sessions_fixed above.
       match /sessions_ai/{sessionId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId;
+        allow update: if false;
+        allow delete: if false;
       }
 
+      // The client only ever needs to create today's session once
+      // (createTodaySession, no-op if it already exists) — after that,
+      // only submitDailyChallengeResult (Cloud Function) writes it, so a
+      // client can't rewrite its stored `questions` to ones it already
+      // knows the answers to before finishing the session.
       match /daily_challenges/{dateId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+        allow create: if request.auth != null
+          && request.auth.uid == userId;
+        allow update: if false;
+        allow delete: if false;
       }
 
       // weeklyScore here feeds weekly-league season reward payouts
@@ -214,48 +238,33 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // `claimed` (which gates claimAchievementReward) must never be
-      // client-writable for any achievement — otherwise a modified client
-      // could reset it to false after a real claim and re-claim the same
-      // reward forever. `completed`/`progress` are additionally locked for
-      // the 4 ids whose progress now has a trustworthy server-side source
-      // (PvP wins/streak via finalizePvpMatch, daily streak via
-      // submitDailyChallengeResult) — a client could otherwise forge
-      // "completed" without earning it. `solo_levels_10`/`friends_5` don't
-      // have that server-side tracking yet, so progress/completed stay
-      // client-writable for those two (a smaller, documented residual gap:
-      // at most a one-time forged claim per id, never a repeat, since
-      // `claimed` itself is always protected).
-      function achievementServerOnlyFields(achievementId) {
-        return achievementId in
-          ['first_pvp_win', 'pvp_wins_10', 'pvp_streak_5', 'daily_streak_7']
-          ? ['completed', 'progress', 'claimed']
-          : ['claimed'];
-      }
-
+      // Cloud-Function-only. Every achievement's progress now has a
+      // trustworthy server-side source (PvP wins/streak via
+      // finalizePvpMatch, daily streak via submitDailyChallengeResult,
+      // solo levels via submitSoloLevelResult, friend count via
+      // acceptFriendRequest) — the client has no legitimate write left
+      // here. Previously this allowed client writes (needed before that
+      // migration), which also meant a modified client could forge
+      // `completed`/`progress`, or reset `claimed` to false after a real
+      // claimAchievementReward call to re-claim the same reward forever.
       match /achievements/{achievementId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
-
-        allow create: if request.auth != null
-          && request.auth.uid == userId
-          && !(achievementId in
-              ['first_pvp_win', 'pvp_wins_10', 'pvp_streak_5', 'daily_streak_7']);
-
-        allow update: if request.auth != null
-          && request.auth.uid == userId
-          && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(achievementServerOnlyFields(achievementId));
-
-        allow delete: if false;
+        allow write: if false;
       }
 
+      // Cloud-Function-only (acceptFriendRequest/removeFriend in
+      // functions/src/index.ts) — the previous rule let either side of a
+      // friendship write here (needed so accepting could write both mirror
+      // docs in one go), but that also let a client fabricate a "friend"
+      // doc directly with no real request ever sent or accepted.
       match /friends/{friendId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && (
             request.auth.uid == userId ||
             request.auth.uid == friendId
           );
+        allow write: if false;
       }
 
       match /friend_requests/{requesterId} {
@@ -325,7 +334,11 @@ service cloud.firestore {
     // since either player can trigger rematch creation). `update` also
     // allows a brand-new joiner to claim an empty guestUid slot
     // (MatchService.joinMatch), since at that moment they aren't yet
-    // host or guest on the existing doc.
+    // host or guest on the existing doc. `questions` is locked immutable
+    // post-creation — finalizePvpMatch now recomputes each player's real
+    // score from their `players.{uid}.answers` against this exact array,
+    // so a player rewriting it mid-match (e.g. to questions they already
+    // know the answers to) would otherwise let them rig their own result.
     match /matches/{matchId} {
       allow read: if request.auth != null
         && (
@@ -349,7 +362,8 @@ service cloud.firestore {
             request.resource.data.guestUid == request.auth.uid
           )
         )
-        && request.resource.data.winReward == resource.data.winReward;
+        && request.resource.data.winReward == resource.data.winReward
+        && request.resource.data.questions == resource.data.questions;
     }
 
     // The "current" weekly topic (and its rewardCoins/rewardAvatarId) is
@@ -364,7 +378,9 @@ service cloud.firestore {
     // Same reasoning as /matches — only the challenger and the challenged
     // player may read or write an async match. Both UIDs are always set
     // at creation (no open "guest slot" here), so create/update only need
-    // the participant check, no empty-slot claim clause.
+    // the participant check, no empty-slot claim clause. `questions` is
+    // locked immutable post-creation for the same reason as /matches —
+    // finalizeAsyncPvpMatch recomputes scores from `answers` against it.
     match /async_matches/{matchId} {
       allow read: if request.auth != null
         && (
@@ -384,7 +400,8 @@ service cloud.firestore {
           request.auth.uid == resource.data.challengerUid ||
           request.auth.uid == resource.data.challengedUid
         )
-        && request.resource.data.winReward == resource.data.winReward;
+        && request.resource.data.winReward == resource.data.winReward
+        && request.resource.data.questions == resource.data.questions;
     }
 
     match /realtime_invites/{inviteId} {

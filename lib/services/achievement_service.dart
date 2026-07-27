@@ -189,78 +189,6 @@ class AchievementService {
     } catch (_) {}
   }
 
-  Future<void> incrementProgress({
-    required String uid,
-    required String achievementId,
-    int amount = 1,
-  }) async {
-    final achievement = getAchievementById(achievementId);
-    if (achievement == null) return;
-
-    final ref = _achievementRef(
-      uid: uid,
-      achievementId: achievementId,
-    );
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-
-      final alreadyClaimed = data['claimed'] == true;
-      if (alreadyClaimed) return;
-
-      final currentProgress = ((data['progress'] ?? 0) as num).toInt();
-      final nextProgress = (currentProgress + amount).clamp(
-        0,
-        achievement.target,
-      );
-
-      final completed = nextProgress >= achievement.target;
-
-      tx.set(
-        ref,
-        {
-          'id': achievementId,
-          'progress': nextProgress,
-          'target': achievement.target,
-          'completed': completed,
-          'claimed': false,
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (completed) 'completedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    });
-
-    try {
-      final snap = await ref.get();
-      final data = snap.data();
-
-      if (data != null &&
-          data['completed'] == true &&
-          data['notificationSent'] != true) {
-        await ref.set({
-          'notificationSent': true,
-          'notificationSentAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        await _notificationService.createNotification(
-          targetUid: uid,
-          type: 'achievement_completed',
-          title: 'Achievement completed',
-          body: 'You completed "${achievement.title}". Claim your reward.',
-          data: {
-            'achievementId': achievement.id,
-          },
-        );
-
-        await AnalyticsService.instance.logAchievementUnlocked(
-          achievementId: achievement.id,
-        );
-      }
-    } catch (_) {}
-  }
-
   Future<void> claimAchievement({
     required String uid,
     required String achievementId,
@@ -300,26 +228,5 @@ class AchievementService {
         progress: currentWinStreak,
       ),
     ]);
-  }
-
-  Future<void> syncFriendsAchievements({
-    required String uid,
-    required int friendCount,
-  }) async {
-    await setProgress(
-      uid: uid,
-      achievementId: 'friends_5',
-      progress: friendCount,
-    );
-  }
-
-  Future<void> incrementSoloLevelCompleted({
-    required String uid,
-  }) async {
-    await incrementProgress(
-      uid: uid,
-      achievementId: 'solo_levels_10',
-      amount: 1,
-    );
   }
 }

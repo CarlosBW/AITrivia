@@ -26,6 +26,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   int _currentIndex = 0;
   int _correct = 0;
   int _totalAnswered = 0;
+  final List<Map<String, dynamic>> _answers = [];
 
   int _timeLeft = 120;
   Timer? _timer;
@@ -126,6 +127,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     if (_finishing || _savingResults || _selectedIndex != null) return;
 
     final isCorrect = index == correctIndex;
+    final questionIndex = _questions.indexOf(_currentQuestion());
 
     if (isCorrect) {
       HapticFeedback.lightImpact();
@@ -144,6 +146,11 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       if (isCorrect) {
         _correct++;
       }
+
+      _answers.add({
+        'questionIndex': questionIndex,
+        'selectedIndex': index,
+      });
     });
 
     if (isCorrect) {
@@ -182,6 +189,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
         uid: widget.uid,
         correct: _correct,
         totalAnswered: _totalAnswered,
+        answers: _answers,
       );
 
       if (!mounted) return;

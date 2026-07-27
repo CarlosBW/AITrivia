@@ -302,17 +302,6 @@ class AchievementService {
     ]);
   }
 
-  Future<void> syncDailyAchievements({
-    required String uid,
-    required int dailyStreak,
-  }) async {
-    await setProgress(
-      uid: uid,
-      achievementId: 'daily_streak_7',
-      progress: dailyStreak,
-    );
-  }
-
   Future<void> syncFriendsAchievements({
     required String uid,
     required int friendCount,

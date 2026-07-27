@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
-import 'achievement_service.dart';
 import 'analytics_service.dart';
 
 class DailyChallengeSession {
@@ -307,20 +306,16 @@ class DailyChallengeService {
     return result;
   }
 
-  // Achievement-avatar unlocking is handled server-side, inside
-  // submitDailyChallengeResult, since unlockedAvatars is now locked
-  // against direct client writes in firestore.rules.
+  // Achievement-avatar unlocking and the daily_streak_7 achievement's
+  // progress are both handled server-side, inside
+  // submitDailyChallengeResult, since those fields are now locked against
+  // direct client writes in firestore.rules.
   Future<void> _syncDailyRetentionHooks({
     required String uid,
     required int dailyStreak,
     required int score,
   }) async {
     try {
-      await AchievementService.instance.syncDailyAchievements(
-        uid: uid,
-        dailyStreak: dailyStreak,
-      );
-
       await AnalyticsService.instance.logDailyChallengeComplete(
         streak: dailyStreak,
         score: score,

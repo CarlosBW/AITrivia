@@ -1476,11 +1476,14 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     .collection("players").doc(uid);
   const weeklyParticipationRef = userRef
     .collection("weekly_participation").doc(weekId);
+  const dailyStreakAchievementRef = userRef
+    .collection("achievements").doc("daily_streak_7");
   const coinsEarned = calculateDailyCoinsEarned(correct);
 
   return db.runTransaction(async (tx) => {
     const dailySnap = await tx.get(dailyRef);
     const userSnap = await tx.get(userRef);
+    const dailyStreakAchievementSnap = await tx.get(dailyStreakAchievementRef);
 
     const alreadyPlayed = dailySnap.data()?.played === true;
 
@@ -1533,6 +1536,15 @@ export const submitDailyChallengeResult = onCall(async (request) => {
 
     const newStreak = lastDailyPlayed && isYesterday(lastDailyPlayed, dateId) ?
       previousStreak + 1 : 1;
+
+    // Progress for this achievement is written here (rather than by a
+    // client-side follow-up call) since completed/progress/claimed are
+    // locked against direct client writes for this id in firestore.rules —
+    // this is the one place newStreak is already computed authoritatively.
+    applyPvpAchievementProgress(
+      tx, uid, {id: "daily_streak_7", title: "Weekly Habit", target: 7},
+      newStreak, dailyStreakAchievementSnap
+    );
 
     const streakBonusCoins = calculateDailyStreakBonusCoins(newStreak);
     const totalCoinsToAdd = coinsEarned + streakBonusCoins + levelUpBonusCoins;

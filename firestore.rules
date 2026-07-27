@@ -32,10 +32,11 @@ service cloud.firestore {
     // Functions (finalizePvpMatch, finalizeAsyncPvpMatch,
     // claimPvpSeasonRewards, submitDailyChallengeResult) — the client may
     // no longer write them directly. `unlockedAvatars`/`dynamicAvatars`
-    // (which avatars/AI-topic avatars a player has earned) are granted the
-    // same way, so a modified client can't unlock cosmetics it never
-    // earned. Everything else on this doc (profile fields, which cosmetic
-    // is currently equipped, etc.) stays client-writable — see
+    // (which weekly-topic/achievement avatars a player has earned, granted
+    // by submitDailyChallengeResult / claimWeeklyTopicCompletionReward) are
+    // protected the same way, so a modified client can't unlock cosmetics
+    // it never earned. Everything else on this doc (profile fields, which
+    // cosmetic is currently equipped, etc.) stays client-writable — see
     // avatarIdFieldValid()/equippedFrameFieldValid() below for the equip
     // actions specifically. More fields move into this list as later
     // phases land.
@@ -81,13 +82,34 @@ service cloud.firestore {
         : ['bronze'];
     }
 
+    // Mirrors AvatarService.unlockedAvatarIdsForBestLeague() — PvP avatars
+    // are never persisted into unlockedAvatars (they're derived purely
+    // from bestLeagueId at picker-render time on the client), so the rule
+    // has to recognize them the same way or a legitimately-earned PvP
+    // avatar could never be equipped.
+    function pvpAvatarsForLeague(bestLeagueId) {
+      return bestLeagueId == 'master'
+        ? ['pvp_bronze', 'pvp_silver', 'pvp_gold', 'pvp_platinum', 'pvp_diamond', 'pvp_master']
+        : bestLeagueId == 'diamond'
+        ? ['pvp_bronze', 'pvp_silver', 'pvp_gold', 'pvp_platinum', 'pvp_diamond']
+        : bestLeagueId == 'platinum'
+        ? ['pvp_bronze', 'pvp_silver', 'pvp_gold', 'pvp_platinum']
+        : bestLeagueId == 'gold'
+        ? ['pvp_bronze', 'pvp_silver', 'pvp_gold']
+        : bestLeagueId == 'silver'
+        ? ['pvp_bronze', 'pvp_silver']
+        : ['pvp_bronze'];
+    }
+
     // A client may still equip a cosmetic (avatarId/equippedFrame), just
-    // not fabricate one: avatarId must already be in the server-granted
-    // unlockedAvatars list, and equippedFrame must be unlocked for the
-    // player's own (server-protected) bestLeagueId.
+    // not fabricate one: avatarId must be either in the server-granted
+    // unlockedAvatars list (base/weekly/achievement avatars) or a PvP
+    // avatar unlocked for the player's own bestLeagueId; equippedFrame
+    // must be unlocked for that same bestLeagueId.
     function avatarIdFieldValid() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarId'])
-        || request.resource.data.avatarId in resource.data.unlockedAvatars;
+        || request.resource.data.avatarId in resource.data.unlockedAvatars
+        || request.resource.data.avatarId in pvpAvatarsForLeague(resource.data.bestLeagueId);
     }
 
     function equippedFrameFieldValid() {
@@ -192,9 +214,40 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // `claimed` (which gates claimAchievementReward) must never be
+      // client-writable for any achievement — otherwise a modified client
+      // could reset it to false after a real claim and re-claim the same
+      // reward forever. `completed`/`progress` are additionally locked for
+      // the 4 ids whose progress now has a trustworthy server-side source
+      // (PvP wins/streak via finalizePvpMatch, daily streak via
+      // submitDailyChallengeResult) — a client could otherwise forge
+      // "completed" without earning it. `solo_levels_10`/`friends_5` don't
+      // have that server-side tracking yet, so progress/completed stay
+      // client-writable for those two (a smaller, documented residual gap:
+      // at most a one-time forged claim per id, never a repeat, since
+      // `claimed` itself is always protected).
+      function achievementServerOnlyFields(achievementId) {
+        return achievementId in
+          ['first_pvp_win', 'pvp_wins_10', 'pvp_streak_5', 'daily_streak_7']
+          ? ['completed', 'progress', 'claimed']
+          : ['claimed'];
+      }
+
       match /achievements/{achievementId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && !(achievementId in
+              ['first_pvp_win', 'pvp_wins_10', 'pvp_streak_5', 'daily_streak_7']);
+
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(achievementServerOnlyFields(achievementId));
+
+        allow delete: if false;
       }
 
       match /friends/{friendId} {

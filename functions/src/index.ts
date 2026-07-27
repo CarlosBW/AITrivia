@@ -3013,10 +3013,45 @@ export const markWeeklyTopicLevelCompleted = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid weekId/levelNumber.");
   }
 
-  const ref = db.collection("users").doc(uid)
-    .collection("weekly_participation").doc(weekId);
+  // The weekly topic is always tied to one fixed category (see
+  // weekly_topics/current's own `categoryId`) — this call used to accept
+  // any levelNumber with no check at all, letting a client claim the
+  // week's coin/avatar rewards without ever passing (or even playing) the
+  // levels. Requiring the level to already be in this player's own
+  // progress_fixed.passedLevels (written by submitSoloLevelResult, using
+  // its own server-verified score) closes that off.
+  const topicSnap = await db.collection("weekly_topics").doc("current").get();
+  const topicData = topicSnap.data();
+  if (!topicData || String(topicData.weekId || "") !== weekId) {
+    throw new HttpsError(
+      "failed-precondition", "This weekly topic is no longer active."
+    );
+  }
+
+  const categoryId = String(topicData.categoryId || "");
+  if (!categoryId) {
+    throw new HttpsError(
+      "failed-precondition", "Weekly topic is misconfigured."
+    );
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const progressRef = userRef.collection("progress_fixed").doc(categoryId);
+  const ref = userRef.collection("weekly_participation").doc(weekId);
 
   return db.runTransaction(async (tx) => {
+    const progressSnap = await tx.get(progressRef);
+    const passedLevels = new Set<number>(
+      ((progressSnap.data()?.passedLevels as unknown[]) || [])
+        .map((e) => safeInt(e, 0))
+    );
+
+    if (!passedLevels.has(levelNumber)) {
+      throw new HttpsError(
+        "failed-precondition", "This level hasn't been passed yet."
+      );
+    }
+
     const snap = await tx.get(ref);
     const data = snap.data() || {};
 

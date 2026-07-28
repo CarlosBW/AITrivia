@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
@@ -74,7 +75,7 @@ class _FriendChallengeSetupScreenState
           difficulty: _difficulty,
           totalQuestions: _totalQuestions,
           timePerQuestionSec: _timePerQuestionSec,
-          winReward: 2,
+          winReward: EconomyService.defaultPvpWinReward,
         );
 
         if (!mounted) return;
@@ -97,7 +98,7 @@ class _FriendChallengeSetupScreenState
         difficulty: _difficulty,
         totalQuestions: _totalQuestions,
         timePerQuestionSec: _timePerQuestionSec,
-        winReward: 2,
+        winReward: EconomyService.defaultPvpWinReward,
         challengerDisplayName: myName,
         challengedDisplayName: widget.friendName,
       );

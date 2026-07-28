@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
@@ -23,7 +24,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   // Fijo, igual que el matchmaking público — evita que el jugador siempre
   // elija la recompensa máxima al crear su propia sala.
-  static const int _winReward = 2;
+  static const int _winReward = EconomyService.defaultPvpWinReward;
 
   final TextEditingController _nameCtrl =
       TextEditingController(text: 'Host');

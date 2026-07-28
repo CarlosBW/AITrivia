@@ -3,12 +3,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/economy_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
 import 'live_matchmaking_screen.dart';
+
+class _CategoryOption {
+  final String id;
+  final String name;
+
+  const _CategoryOption({required this.id, required this.name});
+}
 
 class LiveMenuScreen extends StatefulWidget {
   const LiveMenuScreen({super.key});
@@ -18,14 +26,37 @@ class LiveMenuScreen extends StatefulWidget {
 }
 
 class _LiveMenuScreenState extends State<LiveMenuScreen> {
-  final List<String> _fixedCategories = const [
-    'cine',
-    'historia',
-    'videojuegos',
-    'random',
-  ];
+  late final Future<List<_CategoryOption>> _categoriesFuture =
+      _loadCategories();
 
-  String _selectedCategoryId = 'cine';
+  String _selectedCategoryId = 'random';
+
+  // Reads the same `fixed_categories` collection Solo uses, so this
+  // dropdown always reflects whatever categories are active — no more
+  // hand-maintained list that drifts as categories are added. The 'random'
+  // pseudo-category isn't stored in Firestore, so it's prepended by the
+  // caller (which has a localized label ready) rather than here.
+  Future<List<_CategoryOption>> _loadCategories() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('fixed_categories')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final ao = ((a.data()['order'] ?? 999) as num).toInt();
+        final bo = ((b.data()['order'] ?? 999) as num).toInt();
+        return ao.compareTo(bo);
+      });
+
+    return [
+      for (final doc in docs)
+        _CategoryOption(
+          id: doc.id,
+          name: (doc.data()['name'] ?? doc.id).toString(),
+        ),
+    ];
+  }
 
   void _goMatchmaking() {
     Navigator.push(
@@ -34,7 +65,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
         builder: (_) => LiveMatchmakingScreen(
           categoryId: _selectedCategoryId,
           ranked: true,
-          winReward: 2,
+          winReward: EconomyService.defaultPvpWinReward,
         ),
       ),
     );
@@ -135,19 +166,39 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedCategoryId,
-            items: _fixedCategories
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(() => _selectedCategoryId = v);
+          FutureBuilder<List<_CategoryOption>>(
+            future: _categoriesFuture,
+            builder: (context, snap) {
+              final options = [
+                _CategoryOption(
+                  id: 'random',
+                  name: l10n.friendChallengeCategoryRandom,
+                ),
+                ...?snap.data,
+              ];
+
+              return DropdownButtonFormField<String>(
+                initialValue: _selectedCategoryId,
+                items: options
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c.id,
+                        child: Text(c.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: snap.hasData
+                    ? (v) {
+                        if (v == null) return;
+                        setState(() => _selectedCategoryId = v);
+                      }
+                    : null,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              );
             },
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
           ),
           const SizedBox(height: 22),
           Text(

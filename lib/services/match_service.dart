@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'economy_service.dart';
 import 'locale_controller.dart';
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
@@ -51,7 +52,7 @@ class MatchService {
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 10,
-    int winReward = 2,
+    int winReward = EconomyService.defaultPvpWinReward,
     String displayName = 'Player',
     bool ranked = false,
   }) async {
@@ -325,7 +326,7 @@ class MatchService {
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 10,
-    int winReward = 2,
+    int winReward = EconomyService.defaultPvpWinReward,
     String myDisplayName = 'Host',
     bool ranked = false,
   }) async {
@@ -527,7 +528,7 @@ class MatchService {
     required String categoryId,
     int totalQuestions = 10,
     int timePerQuestionSec = 10,
-    int winReward = 2,
+    int winReward = EconomyService.defaultPvpWinReward,
     int difficulty = 1,
     String displayName = 'Host',
     bool ranked = false,
@@ -1038,7 +1039,7 @@ class MatchService {
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 10,
-    int winReward = 2,
+    int winReward = EconomyService.defaultPvpWinReward,
     String challengerDisplayName = 'Player',
     String challengedDisplayName = 'Player',
   }) async {

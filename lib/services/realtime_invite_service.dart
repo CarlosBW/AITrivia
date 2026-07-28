@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'economy_service.dart';
 import 'locale_controller.dart';
 import 'notification_service.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -95,7 +96,7 @@ class RealtimeInviteService {
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 10,
-    int winReward = 2,
+    int winReward = EconomyService.defaultPvpWinReward,
   }) async {
     if (toUid.trim().isEmpty) {
       throw Exception(_l10n.serviceInvalidUser);

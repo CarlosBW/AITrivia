@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/economy_service.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
   final int difficulty;
@@ -16,7 +17,7 @@ class AsyncMenuScreen extends StatefulWidget {
     this.difficulty = 1,
     this.timePerQuestionSec = 10,
     this.totalQuestions = 10,
-    this.winReward = 2,
+    this.winReward = EconomyService.defaultPvpWinReward,
   });
 
   @override

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/pvp_league_service.dart';
@@ -24,7 +25,7 @@ class LiveMatchmakingScreen extends StatefulWidget {
     this.difficulty = 1,
     this.timePerQuestionSec = 10,
     this.totalQuestions = 10,
-    this.winReward = 2,
+    this.winReward = EconomyService.defaultPvpWinReward,
     this.displayName = 'Player',
     this.ranked = false,
   });

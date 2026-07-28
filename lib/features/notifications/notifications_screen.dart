@@ -13,6 +13,7 @@ import '../versus/match_play_screen.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -85,30 +86,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  String _ctaForType(String type) {
+  String _ctaForType(AppLocalizations l10n, String type) {
     switch (type) {
       case 'match_invite':
-        return 'Play now';
+        return l10n.navPlayNow;
       case 'match_turn':
-        return 'Continue';
+        return l10n.notificationsContinue;
       case 'match_result':
-        return 'View result';
+        return l10n.notificationsViewResult;
       case 'friend_request':
-        return 'Review';
+        return l10n.notificationsReview;
       case 'season_reward':
-        return 'Claim';
+        return l10n.weeklyLeagueClaim;
       case 'achievement_completed':
-        return 'View';
+        return l10n.notificationsView;
       case 'rematch_request':
-        return 'View';
+        return l10n.notificationsView;
       case 'streak_at_risk':
-        return 'Play now';
+        return l10n.navPlayNow;
       case 'realtime_invite':
-        return 'Open';
+        return l10n.notificationsOpen;
       case 'realtime_invite_accepted':
-        return 'Open lobby';
+        return l10n.notificationsOpenLobby;
       default:
-        return 'Open';
+        return l10n.notificationsOpen;
     }
   }
 
@@ -142,7 +143,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invitación rechazada')),
+        SnackBar(content: Text(AppLocalizations.of(context).realtimeInvitesDeclined)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -175,7 +176,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reto rechazado')),
+        SnackBar(content: Text(AppLocalizations.of(context).notificationsChallengeDeclined)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -311,9 +312,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(l10n.notificationsTitle),
         actions: [
           TextButton.icon(
             onPressed: _markingAll ? null : _markAllAsRead,
@@ -324,7 +327,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.done_all),
-            label: const Text('Read all'),
+            label: Text(l10n.notificationsReadAll),
           ),
         ],
       ),
@@ -336,7 +339,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Error loading notifications:\n${snap.error}',
+                  l10n.notificationsErrorLoading(snap.error.toString()),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -362,7 +365,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               final data = doc.data();
 
               final type = (data['type'] ?? '').toString();
-              final title = (data['title'] ?? 'Notification').toString();
+              final title = (data['title'] ?? l10n.notificationsFallbackTitle).toString();
               final body = (data['body'] ?? '').toString();
               final read = data['read'] == true;
               final payload = Map<String, dynamic>.from(
@@ -390,7 +393,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   accentColor: _colorForType(type, read),
                   title: title,
                   body: body,
-                  cta: _ctaForType(type),
+                  type: type,
+                  cta: _ctaForType(l10n, type),
                   read: read,
                   isPvp: type == 'match_invite' ||
                       type == 'match_turn' ||
@@ -429,6 +433,7 @@ class _NotificationTile extends StatelessWidget {
   final Color accentColor;
   final String title;
   final String body;
+  final String type;
   final String cta;
   final bool read;
   final bool isPvp;
@@ -442,6 +447,7 @@ class _NotificationTile extends StatelessWidget {
     required this.accentColor,
     required this.title,
     required this.body,
+    required this.type,
     required this.cta,
     required this.read,
     required this.isPvp,
@@ -453,6 +459,7 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final challengerName = (matchData['challengerName'] ?? '').toString();
 
     final categoryId = (matchData['categoryId'] ?? '').toString();
@@ -462,7 +469,9 @@ class _NotificationTile extends StatelessWidget {
     final timePerQuestionSec =
         (matchData['timePerQuestionSec'] ?? '').toString();
 
-    final showMatchDetails = cta == 'Play now' && categoryId.isNotEmpty;
+    final showMatchDetails =
+        (type == 'match_invite' || type == 'streak_at_risk') &&
+            categoryId.isNotEmpty;
     final cardColor = read
         ? Theme.of(context).colorScheme.surface
         : isPvp
@@ -509,15 +518,15 @@ class _NotificationTile extends StatelessWidget {
               const SizedBox(height: 10),
               if (challengerName.isNotEmpty)
                 Text(
-                  '👤 $challengerName',
+                  l10n.notificationsChallengerPrefix(challengerName),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               const SizedBox(height: 4),
-              Text('🎯 Category: $categoryId'),
-              Text('❓ Questions: $totalQuestions'),
-              Text('⏱ Time: $timePerQuestionSec sec'),
+              Text(l10n.notificationsCategoryLine(categoryId)),
+              Text(l10n.notificationsQuestionsLine(totalQuestions)),
+              Text(l10n.notificationsTimeLine(timePerQuestionSec)),
             ],
             const SizedBox(height: 8),
             Row(
@@ -545,7 +554,7 @@ class _NotificationTile extends StatelessWidget {
                             ),
                           )
                         : const Icon(Icons.close),
-                    label: const Text('Decline'),
+                    label: Text(l10n.realtimeInvitesDecline),
                   ),
               ],
             ),
@@ -571,18 +580,18 @@ class _EmptyNotifications extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.notifications_none, size: 48),
-            SizedBox(height: 12),
+            const Icon(Icons.notifications_none, size: 48),
+            const SizedBox(height: 12),
             Text(
-              'No notifications yet.',
+              AppLocalizations.of(context).notificationsEmptyState,
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
         ),

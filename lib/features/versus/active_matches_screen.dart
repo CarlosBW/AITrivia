@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'async_match_play_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class ActiveMatchesScreen extends StatefulWidget {
@@ -108,7 +109,7 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
 
       setState(() {
         _loading = false;
-        _softError = 'Reconnecting...';
+        _softError = AppLocalizations.of(context).activeMatchesReconnecting;
       });
 
       _retryTimer = Timer(_autoRetryDelay, () {
@@ -127,9 +128,11 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Active Matches'),
+        title: Text(l10n.activeMatchesTitle),
       ),
       body: RefreshIndicator(
         onRefresh: _refreshSilently,
@@ -144,10 +147,10 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
               ),
 
             _AsyncMatchesSection(
-              title: 'Your Turn',
+              title: l10n.activeMatchesYourTurn,
               emptyText: _loading
-                  ? 'Loading your matches...'
-                  : 'No async matches waiting for you.',
+                  ? l10n.activeMatchesLoadingYourMatches
+                  : l10n.activeMatchesNoneWaitingForYou,
               docs: _yourTurn,
               uid: uid,
               mode: _AsyncSectionMode.yourTurn,
@@ -157,10 +160,10 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
             const SizedBox(height: 22),
 
             _AsyncMatchesSection(
-              title: 'Waiting For Opponent',
+              title: l10n.activeMatchesWaitingForOpponent,
               emptyText: _loading
-                  ? 'Loading matches...'
-                  : 'No matches waiting for your opponent.',
+                  ? l10n.activeMatchesLoadingMatches
+                  : l10n.activeMatchesNoneWaitingForOpponent,
               docs: _waitingOpponent,
               uid: uid,
               mode: _AsyncSectionMode.waitingOpponent,
@@ -170,10 +173,10 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
             const SizedBox(height: 22),
 
             _AsyncMatchesSection(
-              title: 'Recently Finished',
+              title: l10n.activeMatchesRecentlyFinished,
               emptyText: _loading
-                  ? 'Loading results...'
-                  : 'No recent finished matches.',
+                  ? l10n.activeMatchesLoadingResults
+                  : l10n.activeMatchesNoneFinished,
               docs: _finished,
               uid: uid,
               mode: _AsyncSectionMode.finished,
@@ -281,38 +284,38 @@ class _AsyncMatchTile extends StatelessWidget {
     return raw is num ? raw.toInt() : 0;
   }
 
-  String _subtitle() {
+  String _subtitle(AppLocalizations l10n) {
     final challengerScore = _challengerScore();
     final challengedScore = _challengedScore();
 
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return 'Your turn • ${_category()}';
+        return l10n.activeMatchesYourTurnSubtitle(_category());
       case _AsyncSectionMode.waitingOpponent:
-        return 'Waiting • Your score: $challengerScore';
+        return l10n.activeMatchesWaitingSubtitle(challengerScore);
       case _AsyncSectionMode.finished:
         final winnerUid = data['winnerUid'] as String?;
 
         if (winnerUid == null) {
-          return 'Draw • $challengerScore-$challengedScore';
+          return l10n.activeMatchesDrawSubtitle(challengerScore, challengedScore);
         }
 
         if (winnerUid == uid) {
-          return 'Victory • $challengerScore-$challengedScore';
+          return l10n.activeMatchesVictorySubtitle(challengerScore, challengedScore);
         }
 
-        return 'Defeat • $challengerScore-$challengedScore';
+        return l10n.activeMatchesDefeatSubtitle(challengerScore, challengedScore);
     }
   }
 
-  String _buttonText() {
+  String _buttonText(AppLocalizations l10n) {
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return 'Play';
+        return l10n.activeMatchesPlay;
       case _AsyncSectionMode.waitingOpponent:
-        return 'View';
+        return l10n.activeMatchesView;
       case _AsyncSectionMode.finished:
-        return 'Result';
+        return l10n.activeMatchesResult;
     }
   }
 
@@ -340,6 +343,7 @@ class _AsyncMatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final opponent = _opponentName();
 
     return Card(
@@ -353,10 +357,10 @@ class _AsyncMatchTile extends StatelessWidget {
           child: Icon(_icon(), color: _statusColor(context)),
         ),
         title: Text(
-          'vs $opponent',
+          l10n.profileVsOpponent(opponent),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(_subtitle()),
+        subtitle: Text(_subtitle(l10n)),
         trailing: FilledButton.tonal(
           onPressed: () {
             Navigator.push(
@@ -368,7 +372,7 @@ class _AsyncMatchTile extends StatelessWidget {
               ),
             );
           },
-          child: Text(_buttonText()),
+          child: Text(_buttonText(l10n)),
         ),
       ),
     );
@@ -415,15 +419,15 @@ class _LoadingLine extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: 12),
-          Text('Loading...'),
+          const SizedBox(width: 12),
+          Text(AppLocalizations.of(context).commonLoading),
         ],
       ),
     );

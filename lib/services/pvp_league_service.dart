@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../l10n/generated/app_localizations.dart';
+
 class PvpLeagueInfo {
   final String id;
   final String name;
@@ -32,14 +34,10 @@ class PvpLeagueInfo {
 class PvpMatchmakingWindow {
   final int searchSeconds;
   final int allowedRatingGap;
-  final String label;
-  final String description;
 
   const PvpMatchmakingWindow({
     required this.searchSeconds,
     required this.allowedRatingGap,
-    required this.label,
-    required this.description,
   });
 }
 
@@ -117,46 +115,36 @@ class PvpLeagueService {
 
   PvpMatchmakingWindow windowForSearchSeconds(int seconds) {
     if (seconds < 10) {
-      return const PvpMatchmakingWindow(
-        searchSeconds: 0,
-        allowedRatingGap: 100,
-        label: 'Misma liga',
-        description: 'Buscando primero un rival muy cercano a tu MMR.',
-      );
+      return const PvpMatchmakingWindow(searchSeconds: 0, allowedRatingGap: 100);
     }
 
     if (seconds < 20) {
-      return const PvpMatchmakingWindow(
-        searchSeconds: 10,
-        allowedRatingGap: 250,
-        label: 'Ligas cercanas',
-        description: 'Ampliando a jugadores de ligas vecinas.',
-      );
+      return const PvpMatchmakingWindow(searchSeconds: 10, allowedRatingGap: 250);
     }
 
     if (seconds < 30) {
-      return const PvpMatchmakingWindow(
-        searchSeconds: 20,
-        allowedRatingGap: 500,
-        label: 'Rango ampliado',
-        description: 'Priorizando encontrar partida sin perder competitividad.',
-      );
+      return const PvpMatchmakingWindow(searchSeconds: 20, allowedRatingGap: 500);
     }
 
-    return const PvpMatchmakingWindow(
-      searchSeconds: 30,
-      allowedRatingGap: 999999,
-      label: 'Cualquier rival disponible',
-      description: 'Ahora se prioriza que puedas jugar sin quedarte esperando.',
-    );
+    return const PvpMatchmakingWindow(searchSeconds: 30, allowedRatingGap: 999999);
   }
 
   int allowedRatingGapForSearchSeconds(int secondsSearching) {
     return windowForSearchSeconds(secondsSearching).allowedRatingGap;
   }
 
-  String searchMessageForSeconds(int secondsSearching) {
-    return windowForSearchSeconds(secondsSearching).description;
+  String matchmakingLabelFor(AppLocalizations l10n, int seconds) {
+    if (seconds < 10) return l10n.pvpWindowSameLeagueLabel;
+    if (seconds < 20) return l10n.pvpWindowNearbyLeaguesLabel;
+    if (seconds < 30) return l10n.pvpWindowExpandedRangeLabel;
+    return l10n.pvpWindowAnyOpponentLabel;
+  }
+
+  String matchmakingDescriptionFor(AppLocalizations l10n, int seconds) {
+    if (seconds < 10) return l10n.pvpWindowSameLeagueDescription;
+    if (seconds < 20) return l10n.pvpWindowNearbyLeaguesDescription;
+    if (seconds < 30) return l10n.pvpWindowExpandedRangeDescription;
+    return l10n.pvpWindowAnyOpponentDescription;
   }
 
   String leagueLabelForRating(int rating) {

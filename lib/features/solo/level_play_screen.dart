@@ -12,6 +12,7 @@ import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/weekly_topic_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class LevelPlayScreen extends StatefulWidget {
@@ -201,18 +202,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ No tienes suficientes monedas'),
+          SnackBar(
+            content: Text(l10n.soloNotEnoughCoins),
           ),
         );
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Vida recuperada'),
+        SnackBar(
+          content: Text(l10n.soloLifeRecovered),
         ),
       );
 
@@ -243,18 +246,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ No tienes suficientes monedas'),
+          SnackBar(
+            content: Text(l10n.soloNotEnoughCoins),
           ),
         );
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❤️ Vida recuperada'),
+        SnackBar(
+          content: Text(l10n.soloLifeRecovered),
         ),
       );
 
@@ -313,7 +318,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           _locked = true;
           _timedOut = true;
           _timeoutAnswerIndex = answerIndex;
-          _statusMsg = '⏰ Se acabó el tiempo';
+          _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
 
           SfxService.instance.playTimeout();
 
@@ -325,10 +330,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
             if (!mounted) return;
 
+            final l10n = AppLocalizations.of(context);
+
             setState(() {
               _statusMsg = _endedByNoLives
-                  ? '⏰ Se acabó el tiempo - te quedaste sin vidas'
-                  : '⏰ Se acabó el tiempo - perdiste media vida';
+                  ? l10n.levelPlayTimeUpNoLives
+                  : l10n.levelPlayTimeUpLostHalfLife;
             });
 
             if (_endedByNoLives) return;
@@ -408,10 +415,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       await _refreshLivesAndStopIfEmpty();
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
+
         setState(() {
           _statusMsg = _endedByNoLives
-              ? '❌ Incorrecto - te quedaste sin vidas'
-              : '❌ Incorrecto - perdiste media vida';
+              ? l10n.levelPlayWrongNoLives
+              : l10n.levelPlayWrongLostHalfLife;
         });
       }
     }
@@ -430,6 +439,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Future<void> _checkAndConsumeLife(String uid) async {
     if (_lifeChecked || _lifeLoading) return;
 
+    final l10n = AppLocalizations.of(context);
+
     setState(() {
       _lifeLoading = true;
       _lifeGateError = null;
@@ -442,12 +453,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       await _syncLivesUiFromFirestore();
 
       if (!ok) {
-        _lifeGateError = 'Necesitas 1 vida completa para entrar a este nivel.';
+        _lifeGateError = l10n.levelPlayNeedFullLife;
       }
 
       _lifeChecked = true;
     } catch (e) {
-      _lifeGateError = 'Error verificando vidas: $e';
+      _lifeGateError = l10n.levelPlayLifeCheckError(e.toString());
       _lifeChecked = true;
     } finally {
       if (mounted) {
@@ -462,6 +473,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Widget build(BuildContext context) {
     final db = FirebaseFirestore.instance;
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     final categoryRef = widget.isAiTopic
         ? db
@@ -484,9 +496,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-        '${widget.isAiTopic ? "Tema IA" : widget.categoryId} - Nivel ${widget.levelNumber}',
-      )),
+        title: Text(
+          l10n.levelPlayAppBarTitle(
+            widget.isAiTopic ? l10n.levelPlayAiTopicLabel : widget.categoryId,
+            widget.levelNumber,
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -553,7 +569,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                'Error creando sesión',
+                                l10n.levelPlaySessionCreateErrorTitle,
                                 style: GoogleFonts.baloo2(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -573,7 +589,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                     _creatingSession = false;
                                   });
                                 },
-                                child: const Text('Reintentar'),
+                                child: Text(l10n.commonRetry),
                               ),
                             ],
                           ),
@@ -581,13 +597,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       );
                     }
 
-                    return const Center(
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 12),
-                          Text('Generando preguntas del nivel...'),
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 12),
+                          Text(l10n.levelPlayGeneratingQuestions),
                         ],
                       ),
                     );
@@ -602,16 +618,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       final data = snap.data!.data();
                       if (data == null) {
-                        return const Center(
-                          child: Text('Sesión no encontrada.'),
+                        return Center(
+                          child: Text(l10n.levelPlaySessionNotFound),
                         );
                       }
 
                       final questions =
                           (data['questions'] as List<dynamic>? ?? []);
                       if (questions.isEmpty) {
-                        return const Center(
-                          child: Text('Esta sesión no tiene preguntas.'),
+                        return Center(
+                          child: Text(l10n.levelPlaySessionNoQuestions),
                         );
                       }
 
@@ -720,15 +736,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withValues(alpha: 0.4),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
                     Text(
-                      'Cargando...',
-                      style: TextStyle(color: Colors.white),
+                      l10n.commonLoading,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -740,6 +756,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   Widget _buildNoLivesGate(BuildContext context, String uid) {
+    final l10n = AppLocalizations.of(context);
     final lifeText =
         '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
 
@@ -750,14 +767,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             : _secondsToNextHalfLife! + 150);
 
     return _NoLivesCard(
-      title: 'Sin vidas suficientes',
-      message: _lifeGateError ?? 'Necesitas 1 vida completa para entrar.',
+      title: l10n.livesNoLivesTitle,
+      message: _lifeGateError ?? l10n.levelPlayNeedFullLife,
       lifeText: lifeText,
       nextHalfLifeText: _lifeUnits >= _maxLifeUnits
-          ? 'MAX'
+          ? l10n.levelPlayLivesMax
           : _formatSeconds(_secondsToNextHalfLife),
       nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
-      buyLabel: 'Recuperar 1 vida ($_buyLifeCost monedas)',
+      buyLabel: l10n.livesRecoverButton(_buyLifeCost),
       onBuyLife: _buyingLife ? null : () => _buyLifeAndRetryEntry(uid),
       onBack: _isNavigating || _buyingLife
           ? null
@@ -770,6 +787,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   Widget _buildNoLivesMidLevel(BuildContext context, String uid) {
+    final l10n = AppLocalizations.of(context);
     final lifeText =
         '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
 
@@ -780,14 +798,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             : _secondsToNextHalfLife! + 150);
 
     return _NoLivesCard(
-      title: 'Te quedaste sin vidas',
-      message: 'No puedes continuar este nivel hasta recuperar vidas.',
+      title: l10n.levelPlayOutOfLivesTitle,
+      message: l10n.levelPlayOutOfLivesMessage,
       lifeText: lifeText,
       nextHalfLifeText: _lifeUnits >= _maxLifeUnits
-          ? 'MAX'
+          ? l10n.levelPlayLivesMax
           : _formatSeconds(_secondsToNextHalfLife),
       nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
-      buyLabel: 'Recuperar 1 vida ($_buyLifeCost monedas)',
+      buyLabel: l10n.livesRecoverButton(_buyLifeCost),
       onBuyLife: _buyingLife ? null : () => _buyLifeMidLevel(uid),
       onBack: _isNavigating || _buyingLife
           ? null
@@ -800,6 +818,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   Widget _buildLivesHeader() {
+    final l10n = AppLocalizations.of(context);
     final lifeText =
         '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
     final isFull = _lifeUnits >= _maxLifeUnits;
@@ -822,7 +841,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Vidas: $lifeText',
+              l10n.levelPlayLivesHeader(lifeText),
               style: GoogleFonts.baloo2(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
@@ -838,8 +857,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           const SizedBox(width: 4),
           Text(
             isFull
-                ? 'MAX'
-                : '+0.5 en ${_formatSeconds(_secondsToNextHalfLife)}',
+                ? l10n.levelPlayLivesMax
+                : l10n.levelPlayHalfLifeIn(
+                    _formatSeconds(_secondsToNextHalfLife),
+                  ),
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -858,6 +879,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     required int answerIndex,
     required int total,
   }) {
+    final l10n = AppLocalizations.of(context);
     final absorbing =
         _locked || _answerSubmitting || _isNavigating || _endedByNoLives;
 
@@ -893,7 +915,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pregunta ${_index + 1} de $total',
+                        l10n.levelPlayQuestionOfTotal(_index + 1, total),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1310,6 +1332,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       return const SizedBox.shrink();
     }
 
+    final l10n = AppLocalizations.of(context);
     final counted = pct >= 0.4;
 
     return Container(
@@ -1334,8 +1357,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           Expanded(
             child: Text(
               counted
-                  ? 'Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.'
-                  : 'No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.',
+                  ? l10n.levelPlayWeeklyCounted
+                  : l10n.levelPlayWeeklyNotCounted,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: counted ? Colors.green.shade800 : Colors.orange.shade900,
@@ -1348,17 +1371,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   Widget _buildEnd(BuildContext context, int total) {
+    final l10n = AppLocalizations.of(context);
     final pct = total == 0 ? 0.0 : (_correct / total);
 
     String label;
     if (pct >= 0.9) {
-      label = 'Experto';
+      label = l10n.levelPlayRankExpert;
     } else if (pct >= 0.7) {
-      label = 'Avanzado';
+      label = l10n.levelPlayRankAdvanced;
     } else if (pct >= 0.4) {
-      label = 'Intermedio';
+      label = l10n.levelPlayRankIntermediate;
     } else {
-      label = 'Novato';
+      label = l10n.levelPlayRankBeginner;
     }
 
     final starCount = pct >= 0.9
@@ -1382,7 +1406,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              pct >= 0.4 ? '¡Nivel aprobado!' : 'Nivel finalizado',
+              pct >= 0.4 ? l10n.levelPlayLevelPassed : l10n.levelPlayLevelFinished,
               style: GoogleFonts.baloo2(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -1393,13 +1417,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             _BigStarsRow(count: starCount),
             const SizedBox(height: 14),
             Text(
-              'Puntaje: $_correct / $total ($pctText)',
+              l10n.levelPlayScoreLine(_correct, total, pctText),
               style: const TextStyle(fontSize: 18),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              'Rango: $label',
+              l10n.levelPlayRankLine(label),
               style: GoogleFonts.baloo2(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -1421,7 +1445,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               child: Column(
                 children: [
                   Text(
-                    'Recompensas',
+                    l10n.levelPlayRewardsTitle,
                     style: GoogleFonts.baloo2(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -1433,7 +1457,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       Expanded(
                         child: _RewardCard(
                           icon: Icons.auto_awesome_outlined,
-                          label: 'XP',
+                          label: l10n.homeXp,
                           accent: Theme.of(context).colorScheme.primary,
                           background:
                               Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -1452,7 +1476,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       Expanded(
                         child: _RewardCard(
                           icon: Icons.monetization_on_outlined,
-                          label: 'Monedas',
+                          label: l10n.homeCoins,
                           accent: AppColors.reward,
                           background: AppColors.rewardBg,
                           child: _AnimatedRewardNumber(
@@ -1468,8 +1492,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     const SizedBox(height: 12),
                     Text(
                       pct >= 0.4
-                          ? 'Este nivel ya había sido aprobado antes.'
-                          : 'Necesitas al menos 40% de aciertos para aprobar este nivel.',
+                          ? l10n.levelPlayAlreadyPassedBefore
+                          : l10n.levelPlayNeed40Percent,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.orange,
@@ -1489,26 +1513,26 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               const SizedBox(height: 18),
               const CircularProgressIndicator(strokeWidth: 3),
               const SizedBox(height: 8),
-              const Text('Guardando progreso...'),
+              Text(l10n.levelPlaySavingProgress),
             ],
             if (_saveError != null) ...[
               const SizedBox(height: 18),
               Text(
-                'Error guardando: $_saveError',
+                l10n.levelPlaySaveError(_saveError!),
                 style: const TextStyle(color: Colors.red),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               FilledButton(
                 onPressed: _saving ? null : () => _saveProgress(total: total),
-                child: const Text('Reintentar guardado'),
+                child: Text(l10n.levelPlayRetrySave),
               ),
             ],
             if (_saved && _saveError == null && !_saving) ...[
               const SizedBox(height: 18),
-              const Text(
-                '✅ Progreso guardado',
-                style: TextStyle(fontWeight: FontWeight.w600),
+              Text(
+                l10n.levelPlayProgressSaved,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ],
             const SizedBox(height: 24),
@@ -1526,7 +1550,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                 Navigator.pop(context);
                               });
                             },
-                      child: const Text('Volver'),
+                      child: Text(l10n.livesGoBack),
                     ),
                   ),
                 if (hasNext) ...[
@@ -1555,7 +1579,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                 );
                               });
                             },
-                      child: Text('Continuar (Nivel $nextLevel)'),
+                      child: Text(l10n.levelPlayContinueNextLevel(nextLevel)),
                     ),
                   ),
                 ],
@@ -1591,6 +1615,8 @@ class _NoLivesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -1644,19 +1670,19 @@ class _NoLivesCard extends StatelessWidget {
                   children: [
                     _InfoRow(
                       icon: Icons.favorite,
-                      label: 'Tus vidas',
+                      label: l10n.livesYourLives,
                       value: lifeText,
                     ),
                     const SizedBox(height: 10),
                     _InfoRow(
                       icon: Icons.timer,
-                      label: 'Próx. media vida',
+                      label: l10n.livesNextHalf,
                       value: nextHalfLifeText,
                     ),
                     const SizedBox(height: 10),
                     _InfoRow(
                       icon: Icons.hourglass_bottom,
-                      label: 'Para 1 vida completa',
+                      label: l10n.livesNextFull,
                       value: nextFullLifeText,
                     ),
                   ],
@@ -1676,7 +1702,7 @@ class _NoLivesCard extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: onBack,
-                  child: const Text('Volver'),
+                  child: Text(l10n.livesGoBack),
                 ),
               ),
             ],
@@ -1920,6 +1946,7 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentLevel = _playerLevelFromXp(widget.currentXp);
 
     return Container(
@@ -1933,7 +1960,7 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nivel de jugador $currentLevel',
+            l10n.levelPlayPlayerLevel(currentLevel),
             style: GoogleFonts.baloo2(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -1970,7 +1997,7 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
             curve: Curves.easeOutCubic,
             builder: (context, animatedXp, _) {
               return Text(
-                'XP total: $animatedXp',
+                l10n.levelPlayTotalXp(animatedXp),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -2069,6 +2096,8 @@ class _XpSegmentViewState extends State<_XpSegmentView>
     final crossedLevel = widget.segment.endXp >= widget.segment.ceilXp &&
         widget.segment.startXp < widget.segment.ceilXp;
 
+    final l10n = AppLocalizations.of(context);
+
     return TweenAnimationBuilder<double>(
       tween: Tween(
         begin: beginProgress,
@@ -2097,7 +2126,7 @@ class _XpSegmentViewState extends State<_XpSegmentView>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Nivel ${widget.segment.level}',
+              l10n.levelSelectLevelNumber(widget.segment.level),
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -2136,7 +2165,7 @@ class _XpSegmentViewState extends State<_XpSegmentView>
                           ],
                         ),
                         child: Text(
-                          'LEVEL UP! ${widget.segment.level + 1}',
+                          l10n.levelPlayLevelUp(widget.segment.level + 1),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
@@ -2152,8 +2181,11 @@ class _XpSegmentViewState extends State<_XpSegmentView>
             const SizedBox(height: 6),
             Text(
               crossedLevel && value >= 0.999
-                  ? '¡Subiste al nivel ${widget.segment.level + 1}!'
-                  : '${displayedXp - widget.segment.floorXp} / $span XP en este nivel',
+                  ? l10n.levelPlayLeveledUpTo(widget.segment.level + 1)
+                  : l10n.levelPlayXpInLevel(
+                      displayedXp - widget.segment.floorXp,
+                      span,
+                    ),
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: crossedLevel && value >= 0.999

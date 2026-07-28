@@ -5,13 +5,9 @@ import 'pvp_league_service.dart';
 
 class PvpSeasonRewardInfo {
   final int coins;
-  final String label;
-  final String description;
 
   const PvpSeasonRewardInfo({
     required this.coins,
-    required this.label,
-    required this.description,
   });
 }
 
@@ -145,42 +141,18 @@ class PvpSeasonService {
   PvpSeasonRewardInfo rewardForLeague(PvpLeagueInfo league) {
     switch (league.id) {
       case 'master':
-        return const PvpSeasonRewardInfo(
-          coins: 80,
-          label: 'Master reward',
-          description: 'Top-tier ranked season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 80);
       case 'diamond':
-        return const PvpSeasonRewardInfo(
-          coins: 40,
-          label: 'Diamond reward',
-          description: 'High competitive season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 40);
       case 'platinum':
-        return const PvpSeasonRewardInfo(
-          coins: 20,
-          label: 'Platinum reward',
-          description: 'Advanced ranked season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 20);
       case 'gold':
-        return const PvpSeasonRewardInfo(
-          coins: 10,
-          label: 'Gold reward',
-          description: 'Strong ranked season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 10);
       case 'silver':
-        return const PvpSeasonRewardInfo(
-          coins: 5,
-          label: 'Silver reward',
-          description: 'Progression ranked season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 5);
       case 'bronze':
       default:
-        return const PvpSeasonRewardInfo(
-          coins: 2,
-          label: 'Bronze reward',
-          description: 'Entry ranked season reward.',
-        );
+        return const PvpSeasonRewardInfo(coins: 2);
     }
   }
 

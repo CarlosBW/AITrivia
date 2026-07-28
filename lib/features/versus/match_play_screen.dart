@@ -11,6 +11,7 @@ import '../../services/presence_service.dart';
 import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
 
@@ -134,7 +135,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           _locked = true;
           _timedOut = true;
           _timeoutAnswerIndex = answerIndex;
-          _statusMsg = '⏰ Se acabó el tiempo';
+          _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
 
           SfxService.instance.playTimeout();
 
@@ -194,27 +195,28 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     if (!opponentRematchAccepted) return;
 
     _rematchPromptShowing = true;
+    final l10n = AppLocalizations.of(context);
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Solicitud de revancha'),
-          content: Text('$opponentName quiere jugar una revancha.'),
+          title: Text(l10n.matchPlayRematchRequestTitle),
+          content: Text(l10n.matchPlayRematchRequestBody(opponentName)),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Luego'),
+              child: Text(l10n.navLater),
             ),
             FilledButton(
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 await _requestRematch(match);
               },
-              child: const Text('Aceptar'),
+              child: Text(l10n.realtimeInvitesAccept),
             ),
           ],
         );
@@ -406,13 +408,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     final ref =
         FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('1 vs 1'),
+        title: Text(l10n.matchPlayTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
@@ -438,13 +441,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           final data = snap.data!.data();
 
           if (data == null) {
-            return const Center(child: Text('Match no encontrado'));
+            return Center(child: Text(l10n.matchPlayNotFound));
           }
 
           final status = (data['status'] ?? 'waiting').toString();
 
           if (status != 'playing' && status != 'finished') {
-            return const Center(child: Text('Esperando que inicie...'));
+            return Center(child: Text(l10n.matchPlayWaitingToStart));
           }
 
           if (status == 'playing') {
@@ -460,8 +463,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           final questions = data['questions'] as List<dynamic>? ?? [];
 
           if (questions.isEmpty) {
-            return const Center(
-              child: Text('Este match no tiene preguntas.'),
+            return Center(
+              child: Text(l10n.matchPlayNoQuestions),
             );
           }
 
@@ -573,6 +576,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     required int myScore,
     required int timePerQ,
   }) {
+    final l10n = AppLocalizations.of(context);
     final absorbing = _locked || _answerSubmitting;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -603,7 +607,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Pregunta ${_index + 1} de $total',
+                        l10n.levelPlayQuestionOfTotal(_index + 1, total),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -656,7 +660,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             const SizedBox(height: 10),
             StatChip(
               icon: Icons.emoji_events_outlined,
-              label: 'Tu puntaje',
+              label: l10n.matchPlayYourScoreLabel,
               value: '$myScore',
               fullWidth: true,
             ),
@@ -848,6 +852,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     String uid,
     int myScore,
   ) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -863,7 +869,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Esperando resultado final...',
+              l10n.matchPlayWaitingFinalResult,
               textAlign: TextAlign.center,
               style: GoogleFonts.baloo2(
                 fontSize: 24,
@@ -871,14 +877,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Tu rival todavía está respondiendo preguntas.',
+            Text(
+              l10n.matchPlayOpponentStillAnswering,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
             Text(
-              'Tu puntaje: $myScore',
+              l10n.matchPlayYourScoreLine(myScore),
               style: GoogleFonts.baloo2(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -897,6 +903,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     Map<String, dynamic> match,
     String uid,
   ) {
+    final l10n = AppLocalizations.of(context);
     final players = Map<String, dynamic>.from(match['players'] ?? {});
 
     final hostUid = (match['hostUid'] ?? '').toString();
@@ -1005,32 +1012,32 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
     if (winnerUid == null) {
       state = PvpResultState.draw;
-      title = 'Empate';
-      subtitle = 'Ambos terminaron con el mismo puntaje.';
+      title = l10n.matchPlayDrawTitle;
+      subtitle = l10n.matchPlayDrawSubtitle;
     } else if (winnerUid == uid) {
       state = PvpResultState.victory;
-      title = '¡Ganaste!';
+      title = l10n.matchPlayVictoryTitle;
       subtitle = affectsPvpRating
-          ? 'Buen duelo. Tu rating competitivo fue actualizado.'
-          : 'Buen duelo. Sumaste una victoria 1 vs 1.';
+          ? l10n.matchPlayVictoryRankedSubtitle
+          : l10n.matchPlayVictoryCasualSubtitle;
       coinsEarned =
           affectsPvpRating ? (rankedCoinsEarned ?? winReward) : winReward;
     } else {
       state = PvpResultState.defeat;
-      title = 'Perdiste';
+      title = l10n.matchPlayDefeatTitle;
       subtitle = affectsPvpRating
-          ? 'Estuviste cerca. Tu rating competitivo fue actualizado.'
-          : 'Estuviste cerca. Intenta una revancha.';
+          ? l10n.matchPlayDefeatRankedSubtitle
+          : l10n.matchPlayDefeatCasualSubtitle;
     }
 
-    String secondaryText = 'Revancha';
+    String secondaryText = l10n.matchPlayRematch;
 
     if (_requestingRematch) {
-      secondaryText = 'Enviando solicitud...';
+      secondaryText = l10n.matchPlaySendingRequest;
     } else if (myRematchAccepted && !opponentRematchAccepted) {
-      secondaryText = 'Solicitud enviada ✓';
+      secondaryText = l10n.matchPlayRequestSent;
     } else if (myRematchAccepted && opponentRematchAccepted) {
-      secondaryText = 'Creando revancha...';
+      secondaryText = l10n.matchPlayCreatingRematch;
     }
 
     return PvpResultCard(
@@ -1055,7 +1062,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       winStreak: winStreak,
       oldLeagueName: oldLeagueName.isEmpty ? null : oldLeagueName,
       newLeagueName: newLeagueName.isEmpty ? null : newLeagueName,
-      primaryButtonText: 'Salir',
+      primaryButtonText: l10n.matchPlayExit,
       onPrimaryPressed: () async {
         await _exitToPvpMenu(context);
       },

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/pvp_league_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
@@ -43,6 +44,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
     required int rating,
     required int delta,
   }) {
+    final l10n = AppLocalizations.of(context);
     final leagueService = PvpLeagueService.instance;
     final league = leagueService.leagueForRating(rating);
     final color = Color(league.colorValue);
@@ -69,7 +71,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${league.name} League',
+                  l10n.liveMenuLeagueTitle(league.name),
                   style: GoogleFonts.baloo2(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -80,7 +82,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
                 Text('$rating MMR'),
                 const SizedBox(height: 4),
                 Text(
-                  'Buscar rival afecta tu MMR y tu liga PvP.',
+                  l10n.liveMenuMmrHint1,
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -104,6 +106,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
@@ -127,9 +130,9 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
             },
           ),
           const SizedBox(height: 18),
-          const Text(
-            'Tema fijo',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Text(
+            l10n.liveMenuFixedTopicLabel,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -148,18 +151,18 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
           ),
           const SizedBox(height: 22),
           Text(
-            'Matchmaking público',
+            l10n.liveMenuPublicMatchmaking,
             style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _goMatchmaking,
             icon: const Icon(Icons.emoji_events_outlined),
-            label: const Text('Buscar rival'),
+            label: Text(l10n.findOpponentTitle),
           ),
           const SizedBox(height: 8),
           Text(
-            'Buscar rival afecta tu MMR, liga y estadísticas PvP.',
+            l10n.liveMenuMmrHint2,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 13,
@@ -168,7 +171,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Partidas privadas',
+            l10n.liveMenuPrivateMatches,
             style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
@@ -182,7 +185,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               );
             },
             icon: const Icon(Icons.add),
-            label: const Text('Crear sala privada'),
+            label: Text(l10n.liveMenuCreatePrivateRoom),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
@@ -195,11 +198,11 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               );
             },
             icon: const Icon(Icons.login),
-            label: const Text('Unirme con código'),
+            label: Text(l10n.liveMenuJoinWithCode),
           ),
           const SizedBox(height: 28),
           Text(
-            'Las partidas privadas son amistosas y no afectan tu ranking.',
+            l10n.liveMenuPrivateMatchesHint,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

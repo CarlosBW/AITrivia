@@ -4,14 +4,35 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'league_service.dart';
 import 'weekly_league_service.dart';
 import 'notification_service.dart';
+import '../l10n/generated/app_localizations.dart';
+
+/// Which rank-based bonus tier a weekly-league reward falls into. Kept as
+/// an enum (rather than a pre-localized string) so the display text can be
+/// resolved lazily from a widget's own `AppLocalizations.of(context)` —
+/// `getPendingSeasonRewards` below runs from `initState`, where a
+/// context-derived locale isn't safely available yet.
+enum SeasonRewardTier { champion, top3, top10, generic }
+
+String seasonRewardMessageFor(AppLocalizations l10n, SeasonRewardTier tier) {
+  switch (tier) {
+    case SeasonRewardTier.champion:
+      return l10n.weeklyRewardChampionBonus;
+    case SeasonRewardTier.top3:
+      return l10n.weeklyRewardTop3Bonus;
+    case SeasonRewardTier.top10:
+      return l10n.weeklyRewardTop10Bonus;
+    case SeasonRewardTier.generic:
+      return l10n.weeklyRewardGenericBonus;
+  }
+}
 
 class SeasonReward {
   final int coins;
-  final String message;
+  final SeasonRewardTier tier;
 
   const SeasonReward({
     required this.coins,
-    required this.message,
+    required this.tier,
   });
 }
 
@@ -22,7 +43,7 @@ class PendingSeasonReward {
   final int rank;
   final int weeklyScore;
   final int rewardCoins;
-  final String rewardMessage;
+  final SeasonRewardTier rewardTier;
 
   const PendingSeasonReward({
     required this.seasonId,
@@ -31,7 +52,7 @@ class PendingSeasonReward {
     required this.rank,
     required this.weeklyScore,
     required this.rewardCoins,
-    required this.rewardMessage,
+    required this.rewardTier,
   });
 }
 
@@ -79,16 +100,15 @@ class SeasonService {
 
     final total = baseCoins + bonus;
 
-    return SeasonReward(
-      coins: total,
-      message: rank == 1
-          ? 'Champion bonus!'
-          : rank <= 3
-              ? 'Top 3 bonus!'
-              : rank <= 10
-                  ? 'Top 10 bonus!'
-                  : 'Weekly league reward',
-    );
+    final tier = rank == 1
+        ? SeasonRewardTier.champion
+        : rank <= 3
+            ? SeasonRewardTier.top3
+            : rank <= 10
+                ? SeasonRewardTier.top10
+                : SeasonRewardTier.generic;
+
+    return SeasonReward(coins: total, tier: tier);
   }
 
   DocumentReference<Map<String, dynamic>> seasonHistoryRef({
@@ -240,7 +260,7 @@ class SeasonService {
           rank: rank,
           weeklyScore: weeklyScore,
           rewardCoins: reward.coins,
-          rewardMessage: reward.message,
+          rewardTier: reward.tier,
         ),
       );
     }

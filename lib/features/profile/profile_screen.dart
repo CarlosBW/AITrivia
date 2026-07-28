@@ -1416,7 +1416,7 @@ class _RecentMatchHistory extends StatelessWidget {
       builder: (context, snap) {
         if (snap.hasError) {
           return Text(
-            'Error loading match history:\n${snap.error}',
+            l10n.profileErrorLoadingMatchHistory(snap.error.toString()),
             textAlign: TextAlign.center,
           );
         }

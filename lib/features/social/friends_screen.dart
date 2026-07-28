@@ -5,6 +5,7 @@ import '../../services/friend_service.dart';
 import '../../services/presence_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 enum _RelationStatus { friend, requestSent, requestReceived, none }
 
@@ -34,11 +35,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
     super.dispose();
   }
 
-  String _offlineLabel(Map<String, dynamic>? presence) {
+  String _offlineLabel(AppLocalizations l10n, Map<String, dynamic>? presence) {
     final updatedAt = presence?['updatedAt'];
 
     if (updatedAt is! Timestamp) {
-      return 'Offline';
+      return l10n.friendsOfflineLabel;
     }
 
     final diff = DateTime.now().difference(
@@ -46,18 +47,18 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
 
     if (diff.inMinutes < 1) {
-      return 'Last seen just now';
+      return l10n.friendsLastSeenJustNow;
     }
 
     if (diff.inMinutes < 60) {
-      return 'Last seen ${diff.inMinutes}m ago';
+      return l10n.friendsLastSeenMinutes(diff.inMinutes);
     }
 
     if (diff.inHours < 24) {
-      return 'Last seen ${diff.inHours}h ago';
+      return l10n.friendsLastSeenHours(diff.inHours);
     }
 
-    return 'Offline';
+    return l10n.friendsOfflineLabel;
   }
 
   /// Classifies each searched user's relationship to me, reusing the same
@@ -108,7 +109,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     if (query.isEmpty) {
       setState(() {
-        _error = 'Escribe un username para buscar.';
+        _error = AppLocalizations.of(context).friendsEnterUsername;
         _searchResults = [];
         _hasSearched = false;
       });
@@ -170,7 +171,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solicitud enviada')),
+        SnackBar(content: Text(AppLocalizations.of(context).friendsRequestSent)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -206,7 +207,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       onSuccess?.call();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Acción completada')),
+        SnackBar(content: Text(AppLocalizations.of(context).friendsActionCompleted)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -244,22 +245,24 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Friends'),
+          title: Text(l10n.friendsTitle),
           bottom: TabBar(
             isScrollable: true,
             tabs: [
-              const Tab(text: 'Buscar'),
-              const Tab(text: 'Amigos'),
+              Tab(text: l10n.friendsSearchTab),
+              Tab(text: l10n.friendsFriendsTab),
               _CountTab(
-                label: 'Enviadas',
+                label: l10n.friendsSentTab,
                 stream: _service.watchOutgoingRequests(),
               ),
               _CountTab(
-                label: 'Recibidas',
+                label: l10n.friendsReceivedTab,
                 stream: _service.watchIncomingRequests(),
               ),
             ],
@@ -269,10 +272,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
           children: [
             TabBarView(
               children: [
-                _buildSearchTab(),
-                _buildFriendsTab(),
-                _buildOutgoingTab(),
-                _buildIncomingTab(),
+                _buildSearchTab(l10n),
+                _buildFriendsTab(l10n),
+                _buildOutgoingTab(l10n),
+                _buildIncomingTab(l10n),
               ],
             ),
             if (_actionLoading)
@@ -286,7 +289,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildSearchTab() {
+  Widget _buildSearchTab(AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -296,10 +299,10 @@ class _FriendsScreenState extends State<FriendsScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.friendsUsernameLabel,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => _search(),
               ),
@@ -313,7 +316,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Buscar'),
+                  : Text(l10n.friendsSearchTab),
             ),
           ],
         ),
@@ -327,9 +330,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
         if (_hasSearched) ...[
           const SizedBox(height: 18),
           if (_searchResults.isEmpty)
-            const _EmptyCard(
+            _EmptyCard(
               icon: Icons.person_search,
-              text: 'No se encontraron jugadores con ese username.',
+              text: l10n.friendsNoPlayersFound,
             )
           else
             ..._searchResults.map((doc) {
@@ -370,32 +373,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildFriendsTab() {
+  Widget _buildFriendsTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _service.watchFriends(),
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
             child: Text(
-              'Error cargando amigos:\n${snap.error}',
+              l10n.friendsErrorLoadingFriends(snap.error.toString()),
               textAlign: TextAlign.center,
             ),
           );
         }
 
         if (!snap.hasData) {
-          return const Center(
-            child: _LoadingCard(text: 'Cargando amigos...'),
+          return Center(
+            child: _LoadingCard(text: l10n.friendsLoadingFriends),
           );
         }
 
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return const Center(
+          return Center(
             child: _EmptyCard(
               icon: Icons.group_outlined,
-              text: 'Todavía no tienes amigos agregados.',
+              text: l10n.friendsNoFriendsYet,
             ),
           );
         }
@@ -421,7 +424,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 return _UserTile(
                   player: data,
                   title: displayName,
-                  subtitle: online ? statusText : _offlineLabel(presence),
+                  subtitle: online ? statusText : _offlineLabel(l10n, presence),
                   statusColor: online
                       ? (statusText == 'In match'
                           ? Colors.orangeAccent
@@ -441,7 +444,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                       online ? Icons.flash_on : Icons.schedule,
                       size: 18,
                     ),
-                    label: Text(online ? 'Retar' : 'Async only'),
+                    label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
                   ),
                 );
               },
@@ -452,32 +455,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildOutgoingTab() {
+  Widget _buildOutgoingTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _service.watchOutgoingRequests(),
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
             child: Text(
-              'Error cargando solicitudes enviadas:\n${snap.error}',
+              l10n.friendsErrorLoadingSent(snap.error.toString()),
               textAlign: TextAlign.center,
             ),
           );
         }
 
         if (!snap.hasData) {
-          return const Center(
-            child: _LoadingCard(text: 'Cargando solicitudes enviadas...'),
+          return Center(
+            child: _LoadingCard(text: l10n.friendsLoadingSent),
           );
         }
 
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return const Center(
+          return Center(
             child: _EmptyCard(
               icon: Icons.outbox_outlined,
-              text: 'No tienes solicitudes pendientes por responder.',
+              text: l10n.friendsNoSentRequests,
             ),
           );
         }
@@ -501,11 +504,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
             return _UserTile(
               player: targetPlayer,
               title: targetName,
-              subtitle: 'Pendiente',
+              subtitle: l10n.friendsPending,
               statusColor: Colors.orange,
-              trailing: const FilledButton(
+              trailing: FilledButton(
                 onPressed: null,
-                child: Text('Enviado'),
+                child: Text(l10n.friendsSentStatus),
               ),
             );
           }).toList(),
@@ -514,32 +517,32 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  Widget _buildIncomingTab() {
+  Widget _buildIncomingTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _service.watchIncomingRequests(),
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
             child: Text(
-              'Error cargando solicitudes:\n${snap.error}',
+              l10n.friendsErrorLoadingReceived(snap.error.toString()),
               textAlign: TextAlign.center,
             ),
           );
         }
 
         if (!snap.hasData) {
-          return const Center(
-            child: _LoadingCard(text: 'Cargando solicitudes...'),
+          return Center(
+            child: _LoadingCard(text: l10n.friendsLoadingReceived),
           );
         }
 
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return const Center(
+          return Center(
             child: _EmptyCard(
               icon: Icons.inbox_outlined,
-              text: 'No tienes solicitudes pendientes.',
+              text: l10n.friendsNoReceivedRequests,
             ),
           );
         }
@@ -564,13 +567,13 @@ class _FriendsScreenState extends State<FriendsScreen> {
             return _UserTile(
               player: requesterPlayer,
               title: name,
-              subtitle: 'Quiere agregarte',
+              subtitle: l10n.friendsWantsToAddYou,
               statusColor: Colors.orange,
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    tooltip: 'Rechazar',
+                    tooltip: l10n.friendsReject,
                     onPressed: _actionLoading
                         ? null
                         : () => _runAction(
@@ -581,7 +584,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     icon: const Icon(Icons.close),
                   ),
                   IconButton(
-                    tooltip: 'Aceptar',
+                    tooltip: l10n.friendsAccept,
                     onPressed: _actionLoading
                         ? null
                         : () => _runAction(
@@ -661,6 +664,8 @@ class _SearchResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     switch (status) {
       case _RelationStatus.friend:
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -678,7 +683,7 @@ class _SearchResultTile extends StatelessWidget {
             return _UserTile(
               player: player,
               title: username,
-              subtitle: 'Ya es tu amigo',
+              subtitle: l10n.friendsAlreadyFriend,
               statusColor: Colors.greenAccent,
               trailing: FilledButton.icon(
                 onPressed: actionLoading ? null : () => onChallenge(online),
@@ -686,7 +691,7 @@ class _SearchResultTile extends StatelessWidget {
                   online ? Icons.flash_on : Icons.schedule,
                   size: 18,
                 ),
-                label: Text(online ? 'Retar' : 'Async only'),
+                label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
               ),
             );
           },
@@ -696,11 +701,11 @@ class _SearchResultTile extends StatelessWidget {
         return _UserTile(
           player: player,
           title: username,
-          subtitle: 'Solicitud enviada',
+          subtitle: l10n.friendsRequestSent,
           statusColor: Colors.orange,
-          trailing: const FilledButton(
+          trailing: FilledButton(
             onPressed: null,
-            child: Text('Enviado'),
+            child: Text(l10n.friendsSentStatus),
           ),
         );
 
@@ -708,18 +713,18 @@ class _SearchResultTile extends StatelessWidget {
         return _UserTile(
           player: player,
           title: username,
-          subtitle: 'Te quiere agregar',
+          subtitle: l10n.friendsWantsToAddYouTile,
           statusColor: Colors.orange,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                tooltip: 'Rechazar',
+                tooltip: l10n.friendsReject,
                 onPressed: actionLoading ? null : onReject,
                 icon: const Icon(Icons.close),
               ),
               IconButton(
-                tooltip: 'Aceptar',
+                tooltip: l10n.friendsAccept,
                 onPressed: actionLoading ? null : onAccept,
                 icon: const Icon(Icons.check),
               ),
@@ -731,12 +736,12 @@ class _SearchResultTile extends StatelessWidget {
         return _UserTile(
           player: player,
           title: username,
-          subtitle: 'Jugador encontrado',
+          subtitle: l10n.friendsPlayerFound,
           statusColor: Colors.grey,
           trailing: FilledButton.tonalIcon(
             onPressed: actionLoading ? null : onAdd,
             icon: const Icon(Icons.person_add),
-            label: const Text('Agregar'),
+            label: Text(l10n.friendsAddButton),
           ),
         );
     }

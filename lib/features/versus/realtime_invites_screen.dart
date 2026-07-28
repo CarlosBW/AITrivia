@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/realtime_invite_service.dart';
 import 'match_lobby_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class RealtimeInvitesScreen extends StatefulWidget {
   const RealtimeInvitesScreen({super.key});
@@ -27,7 +28,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite declined')),
+        SnackBar(content: Text(AppLocalizations.of(context).realtimeInvitesDeclined)),
       );
     } catch (e) {
       if (!mounted) return;
@@ -85,9 +86,11 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Realtime Invites'),
+        title: Text(l10n.pvpRealtimeInvitesTitle),
       ),
       body: Stack(
         children: [
@@ -99,7 +102,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Error loading invites:\n${snap.error}',
+                      l10n.realtimeInvitesErrorLoading(snap.error.toString()),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -157,7 +160,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  '$fromName invited you',
+                                  l10n.realtimeInvitesInvitedYou(fromName),
                                   style: const TextStyle(
                                     fontSize: 17,
                                     fontWeight: FontWeight.bold,
@@ -168,7 +171,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Realtime 1 vs 1 • Category: $categoryId',
+                            l10n.realtimeInvitesSubtitle(categoryId),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
@@ -186,7 +189,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                                   icon: const Icon(
                                     Icons.close,
                                   ),
-                                  label: const Text('Decline'),
+                                  label: Text(l10n.realtimeInvitesDecline),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -200,7 +203,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                                   icon: const Icon(
                                     Icons.check,
                                   ),
-                                  label: const Text('Accept'),
+                                  label: Text(l10n.realtimeInvitesAccept),
                                 ),
                               ),
                             ],
@@ -231,18 +234,18 @@ class _EmptyInvites extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bolt_outlined, size: 48),
-            SizedBox(height: 12),
+            const Icon(Icons.bolt_outlined, size: 48),
+            const SizedBox(height: 12),
             Text(
-              'No realtime invites right now.',
+              AppLocalizations.of(context).realtimeInvitesEmpty,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),
             ),

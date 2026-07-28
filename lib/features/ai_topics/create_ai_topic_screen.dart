@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class CreateAiTopicScreen extends StatefulWidget {
   const CreateAiTopicScreen({super.key});
@@ -25,8 +26,8 @@ class _CreateAiTopicScreenState
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter a topic'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).createAiTopicEnterTopic),
         ),
       );
       return;
@@ -42,8 +43,8 @@ class _CreateAiTopicScreenState
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('AI topic created'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).createAiTopicCreated),
         ),
       );
 
@@ -73,9 +74,11 @@ class _CreateAiTopicScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create AI Topic'),
+        title: Text(l10n.aiTopicsEmptyButton),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -83,7 +86,7 @@ class _CreateAiTopicScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Create your own trivia category',
+              l10n.createAiTopicSubtitle,
               style: GoogleFonts.baloo2(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -92,22 +95,16 @@ class _CreateAiTopicScreenState
 
             const SizedBox(height: 10),
 
-            const Text(
-              'Examples:',
-              style: TextStyle(
+            Text(
+              l10n.createAiTopicExamplesLabel,
+              style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),
             ),
 
             const SizedBox(height: 6),
 
-            const Text(
-              '• Formula 1\n'
-              '• Harry Potter\n'
-              '• Marvel Movies\n'
-              '• Ancient Egypt\n'
-              '• Space Exploration',
-            ),
+            Text(l10n.createAiTopicExamplesList),
 
             const SizedBox(height: 24),
 
@@ -116,10 +113,10 @@ class _CreateAiTopicScreenState
               maxLength: 60,
               textCapitalization:
                   TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Topic',
-                hintText: 'Example: Formula 1',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.createAiTopicFieldLabel,
+                hintText: l10n.createAiTopicFieldHint,
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -146,8 +143,8 @@ class _CreateAiTopicScreenState
                     : const Icon(Icons.auto_awesome),
                 label: Text(
                   _loading
-                      ? 'Creating...'
-                      : 'Create Topic',
+                      ? l10n.createAiTopicCreatingButton
+                      : l10n.aiTopicsCreateTopic,
                 ),
               ),
             ),
@@ -170,6 +167,7 @@ class _PricingCard extends StatelessWidget {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: userRef.snapshots(),
       builder: (context, snap) {
+        final l10n = AppLocalizations.of(context);
         final data = snap.data?.data() ?? {};
         final coins = ((data['coins'] ?? 0) as num).toInt();
         final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
@@ -192,14 +190,14 @@ class _PricingCard extends StatelessWidget {
               const Icon(Icons.auto_awesome),
               const SizedBox(height: 10),
               Text(
-                'Tienes $coins monedas',
+                l10n.createAiTopicYouHaveCoins(coins),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Text(
                 hasFreePass
-                    ? '🎉 Tu primer tema es gratis'
-                    : 'Este tema cuesta $cost monedas',
+                    ? l10n.createAiTopicFirstFree
+                    : l10n.createAiTopicCosts(cost),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: accentColor,
@@ -209,14 +207,13 @@ class _PricingCard extends StatelessWidget {
               if (!hasFreePass && !canAfford) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Te faltan ${cost - coins} monedas',
+                  l10n.createAiTopicMissingCoins(cost - coins),
                   style: TextStyle(color: accentColor, fontSize: 12),
                 ),
               ],
               const SizedBox(height: 10),
               Text(
-                'Incluye 10 niveles con 10 preguntas cada uno, '
-                'preparados de a poco mientras juegas.',
+                l10n.createAiTopicIncludesHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

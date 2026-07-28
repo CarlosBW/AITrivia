@@ -7,6 +7,7 @@ import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/pvp_league_service.dart';
 import 'match_lobby_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
   final String categoryId;
@@ -90,10 +91,13 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   }
 
   Widget _rankedSearchWindowCard(Map<String, dynamic>? data) {
+    final l10n = AppLocalizations.of(context);
     final rating = ((data?['pvpRating'] ?? PvpLeagueService.defaultRating) as num).toInt();
     final league = PvpLeagueService.instance.leagueForRating(rating);
     final seconds = _searchAgeSeconds(data);
-    final window = PvpLeagueService.instance.windowForSearchSeconds(seconds);
+    final windowLabel = PvpLeagueService.instance.matchmakingLabelFor(l10n, seconds);
+    final windowDescription =
+        PvpLeagueService.instance.matchmakingDescriptionFor(l10n, seconds);
 
     return Container(
       width: double.infinity,
@@ -116,12 +120,12 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            window.label,
+            windowLabel,
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
-            window.description,
+            windowDescription,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -167,7 +171,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
         if (!mounted) return;
         setState(() {
-          _error = 'No se encontró rival por ahora. Intenta nuevamente.';
+          _error = AppLocalizations.of(context).liveMatchmakingNoOpponentFound;
         });
       });
     } catch (e) {
@@ -262,11 +266,16 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final queueStream = _service.watchMyLiveQueue();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.ranked ? 'Ranked Matchmaking' : 'Casual Matchmaking'),
+        title: Text(
+          widget.ranked
+              ? l10n.liveMatchmakingRankedTitle
+              : l10n.liveMatchmakingCasualTitle,
+        ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: queueStream,
@@ -287,11 +296,13 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Tipo: ${widget.ranked ? 'Ranked' : 'Casual'}'),
-                Text('Categoría: ${widget.categoryId}'),
-                Text('Dificultad: ${widget.difficulty}'),
-                Text('Preguntas: ${widget.totalQuestions}'),
-                Text('Tiempo/Pregunta: ${widget.timePerQuestionSec}s'),
+                Text(l10n.liveMatchmakingTypeLine(
+                  widget.ranked ? l10n.profileRanked : l10n.profileCasual,
+                )),
+                Text(l10n.liveMatchmakingCategoryLine(widget.categoryId)),
+                Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
+                Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
+                Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),
                 const SizedBox(height: 16),
                 if (widget.ranked) ...[
                   _rankedSearchWindowCard(data),
@@ -315,7 +326,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Buscar'),
+                          : Text(l10n.liveMatchmakingSearchButton),
                     ),
                   ),
                 ] else ...[
@@ -330,10 +341,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                       Expanded(
                         child: Text(
                           status.isEmpty
-                              ? 'Buscando...'
+                              ? l10n.liveMatchmakingSearching
                               : status == 'searching'
-                                  ? 'Buscando rival...'
-                                  : 'Estado cola: $status',
+                                  ? l10n.liveMatchmakingSearchingOpponent
+                                  : l10n.liveMatchmakingQueueStatus(status),
                         ),
                       ),
                     ],
@@ -341,8 +352,8 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                   const SizedBox(height: 8),
                   Text(
                     widget.ranked
-                        ? 'Primero busca rivales cercanos a tu MMR; si tarda, amplía el rango automáticamente.'
-                        : 'Casual no afecta tu MMR. Se prioriza encontrar rival rápido.',
+                        ? l10n.liveMatchmakingRankedHint
+                        : l10n.liveMatchmakingCasualHint,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -352,7 +363,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                     width: double.infinity,
                     child: OutlinedButton(
                       onPressed: () => _cancel(),
-                      child: const Text('Cancelar búsqueda'),
+                      child: Text(l10n.liveMatchmakingCancelSearch),
                     ),
                   ),
                 ],

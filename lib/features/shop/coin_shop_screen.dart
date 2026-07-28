@@ -4,6 +4,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/economy_service.dart';
 import '../../services/purchase_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 /// Coin pack storefront. Until the packs are configured in the Google Play
@@ -50,12 +51,14 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
 
     setState(() => _purchasingProductId = null);
 
+    final l10n = AppLocalizations.of(context);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           result.success
-              ? '+${result.grantedCoins} monedas'
-              : result.message ?? 'La compra no se completó.',
+              ? l10n.coinShopPurchaseSuccess(result.grantedCoins)
+              : result.message ?? l10n.coinShopPurchaseFailed,
         ),
       ),
     );
@@ -81,7 +84,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Comprar monedas')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).coinShopTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _storeAvailable
@@ -91,6 +94,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   }
 
   Widget _buildComingSoon(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -106,7 +110,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Próximamente',
+              l10n.coinShopComingSoonTitle,
               style: GoogleFonts.baloo2(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -115,8 +119,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'La compra de monedas todavía no está disponible en esta '
-              'versión.',
+              l10n.coinShopComingSoonBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
@@ -127,6 +130,8 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   }
 
   Widget _buildShop(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: EconomyService.coinPacks.length,
@@ -162,7 +167,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${pack.coins} monedas',
+                      l10n.coinShopCoinsAmount(pack.coins),
                       style: GoogleFonts.baloo2(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -186,7 +191,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Comprar'),
+                    : Text(l10n.coinShopBuyButton),
               ),
             ],
           ),

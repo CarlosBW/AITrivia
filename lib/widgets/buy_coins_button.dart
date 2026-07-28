@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/shop/coin_shop_screen.dart';
 import '../theme/app_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 
 /// Eye-catching entry point into the coin shop — purple gradient (matching
 /// the app's other hero CTAs) with an amber coin accent, reused on Home and
@@ -48,10 +49,10 @@ class BuyCoinsButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Comprar monedas',
-                  style: TextStyle(
+                  AppLocalizations.of(context).buyCoinsButtonLabel,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

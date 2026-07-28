@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/locale_controller.dart';
 
 String _todayDateId([DateTime? now]) {
   final d = now ?? DateTime.now();
@@ -78,6 +79,8 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'lastLifeTickAt': FieldValue.serverTimestamp(),
 
       'hasSeenOnboarding': false,
+
+      'languageCode': LocaleController.instance.locale.value.languageCode,
 
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -158,6 +161,9 @@ Future<bool> bootstrapUserDoc(String uid) async {
       'lastLifeTickAt': data['lastLifeTickAt'] ?? FieldValue.serverTimestamp(),
 
       'hasSeenOnboarding': hasSeenOnboarding,
+
+      'languageCode': data['languageCode'] ??
+          LocaleController.instance.locale.value.languageCode,
 
       'updatedAt': FieldValue.serverTimestamp(),
     },

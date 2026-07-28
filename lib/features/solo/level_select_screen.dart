@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class LevelSelectScreen extends StatefulWidget {
@@ -165,14 +166,16 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❤️ Vida recuperada')),
+          SnackBar(content: Text(l10n.soloLifeRecovered)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ No tienes suficientes monedas'),
+          SnackBar(
+            content: Text(l10n.soloNotEnoughCoins),
           ),
         );
       }
@@ -299,6 +302,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -314,19 +318,19 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               onRetry: () => _loadScreenData(),
             )
           else
-            _buildContent(context: context, uid: uid),
+            _buildContent(context: context, uid: uid, l10n: l10n),
           if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withValues(alpha: 0.4),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
                     Text(
-                      'Cargando...',
-                      style: TextStyle(color: Colors.white),
+                      l10n.commonLoading,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -340,6 +344,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   Widget _buildContent({
     required BuildContext context,
     required String uid,
+    required AppLocalizations l10n,
   }) {
     final levelCount = ((_categoryData['levelCount'] ?? 10) as num).toInt();
 
@@ -398,14 +403,14 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
-        children: const [
-          SizedBox(height: 120),
-          Icon(Icons.info_outline, size: 42),
-          SizedBox(height: 12),
+        children: [
+          const SizedBox(height: 120),
+          const Icon(Icons.info_outline, size: 42),
+          const SizedBox(height: 12),
           Text(
-            'Esta categoría aún no tiene niveles disponibles.',
+            l10n.levelSelectNoLevelsYet,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 16),
           ),
         ],
       );
@@ -416,7 +421,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Selecciona un nivel',
+          l10n.levelSelectChooseLevel,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 10),
@@ -433,11 +438,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               Text(
                 completedAll
                     ? widget.isAiTopic
-                        ? 'Tema IA aprobado'
-                        : 'Categoría aprobada'
+                        ? l10n.levelSelectAiTopicApproved
+                        : l10n.levelSelectCategoryApproved
                     : widget.isAiTopic
-                        ? 'Tu progreso aprobado en este tema IA'
-                        : 'Tu progreso aprobado en esta categoría',
+                        ? l10n.levelSelectAiTopicProgressApproved
+                        : l10n.levelSelectCategoryProgressApproved,
                 style: GoogleFonts.baloo2(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -445,7 +450,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Aprobados: $completedCount / $levelCount',
+                l10n.levelSelectApprovedCount(completedCount, levelCount),
                 style: const TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 10),
@@ -472,8 +477,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                   ),
                   label: Text(
                     completedAll
-                        ? 'Jugar último nivel'
-                        : 'Continuar en nivel $recommendedLevel',
+                        ? l10n.levelSelectPlayLastLevel
+                        : l10n.levelSelectContinueAtLevel(recommendedLevel),
                   ),
                 ),
               ),
@@ -510,17 +515,17 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             if (isCompleted) {
               tileColor = AppColors.success.withValues(alpha: 0.15);
               icon = Icons.check_circle_outline;
-              subtitle = 'Completado';
+              subtitle = l10n.soloStatusCompleted;
             } else if (isUnlocked) {
               tileColor = isPlayed
                   ? AppColors.reward.withValues(alpha: 0.12)
                   : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
               icon = isPlayed ? Icons.refresh : Icons.play_circle_outline;
-              subtitle = isPlayed ? 'Reintentar' : 'Disponible';
+              subtitle = isPlayed ? l10n.commonRetry : l10n.levelSelectAvailable;
             } else {
               tileColor = Theme.of(context).colorScheme.surfaceContainerHighest;
               icon = Icons.lock_outline;
-              subtitle = 'Bloqueado';
+              subtitle = l10n.levelSelectLocked;
             }
 
             final showRecommended = level == recommendedLevel && !completedAll;
@@ -564,7 +569,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                       Icon(icon, size: 32),
                       const SizedBox(height: 8),
                       Text(
-                        'Nivel $level',
+                        l10n.levelSelectLevelNumber(level),
                         style: GoogleFonts.baloo2(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -590,9 +595,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                             color: Colors.blue.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text(
-                            'Siguiente',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.levelSelectNextBadge,
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.blue,
@@ -641,6 +646,8 @@ class _LoadErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -650,7 +657,7 @@ class _LoadErrorView extends StatelessWidget {
             const Icon(Icons.error_outline, size: 44),
             const SizedBox(height: 12),
             Text(
-              'No se pudo cargar la categoría.',
+              l10n.levelSelectLoadFailedTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.baloo2(
                 fontSize: 18,
@@ -667,7 +674,7 @@ class _LoadErrorView extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+              label: Text(l10n.commonRetry),
             ),
           ],
         ),

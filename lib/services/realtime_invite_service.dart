@@ -3,7 +3,10 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'locale_controller.dart';
 import 'notification_service.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 class RealtimeInviteService {
   RealtimeInviteService._();
@@ -16,6 +19,11 @@ class RealtimeInviteService {
   final Random _random = Random();
 
   String get uid => _auth.currentUser!.uid;
+
+  // Resolved from the acting user's own device locale — correct for
+  // exceptions, since they always surface back to whoever called this.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   CollectionReference<Map<String, dynamic>> get _invitesCol {
     return _db.collection('realtime_invites');
@@ -90,11 +98,11 @@ class RealtimeInviteService {
     int winReward = 2,
   }) async {
     if (toUid.trim().isEmpty) {
-      throw Exception('Usuario inválido.');
+      throw Exception(_l10n.serviceInvalidUser);
     }
 
     if (toUid == uid) {
-      throw Exception('No puedes retarte a ti mismo.');
+      throw Exception(_l10n.serviceCannotChallengeSelfPeriod);
     }
 
     final existingInviteId = await _findExistingPendingInvite(
@@ -147,12 +155,14 @@ class RealtimeInviteService {
       timePerQuestionSec: timePerQuestionSec,
     );
 
+    final recipientL10n = await _notificationService.l10nForRecipient(toUid);
+
     await _notificationService.createOrBumpNotificationById(
       targetUid: toUid,
       notificationId: notificationId,
       type: 'realtime_invite',
-      title: 'Realtime challenge',
-      body: '$fromName invited you to a realtime 1 vs 1 match.',
+      title: recipientL10n.serviceRealtimeChallengeTitle,
+      body: recipientL10n.serviceRealtimeChallengeBody(fromName),
       data: {
         'inviteId': inviteId,
         'fromUid': uid,
@@ -178,7 +188,7 @@ class RealtimeInviteService {
     final invite = inviteSnap.data();
 
     if (invite == null) {
-      throw Exception('La invitación ya no existe.');
+      throw Exception(_l10n.serviceInviteNotFound);
     }
 
     final fromUid = (invite['fromUid'] ?? '').toString();
@@ -188,11 +198,11 @@ class RealtimeInviteService {
     final status = (invite['status'] ?? '').toString();
 
     if (toUid != uid) {
-      throw Exception('No puedes aceptar esta invitación.');
+      throw Exception(_l10n.serviceCannotAcceptInvite);
     }
 
     if (status != 'pending') {
-      throw Exception('Esta invitación ya no está disponible.');
+      throw Exception(_l10n.serviceInviteNoLongerAvailable);
     }
 
     final categoryId = (invite['categoryId'] ?? 'random').toString();
@@ -211,7 +221,7 @@ class RealtimeInviteService {
     );
 
     if (questions.isEmpty) {
-      throw Exception('No hay preguntas disponibles para esta categoría.');
+      throw Exception(_l10n.serviceNoQuestionsForCategory);
     }
 
     final now = FieldValue.serverTimestamp();
@@ -267,11 +277,14 @@ class RealtimeInviteService {
       'updatedAt': now,
     });
 
+    final fromRecipientL10n =
+        await _notificationService.l10nForRecipient(fromUid);
+
     await _notificationService.createNotification(
       targetUid: fromUid,
       type: 'realtime_invite_accepted',
-      title: 'Realtime invite accepted',
-      body: '$toName accepted your realtime challenge.',
+      title: fromRecipientL10n.serviceRealtimeInviteAcceptedTitle,
+      body: fromRecipientL10n.serviceRealtimeInviteAcceptedBody(toName),
       data: {
         'inviteId': inviteId,
         'matchId': matchRef.id,
@@ -292,7 +305,7 @@ class RealtimeInviteService {
     final ids = snap.docs.map((d) => d.id).toList();
 
     if (ids.isEmpty) {
-      throw Exception('No hay categorías activas disponibles.');
+      throw Exception(_l10n.serviceNoActiveCategoriesAvailable);
     }
 
     ids.shuffle(_random);

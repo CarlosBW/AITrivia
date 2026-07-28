@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 enum PvpResultState {
@@ -97,14 +98,14 @@ class PvpResultCard extends StatelessWidget {
     }
   }
 
-  String get _scoreDifferenceText {
+  String _scoreDifferenceText(AppLocalizations l10n) {
     if (opponentScore == null) return '';
 
     final diff = myScore - opponentScore!;
 
-    if (diff == 0) return 'Empate perfecto';
-    if (diff > 0) return 'Ganaste por +$diff puntos';
-    return 'Perdiste por ${diff.abs()} puntos';
+    if (diff == 0) return l10n.pvpResultPerfectDraw;
+    if (diff > 0) return l10n.pvpResultWonByPoints(diff);
+    return l10n.pvpResultLostByPoints(diff.abs());
   }
 
   int get _accuracy {
@@ -120,10 +121,12 @@ class PvpResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final resultColor = _colorFor(context);
     final hasOpponentScore = opponentScore != null;
     final hasRatingChange =
         oldRating != null && newRating != null && ratingDelta != null;
+    final scoreDifferenceText = _scoreDifferenceText(l10n);
 
     return Center(
       child: SingleChildScrollView(
@@ -174,7 +177,7 @@ class PvpResultCard extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            if (_scoreDifferenceText.isNotEmpty) ...[
+            if (scoreDifferenceText.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -189,7 +192,7 @@ class PvpResultCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  _scoreDifferenceText,
+                  scoreDifferenceText,
                   style: TextStyle(
                     color: resultColor,
                     fontWeight: FontWeight.bold,
@@ -208,7 +211,7 @@ class PvpResultCard extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Resultado final',
+                    l10n.pvpResultFinalResult,
                     style: GoogleFonts.baloo2(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
@@ -237,7 +240,7 @@ class PvpResultCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          'VS',
+                          l10n.pvpResultVs,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -271,7 +274,7 @@ class PvpResultCard extends StatelessWidget {
                           Expanded(
                             child: _RewardMiniCard(
                               icon: Icons.auto_awesome_outlined,
-                              label: 'XP',
+                              label: l10n.homeXp,
                               value: '+$xpEarned',
                             ),
                           ),
@@ -281,7 +284,7 @@ class PvpResultCard extends StatelessWidget {
                           Expanded(
                             child: _RewardMiniCard(
                               icon: Icons.monetization_on_outlined,
-                              label: 'Monedas',
+                              label: l10n.homeCoins,
                               value: '+$coinsEarned',
                             ),
                           ),
@@ -403,6 +406,8 @@ class _MatchSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -417,7 +422,7 @@ class _MatchSummaryCard extends StatelessWidget {
               const Icon(Icons.analytics_outlined, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Resumen del match',
+                l10n.pvpResultMatchSummary,
                 style: GoogleFonts.baloo2(
                   fontWeight: FontWeight.w800,
                 ),
@@ -429,19 +434,19 @@ class _MatchSummaryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _SummaryItem(
-                  label: 'Tu score',
+                  label: l10n.pvpResultYourScore,
                   value: '$myScore',
                 ),
               ),
               Expanded(
                 child: _SummaryItem(
-                  label: 'Rival',
+                  label: l10n.pvpResultOpponent,
                   value: opponentScore == null ? '—' : '$opponentScore',
                 ),
               ),
               Expanded(
                 child: _SummaryItem(
-                  label: 'Rendimiento',
+                  label: l10n.pvpResultPerformance,
                   value: '$accuracy%',
                 ),
               ),
@@ -549,6 +554,7 @@ class _RatingChangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final positive = ratingDelta > 0;
     final neutral = ratingDelta == 0;
 
@@ -586,7 +592,7 @@ class _RatingChangeCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Ranked MMR',
+                  l10n.profileRankedMmr,
                   style: GoogleFonts.baloo2(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
@@ -608,7 +614,7 @@ class _RatingChangeCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _MmrBox(
-                  label: 'Antes',
+                  label: l10n.pvpResultBefore,
                   value: oldRating,
                 ),
               ),
@@ -618,7 +624,7 @@ class _RatingChangeCard extends StatelessWidget {
               ),
               Expanded(
                 child: _MmrBox(
-                  label: 'Ahora',
+                  label: l10n.pvpResultNow,
                   value: newRating,
                   highlight: true,
                 ),
@@ -641,7 +647,7 @@ class _RatingChangeCard extends StatelessWidget {
           if (winStreak != null && winStreak! > 1) ...[
             const SizedBox(height: 8),
             Text(
-              '🔥 Racha actual: $winStreak victorias',
+              l10n.pvpResultCurrentStreak(winStreak!),
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),

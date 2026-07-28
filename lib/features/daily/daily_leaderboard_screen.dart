@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class DailyLeaderboardScreen extends StatelessWidget {
   const DailyLeaderboardScreen({super.key});
@@ -23,6 +24,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final dateId = DailyChallengeService.instance.todayDateId();
+    final l10n = AppLocalizations.of(context);
 
     final leaderboardQuery = FirebaseFirestore.instance
         .collection('daily_leaderboards')
@@ -33,7 +35,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Leaderboard'),
+        title: Text(l10n.dailyLeaderboardTitle),
       ),
       body: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
         future: leaderboardQuery.get(),
@@ -41,7 +43,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
           if (snap.hasError) {
             return Center(
               child: Text(
-                'Error loading leaderboard:\n${snap.error}',
+                l10n.dailyLeaderboardErrorLoading(snap.error.toString()),
                 textAlign: TextAlign.center,
               ),
             );
@@ -52,9 +54,9 @@ class DailyLeaderboardScreen extends StatelessWidget {
           }
 
           if (!snap.hasData) {
-            return const Center(
+            return Center(
               child: Text(
-                'No leaderboard data available.',
+                l10n.dailyLeaderboardNoData,
                 textAlign: TextAlign.center,
               ),
             );
@@ -63,9 +65,9 @@ class DailyLeaderboardScreen extends StatelessWidget {
           final docs = snap.data!.docs;
 
           if (docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'No scores yet today.\nPlay the Daily Challenge first!',
+                l10n.dailyLeaderboardNoScoresYet,
                 textAlign: TextAlign.center,
               ),
             );
@@ -84,7 +86,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
                 ),
               const SizedBox(height: 16),
               Text(
-                'Ranking',
+                l10n.dailyLeaderboardRankingTitle,
                 style: GoogleFonts.baloo2(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -271,7 +273,7 @@ class _PodiumPlayer extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            '$score pts',
+            AppLocalizations.of(context).dailyLeaderboardPtsSuffix(score),
             style: TextStyle(
               fontWeight: FontWeight.w700,
               color: Theme.of(context).colorScheme.primary,
@@ -323,6 +325,7 @@ class _LeaderboardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rankColor = _rankColor();
 
     return Container(
@@ -362,7 +365,7 @@ class _LeaderboardTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$displayName${isMe ? '  (You)' : ''}',
+                  isMe ? l10n.dailyLeaderboardNameWithYou(displayName) : displayName,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -371,7 +374,7 @@ class _LeaderboardTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${league.emoji} ${league.name} League',
+                  '${league.emoji} ${l10n.liveMenuLeagueTitle(league.name)}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -380,7 +383,7 @@ class _LeaderboardTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Correct: $correct / $totalAnswered  •  Streak: $streak',
+                  l10n.dailyLeaderboardCorrectStreakLine(correct, totalAnswered, streak),
                   style: const TextStyle(fontSize: 13),
                 ),
               ],
@@ -390,9 +393,9 @@ class _LeaderboardTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
-                'Score',
-                style: TextStyle(fontSize: 12),
+              Text(
+                l10n.dailyLeaderboardScoreLabel,
+                style: const TextStyle(fontSize: 12),
               ),
               Text(
                 '$score',

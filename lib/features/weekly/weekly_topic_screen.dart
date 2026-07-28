@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
 import '../solo/level_select_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class WeeklyTopicScreen extends StatefulWidget {
@@ -38,12 +39,14 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             claimed
-                ? '+$rewardCoins coins claimed!'
-                : 'Reward already claimed or not available yet.',
+                ? l10n.weeklyTopicCoinsClaimed(rewardCoins)
+                : l10n.weeklyTopicRewardUnavailable,
           ),
         ),
       );
@@ -72,8 +75,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
     if (rewardAvatarId.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No exclusive reward configured for this week.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).weeklyTopicNoExclusiveReward),
         ),
       );
       return;
@@ -92,12 +95,14 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             claimed
-                ? '${avatar.emoji} ${avatar.name} unlocked!'
-                : 'Reward already claimed or not available yet.',
+                ? l10n.weeklyTopicAvatarUnlocked(avatar.emoji, avatar.name)
+                : l10n.weeklyTopicRewardUnavailable,
           ),
         ),
       );
@@ -120,9 +125,11 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weekly Topic'),
+        title: Text(l10n.weeklyTopicScreenTitle),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: WeeklyTopicService.instance.watchCurrentTopic(),
@@ -138,8 +145,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
           final topicData = topicSnap.data!.data();
 
           if (topicData == null || topicData['active'] != true) {
-            return const Center(
-              child: Text('No Weekly Topic available.'),
+            return Center(
+              child: Text(l10n.homeWeeklyTopicNoneAvailable),
             );
           }
 
@@ -194,13 +201,13 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.star_border, color: AppColors.reward),
-                                SizedBox(width: 8),
+                                const Icon(Icons.star_border, color: AppColors.reward),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Weekly Featured Topic',
-                                  style: TextStyle(
+                                  l10n.weeklyTopicFeaturedBadge,
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -230,7 +237,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Progress',
+                              l10n.weeklyTopicProgressTitle,
                               style: GoogleFonts.baloo2(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
@@ -239,7 +246,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const SizedBox(height: 12),
                             LinearProgressIndicator(value: progress),
                             const SizedBox(height: 10),
-                            Text('$levelsCompleted / 10 levels completed'),
+                            Text(l10n.weeklyTopicLevelsCompleted(levelsCompleted)),
                           ],
                         ),
                       ),
@@ -254,14 +261,14 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Rewards',
+                              l10n.weeklyTopicRewardsTitle,
                               style: GoogleFonts.baloo2(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text('5 levels: +$rewardCoins coins'),
+                            Text(l10n.weeklyTopicFiveLevelReward(rewardCoins)),
                             const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
@@ -275,8 +282,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                 icon: const Icon(Icons.monetization_on_outlined),
                                 label: Text(
                                   coinRewardClaimed
-                                      ? 'Coin reward claimed'
-                                      : 'Claim 5-level reward',
+                                      ? l10n.weeklyTopicCoinRewardClaimed
+                                      : l10n.weeklyTopicClaim5LevelReward,
                                 ),
                               ),
                             ),
@@ -284,15 +291,15 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const Divider(),
                             const SizedBox(height: 8),
                             Text(
-                              '10 levels: ${rewardAvatar.emoji} ${rewardAvatar.name}',
+                              l10n.weeklyTopicTenLevelReward(rewardAvatar.emoji, rewardAvatar.name),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               completionRewardClaimed
-                                  ? 'Exclusive reward claimed.'
+                                  ? l10n.weeklyTopicExclusiveClaimed
                                   : levelsCompleted >= 10
-                                      ? 'Exclusive reward ready to claim.'
-                                      : 'Complete all 10 levels to unlock this reward.',
+                                      ? l10n.weeklyTopicExclusiveReady
+                                      : l10n.weeklyTopicExclusiveLocked,
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
@@ -311,8 +318,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                 icon: const Icon(Icons.card_giftcard_outlined),
                                 label: Text(
                                   completionRewardClaimed
-                                      ? 'Exclusive reward claimed'
-                                      : 'Claim 10-level reward',
+                                      ? l10n.weeklyTopicExclusiveClaimedButton
+                                      : l10n.weeklyTopicClaim10LevelReward,
                                 ),
                               ),
                             ),
@@ -327,9 +334,9 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
                           if (categoryId.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content:
-                                    Text('Weekly Topic category is missing.'),
+                                    Text(l10n.weeklyTopicCategoryMissing),
                               ),
                             );
                             return;
@@ -348,7 +355,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           );
                         },
                         icon: const Icon(Icons.play_arrow),
-                        label: const Text('Play Weekly Topic'),
+                        label: Text(l10n.weeklyTopicPlayButton),
                       ),
                     ],
                   ),

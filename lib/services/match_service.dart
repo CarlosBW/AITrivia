@@ -1,8 +1,11 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'locale_controller.dart';
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 class MatchService {
   final _db = FirebaseFirestore.instance;
@@ -10,6 +13,11 @@ class MatchService {
   final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
+
+  // Resolved from the acting user's own device locale — correct for
+  // exceptions, since they always surface back to whoever called this.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   // ============================================================
   // LIVE MATCHMAKING (buscar jugador en tiempo real)
@@ -66,7 +74,7 @@ class MatchService {
       final cooldownUntil = _activePvpCooldownUntil(userData);
       if (cooldownUntil != null) {
         throw Exception(
-          'Tienes cooldown de ranked por abandono. Intenta de nuevo en ${_formatCooldownRemaining(cooldownUntil)}.',
+          _l10n.serviceRankedCooldown(_formatCooldownRemaining(cooldownUntil)),
         );
       }
     }
@@ -590,7 +598,7 @@ class MatchService {
     String displayName = 'Host',
   }) async {
     if (topic.trim().isEmpty) {
-      throw Exception('Tema IA no puede estar vacío');
+      throw Exception(_l10n.serviceAiTopicEmpty);
     }
 
     final matchRef = _db.collection('matches').doc();
@@ -653,17 +661,19 @@ class MatchService {
 
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
-      if (!snap.exists) throw Exception('Sala no existe');
+      if (!snap.exists) throw Exception(_l10n.serviceRoomNotFound);
 
       final data = snap.data() as Map<String, dynamic>;
       final status = (data['status'] ?? 'waiting').toString();
-      if (status != 'waiting') throw Exception('La sala ya inició o terminó');
+      if (status != 'waiting') {
+        throw Exception(_l10n.serviceRoomAlreadyStartedOrEnded);
+      }
 
       final hostUid = data['hostUid'] as String?;
       final guestUid = data['guestUid'] as String?;
 
       if (hostUid == uid || guestUid == uid) return;
-      if (guestUid != null) throw Exception('Sala llena');
+      if (guestUid != null) throw Exception(_l10n.serviceRoomFull);
 
       tx.update(ref, {
         'guestUid': uid,
@@ -685,7 +695,7 @@ class MatchService {
 
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
-      if (!snap.exists) throw Exception('Sala no existe');
+      if (!snap.exists) throw Exception(_l10n.serviceRoomNotFound);
 
       final data = snap.data() as Map<String, dynamic>;
       final status = (data['status'] ?? 'waiting').toString();
@@ -693,7 +703,7 @@ class MatchService {
 
       final players = Map<String, dynamic>.from(data['players'] ?? {});
       if (!players.containsKey(uid)) {
-        throw Exception('No estás dentro de esta sala');
+        throw Exception(_l10n.serviceNotInRoom);
       }
 
       tx.update(ref, {'players.$uid.ready': ready});
@@ -755,7 +765,7 @@ class MatchService {
 
       final players = Map<String, dynamic>.from(data['players'] ?? {});
       if (!players.containsKey(uid)) {
-        throw Exception('No estás dentro de esta sala');
+        throw Exception(_l10n.serviceNotInRoom);
       }
 
       final me = Map<String, dynamic>.from(players[uid] ?? {});
@@ -811,7 +821,7 @@ class MatchService {
     final data = snap.data();
 
     if (data == null) {
-      throw Exception('Match no encontrado');
+      throw Exception(_l10n.serviceMatchNotFound);
     }
 
     final hostUid = (data['hostUid'] ?? '').toString();
@@ -841,11 +851,14 @@ class MatchService {
 
     if (!opponentAlreadyAccepted && opponentUid.isNotEmpty) {
       try {
+        final recipientL10n =
+            await _notificationService.l10nForRecipient(opponentUid);
+
         await _notificationService.createNotification(
           targetUid: opponentUid,
           type: 'rematch_request',
-          title: 'Rematch requested',
-          body: '$myName wants a rematch.',
+          title: recipientL10n.serviceRematchRequestedTitle,
+          body: recipientL10n.serviceRematchRequestedBody(myName),
           data: {
             'matchId': matchId,
           },
@@ -1029,8 +1042,12 @@ class MatchService {
     String challengerDisplayName = 'Player',
     String challengedDisplayName = 'Player',
   }) async {
-    if (challengedUid.trim().isEmpty) throw Exception('challengedUid vacío');
-    if (challengedUid == uid) throw Exception('No puedes retarte a ti mismo');
+    if (challengedUid.trim().isEmpty) {
+      throw Exception(_l10n.serviceChallengedUidEmpty);
+    }
+    if (challengedUid == uid) {
+      throw Exception(_l10n.serviceCannotChallengeSelfNoPeriod);
+    }
 
     final matchRef = _db.collection('async_matches').doc();
 
@@ -1082,11 +1099,16 @@ class MatchService {
     // =========================================================
 
     try {
+      final recipientL10n =
+          await _notificationService.l10nForRecipient(challengedUid);
+
       await _notificationService.createNotification(
         targetUid: challengedUid,
         type: 'match_invite',
-        title: 'New async challenge',
-        body: '$challengerDisplayName challenged you to a 1 vs 1 match.',
+        title: recipientL10n.serviceNewAsyncChallengeTitle,
+        body: recipientL10n.serviceNewAsyncChallengeBody(
+          challengerDisplayName,
+        ),
         data: {
           'matchId': matchRef.id,
           'challengerUid': uid,
@@ -1112,14 +1134,14 @@ class MatchService {
       final data = snap.data();
 
       if (data == null) {
-        throw Exception('Reto no encontrado');
+        throw Exception(_l10n.serviceChallengeNotFound);
       }
 
       final challengerUid = (data['challengerUid'] ?? '').toString();
       final challengedUid = (data['challengedUid'] ?? '').toString();
 
       if (uid != challengerUid && uid != challengedUid) {
-        throw Exception('No perteneces a este reto');
+        throw Exception(_l10n.serviceNotYourChallenge);
       }
 
       final status = (data['status'] ?? '').toString();
@@ -1158,13 +1180,13 @@ class MatchService {
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data();
-      if (data == null) throw Exception('Async match no existe');
+      if (data == null) throw Exception(_l10n.serviceAsyncMatchNotFound);
 
       final challengerUid = (data['challengerUid'] ?? '').toString();
       final challengedUid = (data['challengedUid'] ?? '').toString();
 
       if (uid != challengerUid && uid != challengedUid) {
-        throw Exception('No perteneces a este match');
+        throw Exception(_l10n.serviceNotYourMatch);
       }
 
       if (uid == challengerUid) {
@@ -1217,11 +1239,14 @@ class MatchService {
         final myName = uid == challengerUid ? challengerName : challengedName;
 
         if (challengerStatus != 'finished' || challengedStatus != 'finished') {
+          final recipientL10n =
+              await _notificationService.l10nForRecipient(opponentUid);
+
           await _notificationService.createNotification(
             targetUid: opponentUid,
             type: 'match_turn',
-            title: 'Your turn',
-            body: '$myName finished their async match. Now it is your turn.',
+            title: recipientL10n.serviceYourTurnTitle,
+            body: recipientL10n.serviceYourTurnBody(myName),
             data: {
               'matchId': matchId,
               'opponentUid': uid,
@@ -1316,7 +1341,7 @@ class MatchService {
         .limit(1)
         .get();
 
-    if (snap.docs.isEmpty) throw Exception('Código no encontrado');
+    if (snap.docs.isEmpty) throw Exception(_l10n.serviceCodeNotFound);
     return snap.docs.first.id;
   }
 
@@ -1355,12 +1380,12 @@ class MatchService {
 
     final snap = await col.get().timeout(
           _questionFetchTimeout,
-          onTimeout: () => throw Exception(
-            'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
-          ),
+          onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
         );
     final docs = snap.docs;
-    if (docs.isEmpty) throw Exception('Pool vacío para $categoryId');
+    if (docs.isEmpty) {
+      throw Exception(_l10n.servicePoolEmptyForCategory(categoryId));
+    }
 
     docs.shuffle(Random());
     return docs.take(min(total, docs.length)).map((d) => d.data()).toList();
@@ -1376,13 +1401,13 @@ class MatchService {
         .get()
         .timeout(
           _questionFetchTimeout,
-          onTimeout: () => throw Exception(
-            'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
-          ),
+          onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
         );
 
     final categories = catsSnap.docs.map((d) => d.id).toList();
-    if (categories.isEmpty) throw Exception('No hay categorías activas');
+    if (categories.isEmpty) {
+      throw Exception(_l10n.serviceNoActiveCategories);
+    }
 
     final rnd = Random();
     categories.shuffle(rnd);
@@ -1400,9 +1425,7 @@ class MatchService {
 
       final snap = await col.get().timeout(
             _questionFetchTimeout,
-            onTimeout: () => throw Exception(
-              'No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.',
-            ),
+            onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
           );
       if (snap.docs.isEmpty) continue;
 

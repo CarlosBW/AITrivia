@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class DailyChallengeResultScreen extends StatelessWidget {
   final DailyChallengeSaveResult result;
@@ -12,9 +13,11 @@ class DailyChallengeResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Challenge Result'),
+        title: Text(l10n.dailyResultTitle),
         automaticallyImplyLeading: false,
       ),
       body: Padding(
@@ -30,7 +33,7 @@ class DailyChallengeResultScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             Text(
-              'Daily Challenge Complete!',
+              l10n.dailyResultComplete,
               textAlign: TextAlign.center,
               style: GoogleFonts.baloo2(
                 fontSize: 26,
@@ -41,35 +44,35 @@ class DailyChallengeResultScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             _ResultRow(
-              label: 'Correct answers',
+              label: l10n.dailyResultCorrectAnswers,
               value: '${result.correct}',
             ),
 
             _ResultRow(
-              label: 'Total answered',
+              label: l10n.dailyResultTotalAnswered,
               value: '${result.totalAnswered}',
             ),
 
             _ResultRow(
-              label: 'Coins earned',
+              label: l10n.dailyResultCoinsEarned,
               value: '+${result.totalCoinsEarned}',
             ),
 
             _ResultRow(
-              label: 'Daily streak',
-              value: '${result.streak} days',
+              label: l10n.dailyResultStreakLabel,
+              value: l10n.dailyResultDaysValue(result.streak),
             ),
 
             if (result.streakBonusCoins > 0)
               _ResultRow(
-                label: 'Streak bonus',
+                label: l10n.dailyResultStreakBonus,
                 value: '+${result.streakBonusCoins}',
               ),
 
             if (result.alreadyPlayed) ...[
               const SizedBox(height: 16),
-              const Text(
-                'You already played today. Coins were not awarded again.',
+              Text(
+                l10n.dailyResultAlreadyPlayed,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -82,7 +85,7 @@ class DailyChallengeResultScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
-                child: const Text('Back to Home'),
+                child: Text(l10n.dailyResultBackHome),
               ),
             ),
           ],

@@ -8,6 +8,9 @@ import 'package:flutter/foundation.dart';
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
 import 'analytics_service.dart';
+import 'locale_controller.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -80,6 +83,11 @@ class DailyChallengeService {
     EconomyService.dailyCorrectPerCoinBlock;
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
+
+  // Resolved from the acting user's own device locale — correct for
+  // exceptions, since they always surface back to whoever called this.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   String todayDateId([DateTime? now]) {
     final d = now ?? DateTime.now();
@@ -223,7 +231,7 @@ class DailyChallengeService {
     }
 
     if (categoryIds.isEmpty) {
-      throw Exception('No hay categorías activas para Daily Challenge.');
+      throw Exception(_l10n.serviceNoActiveDailyCategories);
     }
 
     final all = <Map<String, dynamic>>[];
@@ -251,7 +259,7 @@ class DailyChallengeService {
     }
 
     if (all.isEmpty) {
-      throw Exception('No hay preguntas disponibles en los pools fijos.');
+      throw Exception(_l10n.serviceNoQuestionsInPools);
     }
 
     all.shuffle(Random());

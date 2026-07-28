@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/season_service.dart';
 import '../../services/league_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
@@ -48,12 +49,14 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             result.claimedCount == 0
-                ? 'No pending weekly rewards.'
-                : 'Claimed ${result.claimedCount} reward(s): +${result.totalCoins} coins!',
+                ? l10n.weeklyRewardsNoPending
+                : l10n.weeklyRewardsClaimed(result.claimedCount, result.totalCoins),
           ),
         ),
       );
@@ -71,10 +74,11 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weekly Rewards'),
+        title: Text(l10n.weeklyRewardsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -109,7 +113,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
           const SizedBox(height: 22),
 
           Text(
-            'Weekly Rewards History',
+            l10n.weeklyRewardsHistoryTitle,
             style: GoogleFonts.baloo2(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -123,7 +127,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
             builder: (context, snap) {
               if (snap.hasError) {
                 return Text(
-                  'Error loading history:\n${snap.error}',
+                  l10n.weeklyRewardsErrorLoadingHistory(snap.error.toString()),
                   textAlign: TextAlign.center,
                 );
               }
@@ -149,15 +153,17 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
                   final seasonId = (data['seasonId'] ?? doc.id).toString();
                   final leagueId = (data['leagueId'] ?? '').toString();
-                  final leagueName =
-                      (data['leagueName'] ?? 'League').toString();
+                  final leagueName = (data['leagueName'] ??
+                          l10n.weeklyRewardsLeagueFallback)
+                      .toString();
                   final rank = ((data['rank'] ?? 0) as num).toInt();
                   final weeklyScore =
                       ((data['weeklyScore'] ?? 0) as num).toInt();
                   final rewardCoins =
                       ((data['rewardCoins'] ?? 0) as num).toInt();
-                  final rewardMessage =
-                      (data['rewardMessage'] ?? 'Weekly reward claimed').toString();
+                  final rewardMessage = (data['rewardMessage'] ??
+                          l10n.weeklyRewardsMessageFallback)
+                      .toString();
 
                   return _HistoryTile(
                     seasonId: seasonId,
@@ -189,15 +195,15 @@ class _LoadingCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: 12),
-          Text('Checking pending weekly rewards...'),
+          const SizedBox(width: 12),
+          Text(AppLocalizations.of(context).weeklyRewardsChecking),
         ],
       ),
     );
@@ -209,6 +215,8 @@ class _NoPendingRewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -221,15 +229,15 @@ class _NoPendingRewardsCard extends StatelessWidget {
           const Icon(Icons.verified_outlined, size: 38),
           const SizedBox(height: 10),
           Text(
-            'No pending weekly rewards',
+            l10n.weeklyRewardsNoPendingTitle,
             style: GoogleFonts.baloo2(
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Keep playing Weekly Challenge to earn weekly rewards.',
+          Text(
+            l10n.weeklyRewardsKeepPlayingHint,
             textAlign: TextAlign.center,
           ),
         ],
@@ -253,6 +261,8 @@ class _PendingRewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -270,7 +280,9 @@ class _PendingRewardsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${pending.length} pending reward${pending.length == 1 ? '' : 's'}',
+            pending.length == 1
+                ? l10n.weeklyRewardsPendingSingle(pending.length)
+                : l10n.weeklyRewardsPendingMultiple(pending.length),
             style: GoogleFonts.baloo2(
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -278,7 +290,7 @@ class _PendingRewardsCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Total available: +$totalCoins coins',
+            l10n.weeklyRewardsTotalAvailable(totalCoins),
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
@@ -303,7 +315,7 @@ class _PendingRewardsCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.redeem),
-              label: Text(claiming ? 'Claiming...' : 'Claim All Rewards'),
+              label: Text(claiming ? l10n.pvpSeasonClaiming : l10n.pvpSeasonClaimAllButton),
             ),
           ),
         ],
@@ -333,7 +345,15 @@ class _PendingRewardMiniTile extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '${reward.seasonId} • ${reward.leagueName} • Rank #${reward.rank}',
+              AppLocalizations.of(context).weeklyRewardsMiniTile(
+                reward.seasonId,
+                reward.leagueName,
+                reward.rank,
+                seasonRewardMessageFor(
+                  AppLocalizations.of(context),
+                  reward.rewardTier,
+                ),
+              ),
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
@@ -360,8 +380,8 @@ class _EmptyHistoryCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Text(
-        'No season rewards claimed yet.',
+      child: Text(
+        AppLocalizations.of(context).weeklyRewardsNoHistory,
         textAlign: TextAlign.center,
       ),
     );
@@ -396,6 +416,7 @@ class _HistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = _league != null
         ? Color(_league!.colorValue)
         : Theme.of(context).colorScheme.primary;
@@ -426,12 +447,12 @@ class _HistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$seasonId • $leagueName',
+                  l10n.weeklyRewardsHistoryTitleLine(seasonId, leagueName),
                   style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Rank #$rank • Score $weeklyScore • $rewardMessage',
+                  l10n.weeklyRewardsHistorySubtitle(rank, weeklyScore, rewardMessage),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,

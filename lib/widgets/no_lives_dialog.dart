@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/generated/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 class NoLivesDialog extends StatelessWidget {
@@ -8,8 +9,6 @@ class NoLivesDialog extends StatelessWidget {
   final String nextFullLifeText;
   final VoidCallback? onBuyLife;
   final int cost;
-  final String title;
-  final String message;
 
   const NoLivesDialog({
     super.key,
@@ -18,12 +17,11 @@ class NoLivesDialog extends StatelessWidget {
     required this.nextFullLifeText,
     this.onBuyLife,
     this.cost = 10,
-    this.title = 'Sin vidas suficientes',
-    this.message = 'Necesitas al menos 1 vida completa para entrar a un nivel.',
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dialog(
@@ -48,7 +46,7 @@ class NoLivesDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              title,
+              l10n.livesNoLivesTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 22,
@@ -57,7 +55,7 @@ class NoLivesDialog extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              message,
+              l10n.livesNoLivesMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -76,19 +74,19 @@ class NoLivesDialog extends StatelessWidget {
                 children: [
                   _InfoRow(
                     icon: Icons.favorite,
-                    label: 'Tus vidas',
+                    label: l10n.livesYourLives,
                     value: currentLivesText,
                   ),
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: Icons.timer,
-                    label: 'Próx. media vida',
+                    label: l10n.livesNextHalf,
                     value: nextHalfLifeText,
                   ),
                   const SizedBox(height: 10),
                   _InfoRow(
                     icon: Icons.hourglass_bottom,
-                    label: 'Para 1 vida completa',
+                    label: l10n.livesNextFull,
                     value: nextFullLifeText,
                   ),
                 ],
@@ -100,14 +98,14 @@ class NoLivesDialog extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Volver'),
+                    child: Text(l10n.livesGoBack),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Esperar'),
+                    child: Text(l10n.livesWait),
                   ),
                 ),
               ],
@@ -119,7 +117,7 @@ class NoLivesDialog extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onBuyLife,
                   icon: const Icon(Icons.favorite),
-                  label: Text('Recuperar 1 vida ($cost monedas)'),
+                  label: Text(l10n.livesRecoverButton(cost)),
                 ),
               ),
             ],

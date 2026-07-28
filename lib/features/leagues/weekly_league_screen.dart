@@ -10,6 +10,7 @@ import '../../services/season_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/tier_badge.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
 
@@ -83,12 +84,14 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
       _hasPendingRewardsFuture =
           _seasonService.hasPendingSeasonRewards(uid: uid);
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             result.claimedCount == 0
-                ? 'No pending weekly rewards.'
-                : 'Claimed ${result.claimedCount} rewards: +${result.totalCoins} coins!',
+                ? l10n.weeklyRewardsNoPending
+                : l10n.weeklyLeagueClaimedRewards(result.claimedCount, result.totalCoins),
           ),
         ),
       );
@@ -139,20 +142,21 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weekly Challenge'),
+        title: Text(l10n.weeklyLeagueScreenTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
+          tabs: [
             Tab(
-              icon: Icon(Icons.leaderboard_outlined),
-              text: 'Ranking',
+              icon: const Icon(Icons.leaderboard_outlined),
+              text: l10n.dailyLeaderboardRankingTitle,
             ),
             Tab(
-              icon: Icon(Icons.card_giftcard_outlined),
-              text: 'Rewards',
+              icon: const Icon(Icons.card_giftcard_outlined),
+              text: l10n.pvpSeasonTabRewards,
             ),
           ],
         ),
@@ -169,7 +173,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
           if (userSnap.hasError) {
             return Center(
               child: Text(
-                'Error loading weekly challenge:\n${userSnap.error}',
+                l10n.weeklyLeagueErrorLoading(userSnap.error.toString()),
                 textAlign: TextAlign.center,
               ),
             );
@@ -214,7 +218,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                         if (snap.hasError) {
                           return Center(
                             child: Text(
-                              'Error loading weekly challenge:\n${snap.error}',
+                              l10n.weeklyLeagueErrorLoading(snap.error.toString()),
                               textAlign: TextAlign.center,
                             ),
                           );
@@ -230,9 +234,9 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                         final docs = snap.data?.docs ?? [];
 
                         if (docs.isEmpty) {
-                          return const Center(
+                          return Center(
                             child: Text(
-                              'No weekly scores yet.\nPlay a Daily Challenge to enter this weekly ranking.',
+                              l10n.weeklyLeagueNoScoresYet,
                               textAlign: TextAlign.center,
                             ),
                           );
@@ -247,7 +251,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                           ),
                           children: [
                             Text(
-                              'Weekly Ranking',
+                              l10n.weeklyLeagueRankingTitle,
                               style: GoogleFonts.baloo2(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
@@ -437,6 +441,7 @@ class _LeagueHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = Color(league.colorValue);
 
     return Container(
@@ -453,19 +458,19 @@ class _LeagueHeader extends StatelessWidget {
         children: [
           TierBadge(
             emoji: league.emoji,
-            name: '${league.name} Tier',
+            name: l10n.weeklyLeagueTierSuffix(league.name),
             colorValue: league.colorValue,
           ),
           const SizedBox(height: 8),
           Text(
-            'Weekly Score: $leagueScore',
+            l10n.weeklyLeagueScoreLabel(leagueScore),
             style: const TextStyle(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Weekly reset in $resetText',
+            l10n.weeklyLeagueResetIn(resetText),
             style: const TextStyle(fontSize: 13),
           ),
         ],
@@ -486,17 +491,17 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
             ),
           ),
-          SizedBox(width: 12),
-          Text('Checking pending weekly rewards...'),
+          const SizedBox(width: 12),
+          Text(AppLocalizations.of(context).weeklyRewardsChecking),
         ],
       ),
     );
@@ -518,7 +523,7 @@ class _RewardsHistoryButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.workspace_premium_outlined),
-        label: const Text('Reward history'),
+        label: Text(AppLocalizations.of(context).weeklyLeagueRewardHistoryButton),
       ),
     );
   }
@@ -537,6 +542,8 @@ class _PendingRewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -554,15 +561,15 @@ class _PendingRewardsCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Pending season rewards',
+            l10n.weeklyLeaguePendingSeasonRewards,
             style: GoogleFonts.baloo2(
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Open Weekly Rewards to see exact rank and coins.',
+          Text(
+            l10n.weeklyLeagueOpenToSeeDetails,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
@@ -575,7 +582,7 @@ class _PendingRewardsCard extends StatelessWidget {
                       ? null
                       : onOpenRewards,
                   icon: const Icon(Icons.visibility_outlined),
-                  label: const Text('View details'),
+                  label: Text(l10n.weeklyLeagueViewDetails),
                 ),
               ),
 
@@ -597,8 +604,8 @@ class _PendingRewardsCard extends StatelessWidget {
                       : const Icon(Icons.redeem),
                   label: Text(
                     claiming
-                        ? 'Claiming...'
-                        : 'Claim',
+                        ? l10n.pvpSeasonClaiming
+                        : l10n.weeklyLeagueClaim,
                   ),
                 ),
               ),
@@ -619,6 +626,7 @@ class _RewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = Color(league.colorValue);
 
     return Container(
@@ -637,7 +645,7 @@ class _RewardsCard extends StatelessWidget {
               const Icon(Icons.card_giftcard_outlined),
               const SizedBox(width: 8),
               Text(
-                'Weekly Rewards',
+                l10n.weeklyLeagueWeeklyRewardsTitle,
                 style: GoogleFonts.baloo2(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -650,8 +658,7 @@ class _RewardsCard extends StatelessWidget {
 
           _RewardRow(
             medal: '🥇',
-            text:
-                'Top 1: ${league.top1Reward} coins + promotion bonus',
+            text: l10n.weeklyLeagueTop1Reward(league.top1Reward),
             color: color,
           ),
 
@@ -659,8 +666,7 @@ class _RewardsCard extends StatelessWidget {
 
           _RewardRow(
             medal: '🥈',
-            text:
-                'Top 2-3: ${league.top3Reward} coins',
+            text: l10n.weeklyLeagueTop3Reward(league.top3Reward),
             color: color,
           ),
 
@@ -668,16 +674,15 @@ class _RewardsCard extends StatelessWidget {
 
           _RewardRow(
             medal: '🥉',
-            text:
-                'Top 10: ${league.top10Reward} coins',
+            text: l10n.weeklyLeagueTop10Reward(league.top10Reward),
             color: color,
           ),
 
           const SizedBox(height: 12),
 
-          const Text(
-            'At the end of the week, rankings reset and rewards become claimable.',
-            style: TextStyle(fontSize: 12),
+          Text(
+            l10n.weeklyLeagueResetHint,
+            style: const TextStyle(fontSize: 12),
           ),
         ],
       ),
@@ -752,6 +757,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rankColor = _rankColor();
 
     return Container(
@@ -803,7 +809,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
                   CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$username${isMe ? '  (You)' : ''}',
+                  isMe ? l10n.dailyLeaderboardNameWithYou(username) : username,
                   overflow:
                       TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -816,7 +822,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  'Level $level  •  Streak $streak',
+                  l10n.weeklyLeagueLevelStreak(level, streak),
                   style:
                       const TextStyle(fontSize: 13),
                 ),
@@ -830,9 +836,9 @@ class _WeeklyLeagueTile extends StatelessWidget {
             crossAxisAlignment:
                 CrossAxisAlignment.end,
             children: [
-              const Text(
-                'Weekly',
-                style: TextStyle(fontSize: 12),
+              Text(
+                l10n.weeklyLeagueWeeklyLabel,
+                style: const TextStyle(fontSize: 12),
               ),
               Text(
                 '$weeklyScore',

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class CreateMatchScreen extends StatefulWidget {
   const CreateMatchScreen({super.key});
@@ -88,10 +89,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final categories = <String>['cine', 'historia', 'videojuegos', 'random'];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear sala (Tiempo real)')),
+      appBar: AppBar(title: Text(l10n.createMatchTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -103,9 +105,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
             TextField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Tu nombre (displayName)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.createMatchYourName,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -116,9 +118,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
               onChanged: _loading ? null : (v) => setState(() => _categoryId = v ?? 'cine'),
-              decoration: const InputDecoration(
-                labelText: 'Categoría',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.createMatchCategory,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -128,15 +130,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     initialValue: _difficulty,
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('1 (Fácil)')),
-                      DropdownMenuItem(value: 2, child: Text('2 (Medio)')),
-                      DropdownMenuItem(value: 3, child: Text('3 (Difícil)')),
+                    items: [
+                      DropdownMenuItem(value: 1, child: Text(l10n.createMatchDiffEasy)),
+                      DropdownMenuItem(value: 2, child: Text(l10n.createMatchDiffMedium)),
+                      DropdownMenuItem(value: 3, child: Text(l10n.createMatchDiffHard)),
                     ],
                     onChanged: _loading ? null : (v) => setState(() => _difficulty = v ?? 1),
-                    decoration: const InputDecoration(
-                      labelText: 'Dificultad',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.createMatchDifficulty,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -151,9 +153,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       DropdownMenuItem(value: 15, child: Text('15s')),
                     ],
                     onChanged: _loading ? null : (v) => setState(() => _timePerQuestionSec = v ?? 10),
-                    decoration: const InputDecoration(
-                      labelText: 'Tiempo/Pregunta',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.createMatchTimePerQuestion,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -169,9 +171,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 DropdownMenuItem(value: 15, child: Text('15')),
               ],
               onChanged: _loading ? null : (v) => setState(() => _totalQuestions = v ?? 10),
-              decoration: const InputDecoration(
-                labelText: 'Preguntas',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.createMatchQuestions,
+                border: const OutlineInputBorder(),
               ),
             ),
 
@@ -180,7 +182,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             // ✅ Matchmaking (auto)
             FilledButton(
               onPressed: _loading ? null : _goToMatchmaking,
-              child: const Text('Buscar jugador automático'),
+              child: Text(l10n.createMatchAutoSearch),
             ),
             const SizedBox(height: 12),
 
@@ -193,7 +195,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Crear sala'),
+                  : Text(l10n.createMatchCreateRoom),
             ),
           ],
         ),

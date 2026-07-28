@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 
 class NotificationBellButton extends StatefulWidget {
   final int unreadCount;
@@ -97,7 +98,7 @@ class _NotificationBellButtonState
         );
       },
       child: IconButton(
-        tooltip: 'Notifications',
+        tooltip: AppLocalizations.of(context).notificationBellTooltip,
         onPressed: widget.onPressed,
         icon: Stack(
           clipBehavior: Clip.none,

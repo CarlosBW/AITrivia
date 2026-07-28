@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'match_play_screen.dart';
 
@@ -65,46 +66,48 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     Navigator.pop(context);
   }
 
-  String _displayCategory(String categoryId) {
-    if (categoryId == 'random') return 'Random';
-    if (categoryId.isEmpty) return 'Categoría';
+  String _displayCategory(AppLocalizations l10n, String categoryId) {
+    if (categoryId == 'random') return l10n.friendChallengeCategoryRandom;
+    if (categoryId.isEmpty) return l10n.createMatchCategory;
     return categoryId[0].toUpperCase() + categoryId.substring(1);
   }
 
-  String _statusText({
+  String _statusText(
+    AppLocalizations l10n, {
     required bool myReady,
     required bool opponentReady,
     required bool hasGuest,
   }) {
     if (!hasGuest) {
-      return 'Esperando que tu amigo se una a la sala.';
+      return l10n.matchLobbyWaitingFriendJoin;
     }
 
     if (myReady && opponentReady) {
-      return 'Todo listo. La partida está iniciando...';
+      return l10n.matchLobbyAllReadyStarting;
     }
 
     if (myReady && !opponentReady) {
-      return 'Listo. Esperando que tu rival confirme.';
+      return l10n.matchLobbyReadyWaitingOpponent;
     }
 
     if (!myReady && opponentReady) {
-      return 'Tu rival ya está listo. Confirma para empezar.';
+      return l10n.matchLobbyOpponentReadyConfirm;
     }
 
-    return 'Esperando que ambos jugadores estén listos.';
+    return l10n.matchLobbyWaitingBothReady;
   }
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final service = MatchService();
+    final l10n = AppLocalizations.of(context);
     final ref =
         FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sala 1 vs 1'),
+        title: Text(l10n.matchLobbyTitle),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
@@ -116,7 +119,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           final data = snap.data!.data();
 
           if (data == null) {
-            return const Center(child: Text('Sala no encontrada'));
+            return Center(child: Text(l10n.matchLobbyNotFound));
           }
 
           final status = (data['status'] ?? 'waiting').toString();
@@ -126,7 +129,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
               _leaveBecauseMatchUnavailable(
-                'La sala ya no está disponible.',
+                l10n.matchLobbyNoLongerAvailable,
               );
             });
           }
@@ -171,10 +174,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           final me = Map<String, dynamic>.from(players[uid] ?? {});
 
           final hostName =
-              (hostPlayer['displayName'] ?? 'Jugador 1').toString();
+              (hostPlayer['displayName'] ?? l10n.matchLobbyPlayer1).toString();
           final guestName = guestUid.isEmpty
-              ? 'Esperando rival'
-              : (guestPlayer['displayName'] ?? 'Jugador 2').toString();
+              ? l10n.matchLobbyWaitingOpponentButton
+              : (guestPlayer['displayName'] ?? l10n.matchLobbyPlayer2).toString();
 
           final hostReady = hostPlayer['ready'] == true;
           final guestReady = guestPlayer['ready'] == true;
@@ -184,6 +187,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           final hasGuest = guestUid.isNotEmpty;
 
           final statusMessage = _statusText(
+            l10n,
             myReady: myReady,
             opponentReady: opponentReady,
             hasGuest: hasGuest,
@@ -211,7 +215,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '1 vs 1 Match',
+                        l10n.matchLobbyHeading,
                         style: GoogleFonts.baloo2(
                           fontSize: 25,
                           fontWeight: FontWeight.w800,
@@ -234,23 +238,23 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   children: [
                     _InfoRow(
                       icon: Icons.category_outlined,
-                      label: 'Tema',
-                      value: _displayCategory(categoryId),
+                      label: l10n.matchLobbyTopicLabel,
+                      value: _displayCategory(l10n, categoryId),
                     ),
                     _InfoRow(
                       icon: Icons.auto_awesome_outlined,
-                      label: 'Modo',
-                      value: mode == 'fixed' ? 'Sin IA' : 'Con IA',
+                      label: l10n.matchLobbyModeLabel,
+                      value: mode == 'fixed' ? l10n.matchLobbyModeFixed : l10n.matchLobbyModeAi,
                     ),
                     _InfoRow(
                       icon: Icons.quiz_outlined,
-                      label: 'Preguntas',
+                      label: l10n.createMatchQuestions,
                       value: '$totalQuestions',
                     ),
                     _InfoRow(
                       icon: Icons.timer_outlined,
-                      label: 'Tiempo',
-                      value: '$timePerQuestionSec s por pregunta',
+                      label: l10n.matchLobbyTimeLabel,
+                      value: l10n.matchLobbySecondsPerQuestion(timePerQuestionSec),
                     ),
                   ],
                 ),
@@ -275,8 +279,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     if (!context.mounted) return;
 
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Código copiado'),
+                      SnackBar(
+                        content: Text(l10n.matchLobbyCodeCopied),
                       ),
                     );
                   },
@@ -302,10 +306,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       ),
                       label: Text(
                         !hasGuest
-                            ? 'Esperando rival'
+                            ? l10n.matchLobbyWaitingOpponentButton
                             : myReady
-                                ? 'Esperando rival...'
-                                : 'Estoy listo',
+                                ? l10n.matchLobbyWaitingOpponentEllipsis
+                                : l10n.matchLobbyImReady,
                       ),
                     ),
                   ),
@@ -320,14 +324,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                             false,
                           );
                         },
-                        child: const Text('Cancelar listo'),
+                        child: Text(l10n.matchLobbyCancelReady),
                       ),
                     ),
                   ],
                 ] else if (status != 'playing') ...[
                   Center(
                     child: Text(
-                      'Estado de la sala: $status',
+                      l10n.matchLobbyRoomStatus(status),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -463,16 +467,17 @@ class _PlayerStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final Color borderColor = ready ? AppColors.success : AppColors.reward;
 
     final IconData icon =
         ready ? Icons.check_circle_outline : Icons.access_time;
 
     final String statusText = waiting
-        ? 'Esperando rival...'
+        ? l10n.matchLobbyWaitingOpponentEllipsis
         : ready
-            ? 'Listo'
-            : 'Esperando...';
+            ? l10n.matchLobbyReadyLabel
+            : l10n.matchLobbyWaitingLabel;
 
     final Color statusColor = ready ? AppColors.success : AppColors.reward;
 
@@ -555,6 +560,8 @@ class _RoomCodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -568,7 +575,7 @@ class _RoomCodeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Código de sala',
+            l10n.matchLobbyRoomCodeLabel,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -589,7 +596,7 @@ class _RoomCodeCard extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onCopy,
               icon: const Icon(Icons.copy_outlined),
-              label: const Text('Copiar código'),
+              label: Text(l10n.matchLobbyCopyCodeButton),
             ),
           ),
         ],

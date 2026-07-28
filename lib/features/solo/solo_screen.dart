@@ -7,6 +7,7 @@ import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class SoloScreen extends StatefulWidget {
@@ -99,17 +100,17 @@ class _SoloScreenState extends State<SoloScreen> {
           final completedAll = progressData['completedAllLevels'] == true ||
               completedCount >= levelCount;
 
-          String statusText;
+          _SoloCategoryStatus status;
           Color statusColor;
 
           if (completedAll) {
-            statusText = 'Completado';
+            status = _SoloCategoryStatus.completed;
             statusColor = AppColors.success;
           } else if (completedCount > 0) {
-            statusText = 'En curso';
+            status = _SoloCategoryStatus.inProgress;
             statusColor = AppColors.reward;
           } else {
-            statusText = 'Nuevo';
+            status = _SoloCategoryStatus.fresh;
             statusColor = const Color(0xFF85B7EB);
           }
 
@@ -121,7 +122,7 @@ class _SoloScreenState extends State<SoloScreen> {
             progress: progress,
             nextLevel: nextLevel,
             completedAll: completedAll,
-            statusText: statusText,
+            status: status,
             statusColor: statusColor,
           );
         }),
@@ -181,12 +182,12 @@ class _SoloScreenState extends State<SoloScreen> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success
-                ? '❤️ Vida recuperada'
-                : '❌ No tienes suficientes monedas',
+            success ? l10n.soloLifeRecovered : l10n.soloNotEnoughCoins,
           ),
         ),
       );
@@ -310,28 +311,30 @@ class _SoloScreenState extends State<SoloScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Solo'),
+        title: Text(l10n.soloTabTitle),
       ),
       body: Stack(
         children: [
           RefreshIndicator(
             onRefresh: _loadCategoriesAndProgress,
-            child: _buildContent(),
+            child: _buildContent(l10n),
           ),
           if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withValues(alpha: 0.35),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
                     Text(
-                      'Cargando...',
-                      style: TextStyle(color: Colors.white),
+                      l10n.commonLoading,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -342,7 +345,7 @@ class _SoloScreenState extends State<SoloScreen> {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(AppLocalizations l10n) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -356,14 +359,14 @@ class _SoloScreenState extends State<SoloScreen> {
           const Icon(Icons.error_outline, size: 42),
           const SizedBox(height: 12),
           Text(
-            'Error al cargar categorías:\n$_error',
+            l10n.soloErrorLoadingCategories(_error!),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _loadCategoriesAndProgress,
             icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
+            label: Text(l10n.commonRetry),
           ),
         ],
       );
@@ -373,12 +376,12 @@ class _SoloScreenState extends State<SoloScreen> {
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(24),
-        children: const [
-          SizedBox(height: 120),
-          Icon(Icons.info_outline, size: 42),
-          SizedBox(height: 12),
+        children: [
+          const SizedBox(height: 120),
+          const Icon(Icons.info_outline, size: 42),
+          const SizedBox(height: 12),
           Text(
-            'No hay categorías activas en Firestore.',
+            l10n.soloNoCategoriesAvailable,
             textAlign: TextAlign.center,
           ),
         ],
@@ -395,7 +398,7 @@ class _SoloScreenState extends State<SoloScreen> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
-              'Temas fijos',
+              l10n.soloFixedTopics,
               style: GoogleFonts.baloo2(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -422,6 +425,8 @@ class _SoloScreenState extends State<SoloScreen> {
   }
 }
 
+enum _SoloCategoryStatus { completed, inProgress, fresh }
+
 class _SoloCategoryItem {
   final String categoryId;
   final String name;
@@ -430,7 +435,7 @@ class _SoloCategoryItem {
   final double progress;
   final int nextLevel;
   final bool completedAll;
-  final String statusText;
+  final _SoloCategoryStatus status;
   final Color statusColor;
 
   const _SoloCategoryItem({
@@ -441,7 +446,7 @@ class _SoloCategoryItem {
     required this.progress,
     required this.nextLevel,
     required this.completedAll,
-    required this.statusText,
+    required this.status,
     required this.statusColor,
   });
 }
@@ -493,8 +498,21 @@ class _CategoryCard extends StatelessWidget {
     required this.onContinue,
   });
 
+  String _statusLabel(AppLocalizations l10n) {
+    switch (item.status) {
+      case _SoloCategoryStatus.completed:
+        return l10n.soloStatusCompleted;
+      case _SoloCategoryStatus.inProgress:
+        return l10n.soloStatusInProgress;
+      case _SoloCategoryStatus.fresh:
+        return l10n.soloStatusNew;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -539,7 +557,7 @@ class _CategoryCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      item.statusText,
+                      _statusLabel(l10n),
                       style: TextStyle(
                         color: item.statusColor,
                         fontWeight: FontWeight.w700,
@@ -551,7 +569,7 @@ class _CategoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Progreso: ${item.completedCount} / ${item.levelCount} niveles',
+                l10n.soloProgressLevels(item.completedCount, item.levelCount),
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 8),
@@ -572,7 +590,7 @@ class _CategoryCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: disabled ? null : onOpenLevels,
                       icon: const Icon(Icons.map_outlined),
-                      label: const Text('Ver niveles'),
+                      label: Text(l10n.soloViewLevels),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -586,8 +604,8 @@ class _CategoryCard extends StatelessWidget {
                       ),
                       label: Text(
                         item.completedAll
-                            ? 'Completado'
-                            : 'Continuar N${item.nextLevel}',
+                            ? l10n.soloStatusCompleted
+                            : l10n.soloContinueLevel(item.nextLevel),
                       ),
                     ),
                   ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/achievement_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class AchievementsScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '🎉 Reward claimed: +${achievement?.rewardCoins ?? 0} coins',
+            AppLocalizations.of(context).achievementsRewardClaimed(achievement?.rewardCoins ?? 0),
           ),
         ),
       );
@@ -68,11 +69,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final achievements = AchievementService.achievements;
+    final l10n = AppLocalizations.of(context);
+    final achievements = AchievementService.achievementsFor(l10n);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Achievements'),
+        title: Text(l10n.achievementsTitle),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _service.watchUserAchievements(uid: uid),
@@ -82,7 +84,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Error loading achievements:\n${snap.error}',
+                  l10n.achievementsErrorLoading(snap.error.toString()),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -119,7 +121,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 child: Column(
                   children: [
                     Text(
-                      'Achievements Progress',
+                      l10n.achievementsProgressTitle,
                       style: GoogleFonts.baloo2(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -127,7 +129,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '$completedCount / ${achievements.length} completed',
+                      l10n.achievementsCompletedCount(completedCount, achievements.length),
                       style: GoogleFonts.baloo2(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -219,6 +221,7 @@ class _AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final Color accentColor;
     final Color accentBg;
 
@@ -305,7 +308,7 @@ class _AchievementCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '+${achievement.rewardCoins} coins',
+                  l10n.achievementsCoinsPill(achievement.rewardCoins),
                   style: GoogleFonts.baloo2(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
@@ -329,8 +332,8 @@ class _AchievementCard extends StatelessWidget {
           const SizedBox(height: 14),
 
           if (claimed)
-            const _StatusChip(
-              text: 'Claimed',
+            _StatusChip(
+              text: l10n.achievementsClaimed,
               color: AppColors.success,
             )
           else if (completed)
@@ -339,12 +342,12 @@ class _AchievementCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: claiming ? null : onClaim,
                 icon: const Icon(Icons.card_giftcard_outlined),
-                label: const Text('Claim Reward'),
+                label: Text(l10n.achievementsClaimReward),
               ),
             )
           else
-            const _StatusChip(
-              text: 'In progress',
+            _StatusChip(
+              text: l10n.achievementsInProgress,
               color: AppColors.reward,
             ),
         ],

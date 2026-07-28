@@ -6,6 +6,7 @@ import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
 import 'create_ai_topic_screen.dart';
 import '../solo/level_select_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class AiTopicsScreen extends StatelessWidget {
   const AiTopicsScreen({super.key});
@@ -26,19 +27,19 @@ class AiTopicsScreen extends StatelessWidget {
     }
   }
 
-  String _statusLabel(String status) {
+  String _statusLabel(AppLocalizations l10n, String status) {
     switch (status) {
       case 'ready':
-        return 'Ready';
+        return l10n.aiTopicsStatusReady;
       case 'failed':
-        return 'Failed';
+        return l10n.aiTopicsStatusFailed;
       case 'deleted':
-        return 'Deleted';
+        return l10n.aiTopicsStatusDeleted;
       case 'invalid':
-        return 'Needs repair';
+        return l10n.aiTopicsStatusInvalid;
       case 'pending_generation':
       default:
-        return 'Preparing';
+        return l10n.aiTopicsStatusPreparing;
     }
   }
 
@@ -52,6 +53,7 @@ class AiTopicsScreen extends StatelessWidget {
   }
 
   Widget _statusCostColumn({
+    required AppLocalizations l10n,
     required Color color,
     required String status,
     required bool usedFreePass,
@@ -62,7 +64,7 @@ class AiTopicsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          _statusLabel(status),
+          _statusLabel(l10n, status),
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.bold,
@@ -70,7 +72,7 @@ class AiTopicsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          usedFreePass ? 'Free' : '$cost coins',
+          usedFreePass ? l10n.aiTopicsFree : l10n.aiTopicsCoinsCost(cost),
           style: const TextStyle(fontSize: 12),
         ),
       ],
@@ -79,6 +81,7 @@ class AiTopicsScreen extends StatelessWidget {
 
   Future<void> _confirmAndRun({
     required BuildContext context,
+    required AppLocalizations l10n,
     required String title,
     required String message,
     required Future<void> Function() action,
@@ -93,11 +96,11 @@ class AiTopicsScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancelar'),
+              child: Text(l10n.aiTopicsCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Confirmar'),
+              child: Text(l10n.aiTopicsConfirm),
             ),
           ],
         );
@@ -138,28 +141,35 @@ class AiTopicsScreen extends StatelessWidget {
 
     if (!context.mounted) return;
 
+    final l10n = AppLocalizations.of(context);
+
     if (action == 'regenerate') {
       await _confirmAndRun(
         context: context,
-        title: 'Regenerar preguntas',
-        message: 'Esto reemplaza las preguntas de "$topicTitle" por otras '
-            'nuevas.\n\n'
-            'Costo: ${EconomyService.regenerateAiQuestionsCost} monedas\n'
-            'Tienes: $coins monedas',
+        l10n: l10n,
+        title: l10n.aiTopicsRegenerateDialogTitle,
+        message: l10n.aiTopicsRegenerateDialogBody(
+          topicTitle,
+          EconomyService.regenerateAiQuestionsCost,
+          coins,
+        ),
         action: () => AiTopicService.instance.regenerateTopicQuestions(
           topicId: topicId,
         ),
-        successMessage: 'Preguntas regeneradas',
+        successMessage: l10n.aiTopicsRegenerateSuccess,
       );
     } else if (action == 'expand') {
       await _confirmAndRun(
         context: context,
-        title: 'Ampliar tema',
-        message: 'Agrega 10 niveles más a "$topicTitle".\n\n'
-            'Costo: ${EconomyService.expandAiTopicCost} monedas\n'
-            'Tienes: $coins monedas',
+        l10n: l10n,
+        title: l10n.aiTopicsExpandDialogTitle,
+        message: l10n.aiTopicsExpandDialogBody(
+          topicTitle,
+          EconomyService.expandAiTopicCost,
+          coins,
+        ),
         action: () => AiTopicService.instance.expandTopic(topicId: topicId),
-        successMessage: 'Tema ampliado',
+        successMessage: l10n.aiTopicsExpandSuccess,
       );
     }
   }
@@ -167,15 +177,16 @@ class AiTopicsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final service = AiTopicService.instance;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Topics'),
+        title: Text(l10n.aiTopicsTitle),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openCreate(context),
         icon: const Icon(Icons.add),
-        label: const Text('Create Topic'),
+        label: Text(l10n.aiTopicsCreateTopic),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: service.watchMyAiTopics(),
@@ -185,7 +196,7 @@ class AiTopicsScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Error loading AI topics:\n${snap.error}',
+                  l10n.aiTopicsErrorLoading(snap.error.toString()),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -214,7 +225,7 @@ class AiTopicsScreen extends StatelessWidget {
               final doc = docs[index];
               final data = doc.data();
 
-              final title = (data['title'] ?? 'Untitled topic').toString();
+              final title = (data['title'] ?? l10n.aiTopicsUntitled).toString();
               final rawStatus =
                   (data['status'] ?? 'pending_generation').toString();
 
@@ -238,22 +249,22 @@ class AiTopicsScreen extends StatelessWidget {
                     context: context,
                     builder: (dialogContext) {
                       return AlertDialog(
-                        title: const Text('Delete topic?'),
+                        title: Text(l10n.aiTopicsDeleteTitle),
                         content: Text(
-                          'Do you want to remove "$title" from your AI topics?',
+                          l10n.aiTopicsDeleteBody(title),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () {
                               Navigator.pop(dialogContext, false);
                             },
-                            child: const Text('Cancel'),
+                            child: Text(l10n.aiTopicsCancel),
                           ),
                           FilledButton(
                             onPressed: () {
                               Navigator.pop(dialogContext, true);
                             },
-                            child: const Text('Delete'),
+                            child: Text(l10n.aiTopicsDelete),
                           ),
                         ],
                       );
@@ -295,18 +306,19 @@ class AiTopicsScreen extends StatelessWidget {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(status == 'ready'
-                          ? '$levelsCount levels • $questionsCount questions'
+                          ? l10n.aiTopicsLevelsQuestions(levelsCount, questionsCount)
                           : status == 'failed'
-                              ? 'Tap to retry generation.'
+                              ? l10n.aiTopicsTapRetry
                               : status == 'invalid'
-                                  ? 'This topic needs to be regenerated.'
-                                  : 'Tap to continue preparing this topic.'),
+                                  ? l10n.aiTopicsNeedsRegeneration
+                                  : l10n.aiTopicsTapContinuePreparing),
                     ),
                     trailing: status == 'ready'
                         ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               _statusCostColumn(
+                                l10n: l10n,
                                 color: color,
                                 status: status,
                                 usedFreePass: usedFreePass,
@@ -323,15 +335,17 @@ class AiTopicsScreen extends StatelessWidget {
                                   PopupMenuItem(
                                     value: 'regenerate',
                                     child: Text(
-                                      'Regenerar preguntas — '
-                                      '${EconomyService.regenerateAiQuestionsCost} monedas',
+                                      l10n.aiTopicsRegenerateMenuItem(
+                                        EconomyService.regenerateAiQuestionsCost,
+                                      ),
                                     ),
                                   ),
                                   PopupMenuItem(
                                     value: 'expand',
                                     child: Text(
-                                      'Ampliar tema (+10 niveles) — '
-                                      '${EconomyService.expandAiTopicCost} monedas',
+                                      l10n.aiTopicsExpandMenuItem(
+                                        EconomyService.expandAiTopicCost,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -339,6 +353,7 @@ class AiTopicsScreen extends StatelessWidget {
                             ],
                           )
                         : _statusCostColumn(
+                            l10n: l10n,
                             color: color,
                             status: status,
                             usedFreePass: usedFreePass,
@@ -349,8 +364,8 @@ class AiTopicsScreen extends StatelessWidget {
                           status == 'failed' ||
                           status == 'invalid') {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Generating topic...'),
+                          SnackBar(
+                            content: Text(l10n.aiTopicsGeneratingSnackbar),
                           ),
                         );
 
@@ -407,6 +422,8 @@ class _EmptyAiTopics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -416,7 +433,7 @@ class _EmptyAiTopics extends StatelessWidget {
             const Icon(Icons.auto_awesome, size: 58),
             const SizedBox(height: 14),
             Text(
-              'Create your own trivia topic',
+              l10n.aiTopicsEmptyTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.baloo2(
                 fontSize: 23,
@@ -425,7 +442,7 @@ class _EmptyAiTopics extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Choose any topic you like. AI-generated questions will be connected in the next step.',
+              l10n.aiTopicsEmptySubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -435,7 +452,7 @@ class _EmptyAiTopics extends StatelessWidget {
             FilledButton.icon(
               onPressed: onCreate,
               icon: const Icon(Icons.add),
-              label: const Text('Create AI Topic'),
+              label: Text(l10n.aiTopicsEmptyButton),
             ),
           ],
         ),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/generated/app_localizations.dart';
 import 'daily_challenge_result_screen.dart';
 
 class DailyChallengeScreen extends StatefulWidget {
@@ -74,7 +75,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       _lastCoinMilestone = milestone;
 
       setState(() {
-        _coinPopupText = '+5 Coins 🎉';
+        _coinPopupText = AppLocalizations.of(context).dailyChallengeCoinsPopup;
       });
 
       Future.delayed(const Duration(milliseconds: 900), () {
@@ -210,7 +211,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving results: $e'),
+          content: Text(AppLocalizations.of(context).dailyChallengeErrorSaving(e.toString())),
         ),
       );
     }
@@ -265,13 +266,16 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   String _difficultyLabel() {
     final difficulty = _getTargetDifficulty();
+    final l10n = AppLocalizations.of(context);
 
-    if (difficulty == 3) return 'Hard';
-    if (difficulty == 2) return 'Medium';
-    return 'Easy';
+    if (difficulty == 3) return l10n.friendChallengeDiffHard;
+    if (difficulty == 2) return l10n.friendChallengeDiffMedium;
+    return l10n.friendChallengeDiffEasy;
   }
 
   Widget _savingOverlay() {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       color: Colors.black.withValues(alpha: 0.45),
       child: Center(
@@ -299,7 +303,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Daily completed!',
+                l10n.dailyChallengeCompletedTitle,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.baloo2(
                   fontSize: 24,
@@ -307,10 +311,10 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Saving your results...',
+              Text(
+                l10n.dailyChallengeSavingResults,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
               SizedBox(height: 20),
               CircularProgressIndicator(),
@@ -323,6 +327,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -330,8 +336,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     }
 
     if (_questions.isEmpty) {
-      return const Scaffold(
-        body: Center(child: Text('No questions available')),
+      return Scaffold(
+        body: Center(child: Text(l10n.dailyChallengeNoQuestions)),
       );
     }
 
@@ -341,7 +347,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Daily Challenge'),
+        title: Text(l10n.homeDailyChallengeTitle),
         automaticallyImplyLeading: !_savingResults,
       ),
       body: AnimatedContainer(
@@ -360,7 +366,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         Expanded(
                           child: _HeaderCard(
                             icon: Icons.timer_outlined,
-                            label: 'Time',
+                            label: l10n.dailyChallengeTimeLabel,
                             value: _formatTime(_timeLeft),
                           ),
                         ),
@@ -368,7 +374,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         Expanded(
                           child: _HeaderCard(
                             icon: Icons.star_border,
-                            label: 'Score',
+                            label: l10n.dailyLeaderboardScoreLabel,
                             value: '$_correct',
                           ),
                         ),
@@ -376,7 +382,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         Expanded(
                           child: _HeaderCard(
                             icon: Icons.monetization_on_outlined,
-                            label: 'Coins',
+                            label: l10n.homeCoins,
                             value: '+$_liveCoinsEarned',
                           ),
                         ),
@@ -384,7 +390,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Difficulty: ${_difficultyLabel()}',
+                      l10n.dailyChallengeDifficultyLine(_difficultyLabel()),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
@@ -427,7 +433,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     }),
                     const Spacer(),
                     Text(
-                      'Answered: $_totalAnswered',
+                      l10n.dailyChallengeAnsweredCount(_totalAnswered),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],

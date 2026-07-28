@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
 import '../../widgets/tier_badge.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
@@ -54,16 +55,17 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final season = _seasonService.currentSeason();
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PvP Season'),
+        title: Text(l10n.pvpSeasonTitle),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.shield), text: 'Season'),
-            Tab(icon: Icon(Icons.leaderboard), text: 'Leaderboard'),
-            Tab(icon: Icon(Icons.card_giftcard), text: 'Rewards'),
+          tabs: [
+            Tab(icon: const Icon(Icons.shield), text: l10n.pvpSeasonTabSeason),
+            Tab(icon: const Icon(Icons.leaderboard), text: l10n.pvpSeasonTabLeaderboard),
+            Tab(icon: const Icon(Icons.card_giftcard), text: l10n.pvpSeasonTabRewards),
           ],
         ),
       ),
@@ -127,6 +129,7 @@ class _SeasonOverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = Color(league.colorValue);
     final deltaText = ratingDelta == 0
         ? null
@@ -148,7 +151,7 @@ class _SeasonOverviewTab extends StatelessWidget {
             children: [
               TierBadge(
                 emoji: league.emoji,
-                name: '${league.name} League',
+                name: l10n.liveMenuLeagueTitle(league.name),
                 colorValue: league.colorValue,
               ),
               const SizedBox(height: 6),
@@ -183,16 +186,16 @@ class _SeasonOverviewTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Text('Season: ${season.id}'),
-              Text('Ends in: ${seasonService.formatTimeLeft(season.timeLeft)}'),
+              Text(l10n.pvpSeasonLabel(season.id)),
+              Text(l10n.pvpSeasonEndsIn(seasonService.formatTimeLeft(season.timeLeft))),
               const SizedBox(height: 12),
               Text(
-                'Projected reward: +${reward.coins} coins',
+                l10n.pvpSeasonProjectedReward(reward.coins),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               Text(
-                'Ranked uses flexible matchmaking: first it looks near your league, then expands the range so players are not left waiting.',
+                l10n.pvpSeasonRankedHint,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
@@ -212,15 +215,14 @@ class _SeasonOverviewTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'How PvP Seasons work',
+                l10n.pvpSeasonHowItWorksTitle,
                 style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 18),
               ),
               const SizedBox(height: 8),
-              const Text('• Play Ranked Matches to increase your MMR.'),
-              const Text('• Your league is calculated from your current MMR.'),
-              const Text('• Leaderboards rank players by MMR.'),
-              const Text(
-                  '• Rewards are based on your final league when the season ends.'),
+              Text(l10n.pvpSeasonHowItWorksBullet1),
+              Text(l10n.pvpSeasonHowItWorksBullet2),
+              Text(l10n.pvpSeasonHowItWorksBullet3),
+              Text(l10n.pvpSeasonHowItWorksBullet4),
             ],
           ),
         ),
@@ -242,14 +244,16 @@ class _LeaderboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
-          const TabBar(
+          TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.group), text: 'Friends'),
-              Tab(icon: Icon(Icons.public), text: 'Global'),
+              Tab(icon: const Icon(Icons.group), text: l10n.pvpSeasonFriendsTab),
+              Tab(icon: const Icon(Icons.public), text: l10n.pvpSeasonGlobalTab),
             ],
           ),
           Expanded(
@@ -286,6 +290,8 @@ class _GlobalLeaderboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return DefaultTabController(
       length: PvpLeagueService.leagues.length + 1,
       child: Column(
@@ -293,7 +299,7 @@ class _GlobalLeaderboardTab extends StatelessWidget {
           TabBar(
             isScrollable: true,
             tabs: [
-              const Tab(text: 'All'),
+              Tab(text: l10n.pvpSeasonAllTab),
               ...PvpLeagueService.leagues.map(
                 (league) => Tab(text: '${league.emoji} ${league.name}'),
               ),
@@ -414,6 +420,8 @@ class _FriendsLeaderboardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return FutureBuilder<List<_LeaderboardPlayer>>(
       future: _loadPlayers(),
       builder: (context, snap) {
@@ -422,7 +430,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Error loading friends leaderboard:\n${snap.error}',
+                l10n.pvpSeasonErrorLoadingFriends(snap.error.toString()),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -449,7 +457,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No friends in leaderboard yet',
+                    l10n.pvpSeasonNoFriendsTitle,
                     style: GoogleFonts.baloo2(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
@@ -459,8 +467,8 @@ class _FriendsLeaderboardList extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     players.isEmpty
-                        ? 'Play Ranked Matches and add friends to compare your PvP rating.'
-                        : 'Add friends to compare your PvP rating with people you know.',
+                        ? l10n.pvpSeasonNoFriendsEmptyHint
+                        : l10n.pvpSeasonNoFriendsHint,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -523,18 +531,18 @@ class _FriendsLeaderboardList extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isMe ? '${player.username} (You)' : player.username,
+                            isMe ? l10n.pvpSeasonYouSuffix(player.username) : player.username,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${league.emoji} ${league.name} • ${player.matches} matches',
+                            '${league.emoji} ${league.name} • ${l10n.pvpSeasonMatchesCount(player.matches)}',
                             style: const TextStyle(fontSize: 12),
                           ),
                           Text(
-                            '${player.wins} W / ${player.losses} L / ${player.draws} D',
+                            l10n.pvpSeasonWinLossDraw(player.wins, player.losses, player.draws),
                             style: const TextStyle(fontSize: 12),
                           ),
                         ],
@@ -568,6 +576,8 @@ class _LeaderboardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: query.snapshots(),
       builder: (context, snap) {
@@ -576,7 +586,7 @@ class _LeaderboardList extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                'Error loading leaderboard:\n${snap.error}',
+                l10n.pvpSeasonErrorLoadingLeaderboard(snap.error.toString()),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -590,9 +600,9 @@ class _LeaderboardList extends StatelessWidget {
         final docs = snap.data!.docs;
 
         if (docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No ranked players yet.\nPlay Ranked Match to enter this leaderboard.',
+              l10n.pvpSeasonNoRankedPlayers,
               textAlign: TextAlign.center,
             ),
           );
@@ -658,11 +668,11 @@ class _LeaderboardList extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${league.emoji} ${league.name} • $matches matches',
+                          '${league.emoji} ${league.name} • ${l10n.pvpSeasonMatchesCount(matches)}',
                           style: const TextStyle(fontSize: 12),
                         ),
                         Text(
-                          '$wins W / $losses L / $draws D',
+                          l10n.pvpSeasonWinLossDraw(wins, losses, draws),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
@@ -733,12 +743,14 @@ class _RewardsTabState extends State<_RewardsTab> {
 
       if (!mounted) return;
 
+      final l10n = AppLocalizations.of(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             result.claimedCount == 0
-                ? 'No pending PvP season rewards available.'
-                : 'Claimed ${result.claimedCount} PvP season reward(s): +${result.totalCoins} coins!',
+                ? l10n.pvpSeasonNoPendingRewards
+                : l10n.pvpSeasonClaimedRewards(result.claimedCount, result.totalCoins),
           ),
         ),
       );
@@ -757,6 +769,8 @@ class _RewardsTabState extends State<_RewardsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return RefreshIndicator(
       onRefresh: _refreshPendingRewards,
       child: ListView(
@@ -769,12 +783,12 @@ class _RewardsTabState extends State<_RewardsTab> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Season Rewards',
+            l10n.pvpSeasonRewardsTitle,
             style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            'Rewards are based on your best PvP league from each finished season.',
+            l10n.pvpSeasonRewardsSubtitle,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -834,7 +848,7 @@ class _RewardsTabState extends State<_RewardsTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${league.name} League',
+                          l10n.liveMenuLeagueTitle(league.name),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
@@ -843,7 +857,7 @@ class _RewardsTabState extends State<_RewardsTab> {
                         ),
                         if (isCurrent)
                           Text(
-                            'Current projected reward',
+                            l10n.pvpSeasonCurrentProjectedReward,
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -877,6 +891,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final reward = seasonService.rewardForLeague(currentLeague);
     final season = seasonService.currentSeason();
     final color = Color(currentLeague.colorValue);
@@ -901,7 +916,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Current projected reward',
+                  l10n.pvpSeasonCurrentProjectedReward,
                   style: TextStyle(
                     fontSize: 13,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -910,7 +925,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${currentLeague.name} League',
+                  l10n.liveMenuLeagueTitle(currentLeague.name),
                   style: GoogleFonts.baloo2(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -918,7 +933,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Season ends in ${seasonService.formatTimeLeft(season.timeLeft)}',
+                  l10n.pvpSeasonEndsInLine(seasonService.formatTimeLeft(season.timeLeft)),
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
@@ -977,6 +992,8 @@ class _PendingRewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (loading) {
       return Container(
         width: double.infinity,
@@ -985,15 +1002,15 @@ class _PendingRewardsCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 12),
-            Text('Checking pending PvP season rewards...'),
+            const SizedBox(width: 12),
+            Text(l10n.pvpSeasonCheckingRewards),
           ],
         ),
       );
@@ -1017,7 +1034,7 @@ class _PendingRewardsCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Could not load rewards',
+                    l10n.pvpSeasonCouldNotLoad,
                     style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),
@@ -1034,7 +1051,7 @@ class _PendingRewardsCard extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: Text(l10n.commonRetry),
             ),
           ],
         ),
@@ -1060,12 +1077,12 @@ class _PendingRewardsCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'No reward available yet',
+                    l10n.pvpSeasonNoRewardYetTitle,
                     style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Play Ranked Matches this season. When the season ends, your PvP reward will appear here.',
+                    l10n.pvpSeasonNoRewardYetHint,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -1078,7 +1095,9 @@ class _PendingRewardsCard extends StatelessWidget {
       );
     }
 
-    final plural = pendingRewards.length == 1 ? 'reward' : 'rewards';
+    final pendingText = pendingRewards.length == 1
+        ? l10n.pvpSeasonPendingSingle(pendingRewards.length)
+        : l10n.pvpSeasonPendingMultiple(pendingRewards.length);
 
     return Container(
       width: double.infinity,
@@ -1097,7 +1116,7 @@ class _PendingRewardsCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  '${pendingRewards.length} pending season $plural',
+                  pendingText,
                   style: GoogleFonts.baloo2(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
@@ -1138,7 +1157,7 @@ class _PendingRewardsCard extends StatelessWidget {
               ),
           if (pendingRewards.length > 3)
             Text(
-              '+${pendingRewards.length - 3} more pending season(s)',
+              l10n.pvpSeasonMorePending(pendingRewards.length - 3),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 12,
@@ -1156,7 +1175,7 @@ class _PendingRewardsCard extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.redeem),
-              label: Text(claiming ? 'Claiming...' : 'Claim All Rewards'),
+              label: Text(claiming ? l10n.pvpSeasonClaiming : l10n.pvpSeasonClaimAllButton),
             ),
           ),
         ],

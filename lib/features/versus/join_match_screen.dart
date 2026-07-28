@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'match_lobby_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class JoinMatchScreen extends StatefulWidget {
   const JoinMatchScreen({super.key});
@@ -56,8 +57,10 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Unirme')),
+      appBar: AppBar(title: Text(l10n.joinMatchTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -65,9 +68,9 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
             TextField(
               controller: _ctrl,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Código de sala (ej: A7KQ2)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.joinMatchCodeLabel,
+                border: const OutlineInputBorder(),
               ),
               onSubmitted: (_) => _loading ? null : _join(),
             ),
@@ -86,7 +89,7 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Unirme'),
+                    : Text(l10n.joinMatchTitle),
               ),
             ),
           ],

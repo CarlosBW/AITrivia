@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'notification_service.dart';
 import 'analytics_service.dart';
+import 'locale_controller.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 class AchievementInfo {
   final String id;
@@ -31,65 +34,73 @@ class AchievementService {
   FirebaseFirestore get _db => FirebaseFirestore.instance;
   final _notificationService = NotificationService.instance;
 
-  static const List<AchievementInfo> achievements = [
-    AchievementInfo(
-      id: 'first_pvp_win',
-      title: 'First Duel Win',
-      description: 'Win your first 1 vs 1 match.',
-      target: 1,
-      rewardCoins: 10,
-      rewardXp: 20,
-      icon: '⚔️',
-    ),
-    AchievementInfo(
-      id: 'pvp_wins_10',
-      title: 'Duelist',
-      description: 'Win 10 1 vs 1 matches.',
-      target: 10,
-      rewardCoins: 40,
-      rewardXp: 80,
-      icon: '🏆',
-    ),
-    AchievementInfo(
-      id: 'pvp_streak_5',
-      title: 'On Fire',
-      description: 'Reach a 5-win streak in 1 vs 1.',
-      target: 5,
-      rewardCoins: 50,
-      rewardXp: 100,
-      icon: '🔥',
-    ),
-    AchievementInfo(
-      id: 'solo_levels_10',
-      title: 'Solo Explorer',
-      description: 'Complete 10 solo levels.',
-      target: 10,
-      rewardCoins: 30,
-      rewardXp: 60,
-      icon: '🧭',
-    ),
-    AchievementInfo(
-      id: 'daily_streak_7',
-      title: 'Weekly Habit',
-      description: 'Reach a 7-day Daily Challenge streak.',
-      target: 7,
-      rewardCoins: 50,
-      rewardXp: 100,
-      icon: '📅',
-    ),
-    AchievementInfo(
-      id: 'friends_5',
-      title: 'Social Player',
-      description: 'Add 5 friends.',
-      target: 5,
-      rewardCoins: 25,
-      rewardXp: 50,
-      icon: '👥',
-    ),
-  ];
+  // Resolved from the acting user's own device locale — correct for
+  // exceptions and achievement-completed notifications, since both always
+  // concern the same user whose device just triggered this.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
+
+  /// Achievement metadata, localized for display. Titles/descriptions are
+  /// computed fresh from [l10n] rather than stored as static const text.
+  static List<AchievementInfo> achievementsFor(AppLocalizations l10n) => [
+        AchievementInfo(
+          id: 'first_pvp_win',
+          title: l10n.achievementFirstPvpWinTitle,
+          description: l10n.achievementFirstPvpWinDescription,
+          target: 1,
+          rewardCoins: 10,
+          rewardXp: 20,
+          icon: '⚔️',
+        ),
+        AchievementInfo(
+          id: 'pvp_wins_10',
+          title: l10n.achievementPvpWins10Title,
+          description: l10n.achievementPvpWins10Description,
+          target: 10,
+          rewardCoins: 40,
+          rewardXp: 80,
+          icon: '🏆',
+        ),
+        AchievementInfo(
+          id: 'pvp_streak_5',
+          title: l10n.achievementPvpStreak5Title,
+          description: l10n.achievementPvpStreak5Description,
+          target: 5,
+          rewardCoins: 50,
+          rewardXp: 100,
+          icon: '🔥',
+        ),
+        AchievementInfo(
+          id: 'solo_levels_10',
+          title: l10n.achievementSoloLevels10Title,
+          description: l10n.achievementSoloLevels10Description,
+          target: 10,
+          rewardCoins: 30,
+          rewardXp: 60,
+          icon: '🧭',
+        ),
+        AchievementInfo(
+          id: 'daily_streak_7',
+          title: l10n.achievementDailyStreak7Title,
+          description: l10n.achievementDailyStreak7Description,
+          target: 7,
+          rewardCoins: 50,
+          rewardXp: 100,
+          icon: '📅',
+        ),
+        AchievementInfo(
+          id: 'friends_5',
+          title: l10n.achievementFriends5Title,
+          description: l10n.achievementFriends5Description,
+          target: 5,
+          rewardCoins: 25,
+          rewardXp: 50,
+          icon: '👥',
+        ),
+      ];
 
   AchievementInfo? getAchievementById(String id) {
-    for (final a in achievements) {
+    for (final a in achievementsFor(_l10n)) {
       if (a.id == id) return a;
     }
     return null;
@@ -175,8 +186,8 @@ class AchievementService {
         await _notificationService.createNotification(
           targetUid: uid,
           type: 'achievement_completed',
-          title: 'Achievement completed',
-          body: 'You completed "${achievement.title}". Claim your reward.',
+          title: _l10n.serviceAchievementCompletedTitle,
+          body: _l10n.serviceAchievementCompletedBody(achievement.title),
           data: {
             'achievementId': achievement.id,
           },
@@ -194,7 +205,7 @@ class AchievementService {
     required String achievementId,
   }) async {
     if (getAchievementById(achievementId) == null) {
-      throw Exception('Achievement not found.');
+      throw Exception(_l10n.serviceAchievementNotFound);
     }
 
     try {
@@ -202,7 +213,7 @@ class AchievementService {
           .httpsCallable('claimAchievementReward')
           .call({'achievementId': achievementId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudo reclamar la recompensa.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotClaimReward);
     }
   }
 

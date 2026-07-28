@@ -7,6 +7,7 @@ import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
 import 'active_matches_screen.dart';
 import 'pvp_season_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class PvPScreen extends StatelessWidget {
@@ -35,21 +36,22 @@ class PvPScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PvP'),
+        title: Text(l10n.pvpHubTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Competitive hub',
+            l10n.pvpHubHeading,
             style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose how you want to compete.',
+            l10n.pvpHubSubheading,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 18),
@@ -63,11 +65,11 @@ class PvPScreen extends StatelessWidget {
                 accent: const Color(0xFF6C4FF2),
                 accentBg: const Color(0xFFEEEDFE),
                 title: hasPendingTurn
-                    ? 'Active Matches • Your Turn!'
-                    : 'Active Matches',
+                    ? l10n.pvpActiveMatchesTitleAlert
+                    : l10n.pvpActiveMatchesTitle,
                 subtitle: hasPendingTurn
-                    ? 'You have pending matches waiting for your move.'
-                    : 'Pending turns, live games, and recent results.',
+                    ? l10n.pvpActiveMatchesSubtitleAlert
+                    : l10n.pvpActiveMatchesSubtitle,
                 alert: hasPendingTurn,
                 onTap: () {
                   Navigator.push(
@@ -90,12 +92,11 @@ class PvPScreen extends StatelessWidget {
                 accent: const Color(0xFFFF6B5B),
                 accentBg: const Color(0xFFFFF0EE),
                 title: hasPending
-                    ? 'Realtime Invites • New!'
-                    : 'Realtime Invites',
+                    ? l10n.pvpRealtimeInvitesTitleAlert
+                    : l10n.pvpRealtimeInvitesTitle,
                 subtitle: hasPending
-                    ? 'You have live challenges waiting.'
-                    : 'Accept or decline live challenges. '
-                        'Para retar a un amigo, ve a la pestaña Friends.',
+                    ? l10n.pvpRealtimeInvitesSubtitleAlert
+                    : l10n.pvpRealtimeInvitesSubtitle,
                 alert: hasPending,
                 onTap: () {
                   Navigator.push(
@@ -112,8 +113,8 @@ class PvPScreen extends StatelessWidget {
             icon: Icons.travel_explore_outlined,
             accent: const Color(0xFFE5A400),
             accentBg: const Color(0xFFFFF6DE),
-            title: 'Find Opponent',
-            subtitle: 'Play against any available challenger.',
+            title: l10n.pvpFindOpponentTitle,
+            subtitle: l10n.pvpFindOpponentSubtitle,
             onTap: () {
               Navigator.push(
                 context,
@@ -127,9 +128,8 @@ class PvPScreen extends StatelessWidget {
             icon: Icons.workspace_premium_outlined,
             accent: const Color(0xFFE5622C),
             accentBg: const Color(0xFFFFE8D6),
-            title: 'PvP Season',
-            subtitle:
-                'View your ranked league, season progress, leaderboard and rewards.',
+            title: l10n.pvpSeasonTitle,
+            subtitle: l10n.pvpSeasonSubtitle,
             onTap: () {
               Navigator.push(
                 context,

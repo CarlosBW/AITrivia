@@ -181,5 +181,1290 @@
   "avatarCategoryWeekly": "SEMANAL",
   "avatarCategoryAchievement": "LOGRO",
   "avatarCategoryAi": "IA",
-  "avatarCategoryAiUnique": "IA ÚNICO"
+  "avatarCategoryAiUnique": "IA ÚNICO",
+
+  "livesNoLivesTitle": "Sin vidas suficientes",
+  "livesNoLivesMessage": "Necesitas al menos 1 vida completa para entrar a un nivel.",
+  "livesYourLives": "Tus vidas",
+  "livesNextHalf": "Próx. media vida",
+  "livesNextFull": "Para 1 vida completa",
+  "livesGoBack": "Volver",
+  "livesWait": "Esperar",
+  "livesRecoverButton": "Recuperar 1 vida ({cost} monedas)",
+  "@livesRecoverButton": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+
+  "soloTabTitle": "Solo",
+  "soloErrorLoadingCategories": "Error al cargar categorías:\n{error}",
+  "@soloErrorLoadingCategories": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "soloNoCategoriesAvailable": "No hay categorías activas en Firestore.",
+  "soloFixedTopics": "Temas fijos",
+  "soloLifeRecovered": "❤️ Vida recuperada",
+  "soloNotEnoughCoins": "❌ No tienes suficientes monedas",
+  "soloProgressLevels": "Progreso: {completed} / {total} niveles",
+  "@soloProgressLevels": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "soloViewLevels": "Ver niveles",
+  "soloStatusCompleted": "Completado",
+  "soloStatusInProgress": "En curso",
+  "soloStatusNew": "Nuevo",
+  "soloContinueLevel": "Continuar N{level}",
+  "@soloContinueLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+
+  "levelSelectNoLevelsYet": "Esta categoría aún no tiene niveles disponibles.",
+  "levelSelectChooseLevel": "Selecciona un nivel",
+  "levelSelectAiTopicApproved": "Tema IA aprobado",
+  "levelSelectCategoryApproved": "Categoría aprobada",
+  "levelSelectAiTopicProgressApproved": "Tu progreso aprobado en este tema IA",
+  "levelSelectCategoryProgressApproved": "Tu progreso aprobado en esta categoría",
+  "levelSelectApprovedCount": "Aprobados: {completed} / {total}",
+  "@levelSelectApprovedCount": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelSelectPlayLastLevel": "Jugar último nivel",
+  "levelSelectContinueAtLevel": "Continuar en nivel {level}",
+  "@levelSelectContinueAtLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelSelectAvailable": "Disponible",
+  "levelSelectLocked": "Bloqueado",
+  "levelSelectLevelNumber": "Nivel {level}",
+  "@levelSelectLevelNumber": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelSelectNextBadge": "Siguiente",
+  "levelSelectLoadFailedTitle": "No se pudo cargar la categoría.",
+
+  "levelPlayAiTopicLabel": "Tema IA",
+  "levelPlayAppBarTitle": "{name} - Nivel {level}",
+  "@levelPlayAppBarTitle": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"}
+    }
+  },
+  "levelPlayTimeUp": "⏰ Se acabó el tiempo",
+  "levelPlayTimeUpNoLives": "⏰ Se acabó el tiempo - te quedaste sin vidas",
+  "levelPlayTimeUpLostHalfLife": "⏰ Se acabó el tiempo - perdiste media vida",
+  "levelPlayWrongNoLives": "❌ Incorrecto - te quedaste sin vidas",
+  "levelPlayWrongLostHalfLife": "❌ Incorrecto - perdiste media vida",
+  "levelPlayNeedFullLife": "Necesitas 1 vida completa para entrar a este nivel.",
+  "levelPlayLifeCheckError": "Error verificando vidas: {error}",
+  "@levelPlayLifeCheckError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "levelPlaySessionCreateErrorTitle": "Error creando sesión",
+  "levelPlayGeneratingQuestions": "Generando preguntas del nivel...",
+  "levelPlaySessionNotFound": "Sesión no encontrada.",
+  "levelPlaySessionNoQuestions": "Esta sesión no tiene preguntas.",
+  "levelPlayLivesMax": "MAX",
+  "levelPlayOutOfLivesTitle": "Te quedaste sin vidas",
+  "levelPlayOutOfLivesMessage": "No puedes continuar este nivel hasta recuperar vidas.",
+  "levelPlayLivesHeader": "Vidas: {lives}",
+  "@levelPlayLivesHeader": {
+    "placeholders": {
+      "lives": {"type": "String"}
+    }
+  },
+  "levelPlayHalfLifeIn": "+0.5 en {time}",
+  "@levelPlayHalfLifeIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "levelPlayQuestionOfTotal": "Pregunta {current} de {total}",
+  "@levelPlayQuestionOfTotal": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelPlayRankExpert": "Experto",
+  "levelPlayRankAdvanced": "Avanzado",
+  "levelPlayRankIntermediate": "Intermedio",
+  "levelPlayRankBeginner": "Novato",
+  "levelPlayLevelPassed": "¡Nivel aprobado!",
+  "levelPlayLevelFinished": "Nivel finalizado",
+  "levelPlayScoreLine": "Puntaje: {correct} / {total} ({pct})",
+  "@levelPlayScoreLine": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"},
+      "pct": {"type": "String"}
+    }
+  },
+  "levelPlayRankLine": "Rango: {rank}",
+  "@levelPlayRankLine": {
+    "placeholders": {
+      "rank": {"type": "String"}
+    }
+  },
+  "levelPlayRewardsTitle": "Recompensas",
+  "levelPlayAlreadyPassedBefore": "Este nivel ya había sido aprobado antes.",
+  "levelPlayNeed40Percent": "Necesitas al menos 40% de aciertos para aprobar este nivel.",
+  "levelPlaySavingProgress": "Guardando progreso...",
+  "levelPlaySaveError": "Error guardando: {error}",
+  "@levelPlaySaveError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "levelPlayRetrySave": "Reintentar guardado",
+  "levelPlayProgressSaved": "✅ Progreso guardado",
+  "levelPlayContinueNextLevel": "Continuar (Nivel {level})",
+  "@levelPlayContinueNextLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelPlayWeeklyCounted": "Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.",
+  "levelPlayWeeklyNotCounted": "No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.",
+  "levelPlayPlayerLevel": "Nivel de jugador {level}",
+  "@levelPlayPlayerLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelPlayTotalXp": "XP total: {xp}",
+  "@levelPlayTotalXp": {
+    "placeholders": {
+      "xp": {"type": "int"}
+    }
+  },
+  "levelPlayLevelUp": "¡SUBISTE! Nivel {level}",
+  "@levelPlayLevelUp": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelPlayLeveledUpTo": "¡Subiste al nivel {level}!",
+  "@levelPlayLeveledUpTo": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "levelPlayXpInLevel": "{current} / {total} XP en este nivel",
+  "@levelPlayXpInLevel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+
+  "pvpHubTitle": "PvP",
+  "pvpHubHeading": "Centro competitivo",
+  "pvpHubSubheading": "Elige cómo quieres competir.",
+  "pvpActiveMatchesTitle": "Active Matches",
+  "pvpActiveMatchesTitleAlert": "Active Matches • ¡Tu turno!",
+  "pvpActiveMatchesSubtitle": "Turnos pendientes, partidas en vivo y resultados recientes.",
+  "pvpActiveMatchesSubtitleAlert": "Tienes partidas pendientes esperando tu jugada.",
+  "pvpRealtimeInvitesTitle": "Realtime Invites",
+  "pvpRealtimeInvitesTitleAlert": "Realtime Invites • ¡Nuevo!",
+  "pvpRealtimeInvitesSubtitle": "Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Friends.",
+  "pvpRealtimeInvitesSubtitleAlert": "Tienes retos en vivo esperando.",
+  "pvpFindOpponentTitle": "Find Opponent",
+  "pvpFindOpponentSubtitle": "Juega contra cualquier retador disponible.",
+  "pvpSeasonTitle": "PvP Season",
+  "pvpSeasonSubtitle": "Consulta tu liga ranked, progreso de temporada, leaderboard y recompensas.",
+
+  "activeMatchesTitle": "Partidas Activas",
+  "activeMatchesReconnecting": "Reconectando...",
+  "activeMatchesYourTurn": "Tu turno",
+  "activeMatchesLoadingYourMatches": "Cargando tus partidas...",
+  "activeMatchesNoneWaitingForYou": "No tienes partidas asíncronas pendientes.",
+  "activeMatchesWaitingForOpponent": "Esperando al rival",
+  "activeMatchesLoadingMatches": "Cargando partidas...",
+  "activeMatchesNoneWaitingForOpponent": "No hay partidas esperando a tu rival.",
+  "activeMatchesRecentlyFinished": "Finalizadas recientemente",
+  "activeMatchesLoadingResults": "Cargando resultados...",
+  "activeMatchesNoneFinished": "No hay partidas finalizadas recientes.",
+  "activeMatchesYourTurnSubtitle": "Tu turno • {category}",
+  "@activeMatchesYourTurnSubtitle": {
+    "placeholders": {
+      "category": {"type": "String"}
+    }
+  },
+  "activeMatchesWaitingSubtitle": "Esperando • Tu puntaje: {score}",
+  "@activeMatchesWaitingSubtitle": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "activeMatchesDrawSubtitle": "Empate • {a}-{b}",
+  "@activeMatchesDrawSubtitle": {
+    "placeholders": {
+      "a": {"type": "int"},
+      "b": {"type": "int"}
+    }
+  },
+  "activeMatchesVictorySubtitle": "Victoria • {a}-{b}",
+  "@activeMatchesVictorySubtitle": {
+    "placeholders": {
+      "a": {"type": "int"},
+      "b": {"type": "int"}
+    }
+  },
+  "activeMatchesDefeatSubtitle": "Derrota • {a}-{b}",
+  "@activeMatchesDefeatSubtitle": {
+    "placeholders": {
+      "a": {"type": "int"},
+      "b": {"type": "int"}
+    }
+  },
+  "activeMatchesPlay": "Jugar",
+  "activeMatchesView": "Ver",
+  "activeMatchesResult": "Resultado",
+
+  "findOpponentTitle": "Buscar rival",
+  "findOpponentLiveTab": "Tiempo real",
+  "findOpponentAsyncTab": "Asíncrono",
+
+  "liveMenuLeagueTitle": "Liga {name}",
+  "@liveMenuLeagueTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "liveMenuMmrHint1": "Buscar rival afecta tu MMR y tu liga PvP.",
+  "liveMenuFixedTopicLabel": "Tema fijo",
+  "liveMenuPublicMatchmaking": "Matchmaking público",
+  "liveMenuMmrHint2": "Buscar rival afecta tu MMR, liga y estadísticas PvP.",
+  "liveMenuPrivateMatches": "Partidas privadas",
+  "liveMenuCreatePrivateRoom": "Crear sala privada",
+  "liveMenuJoinWithCode": "Unirme con código",
+  "liveMenuPrivateMatchesHint": "Las partidas privadas son amistosas y no afectan tu ranking.",
+
+  "asyncMenuSelectTopicFirst": "Selecciona un tema fijo primero.",
+  "asyncMenuConfigTitle": "Configuración",
+  "asyncMenuFixedTopicsLabel": "Temas fijos",
+  "asyncMenuNoActiveCategories": "No hay categorías activas.",
+  "asyncMenuSelectTopicLabel": "Selecciona un tema fijo",
+  "asyncMenuFindPlayerButton": "Buscar jugador para retar",
+  "asyncMenuTip": "Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.",
+
+  "createMatchTitle": "Crear sala (Tiempo real)",
+  "createMatchYourName": "Tu nombre (displayName)",
+  "createMatchCategory": "Categoría",
+  "createMatchDifficulty": "Dificultad",
+  "createMatchDiffEasy": "1 (Fácil)",
+  "createMatchDiffMedium": "2 (Medio)",
+  "createMatchDiffHard": "3 (Difícil)",
+  "createMatchTimePerQuestion": "Tiempo/Pregunta",
+  "createMatchQuestions": "Preguntas",
+  "createMatchAutoSearch": "Buscar jugador automático",
+  "createMatchCreateRoom": "Crear sala",
+
+  "joinMatchTitle": "Unirme",
+  "joinMatchCodeLabel": "Código de sala (ej: A7KQ2)",
+
+  "liveMatchmakingRankedTitle": "Matchmaking Ranked",
+  "liveMatchmakingCasualTitle": "Matchmaking Casual",
+  "liveMatchmakingTypeLine": "Tipo: {type}",
+  "@liveMatchmakingTypeLine": {
+    "placeholders": {
+      "type": {"type": "String"}
+    }
+  },
+  "liveMatchmakingCategoryLine": "Categoría: {category}",
+  "@liveMatchmakingCategoryLine": {
+    "placeholders": {
+      "category": {"type": "String"}
+    }
+  },
+  "liveMatchmakingDifficultyLine": "Dificultad: {difficulty}",
+  "@liveMatchmakingDifficultyLine": {
+    "placeholders": {
+      "difficulty": {"type": "int"}
+    }
+  },
+  "liveMatchmakingQuestionsLine": "Preguntas: {total}",
+  "@liveMatchmakingQuestionsLine": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "liveMatchmakingTimePerQuestionLine": "Tiempo/Pregunta: {seconds}s",
+  "@liveMatchmakingTimePerQuestionLine": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "liveMatchmakingNoOpponentFound": "No se encontró rival por ahora. Intenta nuevamente.",
+  "liveMatchmakingSearchButton": "Buscar",
+  "liveMatchmakingSearching": "Buscando...",
+  "liveMatchmakingSearchingOpponent": "Buscando rival...",
+  "liveMatchmakingQueueStatus": "Estado cola: {status}",
+  "@liveMatchmakingQueueStatus": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "liveMatchmakingRankedHint": "Primero busca rivales cercanos a tu MMR; si tarda, amplía el rango automáticamente.",
+  "liveMatchmakingCasualHint": "Casual no afecta tu MMR. Se prioriza encontrar rival rápido.",
+  "liveMatchmakingCancelSearch": "Cancelar búsqueda",
+
+  "asyncFindPlayersCannotChallengeSelf": "No puedes retarte a ti mismo.",
+  "asyncFindPlayersTitle": "Buscar jugador (asíncrono)",
+  "asyncFindPlayersSearchLabel": "Buscar por nombre",
+  "asyncFindPlayersNoneToShow": "No hay jugadores para mostrar.",
+  "asyncFindPlayersChallengeButton": "Retar",
+
+  "realtimeInvitesDeclined": "Invitación rechazada",
+  "realtimeInvitesErrorLoading": "Error cargando invitaciones:\n{error}",
+  "@realtimeInvitesErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "realtimeInvitesInvitedYou": "{name} te invitó",
+  "@realtimeInvitesInvitedYou": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "realtimeInvitesSubtitle": "1 vs 1 en vivo • Categoría: {category}",
+  "@realtimeInvitesSubtitle": {
+    "placeholders": {
+      "category": {"type": "String"}
+    }
+  },
+  "realtimeInvitesDecline": "Rechazar",
+  "realtimeInvitesAccept": "Aceptar",
+  "realtimeInvitesEmpty": "No tienes invitaciones en vivo por ahora.",
+
+  "friendChallengeNotOnline": "Tu amigo no está conectado para jugar en tiempo real.",
+  "friendChallengeRealtimeSent": "Reto en tiempo real enviado a {name}",
+  "@friendChallengeRealtimeSent": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "friendChallengeOnline": "Online",
+  "friendChallengeOffline": "Offline",
+  "friendChallengeSendRealtime": "Enviar reto en tiempo real",
+  "friendChallengeCreateAsync": "Crear reto asíncrono",
+  "friendChallengeTitle": "Configurar reto",
+  "friendChallengeTypeLabel": "Tipo de reto",
+  "friendChallengeNeedOnlineHint": "Tu amigo debe estar online para jugar en tiempo real.",
+  "friendChallengeMatchConfig": "Configuración del match",
+  "friendChallengeCategoryRandom": "Aleatorio",
+  "friendChallengeDiffEasy": "Fácil",
+  "friendChallengeDiffMedium": "Media",
+  "friendChallengeDiffHard": "Difícil",
+  "friendChallengeQuestionCountLabel": "Cantidad de preguntas",
+  "friendChallengeQuestionsCount": "{count} preguntas",
+  "@friendChallengeQuestionsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "friendChallengeTimePerQuestionLabel": "Tiempo por pregunta",
+  "friendChallengeSeconds": "{seconds} segundos",
+  "@friendChallengeSeconds": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "friendChallengeRealtimeHint": "Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.",
+  "friendChallengeAsyncHint": "Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.",
+
+  "matchLobbyWaitingFriendJoin": "Esperando que tu amigo se una a la sala.",
+  "matchLobbyAllReadyStarting": "Todo listo. La partida está iniciando...",
+  "matchLobbyReadyWaitingOpponent": "Listo. Esperando que tu rival confirme.",
+  "matchLobbyOpponentReadyConfirm": "Tu rival ya está listo. Confirma para empezar.",
+  "matchLobbyWaitingBothReady": "Esperando que ambos jugadores estén listos.",
+  "matchLobbyTitle": "Sala 1 vs 1",
+  "matchLobbyNotFound": "Sala no encontrada",
+  "matchLobbyNoLongerAvailable": "La sala ya no está disponible.",
+  "matchLobbyHeading": "1 vs 1 Match",
+  "matchLobbyTopicLabel": "Tema",
+  "matchLobbyModeLabel": "Modo",
+  "matchLobbyModeFixed": "Sin IA",
+  "matchLobbyModeAi": "Con IA",
+  "matchLobbyTimeLabel": "Tiempo",
+  "matchLobbySecondsPerQuestion": "{seconds} s por pregunta",
+  "@matchLobbySecondsPerQuestion": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "matchLobbyCodeCopied": "Código copiado",
+  "matchLobbyWaitingOpponentButton": "Esperando rival",
+  "matchLobbyWaitingOpponentEllipsis": "Esperando rival...",
+  "matchLobbyImReady": "Estoy listo",
+  "matchLobbyCancelReady": "Cancelar listo",
+  "matchLobbyRoomStatus": "Estado de la sala: {status}",
+  "@matchLobbyRoomStatus": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "matchLobbyPlayer1": "Jugador 1",
+  "matchLobbyPlayer2": "Jugador 2",
+  "matchLobbyReadyLabel": "Listo",
+  "matchLobbyWaitingLabel": "Esperando...",
+  "matchLobbyRoomCodeLabel": "Código de sala",
+  "matchLobbyCopyCodeButton": "Copiar código",
+
+  "pvpResultPerfectDraw": "Empate perfecto",
+  "pvpResultWonByPoints": "Ganaste por +{diff} puntos",
+  "@pvpResultWonByPoints": {
+    "placeholders": {
+      "diff": {"type": "int"}
+    }
+  },
+  "pvpResultLostByPoints": "Perdiste por {diff} puntos",
+  "@pvpResultLostByPoints": {
+    "placeholders": {
+      "diff": {"type": "int"}
+    }
+  },
+  "pvpResultFinalResult": "Resultado final",
+  "pvpResultVs": "VS",
+  "pvpResultMatchSummary": "Resumen del match",
+  "pvpResultYourScore": "Tu score",
+  "pvpResultOpponent": "Rival",
+  "pvpResultPerformance": "Rendimiento",
+  "pvpResultBefore": "Antes",
+  "pvpResultNow": "Ahora",
+  "pvpResultCurrentStreak": "🔥 Racha actual: {count} victorias",
+  "@pvpResultCurrentStreak": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "matchPlayRematchRequestTitle": "Solicitud de revancha",
+  "matchPlayRematchRequestBody": "{name} quiere jugar una revancha.",
+  "@matchPlayRematchRequestBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "matchPlayTitle": "1 vs 1",
+  "matchPlayNotFound": "Match no encontrado",
+  "matchPlayWaitingToStart": "Esperando que inicie...",
+  "matchPlayNoQuestions": "Este match no tiene preguntas.",
+  "matchPlayYourScoreLabel": "Tu puntaje",
+  "matchPlayWaitingFinalResult": "Esperando resultado final...",
+  "matchPlayOpponentStillAnswering": "Tu rival todavía está respondiendo preguntas.",
+  "matchPlayYourScoreLine": "Tu puntaje: {score}",
+  "@matchPlayYourScoreLine": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "matchPlayDrawTitle": "Empate",
+  "matchPlayDrawSubtitle": "Ambos terminaron con el mismo puntaje.",
+  "matchPlayVictoryTitle": "¡Ganaste!",
+  "matchPlayVictoryRankedSubtitle": "Buen duelo. Tu rating competitivo fue actualizado.",
+  "matchPlayVictoryCasualSubtitle": "Buen duelo. Sumaste una victoria 1 vs 1.",
+  "matchPlayDefeatTitle": "Perdiste",
+  "matchPlayDefeatRankedSubtitle": "Estuviste cerca. Tu rating competitivo fue actualizado.",
+  "matchPlayDefeatCasualSubtitle": "Estuviste cerca. Intenta una revancha.",
+  "matchPlayRematch": "Revancha",
+  "matchPlaySendingRequest": "Enviando solicitud...",
+  "matchPlayRequestSent": "Solicitud enviada ✓",
+  "matchPlayCreatingRematch": "Creando revancha...",
+  "matchPlayExit": "Salir",
+
+  "asyncMatchPlayTitle": "Reto asíncrono",
+  "asyncMatchPlayNotFound": "Reto no encontrado",
+  "asyncMatchPlayNoQuestions": "Este reto no tiene preguntas.",
+  "asyncMatchPlayYouFallback": "Tú",
+  "asyncMatchPlayOpponentFallback": "Rival",
+  "asyncMatchPlayCorrectLabel": "Aciertos",
+  "asyncMatchPlayChallengeCompletedTitle": "Reto completado",
+  "asyncMatchPlaySendingResultSubtitle": "Enviando tu resultado. Luego esperaremos a tu rival.",
+  "asyncMatchPlayAlreadyPlayedTitle": "Ya jugaste este reto",
+  "asyncMatchPlayCalculatingFinal": "Tu resultado fue enviado. Calculando resultado final.",
+  "asyncMatchPlayWaitingOpponentPlay": "Tu resultado fue enviado. Esperando que tu rival juegue.",
+  "asyncMatchPlaySendingRematch": "Enviando revancha...",
+
+  "pvpSeasonTabSeason": "Temporada",
+  "pvpSeasonTabLeaderboard": "Clasificación",
+  "pvpSeasonTabRewards": "Recompensas",
+  "pvpSeasonLabel": "Temporada: {id}",
+  "@pvpSeasonLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "pvpSeasonEndsIn": "Termina en: {time}",
+  "@pvpSeasonEndsIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "pvpSeasonProjectedReward": "Recompensa proyectada: +{coins} monedas",
+  "@pvpSeasonProjectedReward": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "pvpSeasonRankedHint": "Ranked usa matchmaking flexible: primero busca cerca de tu liga, luego amplía el rango para que nadie se quede esperando.",
+  "pvpSeasonHowItWorksTitle": "Cómo funcionan las Temporadas PvP",
+  "pvpSeasonHowItWorksBullet1": "• Juega partidas Ranked para subir tu MMR.",
+  "pvpSeasonHowItWorksBullet2": "• Tu liga se calcula según tu MMR actual.",
+  "pvpSeasonHowItWorksBullet3": "• Las clasificaciones ordenan a los jugadores por MMR.",
+  "pvpSeasonHowItWorksBullet4": "• Las recompensas se basan en tu liga final cuando termina la temporada.",
+  "pvpSeasonFriendsTab": "Amigos",
+  "pvpSeasonGlobalTab": "Global",
+  "pvpSeasonAllTab": "Todas",
+  "pvpSeasonErrorLoadingFriends": "Error cargando clasificación de amigos:\n{error}",
+  "@pvpSeasonErrorLoadingFriends": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pvpSeasonNoFriendsTitle": "Aún no hay amigos en la clasificación",
+  "pvpSeasonNoFriendsEmptyHint": "Juega partidas Ranked y agrega amigos para comparar tu rating PvP.",
+  "pvpSeasonNoFriendsHint": "Agrega amigos para comparar tu rating PvP con gente que conoces.",
+  "pvpSeasonYouSuffix": "{name} (Tú)",
+  "@pvpSeasonYouSuffix": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "pvpSeasonMatchesCount": "{count} partidas",
+  "@pvpSeasonMatchesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pvpSeasonWinLossDraw": "{wins} G / {losses} P / {draws} E",
+  "@pvpSeasonWinLossDraw": {
+    "placeholders": {
+      "wins": {"type": "int"},
+      "losses": {"type": "int"},
+      "draws": {"type": "int"}
+    }
+  },
+  "pvpSeasonErrorLoadingLeaderboard": "Error cargando clasificación:\n{error}",
+  "@pvpSeasonErrorLoadingLeaderboard": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pvpSeasonNoRankedPlayers": "Aún no hay jugadores ranked.\nJuega una partida Ranked para entrar en esta clasificación.",
+  "pvpSeasonRewardsTitle": "Recompensas de Temporada",
+  "pvpSeasonRewardsSubtitle": "Las recompensas se basan en tu mejor liga PvP de cada temporada finalizada.",
+  "pvpSeasonCurrentProjectedReward": "Recompensa proyectada actual",
+  "pvpSeasonEndsInLine": "La temporada termina en {time}",
+  "@pvpSeasonEndsInLine": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "pvpSeasonCheckingRewards": "Verificando recompensas de temporada PvP pendientes...",
+  "pvpSeasonCouldNotLoad": "No se pudieron cargar las recompensas",
+  "pvpSeasonNoRewardYetTitle": "Aún no hay recompensa disponible",
+  "pvpSeasonNoRewardYetHint": "Juega partidas Ranked esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.",
+  "pvpSeasonPendingSingle": "{count} recompensa de temporada pendiente",
+  "@pvpSeasonPendingSingle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pvpSeasonPendingMultiple": "{count} recompensas de temporada pendientes",
+  "@pvpSeasonPendingMultiple": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pvpSeasonMorePending": "+{count} temporada(s) pendiente(s) más",
+  "@pvpSeasonMorePending": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pvpSeasonClaiming": "Reclamando...",
+  "pvpSeasonClaimAllButton": "Reclamar todas las recompensas",
+  "pvpSeasonNoPendingRewards": "No hay recompensas de temporada PvP pendientes.",
+  "pvpSeasonClaimedRewards": "¡Reclamaste {count} recompensa(s) de temporada PvP: +{coins} monedas!",
+  "@pvpSeasonClaimedRewards": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+
+  "dailyResultTitle": "Resultado del Daily Challenge",
+  "dailyResultComplete": "¡Daily Challenge completado!",
+  "dailyResultCorrectAnswers": "Respuestas correctas",
+  "dailyResultTotalAnswered": "Total respondidas",
+  "dailyResultCoinsEarned": "Monedas ganadas",
+  "dailyResultStreakLabel": "Racha diaria",
+  "dailyResultDaysValue": "{days} días",
+  "@dailyResultDaysValue": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "dailyResultStreakBonus": "Bono de racha",
+  "dailyResultAlreadyPlayed": "Ya jugaste hoy. No se otorgaron monedas nuevamente.",
+  "dailyResultBackHome": "Volver al inicio",
+
+  "weeklyRewardsTitle": "Recompensas semanales",
+  "weeklyRewardsNoPending": "No hay recompensas semanales pendientes.",
+  "weeklyRewardsClaimed": "¡Reclamaste {count} recompensa(s): +{coins} monedas!",
+  "@weeklyRewardsClaimed": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyRewardsChecking": "Verificando recompensas semanales pendientes...",
+  "weeklyRewardsNoPendingTitle": "No hay recompensas semanales pendientes",
+  "weeklyRewardsKeepPlayingHint": "Sigue jugando el Weekly Challenge para ganar recompensas semanales.",
+  "weeklyRewardsPendingSingle": "{count} recompensa pendiente",
+  "@weeklyRewardsPendingSingle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "weeklyRewardsPendingMultiple": "{count} recompensas pendientes",
+  "@weeklyRewardsPendingMultiple": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "weeklyRewardsTotalAvailable": "Total disponible: +{coins} monedas",
+  "@weeklyRewardsTotalAvailable": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyRewardsMiniTile": "{seasonId} • {leagueName} • Puesto #{rank} • {message}",
+  "@weeklyRewardsMiniTile": {
+    "placeholders": {
+      "seasonId": {"type": "String"},
+      "leagueName": {"type": "String"},
+      "rank": {"type": "int"},
+      "message": {"type": "String"}
+    }
+  },
+  "weeklyRewardsHistoryTitle": "Historial de recompensas semanales",
+  "weeklyRewardsNoHistory": "Aún no has reclamado recompensas de temporada.",
+  "weeklyRewardsHistoryTitleLine": "{seasonId} • {leagueName}",
+  "@weeklyRewardsHistoryTitleLine": {
+    "placeholders": {
+      "seasonId": {"type": "String"},
+      "leagueName": {"type": "String"}
+    }
+  },
+  "weeklyRewardsHistorySubtitle": "Puesto #{rank} • Puntaje {score} • {message}",
+  "@weeklyRewardsHistorySubtitle": {
+    "placeholders": {
+      "rank": {"type": "int"},
+      "score": {"type": "int"},
+      "message": {"type": "String"}
+    }
+  },
+  "weeklyRewardsLeagueFallback": "Liga",
+  "weeklyRewardsMessageFallback": "Recompensa semanal reclamada",
+  "weeklyRewardsErrorLoadingHistory": "Error cargando historial:\n{error}",
+  "@weeklyRewardsErrorLoadingHistory": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "dailyLeaderboardTitle": "Clasificación Diaria",
+  "dailyLeaderboardErrorLoading": "Error cargando clasificación:\n{error}",
+  "@dailyLeaderboardErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "dailyLeaderboardNoData": "No hay datos de clasificación disponibles.",
+  "dailyLeaderboardNoScoresYet": "Aún no hay puntajes hoy.\n¡Juega el Daily Challenge primero!",
+  "dailyLeaderboardRankingTitle": "Clasificación",
+  "dailyLeaderboardPtsSuffix": "{score} pts",
+  "@dailyLeaderboardPtsSuffix": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "dailyLeaderboardNameWithYou": "{name}  (Tú)",
+  "@dailyLeaderboardNameWithYou": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "dailyLeaderboardCorrectStreakLine": "Correctas: {correct} / {total}  •  Racha: {streak}",
+  "@dailyLeaderboardCorrectStreakLine": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"},
+      "streak": {"type": "int"}
+    }
+  },
+  "dailyLeaderboardScoreLabel": "Puntaje",
+
+  "dailyChallengeCoinsPopup": "+5 Monedas 🎉",
+  "dailyChallengeErrorSaving": "Error guardando resultados: {error}",
+  "@dailyChallengeErrorSaving": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "dailyChallengeNoQuestions": "No hay preguntas disponibles",
+  "dailyChallengeTimeLabel": "Tiempo",
+  "dailyChallengeDifficultyLine": "Dificultad: {level}",
+  "@dailyChallengeDifficultyLine": {
+    "placeholders": {
+      "level": {"type": "String"}
+    }
+  },
+  "dailyChallengeAnsweredCount": "Respondidas: {count}",
+  "@dailyChallengeAnsweredCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "dailyChallengeCompletedTitle": "¡Daily completado!",
+  "dailyChallengeSavingResults": "Guardando tus resultados...",
+
+  "weeklyTopicScreenTitle": "Weekly Topic",
+  "weeklyTopicCoinsClaimed": "¡{coins} monedas reclamadas!",
+  "@weeklyTopicCoinsClaimed": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyTopicRewardUnavailable": "La recompensa ya fue reclamada o aún no está disponible.",
+  "weeklyTopicNoExclusiveReward": "No hay recompensa exclusiva configurada para esta semana.",
+  "weeklyTopicAvatarUnlocked": "¡{emoji} {name} desbloqueado!",
+  "@weeklyTopicAvatarUnlocked": {
+    "placeholders": {
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "weeklyTopicFeaturedBadge": "Tema Semanal Destacado",
+  "weeklyTopicProgressTitle": "Progreso",
+  "weeklyTopicLevelsCompleted": "{count} / 10 niveles completados",
+  "@weeklyTopicLevelsCompleted": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "weeklyTopicRewardsTitle": "Recompensas",
+  "weeklyTopicFiveLevelReward": "5 niveles: +{coins} monedas",
+  "@weeklyTopicFiveLevelReward": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyTopicCoinRewardClaimed": "Recompensa de monedas reclamada",
+  "weeklyTopicClaim5LevelReward": "Reclamar recompensa de 5 niveles",
+  "weeklyTopicTenLevelReward": "10 niveles: {emoji} {name}",
+  "@weeklyTopicTenLevelReward": {
+    "placeholders": {
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "weeklyTopicExclusiveClaimed": "Recompensa exclusiva reclamada.",
+  "weeklyTopicExclusiveReady": "Recompensa exclusiva lista para reclamar.",
+  "weeklyTopicExclusiveLocked": "Completa los 10 niveles para desbloquear esta recompensa.",
+  "weeklyTopicExclusiveClaimedButton": "Recompensa exclusiva reclamada",
+  "weeklyTopicClaim10LevelReward": "Reclamar recompensa de 10 niveles",
+  "weeklyTopicCategoryMissing": "Falta la categoría del Weekly Topic.",
+  "weeklyTopicPlayButton": "Jugar Weekly Topic",
+
+  "weeklyLeagueScreenTitle": "Weekly Challenge",
+  "weeklyLeagueErrorLoading": "Error cargando el desafío semanal:\n{error}",
+  "@weeklyLeagueErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "weeklyLeagueNoScoresYet": "Aún no hay puntajes semanales.\nJuega un Daily Challenge para entrar en esta clasificación semanal.",
+  "weeklyLeagueRankingTitle": "Clasificación Semanal",
+  "weeklyLeagueTierSuffix": "Nivel {name}",
+  "@weeklyLeagueTierSuffix": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "weeklyLeagueScoreLabel": "Puntaje semanal: {score}",
+  "@weeklyLeagueScoreLabel": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "weeklyLeagueResetIn": "Reinicio semanal en {time}",
+  "@weeklyLeagueResetIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "weeklyLeagueRewardHistoryButton": "Historial de recompensas",
+  "weeklyLeaguePendingSeasonRewards": "Recompensas de temporada pendientes",
+  "weeklyLeagueOpenToSeeDetails": "Abre Recompensas Semanales para ver tu puesto y monedas exactas.",
+  "weeklyLeagueViewDetails": "Ver detalles",
+  "weeklyLeagueClaim": "Reclamar",
+  "weeklyLeagueWeeklyRewardsTitle": "Recompensas Semanales",
+  "weeklyLeagueTop1Reward": "Top 1: {coins} monedas + bono de ascenso",
+  "@weeklyLeagueTop1Reward": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyLeagueTop3Reward": "Top 2-3: {coins} monedas",
+  "@weeklyLeagueTop3Reward": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyLeagueTop10Reward": "Top 10: {coins} monedas",
+  "@weeklyLeagueTop10Reward": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyLeagueResetHint": "Al final de la semana, la clasificación se reinicia y las recompensas se pueden reclamar.",
+  "weeklyLeagueLevelStreak": "Nivel {level}  •  Racha {streak}",
+  "@weeklyLeagueLevelStreak": {
+    "placeholders": {
+      "level": {"type": "int"},
+      "streak": {"type": "int"}
+    }
+  },
+  "weeklyLeagueWeeklyLabel": "Semanal",
+  "weeklyLeagueClaimedRewards": "¡Reclamaste {count} recompensas: +{coins} monedas!",
+  "@weeklyLeagueClaimedRewards": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+
+  "authGateError": "Error: {error}",
+  "@authGateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "achievementsTitle": "Logros",
+  "achievementsRewardClaimed": "🎉 Recompensa reclamada: +{coins} monedas",
+  "@achievementsRewardClaimed": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "achievementsErrorLoading": "Error cargando logros:\n{error}",
+  "@achievementsErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "achievementsProgressTitle": "Progreso de Logros",
+  "achievementsCompletedCount": "{completed} / {total} completados",
+  "@achievementsCompletedCount": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "achievementsClaimed": "Reclamado",
+  "achievementsClaimReward": "Reclamar recompensa",
+  "achievementsInProgress": "En progreso",
+  "achievementsCoinsPill": "+{coins} monedas",
+  "@achievementsCoinsPill": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+
+  "aiTopicsStatusReady": "Listo",
+  "aiTopicsStatusFailed": "Falló",
+  "aiTopicsStatusDeleted": "Eliminado",
+  "aiTopicsStatusInvalid": "Necesita reparación",
+  "aiTopicsStatusPreparing": "Preparando",
+  "aiTopicsTitle": "Temas IA",
+  "aiTopicsCreateTopic": "Crear tema",
+  "aiTopicsErrorLoading": "Error cargando temas IA:\n{error}",
+  "@aiTopicsErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "aiTopicsUntitled": "Tema sin título",
+  "aiTopicsDeleteTitle": "¿Eliminar tema?",
+  "aiTopicsDeleteBody": "¿Quieres quitar \"{title}\" de tus temas IA?",
+  "@aiTopicsDeleteBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "aiTopicsCancel": "Cancelar",
+  "aiTopicsDelete": "Eliminar",
+  "aiTopicsLevelsQuestions": "{levels} niveles • {questions} preguntas",
+  "@aiTopicsLevelsQuestions": {
+    "placeholders": {
+      "levels": {"type": "int"},
+      "questions": {"type": "int"}
+    }
+  },
+  "aiTopicsTapRetry": "Toca para reintentar la generación.",
+  "aiTopicsNeedsRegeneration": "Este tema necesita ser regenerado.",
+  "aiTopicsTapContinuePreparing": "Toca para seguir preparando este tema.",
+  "aiTopicsFree": "Gratis",
+  "aiTopicsCoinsCost": "{cost} monedas",
+  "@aiTopicsCoinsCost": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+  "aiTopicsRegenerateMenuItem": "Regenerar preguntas — {cost} monedas",
+  "@aiTopicsRegenerateMenuItem": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+  "aiTopicsExpandMenuItem": "Ampliar tema (+10 niveles) — {cost} monedas",
+  "@aiTopicsExpandMenuItem": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+  "aiTopicsGeneratingSnackbar": "Generando tema...",
+  "aiTopicsRegenerateDialogTitle": "Regenerar preguntas",
+  "aiTopicsRegenerateDialogBody": "Esto reemplaza las preguntas de \"{title}\" por otras nuevas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
+  "@aiTopicsRegenerateDialogBody": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "cost": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "aiTopicsRegenerateSuccess": "Preguntas regeneradas",
+  "aiTopicsExpandDialogTitle": "Ampliar tema",
+  "aiTopicsExpandDialogBody": "Agrega 10 niveles más a \"{title}\".\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
+  "@aiTopicsExpandDialogBody": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "cost": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "aiTopicsExpandSuccess": "Tema ampliado",
+  "aiTopicsConfirm": "Confirmar",
+  "aiTopicsEmptyTitle": "Crea tu propio tema de trivia",
+  "aiTopicsEmptySubtitle": "Elige cualquier tema que te guste. Las preguntas generadas por IA se conectarán en el siguiente paso.",
+  "aiTopicsEmptyButton": "Crear Tema IA",
+
+  "createAiTopicEnterTopic": "Ingresa un tema",
+  "createAiTopicCreated": "Tema IA creado",
+  "createAiTopicSubtitle": "Crea tu propia categoría de trivia",
+  "createAiTopicExamplesLabel": "Ejemplos:",
+  "createAiTopicExamplesList": "• Fórmula 1\n• Harry Potter\n• Películas de Marvel\n• Antiguo Egipto\n• Exploración espacial",
+  "createAiTopicFieldLabel": "Tema",
+  "createAiTopicFieldHint": "Ejemplo: Fórmula 1",
+  "createAiTopicYouHaveCoins": "Tienes {coins} monedas",
+  "@createAiTopicYouHaveCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "createAiTopicFirstFree": "🎉 Tu primer tema es gratis",
+  "createAiTopicCosts": "Este tema cuesta {cost} monedas",
+  "@createAiTopicCosts": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+  "createAiTopicMissingCoins": "Te faltan {amount} monedas",
+  "@createAiTopicMissingCoins": {
+    "placeholders": {
+      "amount": {"type": "int"}
+    }
+  },
+  "createAiTopicIncludesHint": "Incluye 10 niveles con 10 preguntas cada uno, preparados de a poco mientras juegas.",
+  "createAiTopicCreatingButton": "Creando...",
+
+  "coinShopTitle": "Comprar monedas",
+  "coinShopPurchaseSuccess": "+{coins} monedas",
+  "@coinShopPurchaseSuccess": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "coinShopPurchaseFailed": "La compra no se completó.",
+  "coinShopComingSoonTitle": "Próximamente",
+  "coinShopComingSoonBody": "La compra de monedas todavía no está disponible en esta versión.",
+  "coinShopCoinsAmount": "{coins} monedas",
+  "@coinShopCoinsAmount": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "coinShopBuyButton": "Comprar",
+
+  "notificationsChallengeDeclined": "Reto rechazado",
+  "notificationsContinue": "Continuar",
+  "notificationsViewResult": "Ver resultado",
+  "notificationsReview": "Revisar",
+  "notificationsView": "Ver",
+  "notificationsOpen": "Abrir",
+  "notificationsOpenLobby": "Abrir sala",
+  "notificationsTitle": "Notificaciones",
+  "notificationsReadAll": "Marcar todas",
+  "notificationsErrorLoading": "Error cargando notificaciones:\n{error}",
+  "@notificationsErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "notificationsFallbackTitle": "Notificación",
+  "notificationsChallengerPrefix": "👤 {name}",
+  "@notificationsChallengerPrefix": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "notificationsCategoryLine": "🎯 Categoría: {category}",
+  "@notificationsCategoryLine": {
+    "placeholders": {
+      "category": {"type": "String"}
+    }
+  },
+  "notificationsQuestionsLine": "❓ Preguntas: {count}",
+  "@notificationsQuestionsLine": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "notificationsTimeLine": "⏱ Tiempo: {seconds} seg",
+  "@notificationsTimeLine": {
+    "placeholders": {
+      "seconds": {"type": "String"}
+    }
+  },
+  "notificationsEmptyState": "Aún no tienes notificaciones.",
+
+  "friendsOfflineLabel": "Sin conexión",
+  "friendsLastSeenJustNow": "Visto justo ahora",
+  "friendsLastSeenMinutes": "Visto hace {minutes}m",
+  "@friendsLastSeenMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "friendsLastSeenHours": "Visto hace {hours}h",
+  "@friendsLastSeenHours": {
+    "placeholders": {
+      "hours": {"type": "int"}
+    }
+  },
+  "friendsEnterUsername": "Escribe un username para buscar.",
+  "friendsRequestSent": "Solicitud enviada",
+  "friendsActionCompleted": "Acción completada",
+  "friendsTitle": "Amigos",
+  "friendsSearchTab": "Buscar",
+  "friendsFriendsTab": "Amigos",
+  "friendsSentTab": "Enviadas",
+  "friendsReceivedTab": "Recibidas",
+  "friendsUsernameLabel": "Username",
+  "friendsNoPlayersFound": "No se encontraron jugadores con ese username.",
+  "friendsErrorLoadingFriends": "Error cargando amigos:\n{error}",
+  "@friendsErrorLoadingFriends": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "friendsLoadingFriends": "Cargando amigos...",
+  "friendsNoFriendsYet": "Todavía no tienes amigos agregados.",
+  "friendsAsyncOnly": "Solo asíncrono",
+  "friendsErrorLoadingSent": "Error cargando solicitudes enviadas:\n{error}",
+  "@friendsErrorLoadingSent": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "friendsLoadingSent": "Cargando solicitudes enviadas...",
+  "friendsNoSentRequests": "No tienes solicitudes pendientes por responder.",
+  "friendsPending": "Pendiente",
+  "friendsSentStatus": "Enviado",
+  "friendsErrorLoadingReceived": "Error cargando solicitudes:\n{error}",
+  "@friendsErrorLoadingReceived": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "friendsLoadingReceived": "Cargando solicitudes...",
+  "friendsNoReceivedRequests": "No tienes solicitudes pendientes.",
+  "friendsWantsToAddYou": "Quiere agregarte",
+  "friendsReject": "Rechazar",
+  "friendsAccept": "Aceptar",
+  "friendsAlreadyFriend": "Ya es tu amigo",
+  "friendsWantsToAddYouTile": "Te quiere agregar",
+  "friendsPlayerFound": "Jugador encontrado",
+  "friendsAddButton": "Agregar",
+  "onboardingWelcomeTitle": "¡Bienvenido a TriviaIA!",
+  "onboardingWelcomeBody": "Responde preguntas de trivia, compite contra otros jugadores y sube de nivel cada día.",
+  "onboardingLivesTitle": "Tus vidas",
+  "onboardingLivesBody": "Tienes 5 vidas. Cada una se recupera sola cada 5 minutos, o puedes comprarla al instante con monedas si no quieres esperar.",
+  "onboardingCoinsTitle": "Monedas y racha diaria",
+  "onboardingCoinsBody": "Gana monedas y XP jugando. Vuelve cada día al Daily Challenge para mantener tu racha y ganar recompensas extra.",
+  "onboardingSkip": "Saltar",
+  "onboardingNext": "Siguiente",
+  "onboardingPlayFirstDaily": "Jugar mi primer Daily Challenge",
+  "notificationBellTooltip": "Notificaciones",
+  "buyCoinsButtonLabel": "Comprar monedas",
+  "profileErrorLoadingMatchHistory": "Error cargando historial de partidas:\n{error}",
+  "@profileErrorLoadingMatchHistory": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "levelPlayPerfect": "¡PERFECTO!",
+  "serviceEnterUsername": "Escribe un nombre de usuario.",
+  "serviceConnectionTimeout": "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.",
+  "serviceInvalidUser": "Usuario inválido.",
+  "serviceCannotAddSelf": "No puedes agregarte a ti mismo.",
+  "serviceUserNotFound": "El usuario no existe.",
+  "serviceAlreadyFriends": "Ya son amigos.",
+  "serviceRequestAlreadySent": "Solicitud ya enviada.",
+  "serviceInvalidRequest": "Solicitud inválida.",
+  "serviceCouldNotAcceptRequest": "No se pudo aceptar la solicitud.",
+  "serviceInvalidFriend": "Amigo inválido.",
+  "serviceCouldNotRemoveFriend": "No se pudo eliminar al amigo.",
+  "serviceFriendRequestNotifTitle": "Nueva solicitud de amistad",
+  "serviceFriendRequestNotifBody": "{name} quiere agregarte como amigo.",
+  "@serviceFriendRequestNotifBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceRankedCooldown": "Tienes cooldown de ranked por abandono. Intenta de nuevo en {remaining}.",
+  "@serviceRankedCooldown": {
+    "placeholders": {
+      "remaining": {"type": "String"}
+    }
+  },
+  "serviceAiTopicEmpty": "Tema IA no puede estar vacío",
+  "serviceRoomNotFound": "Sala no existe",
+  "serviceRoomAlreadyStartedOrEnded": "La sala ya inició o terminó",
+  "serviceRoomFull": "Sala llena",
+  "serviceNotInRoom": "No estás dentro de esta sala",
+  "serviceMatchNotFound": "Match no encontrado",
+  "serviceChallengedUidEmpty": "challengedUid vacío",
+  "serviceCannotChallengeSelfNoPeriod": "No puedes retarte a ti mismo",
+  "serviceChallengeNotFound": "Reto no encontrado",
+  "serviceNotYourChallenge": "No perteneces a este reto",
+  "serviceAsyncMatchNotFound": "Async match no existe",
+  "serviceNotYourMatch": "No perteneces a este match",
+  "serviceCodeNotFound": "Código no encontrado",
+  "servicePoolEmptyForCategory": "Pool vacío para {categoryId}",
+  "@servicePoolEmptyForCategory": {
+    "placeholders": {
+      "categoryId": {"type": "String"}
+    }
+  },
+  "serviceNoActiveCategories": "No hay categorías activas",
+  "serviceRematchRequestedTitle": "Revancha solicitada",
+  "serviceRematchRequestedBody": "{name} quiere la revancha.",
+  "@serviceRematchRequestedBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceNewAsyncChallengeTitle": "Nuevo reto asíncrono",
+  "serviceNewAsyncChallengeBody": "{name} te retó a una partida 1 vs 1.",
+  "@serviceNewAsyncChallengeBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceYourTurnTitle": "Tu turno",
+  "serviceYourTurnBody": "{name} terminó su partida asíncrona. Ahora es tu turno.",
+  "@serviceYourTurnBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceCannotChallengeSelfPeriod": "No puedes retarte a ti mismo.",
+  "serviceInviteNotFound": "La invitación ya no existe.",
+  "serviceCannotAcceptInvite": "No puedes aceptar esta invitación.",
+  "serviceInviteNoLongerAvailable": "Esta invitación ya no está disponible.",
+  "serviceNoQuestionsForCategory": "No hay preguntas disponibles para esta categoría.",
+  "serviceNoActiveCategoriesAvailable": "No hay categorías activas disponibles.",
+  "serviceRealtimeChallengeTitle": "Reto en tiempo real",
+  "serviceRealtimeChallengeBody": "{name} te invitó a una partida 1 vs 1 en tiempo real.",
+  "@serviceRealtimeChallengeBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceRealtimeInviteAcceptedTitle": "Invitación en tiempo real aceptada",
+  "serviceRealtimeInviteAcceptedBody": "{name} aceptó tu reto en tiempo real.",
+  "@serviceRealtimeInviteAcceptedBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "serviceNoActiveDailyCategories": "No hay categorías activas para Daily Challenge.",
+  "serviceNoQuestionsInPools": "No hay preguntas disponibles en los pools fijos.",
+  "achievementFirstPvpWinTitle": "Primera victoria en duelo",
+  "achievementFirstPvpWinDescription": "Gana tu primera partida 1 vs 1.",
+  "achievementPvpWins10Title": "Duelista",
+  "achievementPvpWins10Description": "Gana 10 partidas 1 vs 1.",
+  "achievementPvpStreak5Title": "En racha",
+  "achievementPvpStreak5Description": "Alcanza una racha de 5 victorias en 1 vs 1.",
+  "achievementSoloLevels10Title": "Explorador solitario",
+  "achievementSoloLevels10Description": "Completa 10 niveles en solitario.",
+  "achievementDailyStreak7Title": "Hábito semanal",
+  "achievementDailyStreak7Description": "Alcanza una racha de 7 días en el Daily Challenge.",
+  "achievementFriends5Title": "Jugador social",
+  "achievementFriends5Description": "Agrega 5 amigos.",
+  "serviceAchievementCompletedTitle": "Logro completado",
+  "serviceAchievementCompletedBody": "Completaste \"{title}\". Reclama tu recompensa.",
+  "@serviceAchievementCompletedBody": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "serviceAchievementNotFound": "Logro no encontrado.",
+  "serviceCouldNotClaimReward": "No se pudo reclamar la recompensa.",
+  "pvpWindowSameLeagueLabel": "Misma liga",
+  "pvpWindowSameLeagueDescription": "Buscando primero un rival muy cercano a tu MMR.",
+  "pvpWindowNearbyLeaguesLabel": "Ligas cercanas",
+  "pvpWindowNearbyLeaguesDescription": "Ampliando a jugadores de ligas vecinas.",
+  "pvpWindowExpandedRangeLabel": "Rango ampliado",
+  "pvpWindowExpandedRangeDescription": "Priorizando encontrar partida sin perder competitividad.",
+  "pvpWindowAnyOpponentLabel": "Cualquier rival disponible",
+  "pvpWindowAnyOpponentDescription": "Ahora se prioriza que puedas jugar sin quedarte esperando.",
+  "weeklyRewardChampionBonus": "¡Bono de campeón!",
+  "weeklyRewardTop3Bonus": "¡Bono top 3!",
+  "weeklyRewardTop10Bonus": "¡Bono top 10!",
+  "weeklyRewardGenericBonus": "Recompensa de liga semanal"
 }

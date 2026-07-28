@@ -6,6 +6,7 @@ import '../onboarding/onboarding_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
@@ -99,7 +100,7 @@ class _AuthGateState extends State<AuthGate> {
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
-              'Error: $_error',
+              AppLocalizations.of(context).authGateError(_error!),
               textAlign: TextAlign.center,
             ),
           ),

@@ -13,6 +13,32 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+/**
+ * Cloud Functions run with no client context, so notification text sent to
+ * a given user must be picked from their own stored `languageCode` field
+ * (lib/services/locale_controller.dart writes it on every locale change;
+ * lib/features/auth/user_bootstrap.dart seeds it on first launch) rather
+ * than any notion of "current locale" — there isn't one here.
+ * @param {unknown} languageCode The recipient's stored `languageCode`.
+ * @param {string} es Spanish text.
+ * @param {string} en English text.
+ * @return {string} `en` if languageCode is `"en"`, otherwise `es`.
+ */
+function pickText(languageCode: unknown, es: string, en: string): string {
+  return languageCode === "en" ? en : es;
+}
+
+// Mirrors the achievement*Title keys in lib/l10n/app_es.arb / app_en.arb —
+// keep in sync.
+const ACHIEVEMENT_TITLES: Record<string, {es: string; en: string}> = {
+  first_pvp_win: {es: "Primera victoria en duelo", en: "First Duel Win"},
+  pvp_wins_10: {es: "Duelista", en: "Duelist"},
+  pvp_streak_5: {es: "En racha", en: "On Fire"},
+  solo_levels_10: {es: "Explorador solitario", en: "Solo Explorer"},
+  daily_streak_7: {es: "Hábito semanal", en: "Weekly Habit"},
+  friends_5: {es: "Jugador social", en: "Social Player"},
+};
+
 const DEFAULT_RATING = 1000;
 const K_FACTOR = 32;
 
@@ -460,13 +486,17 @@ async function readPvpAchievementSnaps(
  * @param {number} progress New progress value.
  * @param {FirebaseFirestore.DocumentSnapshot} snap Previously-read
  * achievement doc.
+ * @param {unknown} languageCode This player's stored `languageCode`
+ * (`users/{uid}.languageCode`), used to localize the completion
+ * notification — this player is always the notification's own recipient.
  */
 function applyPvpAchievementProgress(
   tx: FirebaseFirestore.Transaction,
   uid: string,
   achievement: PvpAchievementDef,
   progress: number,
-  snap: FirebaseFirestore.DocumentSnapshot
+  snap: FirebaseFirestore.DocumentSnapshot,
+  languageCode: unknown
 ): void {
   const data = snap.data() || {};
 
@@ -499,10 +529,20 @@ function applyPvpAchievementProgress(
   tx.set(snap.ref, update, {merge: true});
 
   if (completed && !alreadyNotified) {
+    const localizedTitle = languageCode === "en" ?
+      (ACHIEVEMENT_TITLES[achievement.id]?.en || achievement.title) :
+      (ACHIEVEMENT_TITLES[achievement.id]?.es || achievement.title);
+
     tx.set(db.collection("users").doc(uid).collection("notifications").doc(), {
       type: "achievement_completed",
-      title: "Achievement completed",
-      body: `You completed "${achievement.title}". Claim your reward.`,
+      title: pickText(
+        languageCode, "Logro completado", "Achievement completed"
+      ),
+      body: pickText(
+        languageCode,
+        `Completaste "${localizedTitle}". Reclama tu recompensa.`,
+        `You completed "${localizedTitle}". Claim your reward.`
+      ),
       data: {achievementId: achievement.id},
       read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -715,29 +755,31 @@ export const finalizePvpMatch = onDocumentUpdated(
           tx, hostUid, PVP_ACHIEVEMENTS[0], hostReward.newStreak > 0 ?
             safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0) :
             safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0),
-          hostFirstWinSnap
+          hostFirstWinSnap, hostUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, hostUid, PVP_ACHIEVEMENTS[1],
-          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins10Snap
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins10Snap,
+          hostUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, hostUid, PVP_ACHIEVEMENTS[2], hostReward.newStreak,
-          hostStreak5Snap
+          hostStreak5Snap, hostUser.languageCode
         );
 
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[0],
           safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0),
-          guestFirstWinSnap
+          guestFirstWinSnap, guestUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[1],
-          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins10Snap
+          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins10Snap,
+          guestUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[2], guestReward.newStreak,
-          guestStreak5Snap
+          guestStreak5Snap, guestUser.languageCode
         );
 
         const hostCoinClamp = clampDailyPvpCoins(
@@ -849,25 +891,31 @@ export const finalizePvpMatch = onDocumentUpdated(
 
         applyPvpAchievementProgress(
           tx, hostUid, PVP_ACHIEVEMENTS[0],
-          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostFirstWinSnap
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostFirstWinSnap,
+          hostUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, hostUid, PVP_ACHIEVEMENTS[1],
-          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins10Snap
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins10Snap,
+          hostUser.languageCode
         );
         applyPvpAchievementProgress(
-          tx, hostUid, PVP_ACHIEVEMENTS[2], hostNewStreak, hostStreak5Snap
+          tx, hostUid, PVP_ACHIEVEMENTS[2], hostNewStreak, hostStreak5Snap,
+          hostUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[0],
-          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestFirstWinSnap
+          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestFirstWinSnap,
+          guestUser.languageCode
         );
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[1],
-          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins10Snap
+          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins10Snap,
+          guestUser.languageCode
         );
         applyPvpAchievementProgress(
-          tx, guestUid, PVP_ACHIEVEMENTS[2], guestNewStreak, guestStreak5Snap
+          tx, guestUid, PVP_ACHIEVEMENTS[2], guestNewStreak, guestStreak5Snap,
+          guestUser.languageCode
         );
 
         const hostCoinClamp = clampDailyPvpCoins(
@@ -1111,16 +1159,21 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
 
       const notify = (
         targetUid: string,
-        title: string,
-        body: string
+        esTitle: string,
+        enTitle: string,
+        esBody: string,
+        enBody: string
       ): void => {
+        const languageCode = targetUid === challengerUid ?
+          challengerUser.languageCode : challengedUser.languageCode;
+
         tx.set(
           db.collection("users").doc(targetUid).collection("notifications")
             .doc(),
           {
             type: "match_result",
-            title,
-            body,
+            title: pickText(languageCode, esTitle, enTitle),
+            body: pickText(languageCode, esBody, enBody),
             data: {matchId},
             read: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1130,11 +1183,13 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
 
       if (draw) {
         notify(
-          challengerUid, "Async match finished",
+          challengerUid, "Partida terminada", "Async match finished",
+          `Tu partida contra ${challengedName} terminó en empate.`,
           `Your match against ${challengedName} ended in a draw.`
         );
         notify(
-          challengedUid, "Async match finished",
+          challengedUid, "Partida terminada", "Async match finished",
+          `Tu partida contra ${challengerName} terminó en empate.`,
           `Your match against ${challengerName} ended in a draw.`
         );
       } else {
@@ -1145,11 +1200,13 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
           challengedName : challengerName;
 
         notify(
-          winnerUid as string, "You won!",
+          winnerUid as string, "¡Ganaste!", "You won!",
+          `Ganaste tu partida asíncrona contra ${winnerOpponentName}.`,
           `You won your async match against ${winnerOpponentName}.`
         );
         notify(
-          loserUid, "Match finished",
+          loserUid, "Partida terminada", "Match finished",
+          `Perdiste tu partida asíncrona contra ${loserOpponentName}.`,
           `You lost your async match against ${loserOpponentName}.`
         );
       }
@@ -1656,7 +1713,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     // this is the one place newStreak is already computed authoritatively.
     applyPvpAchievementProgress(
       tx, uid, {id: "daily_streak_7", title: "Weekly Habit", target: 7},
-      newStreak, dailyStreakAchievementSnap
+      newStreak, dailyStreakAchievementSnap, userData.languageCode
     );
 
     const streakBonusCoins = calculateDailyStreakBonusCoins(newStreak);
@@ -1830,14 +1887,20 @@ export const submitDailyChallengeResult = onCall(async (request) => {
 // ============================================================
 
 /**
- * Mirrors lib/services/season_service.dart's `rewardForLeague`.
+ * Mirrors lib/services/season_service.dart's `rewardForLeague`. The
+ * returned `message` is persisted permanently into the claiming user's
+ * `season_history` doc (see `claimWeeklySeasonRewards` below), so it's
+ * localized at claim time from that user's own `languageCode` — same as
+ * every other Cloud-Function-generated notification/history string here.
  * @param {string} leagueId Weekly league id.
  * @param {number} rank Player's rank within that league for the season.
+ * @param {unknown} languageCode Claiming user's stored `languageCode`.
  * @return {{coins:number, message:string}} Reward for that placement.
  */
 function weeklySeasonRewardForLeague(
   leagueId: string,
-  rank: number
+  rank: number,
+  languageCode: unknown
 ): {coins: number; message: string} {
   const baseCoins = ((): number => {
     switch (leagueId) {
@@ -1856,9 +1919,14 @@ function weeklySeasonRewardForLeague(
   else if (rank <= 10) bonus = Math.round(baseCoins * 0.25);
 
   const message = rank === 1 ?
-    "Champion bonus!" :
-    rank <= 3 ? "Top 3 bonus!" : rank <= 10 ? "Top 10 bonus!" :
-      "Weekly league reward";
+    pickText(languageCode, "¡Bono de campeón!", "Champion bonus!") :
+    rank <= 3 ?
+      pickText(languageCode, "¡Bono top 3!", "Top 3 bonus!") :
+      rank <= 10 ?
+        pickText(languageCode, "¡Bono top 10!", "Top 10 bonus!") :
+        pickText(
+          languageCode, "Recompensa de liga semanal", "Weekly league reward"
+        );
 
   return {coins: baseCoins + bonus, message};
 }
@@ -1878,6 +1946,9 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
 
   const userRef = db.collection("users").doc(uid);
   const currentSeasonId = currentWeekId();
+
+  const userSnap = await userRef.get();
+  const languageCode = userSnap.data()?.languageCode;
 
   const participationSnap = await userRef
     .collection("weekly_participation")
@@ -1923,7 +1994,7 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
       .count().get();
     const rank = (betterPlayersSnap.data().count || 0) + 1;
 
-    const reward = weeklySeasonRewardForLeague(leagueId, rank);
+    const reward = weeklySeasonRewardForLeague(leagueId, rank, languageCode);
 
     pending.push({
       seasonId,
@@ -2034,10 +2105,18 @@ export const notifyStreakAtRisk = onSchedule(
 
         await doc.ref.collection("notifications").add({
           type: "streak_at_risk",
-          title: "Tu racha está en riesgo",
-          body:
+          title: pickText(
+            data.languageCode,
+            "Tu racha está en riesgo",
+            "Your streak is at risk"
+          ),
+          body: pickText(
+            data.languageCode,
             `Tienes una racha de ${streak} días. Juega el Daily ` +
-            "Challenge de hoy antes de perderla.",
+              "Challenge de hoy antes de perderla.",
+            `You have a ${streak}-day streak. Play today's Daily ` +
+              "Challenge before you lose it."
+          ),
           data: {streak},
           read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2309,7 +2388,8 @@ export const submitSoloLevelResult = onCall(async (request) => {
       );
       applyPvpAchievementProgress(
         tx, uid, {id: "solo_levels_10", title: "Solo Explorer", target: 10},
-        currentSoloLevelsProgress + 1, soloLevelsAchievementSnap
+        currentSoloLevelsProgress + 1, soloLevelsAchievementSnap,
+        userData.languageCode
       );
     }
 
@@ -3261,9 +3341,10 @@ async function syncFriendsAchievementProgress(uid: string): Promise<void> {
 
   await db.runTransaction(async (tx) => {
     const achSnap = await tx.get(achRef);
+    const userSnap = await tx.get(db.collection("users").doc(uid));
     applyPvpAchievementProgress(
       tx, uid, {id: "friends_5", title: "Social Player", target: 5},
-      friendCount, achSnap
+      friendCount, achSnap, userSnap.data()?.languageCode
     );
   });
 }

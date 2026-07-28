@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
   final int difficulty;
@@ -35,7 +36,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
   void _goFindPlayersFixed() {
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona un tema fijo primero.')),
+        SnackBar(content: Text(AppLocalizations.of(context).asyncMenuSelectTopicFirst)),
       );
       return;
     }
@@ -56,6 +57,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final canStart = _selectedCategoryId != null;
 
     return Padding(
@@ -65,14 +67,14 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
         children: [
             const SizedBox(height: 8),
             Text(
-              'Configuración',
+              l10n.asyncMenuConfigTitle,
               style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
 
-            const Text(
-              'Temas fijos',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              l10n.asyncMenuFixedTopicsLabel,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
@@ -90,7 +92,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
 
                 final docs = snap.data!.docs;
                 if (docs.isEmpty) {
-                  return const Text('No hay categorías activas.');
+                  return Text(l10n.asyncMenuNoActiveCategories);
                 }
 
                 // Set default si aún no hay seleccionado
@@ -98,9 +100,9 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
 
                 return DropdownButtonFormField<String>(
                   initialValue: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Selecciona un tema fijo',
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: l10n.asyncMenuSelectTopicLabel,
                   ),
                   items: docs.map((d) {
                     final data = d.data();
@@ -119,13 +121,13 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
 
             FilledButton(
               onPressed: canStart ? _goFindPlayersFixed : null,
-              child: const Text('Buscar jugador para retar'),
+              child: Text(l10n.asyncMenuFindPlayerButton),
             ),
 
             const Spacer(),
 
             Text(
-              'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.',
+              l10n.asyncMenuTip,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

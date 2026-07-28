@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
+
 class NotificationService {
   NotificationService._();
 
@@ -13,6 +16,14 @@ class NotificationService {
 
   CollectionReference<Map<String, dynamic>> _notificationsCol(String userId) {
     return _db.collection('users').doc(userId).collection('notifications');
+  }
+
+  /// Resolves the [AppLocalizations] instance matching a notification
+  /// recipient's stored language preference, for building notification
+  /// title/body text server-independently of the sender's own locale.
+  Future<AppLocalizations> l10nForRecipient(String targetUid) async {
+    final snap = await _db.collection('users').doc(targetUid).get();
+    return l10nFor(snap.data()?['languageCode'] as String?);
   }
 
   Future<void> saveFcmToken(String userId, String token) async {

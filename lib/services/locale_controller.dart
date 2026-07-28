@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,5 +37,15 @@ class LocaleController {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKey, languageCode);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'languageCode': languageCode},
+        SetOptions(merge: true),
+      );
+    } catch (_) {}
   }
 }

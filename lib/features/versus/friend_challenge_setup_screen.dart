@@ -5,6 +5,7 @@ import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
 import 'async_match_play_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class FriendChallengeSetupScreen extends StatefulWidget {
   final String friendUid;
@@ -49,8 +50,8 @@ class _FriendChallengeSetupScreenState
 
     if (_challengeType == 'realtime' && !widget.isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tu amigo no está conectado para jugar en tiempo real.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).friendChallengeNotOnline),
         ),
       );
       return;
@@ -80,7 +81,9 @@ class _FriendChallengeSetupScreenState
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Reto en tiempo real enviado a ${widget.friendName}'),
+            content: Text(
+              AppLocalizations.of(context).friendChallengeRealtimeSent(widget.friendName),
+            ),
           ),
         );
 
@@ -122,18 +125,20 @@ class _FriendChallengeSetupScreenState
 
   @override
   Widget build(BuildContext context) {
-    final onlineText = widget.isOnline ? 'Online' : 'Offline';
+    final l10n = AppLocalizations.of(context);
+    final onlineText = widget.isOnline ? l10n.friendChallengeOnline : l10n.friendChallengeOffline;
     final onlineColor = widget.isOnline
         ? AppColors.success
         : Theme.of(context).colorScheme.onSurfaceVariant;
 
     final canSendRealtime = widget.isOnline;
-    final sendButtonText =
-        _challengeType == 'realtime' ? 'Enviar reto en tiempo real' : 'Crear reto asíncrono';
+    final sendButtonText = _challengeType == 'realtime'
+        ? l10n.friendChallengeSendRealtime
+        : l10n.friendChallengeCreateAsync;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configurar reto'),
+        title: Text(l10n.friendChallengeTitle),
       ),
       body: Stack(
         children: [
@@ -189,7 +194,7 @@ class _FriendChallengeSetupScreenState
               ),
               const SizedBox(height: 18),
               Text(
-                'Tipo de reto',
+                l10n.friendChallengeTypeLabel,
                 style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
@@ -202,12 +207,12 @@ class _FriendChallengeSetupScreenState
                           ? Icons.bolt_outlined
                           : Icons.lock_outline,
                     ),
-                    label: const Text('Tiempo real'),
+                    label: Text(l10n.findOpponentLiveTab),
                   ),
-                  const ButtonSegment(
+                  ButtonSegment(
                     value: 'async',
-                    icon: Icon(Icons.schedule_outlined),
-                    label: Text('Asíncrono'),
+                    icon: const Icon(Icons.schedule_outlined),
+                    label: Text(l10n.findOpponentAsyncTab),
                   ),
                 ],
                 selected: {_challengeType},
@@ -220,7 +225,7 @@ class _FriendChallengeSetupScreenState
               if (_challengeType == 'realtime' && !canSendRealtime) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Tu amigo debe estar online para jugar en tiempo real.',
+                  l10n.friendChallengeNeedOnlineHint,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -228,22 +233,22 @@ class _FriendChallengeSetupScreenState
               ],
               const SizedBox(height: 20),
               Text(
-                'Configuración del match',
+                l10n.friendChallengeMatchConfig,
                 style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 initialValue: _categoryId,
-                decoration: const InputDecoration(
-                  labelText: 'Categoría',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.createMatchCategory,
+                  border: const OutlineInputBorder(),
                 ),
                 items: _categories
                     .map(
                       (category) => DropdownMenuItem(
                         value: category,
                         child: Text(
-                          category == 'random' ? 'Random' : category,
+                          category == 'random' ? l10n.friendChallengeCategoryRandom : category,
                         ),
                       ),
                     )
@@ -258,14 +263,14 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 initialValue: _difficulty,
-                decoration: const InputDecoration(
-                  labelText: 'Dificultad',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.createMatchDifficulty,
+                  border: const OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 1, child: Text('Fácil')),
-                  DropdownMenuItem(value: 2, child: Text('Media')),
-                  DropdownMenuItem(value: 3, child: Text('Difícil')),
+                items: [
+                  DropdownMenuItem(value: 1, child: Text(l10n.friendChallengeDiffEasy)),
+                  DropdownMenuItem(value: 2, child: Text(l10n.friendChallengeDiffMedium)),
+                  DropdownMenuItem(value: 3, child: Text(l10n.friendChallengeDiffHard)),
                 ],
                 onChanged: _loading
                     ? null
@@ -277,14 +282,14 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 initialValue: _totalQuestions,
-                decoration: const InputDecoration(
-                  labelText: 'Cantidad de preguntas',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.friendChallengeQuestionCountLabel,
+                  border: const OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 5, child: Text('5 preguntas')),
-                  DropdownMenuItem(value: 10, child: Text('10 preguntas')),
-                  DropdownMenuItem(value: 15, child: Text('15 preguntas')),
+                items: [
+                  DropdownMenuItem(value: 5, child: Text(l10n.friendChallengeQuestionsCount(5))),
+                  DropdownMenuItem(value: 10, child: Text(l10n.friendChallengeQuestionsCount(10))),
+                  DropdownMenuItem(value: 15, child: Text(l10n.friendChallengeQuestionsCount(15))),
                 ],
                 onChanged: _loading
                     ? null
@@ -296,14 +301,14 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 initialValue: _timePerQuestionSec,
-                decoration: const InputDecoration(
-                  labelText: 'Tiempo por pregunta',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.friendChallengeTimePerQuestionLabel,
+                  border: const OutlineInputBorder(),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 10, child: Text('10 segundos')),
-                  DropdownMenuItem(value: 15, child: Text('15 segundos')),
-                  DropdownMenuItem(value: 20, child: Text('20 segundos')),
+                items: [
+                  DropdownMenuItem(value: 10, child: Text(l10n.friendChallengeSeconds(10))),
+                  DropdownMenuItem(value: 15, child: Text(l10n.friendChallengeSeconds(15))),
+                  DropdownMenuItem(value: 20, child: Text(l10n.friendChallengeSeconds(20))),
                 ],
                 onChanged: _loading
                     ? null
@@ -336,8 +341,8 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 12),
               Text(
                 _challengeType == 'realtime'
-                    ? 'Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.'
-                    : 'Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.',
+                    ? l10n.friendChallengeRealtimeHint
+                    : l10n.friendChallengeAsyncHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -6,6 +6,7 @@ import '../auth/user_bootstrap.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/analytics_service.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class _OnboardingPageData {
   final String emoji;
@@ -19,26 +20,23 @@ class _OnboardingPageData {
   });
 }
 
-const _pages = [
-  _OnboardingPageData(
-    emoji: '🧠',
-    title: '¡Bienvenido a TriviaIA!',
-    body:
-        'Responde preguntas de trivia, compite contra otros jugadores y sube de nivel cada día.',
-  ),
-  _OnboardingPageData(
-    emoji: '❤️',
-    title: 'Tus vidas',
-    body:
-        'Tienes 5 vidas. Cada una se recupera sola cada 5 minutos, o puedes comprarla al instante con monedas si no quieres esperar.',
-  ),
-  _OnboardingPageData(
-    emoji: '🔥',
-    title: 'Monedas y racha diaria',
-    body:
-        'Gana monedas y XP jugando. Vuelve cada día al Daily Challenge para mantener tu racha y ganar recompensas extra.',
-  ),
-];
+List<_OnboardingPageData> _pagesFor(AppLocalizations l10n) => [
+      _OnboardingPageData(
+        emoji: '🧠',
+        title: l10n.onboardingWelcomeTitle,
+        body: l10n.onboardingWelcomeBody,
+      ),
+      _OnboardingPageData(
+        emoji: '❤️',
+        title: l10n.onboardingLivesTitle,
+        body: l10n.onboardingLivesBody,
+      ),
+      _OnboardingPageData(
+        emoji: '🔥',
+        title: l10n.onboardingCoinsTitle,
+        body: l10n.onboardingCoinsBody,
+      ),
+    ];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -89,7 +87,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLastPage = _page == _pages.length - 1;
+    final l10n = AppLocalizations.of(context);
+    final pages = _pagesFor(l10n);
+    final isLastPage = _page == pages.length - 1;
 
     return Scaffold(
       body: SafeArea(
@@ -101,16 +101,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPressed: _finishing
                     ? null
                     : () => _finish(goToDailyChallenge: false),
-                child: const Text('Saltar'),
+                child: Text(l10n.onboardingSkip),
               ),
             ),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _page = i),
                 itemBuilder: (context, index) {
-                  final page = _pages[index];
+                  final page = pages[index];
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -147,7 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_pages.length, (i) {
+              children: List.generate(pages.length, (i) {
                 final active = i == _page;
 
                 return AnimatedContainer(
@@ -183,7 +183,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           }
                         },
                   child: Text(
-                    isLastPage ? 'Jugar mi primer Daily Challenge' : 'Siguiente',
+                    isLastPage
+                        ? l10n.onboardingPlayFirstDaily
+                        : l10n.onboardingNext,
                   ),
                 ),
               ),

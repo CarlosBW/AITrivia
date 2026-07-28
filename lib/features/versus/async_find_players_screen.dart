@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/match_service.dart';
 import 'async_match_play_screen.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 class AsyncFindPlayersScreen extends StatefulWidget {
   final String categoryId;
@@ -85,7 +86,9 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
 
     try {
       if (challengedUid == _uid) {
-        throw Exception('No puedes retarte a ti mismo.');
+        throw Exception(
+          AppLocalizations.of(context).asyncFindPlayersCannotChallengeSelf,
+        );
       }
 
       // 1) crear match async
@@ -125,10 +128,11 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final query = _q.trim().toLowerCase();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Buscar jugador (asíncrono)')),
+      appBar: AppBar(title: Text(l10n.asyncFindPlayersTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -139,10 +143,10 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Categoría: ${widget.categoryId}'),
-                  Text('Dificultad: ${widget.difficulty}'),
-                  Text('Preguntas: ${widget.totalQuestions}'),
-                  Text('Tiempo/Pregunta: ${widget.timePerQuestionSec}s'),
+                  Text(l10n.liveMatchmakingCategoryLine(widget.categoryId)),
+                  Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
+                  Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
+                  Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),
                 ],
               ),
             ),
@@ -151,10 +155,10 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
             // Search
             TextField(
               controller: _searchCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Buscar por nombre',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.asyncFindPlayersSearchLabel,
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (v) => setState(() => _q = v),
             ),
@@ -200,8 +204,8 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                   }
 
                   if (filtered.isEmpty) {
-                    return const Center(
-                      child: Text('No hay jugadores para mostrar.'),
+                    return Center(
+                      child: Text(l10n.asyncFindPlayersNoneToShow),
                     );
                   }
 
@@ -240,7 +244,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                                           challengedUid: doc.id,
                                           challengedName: name,
                                         ),
-                                child: const Text('Retar'),
+                                child: Text(l10n.asyncFindPlayersChallengeButton),
                               ),
                       );
                     },

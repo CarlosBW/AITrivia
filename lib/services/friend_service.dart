@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'locale_controller.dart';
 import 'notification_service.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 class FriendService {
   FriendService._();
@@ -14,6 +17,11 @@ class FriendService {
   final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
+
+  // Resolved from the acting user's own device locale — correct for
+  // exceptions, since they always surface back to whoever called this.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   DocumentReference<Map<String, dynamic>> _userRef(String userId) {
     return _db.collection('users').doc(userId);
@@ -67,7 +75,7 @@ class FriendService {
     final q = query.trim().toLowerCase();
 
     if (q.isEmpty) {
-      throw Exception('Escribe un nombre de usuario.');
+      throw Exception(_l10n.serviceEnterUsername);
     }
 
     return _db
@@ -78,9 +86,7 @@ class FriendService {
         .get()
         .timeout(
           const Duration(seconds: 15),
-          onTimeout: () => throw Exception(
-            'No se pudo conectar. Revisa tu conexi\u00f3n e int\u00e9ntalo de nuevo.',
-          ),
+          onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
         );
   }
 
@@ -88,11 +94,11 @@ class FriendService {
     required String targetUid,
   }) async {
     if (targetUid.trim().isEmpty) {
-      throw Exception('Usuario inválido.');
+      throw Exception(_l10n.serviceInvalidUser);
     }
 
     if (targetUid == uid) {
-      throw Exception('No puedes agregarte a ti mismo.');
+      throw Exception(_l10n.serviceCannotAddSelf);
     }
 
     final myRef = _userRef(uid);
@@ -114,16 +120,16 @@ class FriendService {
       final requestSnap = await tx.get(requestRef);
 
       if (!targetSnap.exists) {
-        throw Exception('El usuario no existe.');
+        throw Exception(_l10n.serviceUserNotFound);
       }
 
       if (myFriendSnap.exists || targetFriendSnap.exists) {
-        throw Exception('Ya son amigos.');
+        throw Exception(_l10n.serviceAlreadyFriends);
       }
 
       if (requestSnap.exists &&
           (requestSnap.data()?['status'] ?? 'pending') == 'pending') {
-        throw Exception('Solicitud ya enviada.');
+        throw Exception(_l10n.serviceRequestAlreadySent);
       }
 
       final myData = mySnap.data() ?? {};
@@ -193,11 +199,16 @@ class FriendService {
     });
 
     try {
+      final recipientL10n =
+          await _notificationService.l10nForRecipient(targetUid);
+
       await _notificationService.createNotification(
         targetUid: targetUid,
         type: 'friend_request',
-        title: 'New friend request',
-        body: '$notificationDisplayName wants to add you as a friend.',
+        title: recipientL10n.serviceFriendRequestNotifTitle,
+        body: recipientL10n.serviceFriendRequestNotifBody(
+          notificationDisplayName,
+        ),
         data: {
           'requesterUid': uid,
         },
@@ -214,7 +225,7 @@ class FriendService {
     required String requesterUid,
   }) async {
     if (requesterUid.trim().isEmpty || requesterUid == uid) {
-      throw Exception('Solicitud inválida.');
+      throw Exception(_l10n.serviceInvalidRequest);
     }
 
     try {
@@ -222,7 +233,7 @@ class FriendService {
           .httpsCallable('acceptFriendRequest')
           .call({'requesterUid': requesterUid});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudo aceptar la solicitud.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotAcceptRequest);
     }
   }
 
@@ -230,7 +241,7 @@ class FriendService {
     required String requesterUid,
   }) async {
     if (requesterUid.trim().isEmpty) {
-      throw Exception('Solicitud inválida.');
+      throw Exception(_l10n.serviceInvalidRequest);
     }
 
     final requestRef = _requestsCol(uid).doc(requesterUid);
@@ -263,7 +274,7 @@ class FriendService {
     required String friendUid,
   }) async {
     if (friendUid.trim().isEmpty || friendUid == uid) {
-      throw Exception('Amigo inválido.');
+      throw Exception(_l10n.serviceInvalidFriend);
     }
 
     try {
@@ -271,7 +282,7 @@ class FriendService {
           .httpsCallable('removeFriend')
           .call({'friendUid': friendUid});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudo eliminar al amigo.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotRemoveFriend);
     }
   }
 }

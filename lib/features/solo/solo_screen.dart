@@ -470,6 +470,12 @@ IconData _iconForCategory(String categoryId, String name) {
       key.contains('geography')) {
     return Icons.public_outlined;
   }
+  if (key.contains('musica') || key.contains('música') || key.contains('music')) {
+    return Icons.music_note_outlined;
+  }
+  if (key.contains('arte') || key.contains('art')) {
+    return Icons.palette_outlined;
+  }
   if (key.contains('libro') || key.contains('book')) {
     return Icons.menu_book_outlined;
   }

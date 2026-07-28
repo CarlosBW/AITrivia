@@ -1488,7 +1488,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       ),
                     ],
                   ),
-                  if (!_rewardGrantedForLevel) ...[
+                  if (!_saving &&
+                      (_saved || _saveError != null) &&
+                      !_rewardGrantedForLevel) ...[
                     const SizedBox(height: 12),
                     Text(
                       pct >= 0.4

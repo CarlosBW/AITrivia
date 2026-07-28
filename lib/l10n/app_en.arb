@@ -61,6 +61,7 @@
       "coins": {"type": "int"}
     }
   },
+  "homeWeeklyTopicDefaultDescription": "Complete levels and earn rewards.",
   "homeDailyChallengeTitle": "Daily Challenge",
   "homeDailyChallengeStreak": "Streak: {days} days",
   "@homeDailyChallengeStreak": {

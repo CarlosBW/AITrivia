@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'+{coins} monedas'**
   String homeWeeklyTopicRewardCoins(int coins);
 
+  /// No description provided for @homeWeeklyTopicDefaultDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa niveles y gana recompensas.'**
+  String get homeWeeklyTopicDefaultDescription;
+
   /// No description provided for @homeDailyChallengeTitle.
   ///
   /// In es, this message translates to:
@@ -1157,13 +1163,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpActiveMatchesTitle.
   ///
   /// In es, this message translates to:
-  /// **'Active Matches'**
+  /// **'Partidas Activas'**
   String get pvpActiveMatchesTitle;
 
   /// No description provided for @pvpActiveMatchesTitleAlert.
   ///
   /// In es, this message translates to:
-  /// **'Active Matches • ¡Tu turno!'**
+  /// **'Partidas Activas • ¡Tu turno!'**
   String get pvpActiveMatchesTitleAlert;
 
   /// No description provided for @pvpActiveMatchesSubtitle.
@@ -1181,13 +1187,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpRealtimeInvitesTitle.
   ///
   /// In es, this message translates to:
-  /// **'Realtime Invites'**
+  /// **'Invitaciones en Vivo'**
   String get pvpRealtimeInvitesTitle;
 
   /// No description provided for @pvpRealtimeInvitesTitleAlert.
   ///
   /// In es, this message translates to:
-  /// **'Realtime Invites • ¡Nuevo!'**
+  /// **'Invitaciones en Vivo • ¡Nuevo!'**
   String get pvpRealtimeInvitesTitleAlert;
 
   /// No description provided for @pvpRealtimeInvitesSubtitle.
@@ -1205,7 +1211,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpFindOpponentTitle.
   ///
   /// In es, this message translates to:
-  /// **'Find Opponent'**
+  /// **'Buscar Rival'**
   String get pvpFindOpponentTitle;
 
   /// No description provided for @pvpFindOpponentSubtitle.
@@ -1217,7 +1223,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonTitle.
   ///
   /// In es, this message translates to:
-  /// **'PvP Season'**
+  /// **'Temporada PvP'**
   String get pvpSeasonTitle;
 
   /// No description provided for @pvpSeasonSubtitle.
@@ -1865,7 +1871,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchLobbyHeading.
   ///
   /// In es, this message translates to:
-  /// **'1 vs 1 Match'**
+  /// **'Partida 1 vs 1'**
   String get matchLobbyHeading;
 
   /// No description provided for @matchLobbyTopicLabel.
@@ -3540,7 +3546,7 @@ abstract class AppLocalizations {
   /// No description provided for @friendsUsernameLabel.
   ///
   /// In es, this message translates to:
-  /// **'Username'**
+  /// **'Nombre de usuario'**
   String get friendsUsernameLabel;
 
   /// No description provided for @friendsNoPlayersFound.

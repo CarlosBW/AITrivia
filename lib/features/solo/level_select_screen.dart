@@ -690,15 +690,28 @@ class _StarsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Same gradient used by level_play_screen.dart's _BigStarsRow on the
+    // level-complete result screen, so a level's star color here matches
+    // what the player just saw when they earned it.
+    const gradientStart = Color(0xFF8A6BFF);
+    const gradientEnd = Color(0xFFFF5C93);
+    final unfilledColor =
+        Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (i) {
         final filled = i < count;
+        final color = filled
+            ? Color.lerp(gradientStart, gradientEnd, i / 2)!
+            : unfilledColor;
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 1),
           child: Icon(
             filled ? Icons.star : Icons.star_border,
             size: 18,
+            color: color,
           ),
         );
       }),

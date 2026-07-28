@@ -858,9 +858,15 @@ class _WeeklyTopicCard extends StatelessWidget {
         }
 
         final title = (data['title'] ?? 'Weekly Topic').toString();
-        final description =
-            (data['description'] ?? 'Complete levels and earn rewards.')
-                .toString();
+
+        // `description` (no language suffix) is the legacy single-language
+        // field older weekly-topic docs were seeded with — kept as a
+        // fallback so those don't regress to the generic default text.
+        final languageCode = Localizations.localeOf(context).languageCode;
+        final description = (data['description_$languageCode'] ??
+                data['description'] ??
+                l10n.homeWeeklyTopicDefaultDescription)
+            .toString();
         final rewardCoins = ((data['rewardCoins'] ?? 0) as num).toInt();
 
         return Container(

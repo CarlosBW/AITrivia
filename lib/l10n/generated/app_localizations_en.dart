@@ -132,6 +132,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get homeWeeklyTopicDefaultDescription =>
+      'Complete levels and earn rewards.';
+
+  @override
   String get homeDailyChallengeTitle => 'Daily Challenge';
 
   @override

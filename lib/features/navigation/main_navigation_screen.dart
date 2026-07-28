@@ -278,21 +278,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               ),
               Positioned(
                 top: MediaQuery.of(context).padding.top + 6,
-                right: 56,
-                child: const Material(
-                  color: Colors.transparent,
-                  child: LanguageSwitch(),
-                ),
-              ),
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 6,
                 right: 10,
                 child: Material(
                   color: Colors.transparent,
-                  child: NotificationBellButton(
-                    unreadCount: unreadCount,
-                    onPressed:
-                        _isOpeningNotifications ? () {} : _openNotifications,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const LanguageSwitch(),
+                      const SizedBox(width: 8),
+                      NotificationBellButton(
+                        unreadCount: unreadCount,
+                        onPressed: _isOpeningNotifications
+                            ? () {}
+                            : _openNotifications,
+                      ),
+                    ],
                   ),
                 ),
               ),

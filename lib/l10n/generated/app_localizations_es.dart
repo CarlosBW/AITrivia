@@ -131,6 +131,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get homeWeeklyTopicDefaultDescription =>
+      'Completa niveles y gana recompensas.';
+
+  @override
   String get homeDailyChallengeTitle => 'Daily Challenge';
 
   @override
@@ -628,10 +632,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pvpHubSubheading => 'Elige cómo quieres competir.';
 
   @override
-  String get pvpActiveMatchesTitle => 'Active Matches';
+  String get pvpActiveMatchesTitle => 'Partidas Activas';
 
   @override
-  String get pvpActiveMatchesTitleAlert => 'Active Matches • ¡Tu turno!';
+  String get pvpActiveMatchesTitleAlert => 'Partidas Activas • ¡Tu turno!';
 
   @override
   String get pvpActiveMatchesSubtitle =>
@@ -642,10 +646,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tienes partidas pendientes esperando tu jugada.';
 
   @override
-  String get pvpRealtimeInvitesTitle => 'Realtime Invites';
+  String get pvpRealtimeInvitesTitle => 'Invitaciones en Vivo';
 
   @override
-  String get pvpRealtimeInvitesTitleAlert => 'Realtime Invites • ¡Nuevo!';
+  String get pvpRealtimeInvitesTitleAlert => 'Invitaciones en Vivo • ¡Nuevo!';
 
   @override
   String get pvpRealtimeInvitesSubtitle =>
@@ -656,14 +660,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tienes retos en vivo esperando.';
 
   @override
-  String get pvpFindOpponentTitle => 'Find Opponent';
+  String get pvpFindOpponentTitle => 'Buscar Rival';
 
   @override
   String get pvpFindOpponentSubtitle =>
       'Juega contra cualquier retador disponible.';
 
   @override
-  String get pvpSeasonTitle => 'PvP Season';
+  String get pvpSeasonTitle => 'Temporada PvP';
 
   @override
   String get pvpSeasonSubtitle =>
@@ -1044,7 +1048,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchLobbyNoLongerAvailable => 'La sala ya no está disponible.';
 
   @override
-  String get matchLobbyHeading => '1 vs 1 Match';
+  String get matchLobbyHeading => 'Partida 1 vs 1';
 
   @override
   String get matchLobbyTopicLabel => 'Tema';
@@ -2076,7 +2080,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get friendsReceivedTab => 'Recibidas';
 
   @override
-  String get friendsUsernameLabel => 'Username';
+  String get friendsUsernameLabel => 'Nombre de usuario';
 
   @override
   String get friendsNoPlayersFound =>

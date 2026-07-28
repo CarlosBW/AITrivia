@@ -13,6 +13,7 @@ import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
 import '../../widgets/buy_coins_button.dart';
 import '../../widgets/stat_chip.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -175,20 +176,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) async {
     if (_saving) return;
 
+    final l10n = AppLocalizations.of(context);
+
     final newUsername = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
         String draftUsername = currentUsername;
 
         return AlertDialog(
-          title: const Text('Edit username'),
+          title: Text(l10n.profileEditUsername),
           content: TextFormField(
             initialValue: currentUsername,
             autofocus: true,
             maxLength: 20,
-            decoration: const InputDecoration(
-              hintText: 'Enter username',
-              helperText: 'Debe ser único. Usa 3 a 20 caracteres.',
+            decoration: InputDecoration(
+              hintText: l10n.profileEnterUsername,
+              helperText: l10n.profileUsernameHelper,
             ),
             onChanged: (value) {
               draftUsername = value.trim();
@@ -200,13 +203,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext, draftUsername);
               },
-              child: const Text('Save'),
+              child: Text(l10n.commonSave),
             ),
           ],
         );
@@ -223,8 +226,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (username.length < 3 || username.length > 20) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El username debe tener entre 3 y 20 caracteres.'),
+        SnackBar(
+          content: Text(l10n.profileUsernameLengthError),
         ),
       );
       return;
@@ -234,8 +237,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (!validUsernameRegex.hasMatch(username)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Usa solo letras, números y guion bajo.'),
+        SnackBar(
+          content: Text(l10n.profileUsernameCharsError),
         ),
       );
       return;
@@ -329,7 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil actualizado')),
+        SnackBar(content: Text(l10n.profileUpdated)),
       );
     } catch (e) {
       debugPrint('PROFILE UPDATE ERROR: $e');
@@ -339,8 +342,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         SnackBar(
           content: Text(
             e.toString().contains('Username already in use')
-                ? 'Ese username ya existe.'
-                : 'Error actualizando perfil: $e',
+                ? l10n.profileUsernameTaken
+                : l10n.profileUpdateError(e.toString()),
           ),
         ),
       );
@@ -356,6 +359,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     required List<dynamic>? storedUnlockedAvatars,
   }) async {
     if (_saving) return;
+
+    final l10n = AppLocalizations.of(context);
 
     final unlockedIds = AvatarService.instance.unlockedAvatarIdsForBestLeague(
       bestLeagueId: bestLeagueId,
@@ -383,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
                 Text(
-                  'Avatar Collection',
+                  l10n.profileAvatarCollection,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.baloo2(
                     fontSize: 21,
@@ -392,7 +397,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Unlocked $unlockedCount / ${avatars.length}',
+                  l10n.profileUnlockedCount(unlockedCount, avatars.length),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -426,7 +431,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Currently equipped',
+                              l10n.profileCurrentlyEquipped,
                               style: TextStyle(
                                 color:
                                     Theme.of(context).colorScheme.onSurfaceVariant,
@@ -601,14 +606,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('${selectedAvatar.emoji} ${selectedAvatar.name} equipped'),
+          content: Text(
+            l10n.profileEquippedNotice(
+              selectedAvatar.emoji,
+              selectedAvatar.name,
+            ),
+          ),
         ),
       );
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error actualizando avatar: $e')),
+        SnackBar(content: Text(l10n.profileAvatarUpdateError(e.toString()))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -622,6 +631,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) async {
     if (_saving) return;
 
+    final l10n = AppLocalizations.of(context);
+
     final unlockedFrames = FrameService.instance.unlockedLeagueFrames(
       bestLeagueId: bestLeagueId,
     );
@@ -634,7 +645,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              'Choose Frame',
+              l10n.profileChooseFrame,
               textAlign: TextAlign.center,
               style: GoogleFonts.baloo2(
                 fontSize: 20,
@@ -695,7 +706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${frame.emoji} ${frame.name} equipped',
+            l10n.profileEquippedNotice(frame.emoji, frame.name),
           ),
         ),
       );
@@ -708,6 +719,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_loading) {
       return const Scaffold(
         appBar: _ProfileAppBar(),
@@ -727,14 +740,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                 const Icon(Icons.error_outline, size: 42),
                 const SizedBox(height: 12),
                 Text(
-                  'Error loading profile:\n$_error',
+                  l10n.profileErrorLoading(_error!),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () => _loadProfile(),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  label: Text(l10n.commonRetry),
                 ),
               ],
             ),
@@ -884,7 +897,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Edit username',
+                          tooltip: l10n.profileEditUsername,
                           onPressed: _saving
                               ? null
                               : () => _editUsername(
@@ -897,7 +910,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Level $level',
+                      l10n.profileLevel(level),
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
@@ -936,7 +949,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Weekly Score: $leagueScore',
+                      l10n.profileWeeklyScore(leagueScore),
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
                       ),
@@ -950,7 +963,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text('$levelXp / $xpRequired XP to next level'),
+                    Text(l10n.profileXpToNextLevel(levelXp, xpRequired)),
                   ],
                 ),
               ),
@@ -999,7 +1012,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Logros',
+                                l10n.profileAchievements,
                                 style: GoogleFonts.baloo2(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -1007,9 +1020,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                'Revisa tu progreso y recompensas',
-                                style: TextStyle(
+                              Text(
+                                l10n.profileAchievementsSubtitle,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                 ),
@@ -1032,7 +1045,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Expanded(
                     child: StatChip(
                       icon: Icons.monetization_on_outlined,
-                      label: 'Coins',
+                      label: l10n.profileCoins,
                       accent: AppColors.reward,
                       background: AppColors.rewardBg,
                       value: '$coins',
@@ -1042,7 +1055,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Expanded(
                     child: StatChip(
                       icon: Icons.style_outlined,
-                      label: 'Free topics',
+                      label: l10n.profileFreeTopics,
                       accent: Theme.of(context).colorScheme.primary,
                       background: Theme.of(context)
                           .colorScheme
@@ -1060,7 +1073,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Expanded(
                     child: StatChip(
                       icon: Icons.local_fire_department_outlined,
-                      label: 'Streak',
+                      label: l10n.profileStreak,
                       accent: const Color(0xFFFF6B5B),
                       background: AppColors.dangerBg,
                       value: '$dailyStreak',
@@ -1070,7 +1083,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Expanded(
                     child: StatChip(
                       icon: Icons.whatshot_outlined,
-                      label: 'Best streak',
+                      label: l10n.profileBestStreak,
                       accent: AppColors.reward,
                       background: AppColors.rewardBg,
                       value: '$maxDailyStreak',
@@ -1080,7 +1093,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 18),
               Text(
-                'Stats',
+                l10n.profileStats,
                 style: GoogleFonts.baloo2(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1089,27 +1102,27 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 10),
               _WideStatTile(
                 icon: Icons.sports_esports_outlined,
-                label: 'Games played',
+                label: l10n.profileGamesPlayed,
                 value: '$gamesPlayed',
               ),
               _WideStatTile(
                 icon: Icons.check_circle_outline,
-                label: 'Correct answers',
+                label: l10n.profileCorrectAnswers,
                 value: '$correctAnswers',
               ),
               _WideStatTile(
                 icon: Icons.cancel_outlined,
-                label: 'Wrong answers',
+                label: l10n.profileWrongAnswers,
                 value: '$wrongAnswers',
               ),
               _WideStatTile(
                 icon: Icons.percent,
-                label: 'Accuracy',
+                label: l10n.profileAccuracy,
                 value: '$accuracy%',
               ),
               _WideStatTile(
                 icon: Icons.emoji_events_outlined,
-                label: 'Best Daily score',
+                label: l10n.profileBestDailyScore,
                 value: '$bestDailyScore',
               ),
               const SizedBox(height: 20),
@@ -1138,7 +1151,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${pvpLeague.name} PvP League',
+                                l10n.profilePvpLeague(pvpLeague.name),
                                 style: TextStyle(
                                   color: Color(pvpLeague.colorValue),
                                   fontWeight: FontWeight.bold,
@@ -1168,7 +1181,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.',
+                      l10n.profileRankedHint,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
@@ -1179,7 +1192,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 20),
               Text(
-                '1 vs 1 Stats',
+                l10n.profile1v1Stats,
                 style: GoogleFonts.baloo2(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1188,49 +1201,49 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 10),
               _WideStatTile(
                 icon: Icons.leaderboard_outlined,
-                label: 'Ranked MMR',
+                label: l10n.profileRankedMmr,
                 value: pvpRatingDelta == 0
                     ? '$pvpRating'
                     : '$pvpRating (${pvpRatingDelta > 0 ? '+' : ''}$pvpRatingDelta)',
               ),
               _WideStatTile(
                 icon: Icons.emoji_events_outlined,
-                label: 'Victories',
+                label: l10n.profileVictories,
                 value: '$wins1v1',
               ),
               _WideStatTile(
                 icon: Icons.close,
-                label: 'Defeats',
+                label: l10n.profileDefeats,
                 value: '$losses1v1',
               ),
               _WideStatTile(
                 icon: Icons.handshake,
-                label: 'Draws',
+                label: l10n.profileDraws,
                 value: '$draws1v1',
               ),
               _WideStatTile(
                 icon: Icons.sports_martial_arts,
-                label: 'Matches played',
+                label: l10n.profileMatchesPlayed,
                 value: '$matches1v1',
               ),
               _WideStatTile(
                 icon: Icons.percent,
-                label: 'Winrate',
+                label: l10n.profileWinrate,
                 value: '$winrate1v1%',
               ),
               _WideStatTile(
                 icon: Icons.local_fire_department_outlined,
-                label: 'Current streak',
+                label: l10n.profileCurrentStreak,
                 value: '$currentWinStreak1v1',
               ),
               _WideStatTile(
                 icon: Icons.whatshot_outlined,
-                label: 'Best streak',
+                label: l10n.profileBestStreak,
                 value: '$bestWinStreak1v1',
               ),
               const SizedBox(height: 20),
               Text(
-                'Recent PvP matches',
+                l10n.profileRecentMatches,
                 style: GoogleFonts.baloo2(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -1243,15 +1256,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (_saving)
             Container(
               color: Colors.black.withValues(alpha: 0.35),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
                     Text(
-                      'Guardando...',
-                      style: TextStyle(color: Colors.white),
+                      l10n.commonSaving,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -1268,20 +1281,20 @@ class _AvatarCategoryBadge extends StatelessWidget {
 
   const _AvatarCategoryBadge({required this.category});
 
-  String get _label {
+  String _label(AppLocalizations l10n) {
     switch (category) {
       case 'base':
-        return 'BASE';
+        return l10n.avatarCategoryBase;
       case 'pvp':
-        return 'PVP';
+        return l10n.avatarCategoryPvp;
       case 'weekly':
-        return 'WEEKLY';
+        return l10n.avatarCategoryWeekly;
       case 'achievement':
-        return 'ACHIEVEMENT';
+        return l10n.avatarCategoryAchievement;
       case 'ai':
-        return 'AI';
+        return l10n.avatarCategoryAi;
       case 'ai_dynamic':
-        return 'AI UNIQUE';
+        return l10n.avatarCategoryAiUnique;
       default:
         return category.toUpperCase();
     }
@@ -1322,7 +1335,7 @@ class _AvatarCategoryBadge extends StatelessWidget {
         ),
       ),
       child: Text(
-        _label,
+        _label(AppLocalizations.of(context)),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
@@ -1341,16 +1354,16 @@ class _RecentMatchHistory extends StatelessWidget {
 
   const _RecentMatchHistory({required this.uid});
 
-  String _resultText(String result) {
+  String _resultText(AppLocalizations l10n, String result) {
     switch (result) {
       case 'victory':
-        return 'Victory';
+        return l10n.matchResultVictory;
       case 'defeat':
-        return 'Defeat';
+        return l10n.matchResultDefeat;
       case 'draw':
-        return 'Draw';
+        return l10n.matchResultDraw;
       default:
-        return 'Match';
+        return l10n.matchResultMatch;
     }
   }
 
@@ -1389,6 +1402,8 @@ class _RecentMatchHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     final query = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
@@ -1423,8 +1438,8 @@ class _RecentMatchHistory extends StatelessWidget {
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text(
-              'No PvP matches yet.',
+            child: Text(
+              l10n.profileNoMatches,
               textAlign: TextAlign.center,
             ),
           );
@@ -1440,6 +1455,7 @@ class _RecentMatchHistory extends StatelessWidget {
             final ranked = data['ranked'] == true;
             final deltaText = ranked ? _deltaText(data['ratingDelta']) : '';
             final color = _resultColor(context, result);
+            final resultLabel = _resultText(l10n, result);
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -1464,7 +1480,7 @@ class _RecentMatchHistory extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _resultText(result).toUpperCase(),
+                          resultLabel.toUpperCase(),
                           style: TextStyle(
                             color: color,
                             fontWeight: FontWeight.bold,
@@ -1494,7 +1510,7 @@ class _RecentMatchHistory extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'vs $opponent',
+                    l10n.profileVsOpponent(opponent),
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
@@ -1513,7 +1529,7 @@ class _RecentMatchHistory extends StatelessWidget {
                           child: Column(
                             children: [
                               Text(
-                                'Score',
+                                l10n.profileScore,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1542,7 +1558,7 @@ class _RecentMatchHistory extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
-                          ranked ? 'Ranked' : 'Casual',
+                          ranked ? l10n.profileRanked : l10n.profileCasual,
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                           ),
@@ -1566,7 +1582,7 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: const Text('Player Profile'),
+      title: Text(AppLocalizations.of(context).profileTitle),
     );
   }
 

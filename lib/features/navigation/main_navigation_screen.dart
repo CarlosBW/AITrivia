@@ -15,6 +15,8 @@ import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
 import '../../widgets/notification_bell_button.dart';
+import '../../widgets/language_switch.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -98,6 +100,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
+        final l10n = AppLocalizations.of(dialogContext);
         final body = (notification['body'] ?? '').toString();
 
         return AlertDialog(
@@ -108,20 +111,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 color: Theme.of(dialogContext).colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Reto aceptado'),
+              Expanded(
+                child: Text(l10n.navChallengeAcceptedTitle),
               ),
             ],
           ),
           content: Text(
-            body.isEmpty ? 'Tu invitación fue aceptada.' : body,
+            body.isEmpty ? l10n.navChallengeAcceptedBodyFallback : body,
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
               },
-              child: const Text('Luego'),
+              child: Text(l10n.navLater),
             ),
             FilledButton(
               onPressed: () async {
@@ -157,7 +160,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   _navigatingToAcceptedChallenge = false;
                 });
               },
-              child: const Text('Jugar ahora'),
+              child: Text(l10n.navPlayNow),
             ),
           ],
         );
@@ -272,6 +275,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     child: const ProfileScreen(),
                   ),
                 ],
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 6,
+                right: 56,
+                child: const Material(
+                  color: Colors.transparent,
+                  child: LanguageSwitch(),
+                ),
               ),
               Positioned(
                 top: MediaQuery.of(context).padding.top + 6,
@@ -721,6 +732,8 @@ class _NewNotificationOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return IgnorePointer(
       child: Center(
         child: TweenAnimationBuilder<double>(
@@ -762,7 +775,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Nueva notificación',
+                    l10n.navNewNotificationTitle,
                     style: GoogleFonts.baloo2(
                       color: const Color(0xFF412402),
                       fontSize: 23,
@@ -770,9 +783,9 @@ class _NewNotificationOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Revisa la campana',
-                    style: TextStyle(
+                  Text(
+                    l10n.navNewNotificationSubtitle,
+                    style: const TextStyle(
                       color: Color(0xFF412402),
                       fontSize: 14,
                     ),

@@ -17,6 +17,7 @@ import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/buy_coins_button.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -142,13 +143,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _safeNavigate(Future<void> Function() action) async {
     if (_isNavigating) return;
 
+    final timeoutMessage = AppLocalizations.of(context).homeActionTimeout;
+
     setState(() => _isNavigating = true);
 
     try {
       await action().timeout(
         const Duration(seconds: 12),
         onTimeout: () {
-          throw TimeoutException('La acción tardó demasiado.');
+          throw TimeoutException(timeoutMessage);
         },
       );
     } catch (e) {
@@ -239,6 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -332,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 child: StatChip(
                                   icon: Icons.monetization_on_outlined,
-                                  label: 'Monedas',
+                                  label: l10n.homeCoins,
                                   accent: AppColors.reward,
                                   background: AppColors.rewardBg,
                                   value: '$coins',
@@ -342,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 child: StatChip(
                                   icon: Icons.auto_awesome_outlined,
-                                  label: 'XP',
+                                  label: l10n.homeXp,
                                   accent: Theme.of(context).colorScheme.primary,
                                   background: Theme.of(context)
                                       .colorScheme
@@ -355,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 12),
                           StatChip(
                             icon: Icons.style_outlined,
-                            label: 'Tema libre',
+                            label: l10n.homeFreeTopic,
                             accent: Theme.of(context).colorScheme.primary,
                             background: Theme.of(context)
                                 .colorScheme
@@ -393,10 +397,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 if (alreadyPlayed) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                       content: Text(
-                                        'Ya jugaste el Daily Challenge de '
-                                        'hoy.',
+                                        l10n.homeAlreadyPlayedDaily,
                                       ),
                                     ),
                                   );
@@ -419,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 const SizedBox(height: 22),
-                const SectionLabel('Más formas de jugar'),
+                SectionLabel(l10n.homeMoreWaysToPlay),
                 const SizedBox(height: 10),
                 _WeeklyTopicCard(
                   isBusy: _isNavigating || _buyingLife,
@@ -459,8 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     label: Text(
                       _hasPendingSeasonRewards
-                          ? 'Weekly Challenge • Reward!'
-                          : 'Weekly Challenge',
+                          ? l10n.homeWeeklyChallengeReward
+                          : l10n.homeWeeklyChallenge,
                     ),
                   ),
                 ),
@@ -475,10 +478,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
                     ),
                   ),
-                  child: const Text(
-                    'Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.',
+                  child: Text(
+                    l10n.homeTabsHint,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -487,15 +490,15 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_isNavigating || _buyingLife)
             Container(
               color: Colors.black.withValues(alpha: 0.4),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
                     Text(
-                      'Cargando...',
-                      style: TextStyle(color: Colors.white),
+                      l10n.commonLoading,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -527,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '🔥 STREAK UP!',
+                        l10n.homeStreakUpTitle,
                         style: GoogleFonts.baloo2(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
@@ -535,9 +538,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Keep coming back daily',
-                        style: TextStyle(
+                      Text(
+                        l10n.homeStreakUpSubtitle,
+                        style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white,
                         ),
@@ -573,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '📅 ¡Volviste!',
+                        l10n.homeWelcomeBackTitle,
                         style: GoogleFonts.baloo2(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
@@ -582,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Racha de sesión: $_loginStreakForPopup días',
+                        l10n.homeLoginStreakLabel(_loginStreakForPopup),
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white,
@@ -591,7 +594,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_loginCoinsForPopup > 0) ...[
                         const SizedBox(height: 4),
                         Text(
-                          '+$_loginCoinsForPopup monedas',
+                          l10n.homeLoginStreakCoins(_loginCoinsForPopup),
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -625,6 +628,7 @@ class _LivesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     const iconColor = Color(0xFFFF6B5B);
     const valueColor = Color(0xFFB23A2C);
     const labelColor = Color(0xFFD9695B);
@@ -641,7 +645,7 @@ class _LivesCard extends StatelessWidget {
           const Icon(Icons.favorite_border, size: 22, color: iconColor),
           const SizedBox(width: 10),
           Text(
-            '$livesText vidas',
+            l10n.homeLivesSuffix(livesText),
             style: GoogleFonts.baloo2(
               fontSize: 15,
               fontWeight: FontWeight.w800,
@@ -656,7 +660,7 @@ class _LivesCard extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            isFull ? 'Vidas al máximo' : countdownText,
+            isFull ? l10n.homeLivesFull : countdownText,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -702,6 +706,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final reduceMotion = MediaQuery.of(context).disableAnimations;
 
     return Material(
@@ -760,7 +765,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tema libre (IA)',
+                          l10n.homeAiTopicTitle,
                           style: GoogleFonts.baloo2(
                             color: Colors.white,
                             fontSize: 19,
@@ -768,9 +773,9 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                           ),
                         ),
                         const SizedBox(height: 3),
-                        const Text(
-                          'Crea tu propio tema y juega con tus monedas',
-                          style: TextStyle(
+                        Text(
+                          l10n.homeAiTopicSubtitle,
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
                           ),
@@ -804,12 +809,14 @@ class _WeeklyTopicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: WeeklyTopicService.instance.watchCurrentTopic(),
       builder: (context, snap) {
         if (snap.hasError) {
           return _WeeklyTopicUnavailableCard(
-            message: 'Weekly Topic unavailable',
+            message: l10n.homeWeeklyTopicUnavailable,
             detail: snap.error.toString(),
           );
         }
@@ -822,18 +829,18 @@ class _WeeklyTopicCard extends StatelessWidget {
               color: AppColors.rewardBg,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Loading Weekly Topic...',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    l10n.homeWeeklyTopicLoading,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                 ),
               ],
@@ -844,9 +851,9 @@ class _WeeklyTopicCard extends StatelessWidget {
         final data = snap.data!.data();
 
         if (data == null || data['active'] != true) {
-          return const _WeeklyTopicUnavailableCard(
-            message: 'No Weekly Topic available',
-            detail: 'Check back soon for a featured challenge.',
+          return _WeeklyTopicUnavailableCard(
+            message: l10n.homeWeeklyTopicNoneAvailable,
+            detail: l10n.homeWeeklyTopicCheckBack,
           );
         }
 
@@ -907,7 +914,7 @@ class _WeeklyTopicCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        '+$rewardCoins coins',
+                        l10n.homeWeeklyTopicRewardCoins(rewardCoins),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -935,7 +942,7 @@ class _WeeklyTopicCard extends StatelessWidget {
                   ),
                   onPressed: isBusy ? null : () => onOpen(data),
                   icon: const Icon(Icons.play_arrow, size: 18),
-                  label: const Text('Open Weekly Topic'),
+                  label: Text(l10n.homeOpenWeeklyTopic),
                 ),
               ),
             ],
@@ -1059,6 +1066,7 @@ class _DailyChallengeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final streakColor = _streakColor(context);
 
@@ -1116,7 +1124,7 @@ class _DailyChallengeCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Daily Challenge',
+                        l10n.homeDailyChallengeTitle,
                         style: GoogleFonts.baloo2(
                           color: colorScheme.onSurface,
                           fontSize: 17,
@@ -1128,7 +1136,7 @@ class _DailyChallengeCard extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              'Racha: $streak días',
+                              l10n.homeDailyChallengeStreak(streak),
                               style: TextStyle(
                                 color: streakColor,
                                 fontSize: 13,
@@ -1148,9 +1156,9 @@ class _DailyChallengeCard extends StatelessWidget {
                                 color: AppColors.reward,
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: const Text(
-                                'Reward!',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.homeReward,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
                                   color: Colors.black,

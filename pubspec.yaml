@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
   firebase_core: ^3.0.0
@@ -23,6 +25,8 @@ dependencies:
   timezone: ^0.9.4
   audioplayers: ^5.2.1
   in_app_purchase: ^3.2.0
+  intl: ^0.20.2
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -32,6 +36,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/sfx/
     - assets/icon/

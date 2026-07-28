@@ -1,0 +1,185 @@
+{
+  "@@locale": "en",
+
+  "langSwitchLabelEn": "EN",
+  "langSwitchLabelEs": "ES",
+
+  "navChallengeAcceptedTitle": "Challenge accepted",
+  "navChallengeAcceptedBodyFallback": "Your invite was accepted.",
+  "navLater": "Later",
+  "navPlayNow": "Play now",
+  "navNewNotificationTitle": "New notification",
+  "navNewNotificationSubtitle": "Check the bell",
+
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonRetry": "Retry",
+  "commonLoading": "Loading...",
+  "commonSaving": "Saving...",
+
+  "homeActionTimeout": "The action took too long.",
+  "homeCoins": "Coins",
+  "homeXp": "XP",
+  "homeFreeTopic": "Free topic",
+  "homeAlreadyPlayedDaily": "You already played today's Daily Challenge.",
+  "homeMoreWaysToPlay": "More ways to play",
+  "homeWeeklyChallengeReward": "Weekly Challenge • Reward!",
+  "homeWeeklyChallenge": "Weekly Challenge",
+  "homeTabsHint": "Use the bottom tabs to play SOLO, compete in PvP, challenge friends, and view your profile.",
+  "homeStreakUpTitle": "🔥 STREAK UP!",
+  "homeStreakUpSubtitle": "Keep coming back daily",
+  "homeWelcomeBackTitle": "📅 Welcome back!",
+  "homeLoginStreakLabel": "Login streak: {days} days",
+  "@homeLoginStreakLabel": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "homeLoginStreakCoins": "+{coins} coins",
+  "@homeLoginStreakCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "homeLivesSuffix": "{lives} lives",
+  "@homeLivesSuffix": {
+    "placeholders": {
+      "lives": {"type": "String"}
+    }
+  },
+  "homeLivesFull": "Lives at max",
+  "homeAiTopicTitle": "Free Topic (AI)",
+  "homeAiTopicSubtitle": "Create your own topic and play with your coins",
+  "homeWeeklyTopicUnavailable": "Weekly Topic unavailable",
+  "homeWeeklyTopicNoneAvailable": "No Weekly Topic available",
+  "homeWeeklyTopicCheckBack": "Check back soon for a featured challenge.",
+  "homeWeeklyTopicLoading": "Loading Weekly Topic...",
+  "homeOpenWeeklyTopic": "Open Weekly Topic",
+  "homeWeeklyTopicRewardCoins": "+{coins} coins",
+  "@homeWeeklyTopicRewardCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "homeDailyChallengeTitle": "Daily Challenge",
+  "homeDailyChallengeStreak": "Streak: {days} days",
+  "@homeDailyChallengeStreak": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "homeReward": "Reward!",
+
+  "profileTitle": "Player Profile",
+  "profileEditUsername": "Edit username",
+  "profileEnterUsername": "Enter username",
+  "profileUsernameHelper": "Must be unique. Use 3 to 20 characters.",
+  "profileUsernameLengthError": "The username must be between 3 and 20 characters.",
+  "profileUsernameCharsError": "Use only letters, numbers, and underscore.",
+  "profileUsernameTaken": "That username already exists.",
+  "profileUpdateError": "Error updating profile: {error}",
+  "@profileUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileUpdated": "Profile updated",
+  "profileAvatarCollection": "Avatar Collection",
+  "profileUnlockedCount": "Unlocked {count} / {total}",
+  "@profileUnlockedCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "profileCurrentlyEquipped": "Currently equipped",
+  "profileChooseFrame": "Choose Frame",
+  "profileEquippedNotice": "{emoji} {name} equipped",
+  "@profileEquippedNotice": {
+    "placeholders": {
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "profileAvatarUpdateError": "Error updating avatar: {error}",
+  "@profileAvatarUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileLevel": "Level {level}",
+  "@profileLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "profileWeeklyScore": "Weekly Score: {score}",
+  "@profileWeeklyScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "profileXpToNextLevel": "{current} / {required} XP to next level",
+  "@profileXpToNextLevel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "required": {"type": "int"}
+    }
+  },
+  "profileAchievements": "Achievements",
+  "profileAchievementsSubtitle": "Check your progress and rewards",
+  "profileCoins": "Coins",
+  "profileFreeTopics": "Free topics",
+  "profileStreak": "Streak",
+  "profileBestStreak": "Best streak",
+  "profileStats": "Stats",
+  "profileGamesPlayed": "Games played",
+  "profileCorrectAnswers": "Correct answers",
+  "profileWrongAnswers": "Wrong answers",
+  "profileAccuracy": "Accuracy",
+  "profileBestDailyScore": "Best Daily score",
+  "profilePvpLeague": "{league} PvP League",
+  "@profilePvpLeague": {
+    "placeholders": {
+      "league": {"type": "String"}
+    }
+  },
+  "profileRankedHint": "Ranked first searches for rivals in your league and widens the range if no players are available.",
+  "profile1v1Stats": "1 vs 1 Stats",
+  "profileRankedMmr": "Ranked MMR",
+  "profileVictories": "Victories",
+  "profileDefeats": "Defeats",
+  "profileDraws": "Draws",
+  "profileMatchesPlayed": "Matches played",
+  "profileWinrate": "Winrate",
+  "profileCurrentStreak": "Current streak",
+  "profileRecentMatches": "Recent PvP matches",
+  "profileNoMatches": "No PvP matches yet.",
+  "profileVsOpponent": "vs {opponent}",
+  "@profileVsOpponent": {
+    "placeholders": {
+      "opponent": {"type": "String"}
+    }
+  },
+  "profileScore": "Score",
+  "profileRanked": "Ranked",
+  "profileCasual": "Casual",
+  "profileErrorLoading": "Error loading profile:\n{error}",
+  "@profileErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "matchResultVictory": "Victory",
+  "matchResultDefeat": "Defeat",
+  "matchResultDraw": "Draw",
+  "matchResultMatch": "Match",
+
+  "avatarCategoryBase": "BASE",
+  "avatarCategoryPvp": "PVP",
+  "avatarCategoryWeekly": "WEEKLY",
+  "avatarCategoryAchievement": "ACHIEVEMENT",
+  "avatarCategoryAi": "AI",
+  "avatarCategoryAiUnique": "AI UNIQUE"
+}

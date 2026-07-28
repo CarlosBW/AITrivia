@@ -14,6 +14,7 @@ import 'app/app.dart';
 import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
 import 'services/notification_service.dart';
+import 'services/locale_controller.dart';
 
 const AndroidNotificationChannel triviaChannel = AndroidNotificationChannel(
   'triviaia_channel',
@@ -204,6 +205,8 @@ Future<void> main() async {
   );
 
   WidgetsBinding.instance.addObserver(presenceObserver);
+
+  await LocaleController.instance.load();
 
   if (!kIsWeb) {
     try {

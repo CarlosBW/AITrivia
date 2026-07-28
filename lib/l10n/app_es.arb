@@ -1,0 +1,185 @@
+{
+  "@@locale": "es",
+
+  "langSwitchLabelEn": "EN",
+  "langSwitchLabelEs": "ES",
+
+  "navChallengeAcceptedTitle": "Reto aceptado",
+  "navChallengeAcceptedBodyFallback": "Tu invitación fue aceptada.",
+  "navLater": "Luego",
+  "navPlayNow": "Jugar ahora",
+  "navNewNotificationTitle": "Nueva notificación",
+  "navNewNotificationSubtitle": "Revisa la campana",
+
+  "commonCancel": "Cancelar",
+  "commonSave": "Guardar",
+  "commonRetry": "Reintentar",
+  "commonLoading": "Cargando...",
+  "commonSaving": "Guardando...",
+
+  "homeActionTimeout": "La acción tardó demasiado.",
+  "homeCoins": "Monedas",
+  "homeXp": "XP",
+  "homeFreeTopic": "Tema libre",
+  "homeAlreadyPlayedDaily": "Ya jugaste el Daily Challenge de hoy.",
+  "homeMoreWaysToPlay": "Más formas de jugar",
+  "homeWeeklyChallengeReward": "Weekly Challenge • ¡Recompensa!",
+  "homeWeeklyChallenge": "Weekly Challenge",
+  "homeTabsHint": "Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.",
+  "homeStreakUpTitle": "🔥 ¡RACHA!",
+  "homeStreakUpSubtitle": "Sigue volviendo cada día",
+  "homeWelcomeBackTitle": "📅 ¡Volviste!",
+  "homeLoginStreakLabel": "Racha de sesión: {days} días",
+  "@homeLoginStreakLabel": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "homeLoginStreakCoins": "+{coins} monedas",
+  "@homeLoginStreakCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "homeLivesSuffix": "{lives} vidas",
+  "@homeLivesSuffix": {
+    "placeholders": {
+      "lives": {"type": "String"}
+    }
+  },
+  "homeLivesFull": "Vidas al máximo",
+  "homeAiTopicTitle": "Tema libre (IA)",
+  "homeAiTopicSubtitle": "Crea tu propio tema y juega con tus monedas",
+  "homeWeeklyTopicUnavailable": "Weekly Topic no disponible",
+  "homeWeeklyTopicNoneAvailable": "No hay Weekly Topic disponible",
+  "homeWeeklyTopicCheckBack": "Vuelve pronto para un nuevo reto destacado.",
+  "homeWeeklyTopicLoading": "Cargando Weekly Topic...",
+  "homeOpenWeeklyTopic": "Abrir Weekly Topic",
+  "homeWeeklyTopicRewardCoins": "+{coins} monedas",
+  "@homeWeeklyTopicRewardCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "homeDailyChallengeTitle": "Daily Challenge",
+  "homeDailyChallengeStreak": "Racha: {days} días",
+  "@homeDailyChallengeStreak": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "homeReward": "¡Recompensa!",
+
+  "profileTitle": "Perfil de jugador",
+  "profileEditUsername": "Editar nombre de usuario",
+  "profileEnterUsername": "Ingresa tu nombre de usuario",
+  "profileUsernameHelper": "Debe ser único. Usa 3 a 20 caracteres.",
+  "profileUsernameLengthError": "El nombre de usuario debe tener entre 3 y 20 caracteres.",
+  "profileUsernameCharsError": "Usa solo letras, números y guion bajo.",
+  "profileUsernameTaken": "Ese nombre de usuario ya existe.",
+  "profileUpdateError": "Error actualizando perfil: {error}",
+  "@profileUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileUpdated": "Perfil actualizado",
+  "profileAvatarCollection": "Colección de avatares",
+  "profileUnlockedCount": "Desbloqueados {count} / {total}",
+  "@profileUnlockedCount": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "profileCurrentlyEquipped": "Equipado actualmente",
+  "profileChooseFrame": "Elegir marco",
+  "profileEquippedNotice": "{emoji} {name} equipado",
+  "@profileEquippedNotice": {
+    "placeholders": {
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "profileAvatarUpdateError": "Error actualizando avatar: {error}",
+  "@profileAvatarUpdateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileLevel": "Nivel {level}",
+  "@profileLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "profileWeeklyScore": "Puntaje semanal: {score}",
+  "@profileWeeklyScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "profileXpToNextLevel": "{current} / {required} XP para el siguiente nivel",
+  "@profileXpToNextLevel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "required": {"type": "int"}
+    }
+  },
+  "profileAchievements": "Logros",
+  "profileAchievementsSubtitle": "Revisa tu progreso y recompensas",
+  "profileCoins": "Monedas",
+  "profileFreeTopics": "Temas gratis",
+  "profileStreak": "Racha",
+  "profileBestStreak": "Mejor racha",
+  "profileStats": "Estadísticas",
+  "profileGamesPlayed": "Partidas jugadas",
+  "profileCorrectAnswers": "Respuestas correctas",
+  "profileWrongAnswers": "Respuestas incorrectas",
+  "profileAccuracy": "Precisión",
+  "profileBestDailyScore": "Mejor puntaje diario",
+  "profilePvpLeague": "Liga PvP {league}",
+  "@profilePvpLeague": {
+    "placeholders": {
+      "league": {"type": "String"}
+    }
+  },
+  "profileRankedHint": "Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.",
+  "profile1v1Stats": "Estadísticas 1 vs 1",
+  "profileRankedMmr": "MMR clasificado",
+  "profileVictories": "Victorias",
+  "profileDefeats": "Derrotas",
+  "profileDraws": "Empates",
+  "profileMatchesPlayed": "Partidas jugadas",
+  "profileWinrate": "% de victorias",
+  "profileCurrentStreak": "Racha actual",
+  "profileRecentMatches": "Partidas PvP recientes",
+  "profileNoMatches": "Aún no hay partidas PvP.",
+  "profileVsOpponent": "vs {opponent}",
+  "@profileVsOpponent": {
+    "placeholders": {
+      "opponent": {"type": "String"}
+    }
+  },
+  "profileScore": "Puntaje",
+  "profileRanked": "Clasificado",
+  "profileCasual": "Casual",
+  "profileErrorLoading": "Error cargando perfil:\n{error}",
+  "@profileErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "matchResultVictory": "Victoria",
+  "matchResultDefeat": "Derrota",
+  "matchResultDraw": "Empate",
+  "matchResultMatch": "Partida",
+
+  "avatarCategoryBase": "BASE",
+  "avatarCategoryPvp": "PVP",
+  "avatarCategoryWeekly": "SEMANAL",
+  "avatarCategoryAchievement": "LOGRO",
+  "avatarCategoryAi": "IA",
+  "avatarCategoryAiUnique": "IA ÚNICO"
+}

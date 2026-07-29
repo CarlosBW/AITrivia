@@ -12,9 +12,20 @@ class PresenceService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Timer? _heartbeatTimer;
+  bool _ready = false;
 
   static const Duration heartbeatInterval = Duration(seconds: 15);
   static const Duration onlineMaxAge = Duration(seconds: 45);
+
+  // Guards against writing presence before bootstrapUserDoc has created the
+  // users/{uid} doc — a merge-set on a not-yet-existing doc is evaluated as
+  // a Firestore `create`, which firestore.rules rejects (it requires
+  // coins/xp fields presence writes don't send), surfacing as
+  // PERMISSION_DENIED if a lifecycle-triggered setOnline() races ahead of
+  // bootstrap on a slow/cold app start.
+  void markReady() {
+    _ready = true;
+  }
 
   String get uid => _auth.currentUser!.uid;
 
@@ -73,6 +84,8 @@ class PresenceService {
     required String status,
     required bool inMatch,
   }) async {
+    if (!_ready) return;
+
     final ref = _userRef(uid);
 
     await ref.set({

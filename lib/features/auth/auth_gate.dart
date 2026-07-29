@@ -40,6 +40,8 @@ class _AuthGateState extends State<AuthGate> {
         () => bootstrapUserDoc(uid),
       );
 
+      PresenceService.instance.markReady();
+
       await MatchService().recoverMyRealtimeStateOnAppStart();
       await PresenceService.instance.setOnline();
 

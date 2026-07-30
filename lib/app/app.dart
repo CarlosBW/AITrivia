@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/auth/auth_gate.dart';
+import '../features/onboarding/language_picker_screen.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../services/locale_controller.dart';
 import '../theme/app_theme.dart';
@@ -25,9 +26,50 @@ class TriviaIAApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const AuthGate(),
+          home: const LanguageGate(),
         );
       },
     );
+  }
+}
+
+/// Shows the first-launch language picker before anything else in the app
+/// (including auth) if the player has never explicitly chosen a language;
+/// otherwise goes straight to [AuthGate].
+class LanguageGate extends StatefulWidget {
+  const LanguageGate({super.key});
+
+  @override
+  State<LanguageGate> createState() => _LanguageGateState();
+}
+
+class _LanguageGateState extends State<LanguageGate> {
+  bool? _needsPicker;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    final hasChoice = await LocaleController.instance.hasExplicitChoice();
+    if (!mounted) return;
+    setState(() => _needsPicker = !hasChoice);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_needsPicker == null) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
+    if (_needsPicker!) {
+      return LanguagePickerScreen(
+        onSelected: () => setState(() => _needsPicker = false),
+      );
+    }
+
+    return const AuthGate();
   }
 }

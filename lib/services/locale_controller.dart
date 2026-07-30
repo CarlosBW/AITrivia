@@ -13,6 +13,15 @@ class LocaleController {
 
   final ValueNotifier<Locale> locale = ValueNotifier(const Locale('es'));
 
+  /// Whether the player has ever explicitly picked a language (via
+  /// [setLocale]) — as opposed to [load] merely falling back to the
+  /// device's own locale. Used to gate the first-launch language picker so
+  /// it only ever shows once.
+  Future<bool> hasExplicitChoice() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_prefsKey);
+  }
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_prefsKey);

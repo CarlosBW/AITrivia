@@ -3170,6 +3170,95 @@ export const refundAiTopicCost = onCall(async (request) => {
   });
 });
 
+// A question hitting this many reports (from replays of the same level, or
+// any future case where reports on the same questionId accumulate) gets
+// excluded from that level's question pool going forward — see
+// reportAiQuestion below.
+const AI_QUESTION_REPORT_THRESHOLD = 3;
+
+const AI_QUESTION_REPORT_REASONS = new Set([
+  "wrong_answer",
+  "confusing",
+  "inappropriate",
+  "other",
+]);
+
+/**
+ * Logs a player's report of a bad AI-generated question (wrong answer
+ * marked correct, confusing, inappropriate, etc.) to a global collection
+ * for reviewing AI-generation quality, and — once the same questionId
+ * within a level has been reported [AI_QUESTION_REPORT_THRESHOLD] times —
+ * invalidates that level's cached session so the next play rebuilds the
+ * question set excluding it (see level_play_screen.dart's _ensureSession,
+ * which already filters by this same reportedQuestionCounts field).
+ */
+export const reportAiQuestion = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+  const questionId = String(request.data?.questionId || "");
+  const questionText = String(request.data?.questionText || "");
+  const reason = String(request.data?.reason || "");
+  const details = String(request.data?.details || "").slice(0, 500);
+
+  if (
+    !topicId || levelNumber < 1 || !questionId ||
+    !AI_QUESTION_REPORT_REASONS.has(reason)
+  ) {
+    throw new HttpsError("invalid-argument", "Invalid report.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const topicRef = userRef.collection("ai_topics").doc(topicId);
+  const levelRef = topicRef.collection("levels").doc(`level_${levelNumber}`);
+  const sessionRef = userRef.collection("sessions_ai")
+    .doc(`${topicId}_${levelNumber}`);
+  const reportRef = db.collection("ai_question_reports").doc();
+
+  const topicSnap = await topicRef.get();
+  if (!topicSnap.exists) {
+    throw new HttpsError("not-found", "Topic not found.");
+  }
+
+  return db.runTransaction(async (tx) => {
+    const levelSnap = await tx.get(levelRef);
+    const reportedCounts: Record<string, number> = {
+      ...(levelSnap.data()?.reportedQuestionCounts || {}),
+    };
+
+    const newCount = safeInt(reportedCounts[questionId], 0) + 1;
+    reportedCounts[questionId] = newCount;
+
+    tx.set(reportRef, {
+      uid,
+      topicId,
+      levelNumber,
+      questionId,
+      questionText,
+      reason,
+      details,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    tx.set(
+      levelRef,
+      {reportedQuestionCounts: reportedCounts},
+      {merge: true}
+    );
+
+    const excluded = newCount >= AI_QUESTION_REPORT_THRESHOLD;
+    if (excluded) {
+      tx.delete(sessionRef);
+    }
+
+    return {reportCount: newCount, excluded};
+  });
+});
+
 // ============================================================
 // WEEKLY TOPIC
 //

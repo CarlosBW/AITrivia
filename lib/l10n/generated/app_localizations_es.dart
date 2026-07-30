@@ -532,6 +532,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelPlayWrongNoLifeLoss => '❌ Incorrecto - no perdiste vida';
 
   @override
+  String get aiReportQuestionTooltip => 'Reportar esta pregunta';
+
+  @override
+  String get aiReportDialogTitle => '¿Qué pasa con esta pregunta?';
+
+  @override
+  String get aiReportDialogDetailsHint => 'Detalles adicionales (opcional)';
+
+  @override
+  String get aiReportDialogCancel => 'Cancelar';
+
+  @override
+  String get aiReportDialogSubmit => 'Enviar reporte';
+
+  @override
+  String get aiReportReasonWrongAnswer => 'La respuesta marcada está mal';
+
+  @override
+  String get aiReportReasonConfusing => 'Pregunta confusa o ambigua';
+
+  @override
+  String get aiReportReasonInappropriate => 'Contenido inapropiado';
+
+  @override
+  String get aiReportReasonOther => 'Otro motivo';
+
+  @override
+  String get aiReportSent => 'Gracias, reportamos la pregunta.';
+
+  @override
   String get levelPlayNeedFullLife =>
       'Necesitas 1 vida completa para entrar a este nivel.';
 

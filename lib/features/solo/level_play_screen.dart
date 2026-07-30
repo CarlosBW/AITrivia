@@ -88,6 +88,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
+  // Mirrors AI_QUESTION_REPORT_THRESHOLD in functions/src/index.ts — a
+  // question reported this many times gets excluded from this level's
+  // question pool going forward (see _ensureSession's AI-topic branch).
+  static const int _reportExclusionThreshold = 3;
+  bool _reportingQuestion = false;
+
   @override
   void initState() {
     super.initState();
@@ -649,6 +655,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       final qMap = questions[_index] as Map<String, dynamic>;
                       final qText = (qMap['q'] ?? '').toString();
+                      final questionId = (qMap['questionId'] ?? '').toString();
 
                       List<String> options;
                       int answerIndex;
@@ -722,6 +729,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         child: _buildQuestionView(
                           key: ValueKey('q_$_index'),
                           qText: qText,
+                          questionId: questionId,
                           options: options,
                           answerIndex: answerIndex,
                           total: questions.length,
@@ -872,9 +880,133 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     );
   }
 
+  static const List<String> _reportReasonKeys = [
+    'wrong_answer',
+    'confusing',
+    'inappropriate',
+    'other',
+  ];
+
+  String _reportReasonLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'wrong_answer':
+        return l10n.aiReportReasonWrongAnswer;
+      case 'confusing':
+        return l10n.aiReportReasonConfusing;
+      case 'inappropriate':
+        return l10n.aiReportReasonInappropriate;
+      default:
+        return l10n.aiReportReasonOther;
+    }
+  }
+
+  Future<void> _showReportQuestionDialog({
+    required String questionId,
+    required String questionText,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    String selectedReason = _reportReasonKeys.first;
+    final detailsController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.aiReportDialogTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ..._reportReasonKeys.map(
+                (key) => RadioListTile<String>(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  value: key,
+                  groupValue: selectedReason,
+                  title: Text(_reportReasonLabel(l10n, key)),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() => selectedReason = value);
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: detailsController,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  hintText: l10n.aiReportDialogDetailsHint,
+                  border: const OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.aiReportDialogCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.aiReportDialogSubmit),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _reportQuestion(
+      questionId: questionId,
+      questionText: questionText,
+      reason: selectedReason,
+      details: detailsController.text,
+    );
+  }
+
+  Future<void> _reportQuestion({
+    required String questionId,
+    required String questionText,
+    required String reason,
+    required String details,
+  }) async {
+    if (_reportingQuestion) return;
+    setState(() => _reportingQuestion = true);
+
+    try {
+      await FirebaseFunctions.instance.httpsCallable('reportAiQuestion').call({
+        'topicId': widget.aiTopicId,
+        'levelNumber': widget.levelNumber,
+        'questionId': questionId,
+        'questionText': questionText,
+        'reason': reason,
+        if (details.trim().isNotEmpty) 'details': details.trim(),
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).aiReportSent)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _reportingQuestion = false);
+    }
+  }
+
   Widget _buildQuestionView({
     required Key key,
     required String qText,
+    required String questionId,
     required List<String> options,
     required int answerIndex,
     required int total,
@@ -963,6 +1095,19 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     ],
                   ),
                 ),
+                if (widget.isAiTopic && _locked && questionId.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: l10n.aiReportQuestionTooltip,
+                    onPressed: _reportingQuestion
+                        ? null
+                        : () => _showReportQuestionDialog(
+                              questionId: questionId,
+                              questionText: qText,
+                            ),
+                    icon: const Icon(Icons.flag_outlined),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 22),
@@ -1174,6 +1319,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           .collection('levels')
           .doc('level_${widget.levelNumber}');
 
+      final levelSnap = await levelRef.get();
+      final reportedCounts = Map<String, dynamic>.from(
+        levelSnap.data()?['reportedQuestionCounts'] as Map? ?? {},
+      );
+
       final questionsSnap = await levelRef.collection('questions').get();
 
       if (questionsSnap.docs.isEmpty) {
@@ -1182,7 +1332,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         );
       }
 
-      final chosen = questionsSnap.docs.map((e) => e.data()).toList();
+      // Questions reported _reportExclusionThreshold+ times get skipped —
+      // but if that would empty out the whole level (everything flagged),
+      // fall back to using them all rather than showing a dead end.
+      final usableDocs = questionsSnap.docs.where((doc) {
+        final count = ((reportedCounts[doc.id] ?? 0) as num).toInt();
+        return count < _reportExclusionThreshold;
+      }).toList();
+
+      final docsToUse =
+          usableDocs.isNotEmpty ? usableDocs : questionsSnap.docs;
+
+      final chosen = docsToUse
+          .map((doc) => {...doc.data(), 'questionId': doc.id})
+          .toList();
 
       await sessionRef.set({
         'categoryId': widget.aiTopicId,

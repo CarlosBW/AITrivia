@@ -1004,6 +1004,66 @@ abstract class AppLocalizations {
   /// **'❌ Incorrecto - no perdiste vida'**
   String get levelPlayWrongNoLifeLoss;
 
+  /// No description provided for @aiReportQuestionTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar esta pregunta'**
+  String get aiReportQuestionTooltip;
+
+  /// No description provided for @aiReportDialogTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué pasa con esta pregunta?'**
+  String get aiReportDialogTitle;
+
+  /// No description provided for @aiReportDialogDetailsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalles adicionales (opcional)'**
+  String get aiReportDialogDetailsHint;
+
+  /// No description provided for @aiReportDialogCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get aiReportDialogCancel;
+
+  /// No description provided for @aiReportDialogSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar reporte'**
+  String get aiReportDialogSubmit;
+
+  /// No description provided for @aiReportReasonWrongAnswer.
+  ///
+  /// In es, this message translates to:
+  /// **'La respuesta marcada está mal'**
+  String get aiReportReasonWrongAnswer;
+
+  /// No description provided for @aiReportReasonConfusing.
+  ///
+  /// In es, this message translates to:
+  /// **'Pregunta confusa o ambigua'**
+  String get aiReportReasonConfusing;
+
+  /// No description provided for @aiReportReasonInappropriate.
+  ///
+  /// In es, this message translates to:
+  /// **'Contenido inapropiado'**
+  String get aiReportReasonInappropriate;
+
+  /// No description provided for @aiReportReasonOther.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro motivo'**
+  String get aiReportReasonOther;
+
+  /// No description provided for @aiReportSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Gracias, reportamos la pregunta.'**
+  String get aiReportSent;
+
   /// No description provided for @levelPlayNeedFullLife.
   ///
   /// In es, this message translates to:

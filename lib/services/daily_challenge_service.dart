@@ -123,6 +123,45 @@ class DailyChallengeService {
     return data != null && data['played'] == true;
   }
 
+  /// Reconstructs today's already-submitted result from the stored
+  /// `daily_challenges/{dateId}` doc (written by `submitDailyChallengeResult`
+  /// in [saveResult]), so a player who already played today can see a recap
+  /// instead of a dead-end "you already played" message. Returns null if
+  /// today's session hasn't been played yet.
+  Future<DailyChallengeSaveResult?> getTodayResult(String uid) async {
+    final dateId = todayDateId();
+    final snap = await _dailyRef(uid: uid, dateId: dateId).get();
+    final data = snap.data();
+    if (data == null || data['played'] != true) return null;
+
+    return DailyChallengeSaveResult(
+      saved: true,
+      alreadyPlayed: true,
+      correct: ((data['correct'] ?? 0) as num).toInt(),
+      totalAnswered: ((data['totalAnswered'] ?? 0) as num).toInt(),
+      coinsEarned: ((data['coinsEarned'] ?? 0) as num).toInt(),
+      streak: ((data['streak'] ?? 0) as num).toInt(),
+      streakBonusCoins: ((data['streakBonusCoins'] ?? 0) as num).toInt(),
+      levelUpBonusCoins: ((data['levelUpBonusCoins'] ?? 0) as num).toInt(),
+      score: ((data['score'] ?? 0) as num).toInt(),
+      leveledUp: data['leveledUp'] == true,
+      oldLevel: ((data['oldLevel'] ?? 1) as num).toInt(),
+      newLevel: ((data['newLevel'] ?? 1) as num).toInt(),
+      xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
+    );
+  }
+
+  /// Time remaining until tomorrow's Daily Challenge unlocks (local
+  /// midnight) — used to give the "already played today" recap a concrete
+  /// countdown instead of a dead end.
+  Duration timeUntilReset([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    final nextMidnight =
+        DateTime(n.year, n.month, n.day).add(const Duration(days: 1));
+    final diff = nextMidnight.difference(n);
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
   Future<DailyChallengeSession?> getTodaySession(String uid) async {
     final dateId = todayDateId();
     final snap = await _dailyRef(uid: uid, dateId: dateId).get();

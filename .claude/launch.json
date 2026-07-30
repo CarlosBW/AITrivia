@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "flutter-web",
-      "runtimeExecutable": "flutter",
+      "runtimeExecutable": "C:\\Users\\cbalc\\flutter\\bin\\flutter.bat",
       "runtimeArgs": ["run", "-d", "web-server", "--web-port", "5000"],
       "port": 5000
     }

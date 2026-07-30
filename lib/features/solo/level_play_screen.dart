@@ -325,7 +325,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           final uid = FirebaseAuth.instance.currentUser!.uid;
 
           Future.microtask(() async {
-            await LifeService.instance.tryConsumeWrongAnswer(uid);
+            final lifeLost =
+                await LifeService.instance.tryConsumeWrongAnswer(uid);
             await _refreshLivesAndStopIfEmpty();
 
             if (!mounted) return;
@@ -335,7 +336,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             setState(() {
               _statusMsg = _endedByNoLives
                   ? l10n.levelPlayTimeUpNoLives
-                  : l10n.levelPlayTimeUpLostHalfLife;
+                  : lifeLost
+                      ? l10n.levelPlayTimeUpLostHalfLife
+                      : l10n.levelPlayTimeUpNoLifeLoss;
             });
 
             if (_endedByNoLives) return;
@@ -411,7 +414,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       SfxService.instance.playWrong();
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      await LifeService.instance.tryConsumeWrongAnswer(uid);
+      final lifeLost = await LifeService.instance.tryConsumeWrongAnswer(uid);
       await _refreshLivesAndStopIfEmpty();
 
       if (mounted) {
@@ -420,7 +423,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         setState(() {
           _statusMsg = _endedByNoLives
               ? l10n.levelPlayWrongNoLives
-              : l10n.levelPlayWrongLostHalfLife;
+              : lifeLost
+                  ? l10n.levelPlayWrongLostHalfLife
+                  : l10n.levelPlayWrongNoLifeLoss;
         });
       }
     }
@@ -2112,6 +2117,7 @@ class _XpSegmentViewState extends State<_XpSegmentView>
         _completedCallbackSent = true;
 
         if (crossedLevel && mounted) {
+          SfxService.instance.playReward();
           setState(() => _showLevelUp = true);
           await _levelUpController.forward();
           await Future.delayed(const Duration(milliseconds: 350));

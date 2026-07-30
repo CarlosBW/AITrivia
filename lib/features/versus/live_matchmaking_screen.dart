@@ -8,6 +8,7 @@ import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/pvp_league_service.dart';
 import 'match_lobby_screen.dart';
+import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
@@ -50,6 +51,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   Timer? _pollTimer;
   Timer? _timeoutTimer;
   String? _error;
+  bool _timedOut = false;
 
   @override
   void initState() {
@@ -143,6 +145,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       _starting = true;
       _searching = true;
       _error = null;
+      _timedOut = false;
     });
 
     try {
@@ -173,6 +176,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         if (!mounted) return;
         setState(() {
           _error = AppLocalizations.of(context).liveMatchmakingNoOpponentFound;
+          _timedOut = true;
         });
       });
     } catch (e) {
@@ -313,6 +317,28 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                   Text(
                     _error!,
                     style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_timedOut) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AsyncMenuScreen(
+                              difficulty: widget.difficulty,
+                              timePerQuestionSec: widget.timePerQuestionSec,
+                              totalQuestions: widget.totalQuestions,
+                              winReward: widget.winReward,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(l10n.liveMatchmakingTryAsyncInstead),
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],

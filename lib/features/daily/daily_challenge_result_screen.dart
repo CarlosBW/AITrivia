@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'daily_leaderboard_screen.dart';
 
 class DailyChallengeResultScreen extends StatelessWidget {
   final DailyChallengeSaveResult result;
@@ -75,9 +78,28 @@ class DailyChallengeResultScreen extends StatelessWidget {
                 l10n.dailyResultAlreadyPlayed,
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 8),
+              const _ResetCountdown(),
             ],
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DailyLeaderboardScreen(),
+                    ),
+                  );
+                },
+                child: Text(l10n.dailyResultViewLeaderboard),
+              ),
+            ),
+
+            const SizedBox(height: 16),
 
             SizedBox(
               width: double.infinity,
@@ -90,6 +112,58 @@ class DailyChallengeResultScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ResetCountdown extends StatefulWidget {
+  const _ResetCountdown();
+
+  @override
+  State<_ResetCountdown> createState() => _ResetCountdownState();
+}
+
+class _ResetCountdownState extends State<_ResetCountdown> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeLeft = DailyChallengeService.instance.timeUntilReset();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _timeLeft = DailyChallengeService.instance.timeUntilReset();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+
+    return '${hours}h ${minutes}m ${seconds}s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Text(
+      l10n.dailyResultNextChallengeIn(_formatDuration(_timeLeft)),
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

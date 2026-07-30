@@ -8,10 +8,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../daily/daily_challenge_screen.dart';
+import '../daily/daily_challenge_result_screen.dart';
 import '../leagues/weekly_league_screen.dart';
 import '../../services/daily_challenge_service.dart';
+import '../../services/weekly_league_service.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
+import '../../services/achievement_service.dart';
+import '../../services/avatar_service.dart';
+import '../../services/sfx_service.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/stat_chip.dart';
@@ -46,6 +51,18 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showLoginPopup = false;
   int _loginStreakForPopup = 0;
   int _loginCoinsForPopup = 0;
+
+  Map<String, bool>? _lastSeenAchievementCompleted;
+  bool _showAchievementPopup = false;
+  String _achievementPopupIcon = '';
+  String _achievementPopupTitle = '';
+  int _achievementPopupCoins = 0;
+  int _achievementPopupXp = 0;
+
+  DateTime? _lastSeenAvatarUnlockAt;
+  bool _showAvatarUnlockPopup = false;
+  String _avatarUnlockEmoji = '';
+  String _avatarUnlockName = '';
 
   late final String uid;
 
@@ -224,6 +241,91 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Only the notification/user-doc fields report an achievement completing
+  // — there's no client-side "moment" tied to it (it can complete as a side
+  // effect of any server-side function), so this compares each snapshot's
+  // completed flags against the previous one to catch the transition.
+  void _handleAchievementsSnapshot(
+    QuerySnapshot<Map<String, dynamic>> snap,
+  ) {
+    final current = <String, bool>{
+      for (final doc in snap.docs) doc.id: doc.data()['completed'] == true,
+    };
+
+    final previous = _lastSeenAchievementCompleted;
+    _lastSeenAchievementCompleted = current;
+
+    if (previous == null) return;
+
+    for (final entry in current.entries) {
+      final wasCompleted = previous[entry.key] == true;
+      if (entry.value && !wasCompleted) {
+        _showAchievementCelebration(entry.key);
+        return;
+      }
+    }
+  }
+
+  void _showAchievementCelebration(String achievementId) {
+    final info = AchievementService.instance.getAchievementById(
+      achievementId,
+    );
+    if (info == null) return;
+
+    HapticFeedback.mediumImpact();
+    SfxService.instance.playReward();
+
+    setState(() {
+      _showAchievementPopup = true;
+      _achievementPopupIcon = info.icon;
+      _achievementPopupTitle = info.title;
+      _achievementPopupCoins = info.rewardCoins;
+      _achievementPopupXp = info.rewardXp;
+    });
+
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (!mounted) return;
+
+      setState(() => _showAchievementPopup = false);
+    });
+  }
+
+  // Mirrors _handleAchievementsSnapshot's approach: lastUnlockedAvatarAt is
+  // written server-side whenever a new avatar unlocks (see
+  // user_bootstrap.dart's field comment), but nothing ever read it — this
+  // just detects it moving forward to celebrate the unlock once.
+  void _handleAvatarUnlockChange(Map<String, dynamic> data) {
+    final rawAt = data['lastUnlockedAvatarAt'];
+    final unlockedAt = rawAt is Timestamp ? rawAt.toDate() : null;
+    if (unlockedAt == null) return;
+
+    final previous = _lastSeenAvatarUnlockAt;
+    _lastSeenAvatarUnlockAt = unlockedAt;
+
+    if (previous == null) return;
+    if (!unlockedAt.isAfter(previous)) return;
+
+    final avatarId = data['lastUnlockedAvatarId']?.toString();
+    if (avatarId == null || avatarId.isEmpty) return;
+
+    final info = AvatarService.instance.avatarById(avatarId);
+
+    HapticFeedback.mediumImpact();
+    SfxService.instance.playReward();
+
+    setState(() {
+      _showAvatarUnlockPopup = true;
+      _avatarUnlockEmoji = info.emoji;
+      _avatarUnlockName = info.name;
+    });
+
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (!mounted) return;
+
+      setState(() => _showAvatarUnlockPopup = false);
+    });
+  }
+
   @override
   void dispose() {
     _lifeTimer?.cancel();
@@ -294,6 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (!mounted) return;
 
                       _handleStreakChange(streak);
+                      _handleAvatarUnlockChange(data);
 
                       if (loginCelebrationPending) {
                         _showLoginStreakCelebration(
@@ -396,13 +499,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                 if (!context.mounted) return;
 
                                 if (alreadyPlayed) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.homeAlreadyPlayedDaily,
+                                  final todayResult =
+                                      await DailyChallengeService.instance
+                                          .getTodayResult(uid);
+
+                                  if (!context.mounted) return;
+
+                                  if (todayResult != null) {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            DailyChallengeResultScreen(
+                                          result: todayResult,
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          l10n.homeAlreadyPlayedDaily,
+                                        ),
+                                      ),
+                                    );
+                                  }
                                   return;
                                 }
 
@@ -467,6 +589,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (!_hasPendingSeasonRewards) ...[
+                  const SizedBox(height: 6),
+                  const _WeeklyCountdownLabel(),
+                ],
                 const SizedBox(height: 18),
                 Container(
                   width: double.infinity,
@@ -607,7 +733,191 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: AchievementService.instance.watchUserAchievements(
+              uid: uid,
+            ),
+            builder: (context, snap) {
+              final data = snap.data;
+              if (data != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  _handleAchievementsSnapshot(data);
+                });
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          if (_showAchievementPopup)
+            Center(
+              child: AnimatedScale(
+                scale: _showAchievementPopup ? 1.0 : 0.7,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.reward,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.homeAchievementUnlockedTitle,
+                        style: GoogleFonts.baloo2(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF412402),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.homeAchievementUnlockedSubtitle(
+                          _achievementPopupIcon,
+                          _achievementPopupTitle,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF412402),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.homeAchievementUnlockedRewards(
+                          _achievementPopupCoins,
+                          _achievementPopupXp,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF412402),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (_showAvatarUnlockPopup)
+            Center(
+              child: AnimatedScale(
+                scale: _showAvatarUnlockPopup ? 1.0 : 0.7,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutBack,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.homeAvatarUnlockedTitle,
+                        style: GoogleFonts.baloo2(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.homeAvatarUnlockedSubtitle(
+                          _avatarUnlockEmoji,
+                          _avatarUnlockName,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+// Gives the weekly reset a visible anticipation cue on Home itself instead
+// of only inside weekly_league_screen.dart — previously a player only saw
+// anything about the weekly reset after it already happened (the pending-
+// reward dot), with no "come back before the timer runs out" pull while a
+// week is still active.
+class _WeeklyCountdownLabel extends StatefulWidget {
+  const _WeeklyCountdownLabel();
+
+  @override
+  State<_WeeklyCountdownLabel> createState() => _WeeklyCountdownLabelState();
+}
+
+class _WeeklyCountdownLabelState extends State<_WeeklyCountdownLabel> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeLeft = WeeklyLeagueService.instance.timeUntilReset();
+    _timer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (!mounted) return;
+      setState(() {
+        _timeLeft = WeeklyLeagueService.instance.timeUntilReset();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    final days = duration.inDays;
+    final hours = duration.inHours % 24;
+    final minutes = duration.inMinutes % 60;
+
+    return '${days}d ${hours}h ${minutes}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Center(
+      child: Text(
+        l10n.homeWeeklyResetsIn(_formatDuration(_timeLeft)),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

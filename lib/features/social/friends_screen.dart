@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/friend_service.dart';
 import '../../services/presence_service.dart';
+import '../../services/daily_challenge_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -432,19 +433,27 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               ? Colors.blueAccent
                               : Colors.greenAccent)
                       : Colors.grey,
-                  trailing: FilledButton.icon(
-                    onPressed: _actionLoading
-                        ? null
-                        : () => _challengeFriend(
-                              friendUid: friendUid,
-                              displayName: displayName,
-                              isOnline: online,
-                            ),
-                    icon: Icon(
-                      online ? Icons.flash_on : Icons.schedule,
-                      size: 18,
-                    ),
-                    label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _DailyScoreBadge(friendUid: friendUid),
+                      const SizedBox(height: 4),
+                      FilledButton.icon(
+                        onPressed: _actionLoading
+                            ? null
+                            : () => _challengeFriend(
+                                  friendUid: friendUid,
+                                  displayName: displayName,
+                                  isOnline: online,
+                                ),
+                        icon: Icon(
+                          online ? Icons.flash_on : Icons.schedule,
+                          size: 18,
+                        ),
+                        label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -802,6 +811,48 @@ class _UserTile extends StatelessWidget {
         ),
         trailing: trailing,
       ),
+    );
+  }
+}
+
+// Gives the Friends tab a passive comparison signal — previously it only
+// showed online/offline presence, with no way to see how a friend is
+// actually doing. Reuses the same daily_leaderboards/{dateId}/players doc
+// daily_leaderboard_screen.dart already reads, so no new backend data.
+class _DailyScoreBadge extends StatelessWidget {
+  final String friendUid;
+
+  const _DailyScoreBadge({required this.friendUid});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final dateId = DailyChallengeService.instance.todayDateId();
+
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
+          .collection('daily_leaderboards')
+          .doc(dateId)
+          .collection('players')
+          .doc(friendUid)
+          .get(),
+      builder: (context, snap) {
+        final data = snap.data?.data();
+        final score = data == null ? null : ((data['score'] ?? 0) as num).toInt();
+
+        return Text(
+          score == null
+              ? l10n.friendsNotPlayedToday
+              : l10n.friendsTodayScore(score),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: score == null
+                ? Theme.of(context).colorScheme.onSurfaceVariant
+                : Theme.of(context).colorScheme.primary,
+          ),
+        );
+      },
     );
   }
 }

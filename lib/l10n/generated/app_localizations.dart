@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'Weekly Challenge'**
   String get homeWeeklyChallenge;
 
+  /// No description provided for @homeWeeklyResetsIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Termina en {time}'**
+  String homeWeeklyResetsIn(String time);
+
   /// No description provided for @homeTabsHint.
   ///
   /// In es, this message translates to:
@@ -253,6 +259,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Racha de sesión: {days} días'**
   String homeLoginStreakLabel(int days);
+
+  /// No description provided for @homeAchievementUnlockedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'🏆 ¡Logro desbloqueado!'**
+  String get homeAchievementUnlockedTitle;
+
+  /// No description provided for @homeAchievementUnlockedSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'{icon} {title}'**
+  String homeAchievementUnlockedSubtitle(String icon, String title);
+
+  /// No description provided for @homeAchievementUnlockedRewards.
+  ///
+  /// In es, this message translates to:
+  /// **'+{coins} monedas · +{xp} XP'**
+  String homeAchievementUnlockedRewards(int coins, int xp);
+
+  /// No description provided for @homeAvatarUnlockedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'🎁 ¡Nuevo avatar desbloqueado!'**
+  String get homeAvatarUnlockedTitle;
+
+  /// No description provided for @homeAvatarUnlockedSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'{emoji} {name}'**
+  String homeAvatarUnlockedSubtitle(String emoji, String name);
 
   /// No description provided for @homeLoginStreakCoins.
   ///
@@ -944,6 +980,12 @@ abstract class AppLocalizations {
   /// **'⏰ Se acabó el tiempo - perdiste media vida'**
   String get levelPlayTimeUpLostHalfLife;
 
+  /// No description provided for @levelPlayTimeUpNoLifeLoss.
+  ///
+  /// In es, this message translates to:
+  /// **'⏰ Se acabó el tiempo - no perdiste vida'**
+  String get levelPlayTimeUpNoLifeLoss;
+
   /// No description provided for @levelPlayWrongNoLives.
   ///
   /// In es, this message translates to:
@@ -955,6 +997,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'❌ Incorrecto - perdiste media vida'**
   String get levelPlayWrongLostHalfLife;
+
+  /// No description provided for @levelPlayWrongNoLifeLoss.
+  ///
+  /// In es, this message translates to:
+  /// **'❌ Incorrecto - no perdiste vida'**
+  String get levelPlayWrongNoLifeLoss;
 
   /// No description provided for @levelPlayNeedFullLife.
   ///
@@ -1609,6 +1657,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se encontró rival por ahora. Intenta nuevamente.'**
   String get liveMatchmakingNoOpponentFound;
+
+  /// No description provided for @liveMatchmakingTryAsyncInstead.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugar asíncrono en su lugar'**
+  String get liveMatchmakingTryAsyncInstead;
 
   /// No description provided for @liveMatchmakingSearchButton.
   ///
@@ -2581,6 +2635,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Volver al inicio'**
   String get dailyResultBackHome;
+
+  /// No description provided for @dailyResultNextChallengeIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Próximo desafío en {time}'**
+  String dailyResultNextChallengeIn(String time);
+
+  /// No description provided for @dailyResultViewLeaderboard.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver ranking de hoy'**
+  String get dailyResultViewLeaderboard;
 
   /// No description provided for @weeklyRewardsTitle.
   ///
@@ -3602,6 +3668,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Solo asíncrono'**
   String get friendsAsyncOnly;
+
+  /// No description provided for @friendsTodayScore.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy: {score} pts'**
+  String friendsTodayScore(int score);
+
+  /// No description provided for @friendsNotPlayedToday.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no jugó hoy'**
+  String get friendsNotPlayedToday;
 
   /// No description provided for @friendsErrorLoadingSent.
   ///

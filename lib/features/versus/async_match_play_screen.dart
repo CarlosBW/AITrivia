@@ -812,6 +812,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       title = l10n.matchPlayDrawTitle;
       subtitle = l10n.matchPlayDrawSubtitle;
     } else if (winnerUid == uid) {
+      if (!_resultLogged) SfxService.instance.playReward();
       state = PvpResultState.victory;
       title = l10n.matchPlayVictoryTitle;
       subtitle = l10n.matchPlayVictoryCasualSubtitle;

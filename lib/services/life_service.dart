@@ -12,6 +12,14 @@ class LifeService {
   static const int levelEntryCostUnits = 2; // 1 vida
   static const int wrongAnswerCostUnits = 1; // media vida
 
+  // A brand-new player learning the format can burn through their whole
+  // life bar failing questions before the game has hooked them — wrong
+  // answers don't cost life during their first couple of levels (level
+  // entry still costs a life either way; `gamesPlayed` only increments on
+  // level completion, so this also covers their very first, still-unfinished
+  // level).
+  static const int newPlayerGraceLevels = 2;
+
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
   double unitsToLives(int units) => units / unitsPerLife;
@@ -209,6 +217,10 @@ class LifeService {
     return _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
       final data = snap.data() ?? {};
+
+      final gamesPlayed = ((data['gamesPlayed'] ?? 0) as num).toInt();
+      if (gamesPlayed < newPlayerGraceLevels) return false;
+
       final state = _stateFromData(data);
 
       int lifeUnits = state['lifeUnits'] as int;

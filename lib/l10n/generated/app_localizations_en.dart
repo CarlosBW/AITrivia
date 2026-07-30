@@ -73,6 +73,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeWeeklyChallenge => 'Weekly Challenge';
 
   @override
+  String homeWeeklyResetsIn(String time) {
+    return 'Ends in $time';
+  }
+
+  @override
   String get homeTabsHint =>
       'Use the bottom tabs to play SOLO, compete in PvP, challenge friends, and view your profile.';
 
@@ -88,6 +93,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String homeLoginStreakLabel(int days) {
     return 'Login streak: $days days';
+  }
+
+  @override
+  String get homeAchievementUnlockedTitle => '🏆 Achievement unlocked!';
+
+  @override
+  String homeAchievementUnlockedSubtitle(String icon, String title) {
+    return '$icon $title';
+  }
+
+  @override
+  String homeAchievementUnlockedRewards(int coins, int xp) {
+    return '+$coins coins · +$xp XP';
+  }
+
+  @override
+  String get homeAvatarUnlockedTitle => '🎁 New avatar unlocked!';
+
+  @override
+  String homeAvatarUnlockedSubtitle(String emoji, String name) {
+    return '$emoji $name';
   }
 
   @override
@@ -492,10 +518,17 @@ class AppLocalizationsEn extends AppLocalizations {
       '⏰ Time\'s up - you lost half a life';
 
   @override
+  String get levelPlayTimeUpNoLifeLoss =>
+      '⏰ Time\'s up - you didn\'t lose any life';
+
+  @override
   String get levelPlayWrongNoLives => '❌ Wrong - you ran out of lives';
 
   @override
   String get levelPlayWrongLostHalfLife => '❌ Wrong - you lost half a life';
+
+  @override
+  String get levelPlayWrongNoLifeLoss => '❌ Wrong - you didn\'t lose any life';
 
   @override
   String get levelPlayNeedFullLife =>
@@ -890,6 +923,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get liveMatchmakingNoOpponentFound =>
       'No opponent found right now. Try again.';
+
+  @override
+  String get liveMatchmakingTryAsyncInstead => 'Play async instead';
 
   @override
   String get liveMatchmakingSearchButton => 'Search';
@@ -1464,6 +1500,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyResultBackHome => 'Back to Home';
+
+  @override
+  String dailyResultNextChallengeIn(String time) {
+    return 'Next challenge in $time';
+  }
+
+  @override
+  String get dailyResultViewLeaderboard => 'View today\'s ranking';
 
   @override
   String get weeklyRewardsTitle => 'Weekly Rewards';
@@ -2098,6 +2142,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendsAsyncOnly => 'Async only';
+
+  @override
+  String friendsTodayScore(int score) {
+    return 'Today: $score pts';
+  }
+
+  @override
+  String get friendsNotPlayedToday => 'Hasn\'t played today';
 
   @override
   String friendsErrorLoadingSent(String error) {

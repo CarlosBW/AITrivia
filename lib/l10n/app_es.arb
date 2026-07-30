@@ -25,6 +25,12 @@
   "homeMoreWaysToPlay": "Más formas de jugar",
   "homeWeeklyChallengeReward": "Weekly Challenge • ¡Recompensa!",
   "homeWeeklyChallenge": "Weekly Challenge",
+  "homeWeeklyResetsIn": "Termina en {time}",
+  "@homeWeeklyResetsIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "homeTabsHint": "Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.",
   "homeStreakUpTitle": "🔥 ¡RACHA!",
   "homeStreakUpSubtitle": "Sigue volviendo cada día",
@@ -33,6 +39,29 @@
   "@homeLoginStreakLabel": {
     "placeholders": {
       "days": {"type": "int"}
+    }
+  },
+  "homeAchievementUnlockedTitle": "🏆 ¡Logro desbloqueado!",
+  "homeAchievementUnlockedSubtitle": "{icon} {title}",
+  "@homeAchievementUnlockedSubtitle": {
+    "placeholders": {
+      "icon": {"type": "String"},
+      "title": {"type": "String"}
+    }
+  },
+  "homeAchievementUnlockedRewards": "+{coins} monedas · +{xp} XP",
+  "@homeAchievementUnlockedRewards": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
+  "homeAvatarUnlockedTitle": "🎁 ¡Nuevo avatar desbloqueado!",
+  "homeAvatarUnlockedSubtitle": "{emoji} {name}",
+  "@homeAvatarUnlockedSubtitle": {
+    "placeholders": {
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
     }
   },
   "homeLoginStreakCoins": "+{coins} monedas",
@@ -273,8 +302,10 @@
   "levelPlayTimeUp": "⏰ Se acabó el tiempo",
   "levelPlayTimeUpNoLives": "⏰ Se acabó el tiempo - te quedaste sin vidas",
   "levelPlayTimeUpLostHalfLife": "⏰ Se acabó el tiempo - perdiste media vida",
+  "levelPlayTimeUpNoLifeLoss": "⏰ Se acabó el tiempo - no perdiste vida",
   "levelPlayWrongNoLives": "❌ Incorrecto - te quedaste sin vidas",
   "levelPlayWrongLostHalfLife": "❌ Incorrecto - perdiste media vida",
+  "levelPlayWrongNoLifeLoss": "❌ Incorrecto - no perdiste vida",
   "levelPlayNeedFullLife": "Necesitas 1 vida completa para entrar a este nivel.",
   "levelPlayLifeCheckError": "Error verificando vidas: {error}",
   "@levelPlayLifeCheckError": {
@@ -519,6 +550,7 @@
     }
   },
   "liveMatchmakingNoOpponentFound": "No se encontró rival por ahora. Intenta nuevamente.",
+  "liveMatchmakingTryAsyncInstead": "Jugar asíncrono en su lugar",
   "liveMatchmakingSearchButton": "Buscar",
   "liveMatchmakingSearching": "Buscando...",
   "liveMatchmakingSearchingOpponent": "Buscando rival...",
@@ -833,6 +865,13 @@
   "dailyResultStreakBonus": "Bono de racha",
   "dailyResultAlreadyPlayed": "Ya jugaste hoy. No se otorgaron monedas nuevamente.",
   "dailyResultBackHome": "Volver al inicio",
+  "dailyResultNextChallengeIn": "Próximo desafío en {time}",
+  "@dailyResultNextChallengeIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "dailyResultViewLeaderboard": "Ver ranking de hoy",
 
   "weeklyRewardsTitle": "Recompensas semanales",
   "weeklyRewardsNoPending": "No hay recompensas semanales pendientes.",
@@ -1309,6 +1348,13 @@
   "friendsLoadingFriends": "Cargando amigos...",
   "friendsNoFriendsYet": "Todavía no tienes amigos agregados.",
   "friendsAsyncOnly": "Solo asíncrono",
+  "friendsTodayScore": "Hoy: {score} pts",
+  "@friendsTodayScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "friendsNotPlayedToday": "Aún no jugó hoy",
   "friendsErrorLoadingSent": "Error cargando solicitudes enviadas:\n{error}",
   "@friendsErrorLoadingSent": {
     "placeholders": {

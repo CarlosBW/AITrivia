@@ -25,6 +25,7 @@
   "homeMoreWaysToPlay": "More ways to play",
   "homeWeeklyChallengeReward": "Weekly Challenge • Reward!",
   "homeWeeklyChallenge": "Weekly Challenge",
+  "homeWeeklyResetsIn": "Ends in {time}",
   "homeTabsHint": "Use the bottom tabs to play SOLO, compete in PvP, challenge friends, and view your profile.",
   "homeStreakUpTitle": "🔥 STREAK UP!",
   "homeStreakUpSubtitle": "Keep coming back daily",
@@ -35,6 +36,11 @@
       "days": {"type": "int"}
     }
   },
+  "homeAchievementUnlockedTitle": "🏆 Achievement unlocked!",
+  "homeAchievementUnlockedSubtitle": "{icon} {title}",
+  "homeAchievementUnlockedRewards": "+{coins} coins · +{xp} XP",
+  "homeAvatarUnlockedTitle": "🎁 New avatar unlocked!",
+  "homeAvatarUnlockedSubtitle": "{emoji} {name}",
   "homeLoginStreakCoins": "+{coins} coins",
   "@homeLoginStreakCoins": {
     "placeholders": {
@@ -273,8 +279,10 @@
   "levelPlayTimeUp": "⏰ Time's up",
   "levelPlayTimeUpNoLives": "⏰ Time's up - you ran out of lives",
   "levelPlayTimeUpLostHalfLife": "⏰ Time's up - you lost half a life",
+  "levelPlayTimeUpNoLifeLoss": "⏰ Time's up - you didn't lose any life",
   "levelPlayWrongNoLives": "❌ Wrong - you ran out of lives",
   "levelPlayWrongLostHalfLife": "❌ Wrong - you lost half a life",
+  "levelPlayWrongNoLifeLoss": "❌ Wrong - you didn't lose any life",
   "levelPlayNeedFullLife": "You need 1 full life to enter this level.",
   "levelPlayLifeCheckError": "Error checking lives: {error}",
   "@levelPlayLifeCheckError": {
@@ -519,6 +527,7 @@
     }
   },
   "liveMatchmakingNoOpponentFound": "No opponent found right now. Try again.",
+  "liveMatchmakingTryAsyncInstead": "Play async instead",
   "liveMatchmakingSearchButton": "Search",
   "liveMatchmakingSearching": "Searching...",
   "liveMatchmakingSearchingOpponent": "Searching for opponent...",
@@ -833,6 +842,8 @@
   "dailyResultStreakBonus": "Streak bonus",
   "dailyResultAlreadyPlayed": "You already played today. Coins were not awarded again.",
   "dailyResultBackHome": "Back to Home",
+  "dailyResultNextChallengeIn": "Next challenge in {time}",
+  "dailyResultViewLeaderboard": "View today's ranking",
 
   "weeklyRewardsTitle": "Weekly Rewards",
   "weeklyRewardsNoPending": "No pending weekly rewards.",
@@ -1309,6 +1320,8 @@
   "friendsLoadingFriends": "Loading friends...",
   "friendsNoFriendsYet": "You don't have any friends added yet.",
   "friendsAsyncOnly": "Async only",
+  "friendsTodayScore": "Today: {score} pts",
+  "friendsNotPlayedToday": "Hasn't played today",
   "friendsErrorLoadingSent": "Error loading sent requests:\n{error}",
   "@friendsErrorLoadingSent": {
     "placeholders": {

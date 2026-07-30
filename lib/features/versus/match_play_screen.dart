@@ -1015,6 +1015,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       title = l10n.matchPlayDrawTitle;
       subtitle = l10n.matchPlayDrawSubtitle;
     } else if (winnerUid == uid) {
+      if (!_resultLogged) SfxService.instance.playReward();
       state = PvpResultState.victory;
       title = l10n.matchPlayVictoryTitle;
       subtitle = affectsPvpRating

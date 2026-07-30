@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
+import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'daily_challenge_result_screen.dart';
@@ -73,6 +74,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     if (milestone > _lastCoinMilestone) {
       _lastCoinMilestone = milestone;
+
+      SfxService.instance.playReward();
 
       setState(() {
         _coinPopupText = AppLocalizations.of(context).dailyChallengeCoinsPopup;

@@ -33,6 +33,12 @@ class SfxService {
   Future<void> playWrong() => _play('sfx/wrong.mp3');
   Future<void> playTimeout() => _play('sfx/timeout.mp3');
 
+  /// Milestone/celebration cue (coin bonus, level up, match win, achievement
+  /// or cosmetic unlock) — reuses correct.mp3 since there's no dedicated
+  /// reward sound asset yet. Swap the asset path here once one exists;
+  /// every call site already routes through this single method.
+  Future<void> playReward() => _play('sfx/correct.mp3');
+
   Future<void> _play(String assetPath) async {
     try {
       // Si aún no se llamó init por algún motivo, intenta inicializar aquí.

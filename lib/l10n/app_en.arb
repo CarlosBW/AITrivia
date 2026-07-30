@@ -1013,6 +1013,58 @@
   "weeklyTopicClaim10LevelReward": "Claim 10-level reward",
   "weeklyTopicCategoryMissing": "Weekly Topic category is missing.",
   "weeklyTopicPlayButton": "Play Weekly Topic",
+  "weeklyTopicCorrectAnswersProgress": "{correct} / {total} correct answers",
+  "@weeklyTopicCorrectAnswersProgress": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicCoinRewardDescription": "{threshold} correct answers: +{coins} coins",
+  "@weeklyTopicCoinRewardDescription": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyTopicClaimCoinReward": "Claim coin reward",
+  "weeklyTopicCompletionRewardDescription": "{threshold} correct answers: {emoji} {name}",
+  "@weeklyTopicCompletionRewardDescription": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "weeklyTopicClaimCompletionReward": "Claim exclusive reward",
+  "weeklyTopicExclusiveLockedRounds": "Get {threshold} correct answers to unlock this reward.",
+  "@weeklyTopicExclusiveLockedRounds": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundResultTitle": "Round complete",
+  "weeklyTopicRoundResultBody": "You answered {correct} out of {total} questions correctly.",
+  "@weeklyTopicRoundResultBody": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundResultButton": "Continue",
+  "weeklyTopicRoundQuestionCount": "Question {current} of {total}",
+  "@weeklyTopicRoundQuestionCount": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundCorrectCount": "Correct: {correct}",
+  "@weeklyTopicRoundCorrectCount": {
+    "placeholders": {
+      "correct": {"type": "int"}
+    }
+  },
 
   "weeklyLeagueScreenTitle": "Weekly Challenge",
   "weeklyLeagueErrorLoading": "Error loading weekly challenge:\n{error}",
@@ -1464,6 +1516,18 @@
   "achievementDailyStreak7Description": "Reach a 7-day Daily Challenge streak.",
   "achievementFriends5Title": "Social Player",
   "achievementFriends5Description": "Add 5 friends.",
+  "achievementPvpWins25Title": "Duel Veteran",
+  "achievementPvpWins25Description": "Win 25 1v1 matches.",
+  "achievementSoloLevels25Title": "Solo Master",
+  "achievementSoloLevels25Description": "Pass 25 Solo mode levels.",
+  "achievementDailyStreak21Title": "Iron Consistency",
+  "achievementDailyStreak21Description": "Reach a 21-day Daily Challenge streak.",
+  "achievementFriends10Title": "Social Circle",
+  "achievementFriends10Description": "Add 10 friends.",
+  "achievementWeeklyTopics3Title": "Weekly Explorer",
+  "achievementWeeklyTopics3Description": "Complete 3 Weekly Topics.",
+  "achievementCategoriesExplored5Title": "Curious Mind",
+  "achievementCategoriesExplored5Description": "Pass at least one level in 5 different Solo categories.",
   "serviceAchievementCompletedTitle": "Achievement completed",
   "serviceAchievementCompletedBody": "You completed \"{title}\". Claim your reward.",
   "@serviceAchievementCompletedBody": {

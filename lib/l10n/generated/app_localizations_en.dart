@@ -1718,6 +1718,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyTopicPlayButton => 'Play Weekly Topic';
 
   @override
+  String weeklyTopicCorrectAnswersProgress(int correct, int total) {
+    return '$correct / $total correct answers';
+  }
+
+  @override
+  String weeklyTopicCoinRewardDescription(int threshold, int coins) {
+    return '$threshold correct answers: +$coins coins';
+  }
+
+  @override
+  String get weeklyTopicClaimCoinReward => 'Claim coin reward';
+
+  @override
+  String weeklyTopicCompletionRewardDescription(
+      int threshold, String emoji, String name) {
+    return '$threshold correct answers: $emoji $name';
+  }
+
+  @override
+  String get weeklyTopicClaimCompletionReward => 'Claim exclusive reward';
+
+  @override
+  String weeklyTopicExclusiveLockedRounds(int threshold) {
+    return 'Get $threshold correct answers to unlock this reward.';
+  }
+
+  @override
+  String get weeklyTopicRoundResultTitle => 'Round complete';
+
+  @override
+  String weeklyTopicRoundResultBody(int correct, int total) {
+    return 'You answered $correct out of $total questions correctly.';
+  }
+
+  @override
+  String get weeklyTopicRoundResultButton => 'Continue';
+
+  @override
+  String weeklyTopicRoundQuestionCount(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String weeklyTopicRoundCorrectCount(int correct) {
+    return 'Correct: $correct';
+  }
+
+  @override
   String get weeklyLeagueScreenTitle => 'Weekly Challenge';
 
   @override
@@ -2450,6 +2498,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementFriends5Description => 'Add 5 friends.';
+
+  @override
+  String get achievementPvpWins25Title => 'Duel Veteran';
+
+  @override
+  String get achievementPvpWins25Description => 'Win 25 1v1 matches.';
+
+  @override
+  String get achievementSoloLevels25Title => 'Solo Master';
+
+  @override
+  String get achievementSoloLevels25Description => 'Pass 25 Solo mode levels.';
+
+  @override
+  String get achievementDailyStreak21Title => 'Iron Consistency';
+
+  @override
+  String get achievementDailyStreak21Description =>
+      'Reach a 21-day Daily Challenge streak.';
+
+  @override
+  String get achievementFriends10Title => 'Social Circle';
+
+  @override
+  String get achievementFriends10Description => 'Add 10 friends.';
+
+  @override
+  String get achievementWeeklyTopics3Title => 'Weekly Explorer';
+
+  @override
+  String get achievementWeeklyTopics3Description => 'Complete 3 Weekly Topics.';
+
+  @override
+  String get achievementCategoriesExplored5Title => 'Curious Mind';
+
+  @override
+  String get achievementCategoriesExplored5Description =>
+      'Pass at least one level in 5 different Solo categories.';
 
   @override
   String get serviceAchievementCompletedTitle => 'Achievement completed';

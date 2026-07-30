@@ -11,7 +11,6 @@ import '../../services/life_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
-import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -20,8 +19,6 @@ class LevelPlayScreen extends StatefulWidget {
   final int levelNumber;
   final bool isAiTopic;
   final String? aiTopicId;
-  final bool isWeeklyTopic;
-  final String? weeklyTopicWeekId;
 
   const LevelPlayScreen({
     super.key,
@@ -29,8 +26,6 @@ class LevelPlayScreen extends StatefulWidget {
     required this.levelNumber,
     this.isAiTopic = false,
     this.aiTopicId,
-    this.isWeeklyTopic = false,
-    this.weeklyTopicWeekId,
   });
 
   @override
@@ -1266,8 +1261,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
 
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-
       final callable =
           FirebaseFunctions.instance.httpsCallable('submitSoloLevelResult');
 
@@ -1308,71 +1301,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         );
       }
 
-      final percent = total == 0 ? 0.0 : (_correct / total);
-      final passedLevel = percent >= 0.4;
-
-      if (passedLevel &&
-          widget.isWeeklyTopic &&
-          widget.weeklyTopicWeekId != null &&
-          widget.weeklyTopicWeekId!.trim().isNotEmpty) {
-        unawaited(
-          WeeklyTopicService.instance.markLevelCompleted(
-            uid: uid,
-            weekId: widget.weeklyTopicWeekId!,
-            levelNumber: widget.levelNumber,
-          ),
-        );
-      }
-
       _saved = true;
     } catch (e) {
       _saveError = e.toString();
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  Widget _buildWeeklyTopicResultCard(double pct) {
-    if (!widget.isWeeklyTopic) {
-      return const SizedBox.shrink();
-    }
-
-    final l10n = AppLocalizations.of(context);
-    final counted = pct >= 0.4;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: counted
-            ? Colors.green.withValues(alpha: 0.12)
-            : Colors.orange.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: counted ? Colors.green : Colors.orange,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            counted ? Icons.check_circle : Icons.warning_amber_rounded,
-            color: counted ? Colors.green : Colors.orange,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              counted
-                  ? l10n.levelPlayWeeklyCounted
-                  : l10n.levelPlayWeeklyNotCounted,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: counted ? Colors.green.shade800 : Colors.orange.shade900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildEnd(BuildContext context, int total) {
@@ -1435,10 +1369,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            if (widget.isWeeklyTopic) ...[
-              const SizedBox(height: 16),
-              _buildWeeklyTopicResultCard(pct),
-            ],
             const SizedBox(height: 22),
             Container(
               width: double.infinity,
@@ -1578,9 +1508,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                       levelNumber: nextLevel,
                                       isAiTopic: widget.isAiTopic,
                                       aiTopicId: widget.aiTopicId,
-                                      isWeeklyTopic: widget.isWeeklyTopic,
-                                      weeklyTopicWeekId:
-                                          widget.weeklyTopicWeekId,
                                     ),
                                   ),
                                 );

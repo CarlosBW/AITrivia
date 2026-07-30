@@ -5,7 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
-import '../solo/level_select_screen.dart';
+import '../../services/life_service.dart';
+import '../../widgets/no_lives_dialog.dart';
+import 'weekly_topic_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -21,6 +23,71 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
 
   bool _claimingCoins = false;
   bool _claimingCompletion = false;
+  bool _isNavigating = false;
+
+  Future<bool> _ensureHasLives() async {
+    await LifeService.instance.ensureUserLifeDoc(_uid);
+    final lifeState = await LifeService.instance.refreshLives(_uid);
+
+    final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
+    final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
+    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
+
+    if (lifeUnits < 2) {
+      if (!mounted) return false;
+
+      final nextHalfLifeText = secondsToNextHalfLife == null
+          ? '--:--'
+          : '${(secondsToNextHalfLife ~/ 60).toString().padLeft(2, '0')}:'
+              '${(secondsToNextHalfLife % 60).toString().padLeft(2, '0')}';
+
+      await showDialog<bool>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) => NoLivesDialog(
+          currentLivesText:
+              '${LifeService.instance.formatLives(lifeUnits)} / '
+              '${LifeService.instance.formatLives(maxLifeUnits)}',
+          nextHalfLifeText: nextHalfLifeText,
+          nextFullLifeText: '--:--',
+        ),
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<void> _playRound({
+    required String categoryId,
+    required String categoryName,
+    required String weekId,
+  }) async {
+    if (_isNavigating) return;
+
+    setState(() => _isNavigating = true);
+
+    try {
+      final canPlay = await _ensureHasLives();
+      if (!canPlay) return;
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WeeklyTopicPlayScreen(
+            categoryId: categoryId,
+            categoryName: categoryName,
+            weekId: weekId,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isNavigating = false);
+    }
+  }
 
   Future<void> _claimCoinReward({
     required String weekId,
@@ -167,8 +234,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
             builder: (context, participationSnap) {
               final participation = participationSnap.data?.data();
 
-              final levelsCompleted =
-                  ((participation?['levelsCompleted'] ?? 0) as num).toInt();
+              final correctAnswers =
+                  ((participation?['correctAnswers'] ?? 0) as num).toInt();
 
               final coinRewardClaimed =
                   participation?['coinRewardClaimed'] == true;
@@ -182,7 +249,9 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
               final canClaimCompletion = WeeklyTopicService.instance
                   .canClaimCompletionReward(participation);
 
-              final progress = (levelsCompleted / 10).clamp(0.0, 1.0);
+              final progress = (correctAnswers /
+                      WeeklyTopicService.completionRewardThreshold)
+                  .clamp(0.0, 1.0);
 
               return Stack(
                 children: [
@@ -246,7 +315,12 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const SizedBox(height: 12),
                             LinearProgressIndicator(value: progress),
                             const SizedBox(height: 10),
-                            Text(l10n.weeklyTopicLevelsCompleted(levelsCompleted)),
+                            Text(
+                              l10n.weeklyTopicCorrectAnswersProgress(
+                                correctAnswers,
+                                WeeklyTopicService.completionRewardThreshold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -268,7 +342,12 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(l10n.weeklyTopicFiveLevelReward(rewardCoins)),
+                            Text(
+                              l10n.weeklyTopicCoinRewardDescription(
+                                WeeklyTopicService.coinRewardThreshold,
+                                rewardCoins,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
@@ -283,7 +362,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                 label: Text(
                                   coinRewardClaimed
                                       ? l10n.weeklyTopicCoinRewardClaimed
-                                      : l10n.weeklyTopicClaim5LevelReward,
+                                      : l10n.weeklyTopicClaimCoinReward,
                                 ),
                               ),
                             ),
@@ -291,15 +370,24 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const Divider(),
                             const SizedBox(height: 8),
                             Text(
-                              l10n.weeklyTopicTenLevelReward(rewardAvatar.emoji, rewardAvatar.name),
+                              l10n.weeklyTopicCompletionRewardDescription(
+                                WeeklyTopicService.completionRewardThreshold,
+                                rewardAvatar.emoji,
+                                rewardAvatar.name,
+                              ),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               completionRewardClaimed
                                   ? l10n.weeklyTopicExclusiveClaimed
-                                  : levelsCompleted >= 10
+                                  : correctAnswers >=
+                                          WeeklyTopicService
+                                              .completionRewardThreshold
                                       ? l10n.weeklyTopicExclusiveReady
-                                      : l10n.weeklyTopicExclusiveLocked,
+                                      : l10n.weeklyTopicExclusiveLockedRounds(
+                                          WeeklyTopicService
+                                              .completionRewardThreshold,
+                                        ),
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
@@ -319,7 +407,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                                 label: Text(
                                   completionRewardClaimed
                                       ? l10n.weeklyTopicExclusiveClaimedButton
-                                      : l10n.weeklyTopicClaim10LevelReward,
+                                      : l10n.weeklyTopicClaimCompletionReward,
                                 ),
                               ),
                             ),
@@ -328,32 +416,29 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
-                        onPressed: () {
-                          final categoryId =
-                              (topicData['categoryId'] ?? '').toString();
+                        onPressed: _isNavigating
+                            ? null
+                            : () {
+                                final categoryId =
+                                    (topicData['categoryId'] ?? '').toString();
 
-                          if (categoryId.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content:
-                                    Text(l10n.weeklyTopicCategoryMissing),
-                              ),
-                            );
-                            return;
-                          }
+                                if (categoryId.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        l10n.weeklyTopicCategoryMissing,
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LevelSelectScreen(
-                                categoryId: categoryId,
-                                categoryName: title,
-                                isWeeklyTopic: true,
-                                weeklyTopicWeekId: weekId,
-                              ),
-                            ),
-                          );
-                        },
+                                _playRound(
+                                  categoryId: categoryId,
+                                  categoryName: title,
+                                  weekId: weekId,
+                                );
+                              },
                         icon: const Icon(Icons.play_arrow),
                         label: Text(l10n.weeklyTopicPlayButton),
                       ),

@@ -33,10 +33,16 @@ function pickText(languageCode: unknown, es: string, en: string): string {
 const ACHIEVEMENT_TITLES: Record<string, {es: string; en: string}> = {
   first_pvp_win: {es: "Primera victoria en duelo", en: "First Duel Win"},
   pvp_wins_10: {es: "Duelista", en: "Duelist"},
+  pvp_wins_25: {es: "Veterano de duelos", en: "Duel Veteran"},
   pvp_streak_5: {es: "En racha", en: "On Fire"},
   solo_levels_10: {es: "Explorador solitario", en: "Solo Explorer"},
+  solo_levels_25: {es: "Maestro solitario", en: "Solo Master"},
   daily_streak_7: {es: "Hábito semanal", en: "Weekly Habit"},
+  daily_streak_21: {es: "Constancia de hierro", en: "Iron Consistency"},
   friends_5: {es: "Jugador social", en: "Social Player"},
+  friends_10: {es: "Círculo social", en: "Social Circle"},
+  weekly_topics_completed_3: {es: "Explorador semanal", en: "Weekly Explorer"},
+  categories_explored_5: {es: "Mente curiosa", en: "Curious Mind"},
 };
 
 const DEFAULT_RATING = 1000;
@@ -459,6 +465,7 @@ const PVP_ACHIEVEMENTS: PvpAchievementDef[] = [
   {id: "first_pvp_win", title: "First Duel Win", target: 1},
   {id: "pvp_wins_10", title: "Duelist", target: 10},
   {id: "pvp_streak_5", title: "On Fire", target: 5},
+  {id: "pvp_wins_25", title: "Duel Veteran", target: 25},
 ];
 
 /**
@@ -714,10 +721,12 @@ export const finalizePvpMatch = onDocumentUpdated(
         readPvpAchievementSnaps(tx, guestUid),
       ]);
 
-      const [hostFirstWinSnap, hostWins10Snap, hostStreak5Snap] =
-        hostAchSnaps;
-      const [guestFirstWinSnap, guestWins10Snap, guestStreak5Snap] =
-        guestAchSnaps;
+      const [
+        hostFirstWinSnap, hostWins10Snap, hostStreak5Snap, hostWins25Snap,
+      ] = hostAchSnaps;
+      const [
+        guestFirstWinSnap, guestWins10Snap, guestStreak5Snap, guestWins25Snap,
+      ] = guestAchSnaps;
 
       const ratingResults: Record<string, Record<string, unknown>> = {};
 
@@ -766,6 +775,11 @@ export const finalizePvpMatch = onDocumentUpdated(
           tx, hostUid, PVP_ACHIEVEMENTS[2], hostReward.newStreak,
           hostStreak5Snap, hostUser.languageCode
         );
+        applyPvpAchievementProgress(
+          tx, hostUid, PVP_ACHIEVEMENTS[3],
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins25Snap,
+          hostUser.languageCode
+        );
 
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[0],
@@ -780,6 +794,11 @@ export const finalizePvpMatch = onDocumentUpdated(
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[2], guestReward.newStreak,
           guestStreak5Snap, guestUser.languageCode
+        );
+        applyPvpAchievementProgress(
+          tx, guestUid, PVP_ACHIEVEMENTS[3],
+          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins25Snap,
+          guestUser.languageCode
         );
 
         const hostCoinClamp = clampDailyPvpCoins(
@@ -904,6 +923,11 @@ export const finalizePvpMatch = onDocumentUpdated(
           hostUser.languageCode
         );
         applyPvpAchievementProgress(
+          tx, hostUid, PVP_ACHIEVEMENTS[3],
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0), hostWins25Snap,
+          hostUser.languageCode
+        );
+        applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[0],
           safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestFirstWinSnap,
           guestUser.languageCode
@@ -915,6 +939,11 @@ export const finalizePvpMatch = onDocumentUpdated(
         );
         applyPvpAchievementProgress(
           tx, guestUid, PVP_ACHIEVEMENTS[2], guestNewStreak, guestStreak5Snap,
+          guestUser.languageCode
+        );
+        applyPvpAchievementProgress(
+          tx, guestUid, PVP_ACHIEVEMENTS[3],
+          safeInt(guestUser.wins1v1, 0) + (guestWon ? 1 : 0), guestWins25Snap,
           guestUser.languageCode
         );
 
@@ -1263,15 +1292,24 @@ export const claimPvpSeasonRewards = onCall(async (request) => {
       draws: number;
     };
 
-    const rewardForLeague = (league: PvpLeagueInfo): number => {
-      switch (league.id) {
-      case "master": return 80;
-      case "diamond": return 40;
-      case "platinum": return 20;
-      case "gold": return 10;
-      case "silver": return 5;
-      default: return 2;
+    // Mirrors lib/services/pvp_league_service.dart's `masterTierIndex` +
+    // lib/services/pvp_season_service.dart's `rewardForRating` — Master has
+    // no rating ceiling, so a flat reward regardless of rating meant
+    // progression stopped paying off once a player got there.
+    const rewardForLeague = (league: PvpLeagueInfo, rating: number): number => {
+      if (league.id !== "master") {
+        switch (league.id) {
+        case "diamond": return 40;
+        case "platinum": return 20;
+        case "gold": return 10;
+        case "silver": return 5;
+        default: return 2;
+        }
       }
+
+      if (rating >= 2200) return 150;
+      if (rating >= 2050) return 110;
+      return 80;
     };
 
     const pending: Pending[] = [];
@@ -1293,7 +1331,7 @@ export const claimPvpSeasonRewards = onCall(async (request) => {
         leagueId: bestLeague.id,
         leagueName: bestLeague.name,
         leagueEmoji: bestLeague.emoji,
-        rewardCoins: rewardForLeague(bestLeague),
+        rewardCoins: rewardForLeague(bestLeague, bestRating),
         matchesPlayed: safeInt(data.matchesPlayed, 0),
         wins: safeInt(data.wins, 0),
         losses: safeInt(data.losses, 0),
@@ -1644,11 +1682,15 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     .collection("weekly_participation").doc(weekId);
   const dailyStreakAchievementRef = userRef
     .collection("achievements").doc("daily_streak_7");
+  const dailyStreak21AchievementRef = userRef
+    .collection("achievements").doc("daily_streak_21");
 
   return db.runTransaction(async (tx) => {
     const dailySnap = await tx.get(dailyRef);
     const userSnap = await tx.get(userRef);
     const dailyStreakAchievementSnap = await tx.get(dailyStreakAchievementRef);
+    const dailyStreak21AchievementSnap =
+      await tx.get(dailyStreak21AchievementRef);
 
     const alreadyPlayed = dailySnap.data()?.played === true;
 
@@ -1714,6 +1756,11 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     applyPvpAchievementProgress(
       tx, uid, {id: "daily_streak_7", title: "Weekly Habit", target: 7},
       newStreak, dailyStreakAchievementSnap, userData.languageCode
+    );
+    applyPvpAchievementProgress(
+      tx, uid,
+      {id: "daily_streak_21", title: "Iron Consistency", target: 21},
+      newStreak, dailyStreak21AchievementSnap, userData.languageCode
     );
 
     const streakBonusCoins = calculateDailyStreakBonusCoins(newStreak);
@@ -2284,6 +2331,10 @@ export const submitSoloLevelResult = onCall(async (request) => {
     userRef.collection("progress_fixed").doc(categoryId);
   const soloLevelsAchievementRef = userRef
     .collection("achievements").doc("solo_levels_10");
+  const soloLevels25AchievementRef = userRef
+    .collection("achievements").doc("solo_levels_25");
+  const categoriesExploredAchievementRef = userRef
+    .collection("achievements").doc("categories_explored_5");
 
   const sessionId = isAiTopic ?
     `${aiTopicId}_${levelNumber}` : `${categoryId}_${levelNumber}`;
@@ -2309,6 +2360,10 @@ export const submitSoloLevelResult = onCall(async (request) => {
     const progressSnap = await tx.get(progressRef);
     const userSnap = await tx.get(userRef);
     const soloLevelsAchievementSnap = await tx.get(soloLevelsAchievementRef);
+    const soloLevels25AchievementSnap =
+      await tx.get(soloLevels25AchievementRef);
+    const categoriesExploredAchievementSnap =
+      await tx.get(categoriesExploredAchievementRef);
     const sessionSnap = await tx.get(sessionRef);
 
     const sessionQuestions = sessionSnap.data()?.questions;
@@ -2354,6 +2409,7 @@ export const submitSoloLevelResult = onCall(async (request) => {
 
     const wasAlreadyPlayed = prevCompleted.has(levelNumber);
     const wasAlreadyPassed = prevPassed.has(levelNumber);
+    const categoryWasUnexplored = prevPassed.size === 0;
 
     prevCompleted.add(levelNumber);
     if (passedLevel) prevPassed.add(levelNumber);
@@ -2397,6 +2453,34 @@ export const submitSoloLevelResult = onCall(async (request) => {
         currentSoloLevelsProgress + 1, soloLevelsAchievementSnap,
         userData.languageCode
       );
+
+      const currentSoloLevels25Progress = safeInt(
+        soloLevels25AchievementSnap.data()?.progress, 0
+      );
+      applyPvpAchievementProgress(
+        tx, uid, {id: "solo_levels_25", title: "Solo Master", target: 25},
+        currentSoloLevels25Progress + 1, soloLevels25AchievementSnap,
+        userData.languageCode
+      );
+    }
+
+    // A category counts as "explored" the moment its first level is passed
+    // — `categoriesExploredCount` on the user doc is the running total
+    // (cheaper than re-scanning the whole progress_fixed subcollection on
+    // every level completion) and only ever grows here.
+    const categoryNewlyExplored =
+      !isAiTopic && categoryWasUnexplored && passedLevel;
+
+    const newCategoriesExploredCount = categoryNewlyExplored ?
+      safeInt(userData.categoriesExploredCount, 0) + 1 : null;
+
+    if (newCategoriesExploredCount !== null) {
+      applyPvpAchievementProgress(
+        tx, uid,
+        {id: "categories_explored_5", title: "Curious Mind", target: 5},
+        newCategoriesExploredCount, categoriesExploredAchievementSnap,
+        userData.languageCode
+      );
     }
 
     const completedAll = levelCount > 0 && prevPassed.size >= levelCount;
@@ -2436,7 +2520,9 @@ export const submitSoloLevelResult = onCall(async (request) => {
 
     tx.set(progressRef, progressPatch, {merge: true});
 
-    if (grantedXp > 0 || grantedCoins > 0) {
+    if (
+      grantedXp > 0 || grantedCoins > 0 || newCategoriesExploredCount !== null
+    ) {
       tx.set(
         userRef,
         {
@@ -2444,6 +2530,8 @@ export const submitSoloLevelResult = onCall(async (request) => {
             {xp: admin.firestore.FieldValue.increment(grantedXp)} : {}),
           ...(grantedCoins > 0 ?
             {coins: admin.firestore.FieldValue.increment(grantedCoins)} : {}),
+          ...(newCategoriesExploredCount !== null ?
+            {categoriesExploredCount: newCategoriesExploredCount} : {}),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -2480,10 +2568,16 @@ type AchievementRewardDef = {
 const ACHIEVEMENT_REWARDS: AchievementRewardDef[] = [
   {id: "first_pvp_win", rewardCoins: 10, rewardXp: 20},
   {id: "pvp_wins_10", rewardCoins: 40, rewardXp: 80},
+  {id: "pvp_wins_25", rewardCoins: 100, rewardXp: 150},
   {id: "pvp_streak_5", rewardCoins: 50, rewardXp: 100},
   {id: "solo_levels_10", rewardCoins: 30, rewardXp: 60},
+  {id: "solo_levels_25", rewardCoins: 60, rewardXp: 100},
   {id: "daily_streak_7", rewardCoins: 50, rewardXp: 100},
+  {id: "daily_streak_21", rewardCoins: 90, rewardXp: 150},
   {id: "friends_5", rewardCoins: 25, rewardXp: 50},
+  {id: "friends_10", rewardCoins: 50, rewardXp: 80},
+  {id: "weekly_topics_completed_3", rewardCoins: 60, rewardXp: 100},
+  {id: "categories_explored_5", rewardCoins: 40, rewardXp: 70},
 ];
 
 export const claimAchievementReward = onCall(async (request) => {
@@ -3156,6 +3250,17 @@ const WEEKLY_TOPIC_CATEGORIES: {
 
 const WEEKLY_TOPIC_REWARD_COINS = 10;
 
+// Weekly Topic used to just reuse Solo's own fixed levels 1-10 for the
+// chosen category — meaning a repeat occurrence of the same category
+// (every 9 weeks) showed the exact same 10 question sets a player had
+// already seen in Solo. These constants back a decoupled flow instead:
+// rounds draw a fresh random sample from the category's difficulty pools
+// (mirrors Daily Challenge's own sourcing), and progress is measured in
+// correct answers rather than levels completed.
+const WEEKLY_TOPIC_ROUND_SIZE = 10;
+const WEEKLY_TOPIC_COIN_THRESHOLD = 25;
+const WEEKLY_TOPIC_COMPLETION_THRESHOLD = 50;
+
 /**
  * Deterministic weekly rotation index — a pure function of the week's
  * Monday date, so no extra "which week did we last rotate" bookkeeping is
@@ -3211,78 +3316,106 @@ export const rotateWeeklyTopic = onSchedule(
   }
 );
 
-export const markWeeklyTopicLevelCompleted = onCall(async (request) => {
+/**
+ * Server-authoritative Weekly Topic round grant. Draws for the round come
+ * from the client (see WeeklyTopicService.loadRandomRound), each tagged
+ * with its own difficulty/questionId — this refetches each one directly
+ * from fixed_pools and compares against its stored answerIndex, so a
+ * modified client reporting an inflated correct count can't affect the
+ * real result, exactly like submitDailyChallengeResult/
+ * submitSoloLevelResult.
+ */
+export const submitWeeklyTopicRound = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
   const weekId = String(request.data?.weekId || "");
-  const levelNumber = safeInt(request.data?.levelNumber, -1);
+  const categoryId = String(request.data?.categoryId || "");
+  const rawAnswers = Array.isArray(request.data?.answers) ?
+    request.data.answers : [];
 
-  if (!weekId || levelNumber < 1) {
-    throw new HttpsError("invalid-argument", "Invalid weekId/levelNumber.");
+  if (
+    !weekId || !categoryId || rawAnswers.length === 0 ||
+    rawAnswers.length > WEEKLY_TOPIC_ROUND_SIZE
+  ) {
+    throw new HttpsError("invalid-argument", "Invalid round submission.");
   }
 
-  // The weekly topic is always tied to one fixed category (see
-  // weekly_topics/current's own `categoryId`) — this call used to accept
-  // any levelNumber with no check at all, letting a client claim the
-  // week's coin/avatar rewards without ever passing (or even playing) the
-  // levels. Requiring the level to already be in this player's own
-  // progress_fixed.passedLevels (written by submitSoloLevelResult, using
-  // its own server-verified score) closes that off.
   const topicSnap = await db.collection("weekly_topics").doc("current").get();
   const topicData = topicSnap.data();
-  if (!topicData || String(topicData.weekId || "") !== weekId) {
+  if (
+    !topicData || String(topicData.weekId || "") !== weekId ||
+    String(topicData.categoryId || "") !== categoryId
+  ) {
     throw new HttpsError(
       "failed-precondition", "This weekly topic is no longer active."
     );
   }
 
-  const categoryId = String(topicData.categoryId || "");
-  if (!categoryId) {
-    throw new HttpsError(
-      "failed-precondition", "Weekly topic is misconfigured."
-    );
+  type RoundAnswer = {
+    difficulty: number; questionId: string; selectedIndex: number;
+  };
+
+  const answers: RoundAnswer[] = rawAnswers.map(
+    (a: Record<string, unknown>): RoundAnswer => ({
+      difficulty: safeInt(a?.sourceDifficulty, 0),
+      questionId: String(a?.sourceQuestionId || ""),
+      selectedIndex: safeInt(a?.selectedIndex, -1),
+    })
+  ).filter((a: RoundAnswer) =>
+    a.questionId && [1, 2, 3].includes(a.difficulty)
+  );
+
+  if (answers.length === 0) {
+    throw new HttpsError("invalid-argument", "No valid answers submitted.");
   }
 
+  const questionSnaps = await Promise.all(answers.map((a) =>
+    db.collection("fixed_pools").doc(categoryId)
+      .collection(`difficulty_${a.difficulty}`).doc("pool")
+      .collection("questions").doc(a.questionId).get()
+  ));
+
+  let correct = 0;
+  const answeredQuestionIds: string[] = [];
+
+  answers.forEach((a, i) => {
+    const data = questionSnaps[i].data();
+    if (!data) return;
+
+    answeredQuestionIds.push(a.questionId);
+    const correctIndex = safeInt(data.answerIndex ?? data.correctIndex, -1);
+    if (a.selectedIndex === correctIndex) correct++;
+  });
+
+  const totalAnswered = answeredQuestionIds.length;
+
   const userRef = db.collection("users").doc(uid);
-  const progressRef = userRef.collection("progress_fixed").doc(categoryId);
-  const ref = userRef.collection("weekly_participation").doc(weekId);
+  const participationRef = userRef
+    .collection("weekly_participation").doc(weekId);
 
   return db.runTransaction(async (tx) => {
-    const progressSnap = await tx.get(progressRef);
-    const passedLevels = new Set<number>(
-      ((progressSnap.data()?.passedLevels as unknown[]) || [])
-        .map((e) => safeInt(e, 0))
-    );
-
-    if (!passedLevels.has(levelNumber)) {
-      throw new HttpsError(
-        "failed-precondition", "This level hasn't been passed yet."
-      );
-    }
-
-    const snap = await tx.get(ref);
+    const snap = await tx.get(participationRef);
     const data = snap.data() || {};
 
-    const completedLevels = new Set<number>(
-      ((data.completedLevels as unknown[]) || []).map((e) => safeInt(e, 0))
+    const newCorrectAnswers = safeInt(data.correctAnswers, 0) + correct;
+    const newTotalAnswered = safeInt(data.totalAnswered, 0) + totalAnswered;
+
+    const usedQuestionIds = new Set<string>(
+      ((data.usedQuestionIds as unknown[]) || []).map((e) => String(e))
     );
-
-    if (completedLevels.has(levelNumber)) {
-      return {updated: false, levelsCompleted: completedLevels.size};
-    }
-
-    completedLevels.add(levelNumber);
-    const sorted = Array.from(completedLevels).sort((a, b) => a - b);
+    answeredQuestionIds.forEach((id) => usedQuestionIds.add(id));
 
     tx.set(
-      ref,
+      participationRef,
       {
         weekId,
-        completedLevels: sorted,
-        levelsCompleted: sorted.length,
+        categoryId,
+        correctAnswers: newCorrectAnswers,
+        totalAnswered: newTotalAnswered,
+        usedQuestionIds: Array.from(usedQuestionIds),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         ...(snap.exists ?
           {} : {createdAt: admin.firestore.FieldValue.serverTimestamp()}),
@@ -3290,7 +3423,7 @@ export const markWeeklyTopicLevelCompleted = onCall(async (request) => {
       {merge: true}
     );
 
-    return {updated: true, levelsCompleted: sorted.length};
+    return {correct, totalAnswered, correctAnswers: newCorrectAnswers};
   });
 });
 
@@ -3327,10 +3460,10 @@ export const claimWeeklyTopicCoinReward = onCall(async (request) => {
     const snap = await tx.get(participationRef);
     const data = snap.data() || {};
 
-    const levelsCompleted = safeInt(data.levelsCompleted, 0);
+    const correctAnswers = safeInt(data.correctAnswers, 0);
     const claimed = data.coinRewardClaimed === true;
 
-    if (levelsCompleted < 5 || claimed) {
+    if (correctAnswers < WEEKLY_TOPIC_COIN_THRESHOLD || claimed) {
       return {claimed: false, rewardCoins: 0};
     }
 
@@ -3393,26 +3526,43 @@ export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
   const userRef = db.collection("users").doc(uid);
   const participationRef = userRef
     .collection("weekly_participation").doc(weekId);
+  const weeklyTopicsAchievementRef = userRef
+    .collection("achievements").doc("weekly_topics_completed_3");
 
   return db.runTransaction(async (tx) => {
     const participationSnap = await tx.get(participationRef);
     const participationData = participationSnap.data() || {};
 
-    const levelsCompleted = safeInt(participationData.levelsCompleted, 0);
+    const correctAnswers = safeInt(participationData.correctAnswers, 0);
     const claimed = participationData.completionRewardClaimed === true;
 
-    if (levelsCompleted < 10 || claimed) {
+    if (correctAnswers < WEEKLY_TOPIC_COMPLETION_THRESHOLD || claimed) {
       return {claimed: false};
     }
 
     const userSnap = await tx.get(userRef);
     const userData = userSnap.data() || {};
+    const weeklyTopicsAchievementSnap =
+      await tx.get(weeklyTopicsAchievementRef);
 
     const unlockedAvatars = new Set<string>(
       ((userData.unlockedAvatars as unknown[]) || []).map((e) => String(e))
     );
     const alreadyUnlocked = unlockedAvatars.has(rewardAvatarId);
     unlockedAvatars.add(rewardAvatarId);
+
+    const newWeeklyTopicsCompletedCount =
+      safeInt(userData.weeklyTopicsCompletedCount, 0) + 1;
+    applyPvpAchievementProgress(
+      tx, uid,
+      {
+        id: "weekly_topics_completed_3",
+        title: "Weekly Explorer",
+        target: 3,
+      },
+      newWeeklyTopicsCompletedCount, weeklyTopicsAchievementSnap,
+      userData.languageCode
+    );
 
     tx.set(
       participationRef,
@@ -3434,6 +3584,7 @@ export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
         lastUnlockedAvatarReason: "Weekly Topic completed",
         lastUnlockedAvatarAt: admin.firestore.FieldValue.serverTimestamp(),
         lastWeeklyTopicCompletionRewardWeekId: weekId,
+        weeklyTopicsCompletedCount: newWeeklyTopicsCompletedCount,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true}
@@ -3469,13 +3620,22 @@ async function syncFriendsAchievementProgress(uid: string): Promise<void> {
 
   const achRef = db.collection("users").doc(uid)
     .collection("achievements").doc("friends_5");
+  const ach10Ref = db.collection("users").doc(uid)
+    .collection("achievements").doc("friends_10");
 
   await db.runTransaction(async (tx) => {
     const achSnap = await tx.get(achRef);
+    const ach10Snap = await tx.get(ach10Ref);
     const userSnap = await tx.get(db.collection("users").doc(uid));
+    const languageCode = userSnap.data()?.languageCode;
+
     applyPvpAchievementProgress(
       tx, uid, {id: "friends_5", title: "Social Player", target: 5},
-      friendCount, achSnap, userSnap.data()?.languageCode
+      friendCount, achSnap, languageCode
+    );
+    applyPvpAchievementProgress(
+      tx, uid, {id: "friends_10", title: "Social Circle", target: 10},
+      friendCount, ach10Snap, languageCode
     );
   });
 }

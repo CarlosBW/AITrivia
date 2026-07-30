@@ -2973,6 +2973,73 @@ abstract class AppLocalizations {
   /// **'Jugar Weekly Topic'**
   String get weeklyTopicPlayButton;
 
+  /// No description provided for @weeklyTopicCorrectAnswersProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'{correct} / {total} respuestas correctas'**
+  String weeklyTopicCorrectAnswersProgress(int correct, int total);
+
+  /// No description provided for @weeklyTopicCoinRewardDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{threshold} respuestas correctas: +{coins} monedas'**
+  String weeklyTopicCoinRewardDescription(int threshold, int coins);
+
+  /// No description provided for @weeklyTopicClaimCoinReward.
+  ///
+  /// In es, this message translates to:
+  /// **'Reclamar recompensa de monedas'**
+  String get weeklyTopicClaimCoinReward;
+
+  /// No description provided for @weeklyTopicCompletionRewardDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'{threshold} respuestas correctas: {emoji} {name}'**
+  String weeklyTopicCompletionRewardDescription(
+      int threshold, String emoji, String name);
+
+  /// No description provided for @weeklyTopicClaimCompletionReward.
+  ///
+  /// In es, this message translates to:
+  /// **'Reclamar recompensa exclusiva'**
+  String get weeklyTopicClaimCompletionReward;
+
+  /// No description provided for @weeklyTopicExclusiveLockedRounds.
+  ///
+  /// In es, this message translates to:
+  /// **'Consigue {threshold} respuestas correctas para desbloquear esta recompensa.'**
+  String weeklyTopicExclusiveLockedRounds(int threshold);
+
+  /// No description provided for @weeklyTopicRoundResultTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ronda completada'**
+  String get weeklyTopicRoundResultTitle;
+
+  /// No description provided for @weeklyTopicRoundResultBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Respondiste correctamente {correct} de {total} preguntas.'**
+  String weeklyTopicRoundResultBody(int correct, int total);
+
+  /// No description provided for @weeklyTopicRoundResultButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get weeklyTopicRoundResultButton;
+
+  /// No description provided for @weeklyTopicRoundQuestionCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Pregunta {current} de {total}'**
+  String weeklyTopicRoundQuestionCount(int current, int total);
+
+  /// No description provided for @weeklyTopicRoundCorrectCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Correctas: {correct}'**
+  String weeklyTopicRoundCorrectCount(int correct);
+
   /// No description provided for @weeklyLeagueScreenTitle.
   ///
   /// In es, this message translates to:
@@ -4202,6 +4269,78 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Agrega 5 amigos.'**
   String get achievementFriends5Description;
+
+  /// No description provided for @achievementPvpWins25Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Veterano de duelos'**
+  String get achievementPvpWins25Title;
+
+  /// No description provided for @achievementPvpWins25Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Gana 25 partidas 1 vs 1.'**
+  String get achievementPvpWins25Description;
+
+  /// No description provided for @achievementSoloLevels25Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Maestro solitario'**
+  String get achievementSoloLevels25Title;
+
+  /// No description provided for @achievementSoloLevels25Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprueba 25 niveles del modo Solo.'**
+  String get achievementSoloLevels25Description;
+
+  /// No description provided for @achievementDailyStreak21Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Constancia de hierro'**
+  String get achievementDailyStreak21Title;
+
+  /// No description provided for @achievementDailyStreak21Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza una racha de 21 días en el Desafío Diario.'**
+  String get achievementDailyStreak21Description;
+
+  /// No description provided for @achievementFriends10Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Círculo social'**
+  String get achievementFriends10Title;
+
+  /// No description provided for @achievementFriends10Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Agrega 10 amigos.'**
+  String get achievementFriends10Description;
+
+  /// No description provided for @achievementWeeklyTopics3Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Explorador semanal'**
+  String get achievementWeeklyTopics3Title;
+
+  /// No description provided for @achievementWeeklyTopics3Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa 3 Temas Semanales.'**
+  String get achievementWeeklyTopics3Description;
+
+  /// No description provided for @achievementCategoriesExplored5Title.
+  ///
+  /// In es, this message translates to:
+  /// **'Mente curiosa'**
+  String get achievementCategoriesExplored5Title;
+
+  /// No description provided for @achievementCategoriesExplored5Description.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprueba al menos un nivel en 5 categorías distintas del modo Solo.'**
+  String get achievementCategoriesExplored5Description;
 
   /// No description provided for @serviceAchievementCompletedTitle.
   ///

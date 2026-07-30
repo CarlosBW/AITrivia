@@ -1041,6 +1041,58 @@
   "weeklyTopicClaim10LevelReward": "Reclamar recompensa de 10 niveles",
   "weeklyTopicCategoryMissing": "Falta la categoría del Weekly Topic.",
   "weeklyTopicPlayButton": "Jugar Weekly Topic",
+  "weeklyTopicCorrectAnswersProgress": "{correct} / {total} respuestas correctas",
+  "@weeklyTopicCorrectAnswersProgress": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicCoinRewardDescription": "{threshold} respuestas correctas: +{coins} monedas",
+  "@weeklyTopicCoinRewardDescription": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "weeklyTopicClaimCoinReward": "Reclamar recompensa de monedas",
+  "weeklyTopicCompletionRewardDescription": "{threshold} respuestas correctas: {emoji} {name}",
+  "@weeklyTopicCompletionRewardDescription": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "emoji": {"type": "String"},
+      "name": {"type": "String"}
+    }
+  },
+  "weeklyTopicClaimCompletionReward": "Reclamar recompensa exclusiva",
+  "weeklyTopicExclusiveLockedRounds": "Consigue {threshold} respuestas correctas para desbloquear esta recompensa.",
+  "@weeklyTopicExclusiveLockedRounds": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundResultTitle": "Ronda completada",
+  "weeklyTopicRoundResultBody": "Respondiste correctamente {correct} de {total} preguntas.",
+  "@weeklyTopicRoundResultBody": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundResultButton": "Continuar",
+  "weeklyTopicRoundQuestionCount": "Pregunta {current} de {total}",
+  "@weeklyTopicRoundQuestionCount": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "weeklyTopicRoundCorrectCount": "Correctas: {correct}",
+  "@weeklyTopicRoundCorrectCount": {
+    "placeholders": {
+      "correct": {"type": "int"}
+    }
+  },
 
   "weeklyLeagueScreenTitle": "Weekly Challenge",
   "weeklyLeagueErrorLoading": "Error cargando el desafío semanal:\n{error}",
@@ -1497,6 +1549,18 @@
   "achievementDailyStreak7Description": "Alcanza una racha de 7 días en el Daily Challenge.",
   "achievementFriends5Title": "Jugador social",
   "achievementFriends5Description": "Agrega 5 amigos.",
+  "achievementPvpWins25Title": "Veterano de duelos",
+  "achievementPvpWins25Description": "Gana 25 partidas 1 vs 1.",
+  "achievementSoloLevels25Title": "Maestro solitario",
+  "achievementSoloLevels25Description": "Aprueba 25 niveles del modo Solo.",
+  "achievementDailyStreak21Title": "Constancia de hierro",
+  "achievementDailyStreak21Description": "Alcanza una racha de 21 días en el Desafío Diario.",
+  "achievementFriends10Title": "Círculo social",
+  "achievementFriends10Description": "Agrega 10 amigos.",
+  "achievementWeeklyTopics3Title": "Explorador semanal",
+  "achievementWeeklyTopics3Description": "Completa 3 Temas Semanales.",
+  "achievementCategoriesExplored5Title": "Mente curiosa",
+  "achievementCategoriesExplored5Description": "Aprueba al menos un nivel en 5 categorías distintas del modo Solo.",
   "serviceAchievementCompletedTitle": "Logro completado",
   "serviceAchievementCompletedBody": "Completaste \"{title}\". Reclama tu recompensa.",
   "@serviceAchievementCompletedBody": {

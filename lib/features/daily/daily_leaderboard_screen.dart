@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class DailyLeaderboardScreen extends StatelessWidget {
@@ -114,6 +115,7 @@ class DailyLeaderboardScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _LeaderboardTile(
                     rank: rank,
+                    targetUid: doc.id,
                     player: data,
                     displayName: displayName,
                     score: score,
@@ -288,6 +290,7 @@ class _PodiumPlayer extends StatelessWidget {
 
 class _LeaderboardTile extends StatelessWidget {
   final int rank;
+  final String targetUid;
   final Map<String, dynamic> player;
   final String displayName;
   final int score;
@@ -299,6 +302,7 @@ class _LeaderboardTile extends StatelessWidget {
 
   const _LeaderboardTile({
     required this.rank,
+    required this.targetUid,
     required this.player,
     required this.displayName,
     required this.score,
@@ -406,6 +410,7 @@ class _LeaderboardTile extends StatelessWidget {
               ),
             ],
           ),
+          if (!isMe) AddFriendButton(targetUid: targetUid),
         ],
       ),
     );

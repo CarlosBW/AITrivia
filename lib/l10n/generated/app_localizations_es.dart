@@ -1730,6 +1730,55 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weeklyTopicPlayButton => 'Jugar Weekly Topic';
 
   @override
+  String weeklyTopicCorrectAnswersProgress(int correct, int total) {
+    return '$correct / $total respuestas correctas';
+  }
+
+  @override
+  String weeklyTopicCoinRewardDescription(int threshold, int coins) {
+    return '$threshold respuestas correctas: +$coins monedas';
+  }
+
+  @override
+  String get weeklyTopicClaimCoinReward => 'Reclamar recompensa de monedas';
+
+  @override
+  String weeklyTopicCompletionRewardDescription(
+      int threshold, String emoji, String name) {
+    return '$threshold respuestas correctas: $emoji $name';
+  }
+
+  @override
+  String get weeklyTopicClaimCompletionReward =>
+      'Reclamar recompensa exclusiva';
+
+  @override
+  String weeklyTopicExclusiveLockedRounds(int threshold) {
+    return 'Consigue $threshold respuestas correctas para desbloquear esta recompensa.';
+  }
+
+  @override
+  String get weeklyTopicRoundResultTitle => 'Ronda completada';
+
+  @override
+  String weeklyTopicRoundResultBody(int correct, int total) {
+    return 'Respondiste correctamente $correct de $total preguntas.';
+  }
+
+  @override
+  String get weeklyTopicRoundResultButton => 'Continuar';
+
+  @override
+  String weeklyTopicRoundQuestionCount(int current, int total) {
+    return 'Pregunta $current de $total';
+  }
+
+  @override
+  String weeklyTopicRoundCorrectCount(int correct) {
+    return 'Correctas: $correct';
+  }
+
+  @override
   String get weeklyLeagueScreenTitle => 'Weekly Challenge';
 
   @override
@@ -2464,6 +2513,46 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementFriends5Description => 'Agrega 5 amigos.';
+
+  @override
+  String get achievementPvpWins25Title => 'Veterano de duelos';
+
+  @override
+  String get achievementPvpWins25Description => 'Gana 25 partidas 1 vs 1.';
+
+  @override
+  String get achievementSoloLevels25Title => 'Maestro solitario';
+
+  @override
+  String get achievementSoloLevels25Description =>
+      'Aprueba 25 niveles del modo Solo.';
+
+  @override
+  String get achievementDailyStreak21Title => 'Constancia de hierro';
+
+  @override
+  String get achievementDailyStreak21Description =>
+      'Alcanza una racha de 21 días en el Desafío Diario.';
+
+  @override
+  String get achievementFriends10Title => 'Círculo social';
+
+  @override
+  String get achievementFriends10Description => 'Agrega 10 amigos.';
+
+  @override
+  String get achievementWeeklyTopics3Title => 'Explorador semanal';
+
+  @override
+  String get achievementWeeklyTopics3Description =>
+      'Completa 3 Temas Semanales.';
+
+  @override
+  String get achievementCategoriesExplored5Title => 'Mente curiosa';
+
+  @override
+  String get achievementCategoriesExplored5Description =>
+      'Aprueba al menos un nivel en 5 categorías distintas del modo Solo.';
 
   @override
   String get serviceAchievementCompletedTitle => 'Logro completado';

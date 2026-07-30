@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
 import '../../widgets/tier_badge.dart';
+import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -79,7 +80,7 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
           final ratingDelta =
               ((userData['pvpRatingDelta'] ?? 0) as num).toInt();
           final league = _leagueService.leagueForRating(rating);
-          final reward = _seasonService.rewardForLeague(league);
+          final reward = _seasonService.rewardForRating(rating);
 
           return TabBarView(
             controller: _tabController,
@@ -100,6 +101,7 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
               _RewardsTab(
                 uid: uid,
                 currentLeague: league,
+                rating: rating,
                 seasonService: _seasonService,
               ),
             ],
@@ -151,7 +153,9 @@ class _SeasonOverviewTab extends StatelessWidget {
             children: [
               TierBadge(
                 emoji: league.emoji,
-                name: l10n.liveMenuLeagueTitle(league.name),
+                name: l10n.liveMenuLeagueTitle(
+                  PvpLeagueService.instance.displayNameForRating(rating),
+                ),
                 colorValue: league.colorValue,
               ),
               const SizedBox(height: 6),
@@ -682,6 +686,7 @@ class _LeaderboardList extends StatelessWidget {
                     '$rating MMR',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  if (!isMe) AddFriendButton(targetUid: doc.id),
                 ],
               ),
             );
@@ -695,11 +700,13 @@ class _LeaderboardList extends StatelessWidget {
 class _RewardsTab extends StatefulWidget {
   final String uid;
   final PvpLeagueInfo currentLeague;
+  final int rating;
   final PvpSeasonService seasonService;
 
   const _RewardsTab({
     required this.uid,
     required this.currentLeague,
+    required this.rating,
     required this.seasonService,
   });
 
@@ -779,6 +786,7 @@ class _RewardsTabState extends State<_RewardsTab> {
         children: [
           _CurrentRewardSummaryCard(
             currentLeague: widget.currentLeague,
+            rating: widget.rating,
             seasonService: widget.seasonService,
           ),
           const SizedBox(height: 16),
@@ -822,9 +830,16 @@ class _RewardsTabState extends State<_RewardsTab> {
           ),
           const SizedBox(height: 16),
           ...PvpLeagueService.leagues.reversed.map((league) {
-            final reward = widget.seasonService.rewardForLeague(league);
-            final color = Color(league.colorValue);
             final isCurrent = league.id == widget.currentLeague.id;
+            final reward = isCurrent
+                ? widget.seasonService.rewardForRating(widget.rating)
+                : widget.seasonService.rewardForLeague(league);
+            final displayName = isCurrent
+                ? PvpLeagueService.instance.displayNameForRating(
+                    widget.rating,
+                  )
+                : league.name;
+            final color = Color(league.colorValue);
 
             return Container(
               margin: const EdgeInsets.only(bottom: 10),
@@ -848,7 +863,7 @@ class _RewardsTabState extends State<_RewardsTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.liveMenuLeagueTitle(league.name),
+                          l10n.liveMenuLeagueTitle(displayName),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
@@ -882,17 +897,19 @@ class _RewardsTabState extends State<_RewardsTab> {
 
 class _CurrentRewardSummaryCard extends StatelessWidget {
   final PvpLeagueInfo currentLeague;
+  final int rating;
   final PvpSeasonService seasonService;
 
   const _CurrentRewardSummaryCard({
     required this.currentLeague,
+    required this.rating,
     required this.seasonService,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final reward = seasonService.rewardForLeague(currentLeague);
+    final reward = seasonService.rewardForRating(rating);
     final season = seasonService.currentSeason();
     final color = Color(currentLeague.colorValue);
 
@@ -925,7 +942,9 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  l10n.liveMenuLeagueTitle(currentLeague.name),
+                  l10n.liveMenuLeagueTitle(
+                    PvpLeagueService.instance.displayNameForRating(rating),
+                  ),
                   style: GoogleFonts.baloo2(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,

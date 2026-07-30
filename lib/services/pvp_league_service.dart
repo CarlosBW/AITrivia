@@ -152,5 +152,24 @@ class PvpLeagueService {
     return '${league.emoji} ${league.name} League';
   }
 
+  /// Master has no rating ceiling, so once a player reaches it the "next
+  /// tier" progression signal used to just stop. This carves 3 cosmetic
+  /// sub-tiers out of the Master band (display + reward scaling only —
+  /// the league `id` stays 'master' everywhere else: avatar unlocks,
+  /// firestore.rules, etc. only ever check for reaching Master itself).
+  int masterTierIndex(int rating) {
+    if (rating >= 2200) return 3;
+    if (rating >= 2050) return 2;
+    return 1;
+  }
+
+  String displayNameForRating(int rating) {
+    final league = leagueForRating(rating);
+    if (league.id != 'master') return league.name;
+
+    final tier = masterTierIndex(rating);
+    return tier == 1 ? league.name : '${league.name} ${'I' * tier}';
+  }
+
   String formatDelta(int delta) => delta > 0 ? '+$delta' : '$delta';
 }

@@ -138,6 +138,25 @@ class PvpSeasonService {
     );
   }
 
+  /// Master has no rating ceiling, so a flat reward regardless of rating
+  /// meant progression stopped paying off once a player got there. Prefer
+  /// this over [rewardForLeague] whenever an actual player rating is
+  /// available — it scales the Master reward by
+  /// [PvpLeagueService.masterTierIndex].
+  PvpSeasonRewardInfo rewardForRating(int rating) {
+    final league = PvpLeagueService.instance.leagueForRating(rating);
+    if (league.id != 'master') return rewardForLeague(league);
+
+    switch (PvpLeagueService.instance.masterTierIndex(rating)) {
+      case 3:
+        return const PvpSeasonRewardInfo(coins: 150);
+      case 2:
+        return const PvpSeasonRewardInfo(coins: 110);
+      default:
+        return const PvpSeasonRewardInfo(coins: 80);
+    }
+  }
+
   PvpSeasonRewardInfo rewardForLeague(PvpLeagueInfo league) {
     switch (league.id) {
       case 'master':
@@ -199,7 +218,7 @@ class PvpSeasonService {
     );
 
     final bestLeague = PvpLeagueService.instance.leagueForRating(bestRating);
-    final reward = rewardForLeague(bestLeague);
+    final reward = rewardForRating(bestRating);
 
     return PendingPvpSeasonReward(
       seasonId: seasonId,

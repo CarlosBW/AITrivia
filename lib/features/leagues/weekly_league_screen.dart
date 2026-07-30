@@ -10,6 +10,7 @@ import '../../services/season_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/tier_badge.dart';
+import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
@@ -317,6 +318,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                                     const EdgeInsets.only(bottom: 10),
                                 child: _WeeklyLeagueTile(
                                   rank: rank,
+                                  targetUid: doc.id,
                                   avatarId: avatarId,
                                   frameId: frameId,
                                   bestLeagueId: bestLeagueId,
@@ -727,6 +729,7 @@ class _RewardRow extends StatelessWidget {
 
 class _WeeklyLeagueTile extends StatelessWidget {
   final int rank;
+  final String targetUid;
   final String avatarId;
   final String? frameId;
   final String? bestLeagueId;
@@ -738,6 +741,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
 
   const _WeeklyLeagueTile({
     required this.rank,
+    required this.targetUid,
     required this.avatarId,
     this.frameId,
     this.bestLeagueId,
@@ -849,6 +853,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
               ),
             ],
           ),
+          if (!isMe) AddFriendButton(targetUid: targetUid),
         ],
       ),
     );

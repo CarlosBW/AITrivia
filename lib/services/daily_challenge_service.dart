@@ -180,7 +180,11 @@ class DailyChallengeService {
       );
     }
 
-    final questions = await loadRandomQuestions(limit: questionLimit);
+    final excludeQuestionIds = await _recentlyUsedQuestionIds(uid: uid);
+    final questions = await loadRandomQuestions(
+      limit: questionLimit,
+      excludeQuestionIds: excludeQuestionIds,
+    );
     final startedAt = DateTime.now();
 
     await _db.runTransaction((tx) async {
@@ -215,8 +219,34 @@ class DailyChallengeService {
     );
   }
 
+  /// Question ids (`sourceQuestionId`) this user was already served on the
+  /// last [days] Daily Challenges, so `loadRandomQuestions` can avoid
+  /// repeating them — the random draw from `fixed_pools` has no memory of
+  /// its own, so without this a question can resurface the very next day.
+  Future<Set<String>> _recentlyUsedQuestionIds({
+    required String uid,
+    int days = 2,
+  }) async {
+    final ids = <String>{};
+    final now = DateTime.now();
+
+    for (var i = 1; i <= days; i++) {
+      final dateId = todayDateId(now.subtract(Duration(days: i)));
+      final snap = await _dailyRef(uid: uid, dateId: dateId).get();
+      final rawQuestions = snap.data()?['questions'] as List<dynamic>? ?? [];
+      for (final q in rawQuestions) {
+        if (q is Map && q['sourceQuestionId'] != null) {
+          ids.add(q['sourceQuestionId'].toString());
+        }
+      }
+    }
+
+    return ids;
+  }
+
   Future<List<Map<String, dynamic>>> loadRandomQuestions({
     int limit = defaultQuestionLimit,
+    Set<String> excludeQuestionIds = const {},
   }) async {
     final categoriesSnap = await _db
         .collection('fixed_categories')
@@ -263,7 +293,26 @@ class DailyChallengeService {
     }
 
     all.shuffle(Random());
-    return all.take(min(limit, all.length)).toList();
+
+    if (excludeQuestionIds.isEmpty) {
+      return all.take(min(limit, all.length)).toList();
+    }
+
+    final fresh = <Map<String, dynamic>>[];
+    final recentlyUsed = <Map<String, dynamic>>[];
+    for (final q in all) {
+      if (excludeQuestionIds.contains(q['sourceQuestionId'])) {
+        recentlyUsed.add(q);
+      } else {
+        fresh.add(q);
+      }
+    }
+
+    final selected = fresh.take(limit).toList();
+    if (selected.length < limit) {
+      selected.addAll(recentlyUsed.take(limit - selected.length));
+    }
+    return selected;
   }
 
   /// Grants the Daily Challenge result via the `submitDailyChallengeResult`

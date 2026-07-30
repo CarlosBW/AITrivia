@@ -174,6 +174,41 @@ class AvatarService {
       category: 'weekly',
       unlockLabel: 'Complete a Sports Weekly Topic',
     ),
+    AvatarInfo(
+      id: 'weekly_music',
+      name: 'Music Maestro',
+      emoji: '🎵',
+      category: 'weekly',
+      unlockLabel: 'Complete a Music Weekly Topic',
+    ),
+    AvatarInfo(
+      id: 'weekly_art',
+      name: 'Art Connoisseur',
+      emoji: '🎨',
+      category: 'weekly',
+      unlockLabel: 'Complete an Art Weekly Topic',
+    ),
+    AvatarInfo(
+      id: 'weekly_geography',
+      name: 'Globe Trotter',
+      emoji: '🌍',
+      category: 'weekly',
+      unlockLabel: 'Complete a Geography Weekly Topic',
+    ),
+    AvatarInfo(
+      id: 'weekly_videogames',
+      name: 'Game Master',
+      emoji: '🎮',
+      category: 'weekly',
+      unlockLabel: 'Complete a Gaming Weekly Topic',
+    ),
+    AvatarInfo(
+      id: 'weekly_books',
+      name: 'Bookworm',
+      emoji: '📚',
+      category: 'weekly',
+      unlockLabel: 'Complete a Books Weekly Topic',
+    ),
   ];
 
   // ============================================================

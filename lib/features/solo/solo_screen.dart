@@ -3,7 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
+import '../daily/daily_challenge_screen.dart';
+import '../versus/pvp_screen.dart';
 import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
@@ -25,7 +28,7 @@ class _SoloScreenState extends State<SoloScreen> {
 
   List<_SoloCategoryItem> _categories = [];
 
-  static const int _buyLifeCost = 10;
+  static const int _buyLifeCost = EconomyService.buyFullLifeCost;
 
   late final String uid;
 
@@ -388,10 +391,14 @@ class _SoloScreenState extends State<SoloScreen> {
       );
     }
 
+    final allCompleted = _categories.isNotEmpty &&
+        _categories.every((c) => c.status == _SoloCategoryStatus.completed);
+    final bannerOffset = allCompleted ? 1 : 0;
+
     return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: _categories.length + 1,
+      itemCount: _categories.length + 1 + bannerOffset,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         if (i == 0) {
@@ -407,11 +414,15 @@ class _SoloScreenState extends State<SoloScreen> {
           );
         }
 
-        final item = _categories[i - 1];
+        if (allCompleted && i == 1) {
+          return _AllCategoriesCompletedBanner(l10n: l10n);
+        }
+
+        final item = _categories[i - 1 - bannerOffset];
 
         return _CategoryCard(
           item: item,
-          accent: CategoryAccent.forIndex(i - 1),
+          accent: CategoryAccent.forIndex(i - 1 - bannerOffset),
           disabled: _isNavigating || _buyingLife,
           onOpenLevels: () {
             _safeNavigate(() => _openLevelSelect(item));
@@ -421,6 +432,87 @@ class _SoloScreenState extends State<SoloScreen> {
           },
         );
       },
+    );
+  }
+}
+
+// Shown once every fixed category is finished — Solo's 90 levels each only
+// pay out once, so without this a completionist player would just see 9
+// checkmarks and no indication of where to keep earning coins/XP.
+class _AllCategoriesCompletedBanner extends StatelessWidget {
+  final AppLocalizations l10n;
+
+  const _AllCategoriesCompletedBanner({required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.emoji_events_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.soloAllCompletedTitle,
+                  style: GoogleFonts.baloo2(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.soloAllCompletedBody,
+            style: TextStyle(color: colorScheme.onPrimaryContainer),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DailyChallengeScreen(
+                          uid: FirebaseAuth.instance.currentUser!.uid,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text(l10n.soloAllCompletedDailyButton),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PvPScreen()),
+                    );
+                  },
+                  child: Text(l10n.soloAllCompletedPvpButton),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2373,7 +2373,13 @@ export const submitSoloLevelResult = onCall(async (request) => {
     }
 
     const newlyPassed = passedLevel && !wasAlreadyPassed;
-    const grantedXp = wasAlreadyPlayed ? 0 : levelXp;
+    // Replaying a level once its one-time coin payout is spent still earns
+    // a small XP trickle (20%, floor 1) instead of flatly zero — XP has no
+    // cap and no coin equivalent (see player_level_service.dart), so this
+    // gives completionist players something to keep working toward without
+    // reopening the coin-farming exploit the one-time gate exists to block.
+    const grantedXp = wasAlreadyPlayed ?
+      Math.max(1, Math.floor(levelXp * 0.2)) : levelXp;
     let grantedCoins = newlyPassed ? levelCoins : 0;
     const shouldEnsureAiBuffer = isAiTopic && newlyPassed;
 
@@ -3079,6 +3085,131 @@ export const refundAiTopicCost = onCall(async (request) => {
 // reward claims move here too, even though only the reward-claim half
 // actually touches `coins`.
 // ============================================================
+
+// Mirrors lib/features/home/home_screen.dart's Weekly Topic card and the
+// 9 fixed_categories seeded by tools/seed_categories.js — rotating through
+// real, already-seeded question pools instead of authoring separate
+// weekly-only content. Each entry's rewardAvatarId matches an AvatarInfo in
+// lib/services/avatar_service.dart's weeklyAvatars list.
+const WEEKLY_TOPIC_CATEGORIES: {
+  categoryId: string;
+  title: string;
+  descriptionEs: string;
+  descriptionEn: string;
+  rewardAvatarId: string;
+}[] = [
+  {
+    categoryId: "cine", title: "Cine Week",
+    descriptionEs: "Completa niveles de cine y gana recompensas.",
+    descriptionEn: "Complete cinema levels and earn rewards.",
+    rewardAvatarId: "weekly_cine",
+  },
+  {
+    categoryId: "historia", title: "History Week",
+    descriptionEs: "Completa niveles de historia y gana recompensas.",
+    descriptionEn: "Complete history levels and earn rewards.",
+    rewardAvatarId: "weekly_history",
+  },
+  {
+    categoryId: "ciencia", title: "Science Week",
+    descriptionEs: "Completa niveles de ciencia y gana recompensas.",
+    descriptionEn: "Complete science levels and earn rewards.",
+    rewardAvatarId: "weekly_science",
+  },
+  {
+    categoryId: "musica", title: "Music Week",
+    descriptionEs: "Completa niveles de música y gana recompensas.",
+    descriptionEn: "Complete music levels and earn rewards.",
+    rewardAvatarId: "weekly_music",
+  },
+  {
+    categoryId: "arte", title: "Art Week",
+    descriptionEs: "Completa niveles de arte y gana recompensas.",
+    descriptionEn: "Complete art levels and earn rewards.",
+    rewardAvatarId: "weekly_art",
+  },
+  {
+    categoryId: "geografia", title: "Geography Week",
+    descriptionEs: "Completa niveles de geografía y gana recompensas.",
+    descriptionEn: "Complete geography levels and earn rewards.",
+    rewardAvatarId: "weekly_geography",
+  },
+  {
+    categoryId: "deportes", title: "Sports Week",
+    descriptionEs: "Completa niveles de deportes y gana recompensas.",
+    descriptionEn: "Complete sports levels and earn rewards.",
+    rewardAvatarId: "weekly_sports",
+  },
+  {
+    categoryId: "videojuegos", title: "Gaming Week",
+    descriptionEs: "Completa niveles de videojuegos y gana recompensas.",
+    descriptionEn: "Complete video game levels and earn rewards.",
+    rewardAvatarId: "weekly_videogames",
+  },
+  {
+    categoryId: "libros", title: "Books Week",
+    descriptionEs: "Completa niveles de libros y gana recompensas.",
+    descriptionEn: "Complete book levels and earn rewards.",
+    rewardAvatarId: "weekly_books",
+  },
+];
+
+const WEEKLY_TOPIC_REWARD_COINS = 10;
+
+/**
+ * Deterministic weekly rotation index — a pure function of the week's
+ * Monday date, so no extra "which week did we last rotate" bookkeeping is
+ * needed and re-running this function mid-week is a safe no-op.
+ * @param {string} weekId Monday-of-week date string (YYYY-MM-DD).
+ * @param {number} categoryCount Number of rotation slots.
+ * @return {number} Index into WEEKLY_TOPIC_CATEGORIES for this week.
+ */
+function weeklyTopicCategoryIndex(
+  weekId: string,
+  categoryCount: number
+): number {
+  const monday = new Date(`${weekId}T00:00:00Z`);
+  const epoch = new Date("2024-01-01T00:00:00Z");
+  const diffWeeks = Math.floor(
+    (monday.getTime() - epoch.getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  return ((diffWeeks % categoryCount) + categoryCount) % categoryCount;
+}
+
+/**
+ * Rotates weekly_topics/current to the next category every Monday, so the
+ * Weekly Topic card never goes stale waiting on a manual update — see the
+ * dead-end audit that flagged this doc as having no automated writer
+ * before this function existed.
+ */
+export const rotateWeeklyTopic = onSchedule(
+  {schedule: "0 0 * * 1", timeZone: "America/Lima"},
+  async () => {
+    const weekId = currentWeekId();
+    const topicRef = db.collection("weekly_topics").doc("current");
+    const snap = await topicRef.get();
+
+    if (snap.data()?.weekId === weekId) return;
+
+    const idx = weeklyTopicCategoryIndex(
+      weekId, WEEKLY_TOPIC_CATEGORIES.length
+    );
+    const chosen = WEEKLY_TOPIC_CATEGORIES[idx];
+
+    await topicRef.set({
+      active: true,
+      weekId,
+      title: chosen.title,
+      description_es: chosen.descriptionEs,
+      description_en: chosen.descriptionEn,
+      categoryId: chosen.categoryId,
+      rewardCoins: WEEKLY_TOPIC_REWARD_COINS,
+      rewardAvatarId: chosen.rewardAvatarId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+);
 
 export const markWeeklyTopicLevelCompleted = onCall(async (request) => {
   const uid = request.auth?.uid;

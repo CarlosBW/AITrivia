@@ -758,6 +758,30 @@ abstract class AppLocalizations {
   /// **'Temas fijos'**
   String get soloFixedTopics;
 
+  /// No description provided for @soloAllCompletedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Completaste todo el modo Solo!'**
+  String get soloAllCompletedTitle;
+
+  /// No description provided for @soloAllCompletedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue ganando monedas y XP en el Daily Challenge o retando a otros jugadores en PvP.'**
+  String get soloAllCompletedBody;
+
+  /// No description provided for @soloAllCompletedDailyButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir al Daily Challenge'**
+  String get soloAllCompletedDailyButton;
+
+  /// No description provided for @soloAllCompletedPvpButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Ir a PvP'**
+  String get soloAllCompletedPvpButton;
+
   /// No description provided for @soloLifeRecovered.
   ///
   /// In es, this message translates to:

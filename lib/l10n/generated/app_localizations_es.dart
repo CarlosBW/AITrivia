@@ -382,6 +382,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soloFixedTopics => 'Temas fijos';
 
   @override
+  String get soloAllCompletedTitle => '¡Completaste todo el modo Solo!';
+
+  @override
+  String get soloAllCompletedBody =>
+      'Sigue ganando monedas y XP en el Daily Challenge o retando a otros jugadores en PvP.';
+
+  @override
+  String get soloAllCompletedDailyButton => 'Ir al Daily Challenge';
+
+  @override
+  String get soloAllCompletedPvpButton => 'Ir a PvP';
+
+  @override
   String get soloLifeRecovered => '❤️ Vida recuperada';
 
   @override

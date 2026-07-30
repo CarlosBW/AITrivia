@@ -6,12 +6,19 @@ import {
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {defineSecret} from "firebase-functions/params";
+import Anthropic from "@anthropic-ai/sdk";
 
 setGlobalOptions({maxInstances: 10});
 
 admin.initializeApp();
 
 const db = admin.firestore();
+
+// Set via `firebase functions:secrets:set ANTHROPIC_API_KEY`. Only bound to
+// the callables that actually call Claude (see their `secrets:` option).
+const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
+const AI_SECRETS = [anthropicApiKey];
 
 /**
  * Cloud Functions run with no client context, so notification text sent to
@@ -2272,6 +2279,8 @@ const COMPLETE_FIXED_CATEGORY_COINS = 10;
 const AI_LEVELS_PER_TOPIC = 10;
 const AI_QUESTIONS_PER_LEVEL = 10;
 const AI_INITIAL_GENERATED_LEVELS = 2;
+const AI_GENERATION_BUFFER_LEVELS = 2;
+const AI_MODEL = "claude-haiku-4-5";
 
 /**
  * Mirrors level_play_screen.dart's `_calculateLevelRewards`.
@@ -2824,19 +2833,153 @@ function normalizeTopicTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+interface GeneratedAiQuestion {
+  q: string;
+  options: string[];
+  answerIndex: number;
+  explanation: string;
+}
+
 /**
- * Mirrors ai_topic_service.dart's `generateMockLevel` (mock/placeholder
- * question content — not a real AI call).
+ * Difficulty label for a given AI-topic level number (1-10, scaled easy
+ * to hard), localized via the recipient's stored languageCode.
+ * @param {number} levelNumber Level number (1-10).
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @return {string} Localized difficulty label.
+ */
+function aiLevelDifficultyLabel(
+  levelNumber: number,
+  languageCode: unknown
+): string {
+  if (levelNumber <= 3) return pickText(languageCode, "fácil", "easy");
+  if (levelNumber <= 7) return pickText(languageCode, "intermedio", "medium");
+  return pickText(languageCode, "difícil", "hard");
+}
+
+/**
+ * Calls Claude Haiku 4.5 to generate one level's worth of trivia questions
+ * for a user-created AI topic and validates the shape of the response.
+ * Retries once on a malformed/incomplete response before giving up.
+ * @param {string} title Topic title (e.g. "Dinosaurios").
+ * @param {number} levelNumber Level number (1-10) — scales difficulty.
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @return {Promise<GeneratedAiQuestion[]>} Exactly AI_QUESTIONS_PER_LEVEL
+ * validated questions.
+ */
+async function requestAiQuestionsFromClaude(
+  title: string,
+  levelNumber: number,
+  languageCode: unknown
+): Promise<GeneratedAiQuestion[]> {
+  const client = new Anthropic({apiKey: anthropicApiKey.value()});
+  const outputLanguage = pickText(languageCode, "Spanish", "English");
+  const difficulty = aiLevelDifficultyLabel(levelNumber, languageCode);
+
+  const prompt = `Generate exactly ${AI_QUESTIONS_PER_LEVEL} multiple-choice ` +
+    `trivia questions about "${title}", at ${difficulty} difficulty ` +
+    `(this is level ${levelNumber} of ${AI_LEVELS_PER_TOPIC}; difficulty ` +
+    "should scale up with the level number). Write every question, " +
+    `option, and explanation in ${outputLanguage}. Each question needs ` +
+    "exactly 4 answer options with exactly one correct answer. Vary the " +
+    "position of the correct answer across questions instead of always " +
+    "using the same index. Do not repeat questions or trivially reword " +
+    "the same fact twice.";
+
+  const schema = {
+    type: "object",
+    properties: {
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            q: {type: "string"},
+            options: {type: "array", items: {type: "string"}},
+            answerIndex: {type: "integer"},
+            explanation: {type: "string"},
+          },
+          required: ["q", "options", "answerIndex", "explanation"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["questions"],
+    additionalProperties: false,
+  };
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await client.messages.create({
+        model: AI_MODEL,
+        max_tokens: 4096,
+        messages: [{role: "user", content: prompt}],
+        output_config: {format: {type: "json_schema", schema}},
+      });
+
+      const block = response.content[0];
+      if (!block || block.type !== "text") {
+        throw new Error("Unexpected response block type from Claude.");
+      }
+
+      const parsed = JSON.parse(block.text) as {
+        questions?: GeneratedAiQuestion[];
+      };
+      const questions = parsed.questions || [];
+
+      if (questions.length !== AI_QUESTIONS_PER_LEVEL) {
+        throw new Error(
+          `Expected ${AI_QUESTIONS_PER_LEVEL} questions, got ` +
+          `${questions.length}.`
+        );
+      }
+
+      for (const question of questions) {
+        if (
+          typeof question.q !== "string" || question.q.trim() === "" ||
+          !Array.isArray(question.options) ||
+          question.options.length !== 4 ||
+          question.options.some((o) => typeof o !== "string") ||
+          !Number.isInteger(question.answerIndex) ||
+          question.answerIndex < 0 || question.answerIndex > 3
+        ) {
+          throw new Error("Malformed question from Claude.");
+        }
+      }
+
+      return questions;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error("AI topic question generation failed", lastError);
+  throw new HttpsError(
+    "internal", "No se pudo generar el tema con IA. Intenta de nuevo."
+  );
+}
+
+/**
+ * Generates one level's worth of real AI trivia questions via Claude
+ * Haiku 4.5 and writes them to Firestore. Writes the same schema the old
+ * mock generator used, so no client-side rendering changes are needed.
  * @param {FirebaseFirestore.DocumentReference} topicRef Topic document ref.
  * @param {number} levelNumber Level to (re)generate.
- * @param {string} title Topic title, used in the mock question text.
+ * @param {string} title Topic title, used as the generation subject.
+ * @param {unknown} languageCode Recipient's stored languageCode.
  * @return {Promise<void>} Resolves once the batch commits.
  */
-async function generateMockLevelAdmin(
+async function generateAiTopicLevel(
   topicRef: FirebaseFirestore.DocumentReference,
   levelNumber: number,
-  title: string
+  title: string,
+  languageCode: unknown
 ): Promise<void> {
+  const questions = await requestAiQuestionsFromClaude(
+    title, levelNumber, languageCode
+  );
+
   const levelRef = topicRef.collection("levels").doc(`level_${levelNumber}`);
   const batch = db.batch();
 
@@ -2848,22 +2991,22 @@ async function generateMockLevelAdmin(
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
-  for (let q = 1; q <= AI_QUESTIONS_PER_LEVEL; q++) {
-    batch.set(levelRef.collection("questions").doc(`q_${q}`), {
-      q: `Mock question ${q} about ${title} - Level ${levelNumber}?`,
-      options: [
-        "Correct answer", "Wrong answer A", "Wrong answer B", "Wrong answer C",
-      ],
-      answerIndex: 0,
-      explanation: "This is a temporary mock question.",
+  questions.forEach((question, index) => {
+    batch.set(levelRef.collection("questions").doc(`q_${index + 1}`), {
+      q: question.q,
+      options: question.options,
+      answerIndex: question.answerIndex,
+      explanation: question.explanation,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-  }
+  });
 
   await batch.commit();
 }
 
-export const createAiTopic = onCall(async (request) => {
+export const createAiTopic = onCall({
+  secrets: AI_SECRETS,
+}, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
@@ -2937,7 +3080,9 @@ export const createAiTopic = onCall(async (request) => {
   const topicRef = topicsCol.doc();
 
   for (let level = 1; level <= AI_INITIAL_GENERATED_LEVELS; level++) {
-    await generateMockLevelAdmin(topicRef, level, cleanTitle);
+    await generateAiTopicLevel(
+      topicRef, level, cleanTitle, userData.languageCode
+    );
   }
 
   await topicRef.set({
@@ -2951,7 +3096,7 @@ export const createAiTopic = onCall(async (request) => {
     levelsCount: AI_LEVELS_PER_TOPIC,
     generatedLevels: AI_INITIAL_GENERATED_LEVELS,
     questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
-    generationMode: "mock_buffered",
+    generationMode: "claude_haiku_4_5",
     generationCostCoins: cost,
     usedFreePass: usesFreePass,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2971,7 +3116,9 @@ export const createAiTopic = onCall(async (request) => {
   return {topicId: topicRef.id};
 });
 
-export const regenerateAiTopicQuestions = onCall(async (request) => {
+export const regenerateAiTopicQuestions = onCall({
+  secrets: AI_SECRETS,
+}, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
@@ -3010,9 +3157,10 @@ export const regenerateAiTopicQuestions = onCall(async (request) => {
 
   const generatedLevels = safeInt(topicData.generatedLevels, 0);
   const title = String(topicData.title || "Custom Topic");
+  const languageCode = userSnap.data()?.languageCode;
 
   for (let level = 1; level <= generatedLevels; level++) {
-    await generateMockLevelAdmin(topicRef, level, title);
+    await generateAiTopicLevel(topicRef, level, title, languageCode);
   }
 
   return db.runTransaction(async (tx) => {
@@ -3114,6 +3262,68 @@ export const expandAiTopic = onCall(async (request) => {
 
     return {newTarget};
   });
+});
+
+/**
+ * Server-side replacement for the old client-side `ensureAiTopicBuffer` —
+ * generates real AI levels ahead of the player as they progress, instead
+ * of trusting the client to write mock question content directly. Mirrors
+ * ai_topic_service.dart's buffering math (generate up to
+ * `completedLevel + AI_GENERATION_BUFFER_LEVELS`, clamped to
+ * `targetLevels`) but calls Claude server-side via `generateAiTopicLevel`.
+ */
+export const ensureAiTopicLevelsGenerated = onCall({
+  secrets: AI_SECRETS,
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  if (!topicId) {
+    throw new HttpsError("invalid-argument", "Missing topicId.");
+  }
+  const completedLevel = safeInt(request.data?.completedLevel, 0);
+
+  const topicRef = db.collection("users").doc(uid)
+    .collection("ai_topics").doc(topicId);
+  const topicSnap = await topicRef.get();
+  const topicData = topicSnap.data();
+
+  if (!topicData || topicData.status !== "ready") {
+    return {generatedLevels: safeInt(topicData?.generatedLevels, 0)};
+  }
+
+  const generatedLevels = safeInt(topicData.generatedLevels, 0);
+  const targetLevels = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
+  const desiredGeneratedLevel = Math.max(0, Math.min(
+    completedLevel + AI_GENERATION_BUFFER_LEVELS, targetLevels
+  ));
+
+  if (generatedLevels >= desiredGeneratedLevel) {
+    return {generatedLevels};
+  }
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  const languageCode = userSnap.data()?.languageCode;
+  const title = String(topicData.title || "Custom Topic");
+
+  for (
+    let level = generatedLevels + 1;
+    level <= desiredGeneratedLevel;
+    level++
+  ) {
+    await generateAiTopicLevel(topicRef, level, title, languageCode);
+  }
+
+  await topicRef.set({
+    generatedLevels: desiredGeneratedLevel,
+    questionsCount: desiredGeneratedLevel * AI_QUESTIONS_PER_LEVEL,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+
+  return {generatedLevels: desiredGeneratedLevel};
 });
 
 /**

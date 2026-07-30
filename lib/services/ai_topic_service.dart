@@ -170,45 +170,22 @@ class AiTopicService {
     await batch.commit();
   }
 
+  /// Buffers real AI-generated levels ahead of the player as they
+  /// progress. Generation itself now happens server-side (Claude Haiku
+  /// 4.5, via `ensureAiTopicLevelsGenerated`) — the client no longer
+  /// writes question content directly.
   Future<void> ensureAiTopicBuffer({
     required String topicId,
     required int completedLevel,
   }) async {
-    final topicRef = _topicsCol(uid).doc(topicId);
-    final snap = await topicRef.get();
-    final data = snap.data();
-
-    if (data == null) return;
-    if ((data['status'] ?? '') != 'ready') return;
-
-    final generatedLevels = ((data['generatedLevels'] ?? 0) as num).toInt();
-
-    final targetLevels =
-        ((data['targetLevels'] ?? EconomyService.aiLevelsPerTopic) as num)
-            .toInt();
-
-    final desiredGeneratedLevel =
-        (completedLevel + EconomyService.aiGenerationBufferLevels)
-            .clamp(0, targetLevels)
-            .toInt();
-
-    if (generatedLevels >= desiredGeneratedLevel) return;
-
-    for (int level = generatedLevels + 1;
-        level <= desiredGeneratedLevel;
-        level++) {
-      await generateMockLevel(
-        topicId: topicId,
-        levelNumber: level,
-      );
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('ensureAiTopicLevelsGenerated')
+          .call({'topicId': topicId, 'completedLevel': completedLevel});
+    } on FirebaseFunctionsException {
+      // Best-effort buffering: a failure here just means the next level
+      // isn't pre-generated yet. It retries on the next completed level.
     }
-
-    await topicRef.set({
-      'generatedLevels': desiredGeneratedLevel,
-      'questionsCount':
-          desiredGeneratedLevel * EconomyService.aiQuestionsPerLevel,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> generateMockTopic({

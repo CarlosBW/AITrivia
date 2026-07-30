@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/achievement_service.dart';
+import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -178,7 +179,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                             : (progress / achievement.target)
                                 .clamp(0.0, 1.0);
 
-                    return _AchievementCard(
+                    final card = _AchievementCard(
                       achievement: achievement,
                       progress: progress,
                       completed: completed,
@@ -188,6 +189,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       onClaim: completed && !claimed
                           ? () => _claim(achievement.id)
                           : null,
+                    );
+
+                    if (i != 0) return card;
+
+                    final l10n = AppLocalizations.of(context);
+                    return SpotlightHint(
+                      id: 'achievements_first_card',
+                      title: l10n.spotlightAchievementsTitle,
+                      description: l10n.spotlightAchievementsBody,
+                      child: card,
                     );
                   },
                 ),

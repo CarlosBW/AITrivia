@@ -3892,6 +3892,60 @@ abstract class AppLocalizations {
   /// **'Jugar mi primer Daily Challenge'**
   String get onboardingPlayFirstDaily;
 
+  /// No description provided for @spotlightGotIt.
+  ///
+  /// In es, this message translates to:
+  /// **'Entendido'**
+  String get spotlightGotIt;
+
+  /// No description provided for @spotlightPvpTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Duelos 1 vs 1'**
+  String get spotlightPvpTitle;
+
+  /// No description provided for @spotlightPvpBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Reta a otros jugadores en tiempo real o de forma asíncrona. Ganar sube tu rating y te acerca a la siguiente liga, con más recompensas.'**
+  String get spotlightPvpBody;
+
+  /// No description provided for @spotlightWeeklyTopicTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema de la semana'**
+  String get spotlightWeeklyTopicTitle;
+
+  /// No description provided for @spotlightWeeklyTopicBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Cada semana rota una categoría especial. Responde rondas para ganar monedas y un avatar exclusivo antes de que termine la semana.'**
+  String get spotlightWeeklyTopicBody;
+
+  /// No description provided for @spotlightAchievementsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Logros'**
+  String get spotlightAchievementsTitle;
+
+  /// No description provided for @spotlightAchievementsBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Cumple objetivos jugando y reclama su recompensa en monedas y XP tocando la tarjeta cuando esté completa.'**
+  String get spotlightAchievementsBody;
+
+  /// No description provided for @spotlightFramesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Marcos de perfil'**
+  String get spotlightFramesTitle;
+
+  /// No description provided for @spotlightFramesBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.'**
+  String get spotlightFramesBody;
+
   /// No description provided for @notificationBellTooltip.
   ///
   /// In es, this message translates to:

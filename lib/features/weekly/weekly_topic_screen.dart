@@ -7,6 +7,7 @@ import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
 import '../../services/life_service.dart';
 import '../../widgets/no_lives_dialog.dart';
+import '../../widgets/spotlight_hint.dart';
 import 'weekly_topic_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
@@ -415,32 +416,38 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      FilledButton.icon(
-                        onPressed: _isNavigating
-                            ? null
-                            : () {
-                                final categoryId =
-                                    (topicData['categoryId'] ?? '').toString();
+                      SpotlightHint(
+                        id: 'weekly_topic_play',
+                        title: l10n.spotlightWeeklyTopicTitle,
+                        description: l10n.spotlightWeeklyTopicBody,
+                        child: FilledButton.icon(
+                          onPressed: _isNavigating
+                              ? null
+                              : () {
+                                  final categoryId =
+                                      (topicData['categoryId'] ?? '')
+                                          .toString();
 
-                                if (categoryId.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.weeklyTopicCategoryMissing,
+                                  if (categoryId.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          l10n.weeklyTopicCategoryMissing,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                  return;
-                                }
+                                    );
+                                    return;
+                                  }
 
-                                _playRound(
-                                  categoryId: categoryId,
-                                  categoryName: title,
-                                  weekId: weekId,
-                                );
-                              },
-                        icon: const Icon(Icons.play_arrow),
-                        label: Text(l10n.weeklyTopicPlayButton),
+                                  _playRound(
+                                    categoryId: categoryId,
+                                    categoryName: title,
+                                    weekId: weekId,
+                                  );
+                                },
+                          icon: const Icon(Icons.play_arrow),
+                          label: Text(l10n.weeklyTopicPlayButton),
+                        ),
                       ),
                     ],
                   ),

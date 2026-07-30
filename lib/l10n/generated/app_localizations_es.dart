@@ -2295,6 +2295,37 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingPlayFirstDaily => 'Jugar mi primer Daily Challenge';
 
   @override
+  String get spotlightGotIt => 'Entendido';
+
+  @override
+  String get spotlightPvpTitle => 'Duelos 1 vs 1';
+
+  @override
+  String get spotlightPvpBody =>
+      'Reta a otros jugadores en tiempo real o de forma asíncrona. Ganar sube tu rating y te acerca a la siguiente liga, con más recompensas.';
+
+  @override
+  String get spotlightWeeklyTopicTitle => 'Tema de la semana';
+
+  @override
+  String get spotlightWeeklyTopicBody =>
+      'Cada semana rota una categoría especial. Responde rondas para ganar monedas y un avatar exclusivo antes de que termine la semana.';
+
+  @override
+  String get spotlightAchievementsTitle => 'Logros';
+
+  @override
+  String get spotlightAchievementsBody =>
+      'Cumple objetivos jugando y reclama su recompensa en monedas y XP tocando la tarjeta cuando esté completa.';
+
+  @override
+  String get spotlightFramesTitle => 'Marcos de perfil';
+
+  @override
+  String get spotlightFramesBody =>
+      'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.';
+
+  @override
   String get notificationBellTooltip => 'Notificaciones';
 
   @override

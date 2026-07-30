@@ -13,6 +13,7 @@ import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
 import '../../widgets/buy_coins_button.dart';
 import '../../widgets/stat_chip.dart';
+import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -917,32 +918,39 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(height: 6),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(999),
-                      onTap: _saving
-                          ? null
-                          : () => _chooseFrame(
-                                context: context,
-                                equippedFrame: equippedFrame,
-                                bestLeagueId: bestLeagueId,
-                              ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Color(frame.colorValue).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Color(frame.colorValue).withValues(alpha: 0.40),
+                    SpotlightHint(
+                      id: 'profile_frame_chip',
+                      title: l10n.spotlightFramesTitle,
+                      description: l10n.spotlightFramesBody,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: _saving
+                            ? null
+                            : () => _chooseFrame(
+                                  context: context,
+                                  equippedFrame: equippedFrame,
+                                  bestLeagueId: bestLeagueId,
+                                ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                        child: Text(
-                          '${frame.emoji} ${frame.name}',
-                          style: TextStyle(
-                            color: Color(frame.colorValue),
-                            fontWeight: FontWeight.bold,
+                          decoration: BoxDecoration(
+                            color:
+                                Color(frame.colorValue).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Color(frame.colorValue)
+                                  .withValues(alpha: 0.40),
+                            ),
+                          ),
+                          child: Text(
+                            '${frame.emoji} ${frame.name}',
+                            style: TextStyle(
+                              color: Color(frame.colorValue),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),

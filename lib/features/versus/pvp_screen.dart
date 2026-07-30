@@ -7,6 +7,7 @@ import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
 import 'active_matches_screen.dart';
 import 'pvp_season_screen.dart';
+import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -109,20 +110,25 @@ class PvPScreen extends StatelessWidget {
               );
             },
           ),
-          _PvpCard(
-            icon: Icons.travel_explore_outlined,
-            accent: const Color(0xFFE5A400),
-            accentBg: const Color(0xFFFFF6DE),
-            title: l10n.pvpFindOpponentTitle,
-            subtitle: l10n.pvpFindOpponentSubtitle,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const FindOpponentScreen(),
-                ),
-              );
-            },
+          SpotlightHint(
+            id: 'pvp_find_opponent',
+            title: l10n.spotlightPvpTitle,
+            description: l10n.spotlightPvpBody,
+            child: _PvpCard(
+              icon: Icons.travel_explore_outlined,
+              accent: const Color(0xFFE5A400),
+              accentBg: const Color(0xFFFFF6DE),
+              title: l10n.pvpFindOpponentTitle,
+              subtitle: l10n.pvpFindOpponentSubtitle,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FindOpponentScreen(),
+                  ),
+                );
+              },
+            ),
           ),
           _PvpCard(
             icon: Icons.workspace_premium_outlined,

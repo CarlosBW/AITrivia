@@ -1956,6 +1956,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTopicsStatusInvalid => 'Needs repair';
 
   @override
+  String get aiTopicsStatusBlocked => 'Blocked';
+
+  @override
   String get aiTopicsStatusPreparing => 'Preparing';
 
   @override
@@ -1992,14 +1995,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get aiTopicsTapRetry => 'Tap to retry generation.';
-
-  @override
-  String get aiTopicsNeedsRegeneration => 'This topic needs to be regenerated.';
-
-  @override
-  String get aiTopicsTapContinuePreparing =>
-      'Tap to continue preparing this topic.';
+  String get aiTopicsUnavailableSubtitle =>
+      'This topic couldn\'t be generated. Swipe to delete it and get your cost back.';
 
   @override
   String get aiTopicsFree => 'Free';
@@ -2018,9 +2015,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String aiTopicsExpandMenuItem(int cost) {
     return 'Expand topic (+10 levels) — $cost coins';
   }
-
-  @override
-  String get aiTopicsGeneratingSnackbar => 'Generating topic...';
 
   @override
   String get aiTopicsRegenerateDialogTitle => 'Regenerate questions';

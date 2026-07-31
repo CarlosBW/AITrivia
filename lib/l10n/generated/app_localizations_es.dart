@@ -1970,6 +1970,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiTopicsStatusInvalid => 'Necesita reparación';
 
   @override
+  String get aiTopicsStatusBlocked => 'Bloqueado';
+
+  @override
   String get aiTopicsStatusPreparing => 'Preparando';
 
   @override
@@ -2006,14 +2009,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get aiTopicsTapRetry => 'Toca para reintentar la generación.';
-
-  @override
-  String get aiTopicsNeedsRegeneration => 'Este tema necesita ser regenerado.';
-
-  @override
-  String get aiTopicsTapContinuePreparing =>
-      'Toca para seguir preparando este tema.';
+  String get aiTopicsUnavailableSubtitle =>
+      'No se pudo generar este tema. Desliza para eliminarlo y recuperar tu costo.';
 
   @override
   String get aiTopicsFree => 'Gratis';
@@ -2032,9 +2029,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String aiTopicsExpandMenuItem(int cost) {
     return 'Ampliar tema (+10 niveles) — $cost monedas';
   }
-
-  @override
-  String get aiTopicsGeneratingSnackbar => 'Generando tema...';
 
   @override
   String get aiTopicsRegenerateDialogTitle => 'Regenerar preguntas';

@@ -106,6 +106,13 @@ class AiTopicService {
     }
   }
 
+  /// Deletes the topic, refunding its creation cost first if it never
+  /// became (or stopped being) usable — anything other than `'ready'`,
+  /// including `'blocked'` (a later level got refused after the topic was
+  /// already paid for; see functions/src/index.ts's AI-topics economy
+  /// comment). `refundAiTopicCost` itself is guarded against a double
+  /// refund and against refunding a genuinely healthy topic, so this is
+  /// safe to call unconditionally for any non-ready status.
   Future<void> deleteAiTopic({
     required String topicId,
   }) async {
@@ -113,61 +120,18 @@ class AiTopicService {
 
     final ref = _topicsCol(uid).doc(topicId);
 
+    final snap = await ref.get();
+    final status = (snap.data()?['status'] ?? '').toString();
+
+    if (status.isNotEmpty && status != 'ready') {
+      await refundAiTopicCostIfNeeded(topicId: topicId);
+    }
+
     await ref.set({
       'status': 'deleted',
       'deletedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
-  }
-
-  Future<void> generateMockLevel({
-    required String topicId,
-    required int levelNumber,
-    bool force = false,
-  }) async {
-    if (levelNumber < 1) return;
-
-    final topicRef = _topicsCol(uid).doc(topicId);
-    final topicSnap = await topicRef.get();
-    final topicData = topicSnap.data();
-
-    if (topicData == null) return;
-
-    final title = (topicData['title'] ?? 'Custom Topic').toString();
-
-    final levelRef = topicRef.collection('levels').doc('level_$levelNumber');
-    final levelSnap = await levelRef.get();
-
-    if (levelSnap.exists && !force) return;
-
-    final batch = _db.batch();
-
-    batch.set(levelRef, {
-      'levelNumber': levelNumber,
-      'title': 'Level $levelNumber',
-      'questionsCount': EconomyService.aiQuestionsPerLevel,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    for (int q = 1; q <= EconomyService.aiQuestionsPerLevel; q++) {
-      final questionRef = levelRef.collection('questions').doc('q_$q');
-
-      batch.set(questionRef, {
-        'q': 'Mock question $q about $title - Level $levelNumber?',
-        'options': [
-          'Correct answer',
-          'Wrong answer A',
-          'Wrong answer B',
-          'Wrong answer C',
-        ],
-        'answerIndex': 0,
-        'explanation': 'This is a temporary mock question.',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    await batch.commit();
   }
 
   /// Buffers real AI-generated levels ahead of the player as they
@@ -188,67 +152,18 @@ class AiTopicService {
     }
   }
 
-  Future<void> generateMockTopic({
-    required String topicId,
-  }) async {
-    final topicRef = _topicsCol(uid).doc(topicId);
-
-    try {
-      final topicSnap = await topicRef.get();
-      final topicData = topicSnap.data();
-
-      if (topicData == null) return;
-
-      await Future.delayed(const Duration(seconds: 2));
-
-      for (int level = 1;
-          level <= EconomyService.aiInitialGeneratedLevels;
-          level++) {
-        await generateMockLevel(
-          topicId: topicId,
-          levelNumber: level,
-        );
-      }
-
-      await topicRef.set({
-        'status': 'ready',
-        'targetLevels': EconomyService.aiLevelsPerTopic,
-        'levelCount': EconomyService.aiLevelsPerTopic,
-        'levelsCount': EconomyService.aiLevelsPerTopic,
-        'generatedLevels': EconomyService.aiInitialGeneratedLevels,
-        'questionsCount': EconomyService.aiInitialGeneratedLevels *
-            EconomyService.aiQuestionsPerLevel,
-        'generationMode': 'mock_buffered',
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      await topicRef.set({
-        'status': 'failed',
-        'generationError': e.toString(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      await _refundAiTopicCostIfNeeded(topicId: topicId);
-
-      rethrow;
-    }
-  }
-
-  /// Refunds the coins/free pass spent creating a topic if its generation
-  /// failed, so a failed AI call never leaves the player charged for
-  /// nothing. Guarded server-side by `costRefunded` since a user can retry
-  /// generation on a failed topic (see ai_topics_screen.dart), which must
-  /// not refund twice. Only a safety net for topics created under the old
-  /// client-side flow — `createAiTopic` now only charges after generation
-  /// already succeeded, so new topics never need this.
-  Future<void> _refundAiTopicCostIfNeeded({required String topicId}) async {
+  /// Refunds the coins/free pass spent creating a topic that never became
+  /// (or stopped being) usable. Guarded server-side both by `costRefunded`
+  /// (no double refund on repeated calls) and by `status === 'ready'` (no
+  /// refunding a topic that's actually fine) — safe to call whenever a
+  /// topic's status isn't `'ready'`, see `deleteAiTopic`.
+  Future<void> refundAiTopicCostIfNeeded({required String topicId}) async {
     try {
       await FirebaseFunctions.instance
           .httpsCallable('refundAiTopicCost')
           .call({'topicId': topicId});
     } catch (_) {
-      // Best-effort refund — don't let a refund failure mask the original
-      // generation error via rethrow above.
+      // Best-effort refund — don't block deleting the topic if this fails.
     }
   }
 

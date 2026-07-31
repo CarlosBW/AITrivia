@@ -142,13 +142,33 @@ service cloud.firestore {
         && avatarIdFieldValid()
         && equippedFrameFieldValid();
 
+      // Cloud-Function-only (createAiTopic / ensureAiTopicLevelsGenerated
+      // / regenerateAiTopicQuestions / expandAiTopic, Admin SDK — bypasses
+      // these rules), same reasoning as /achievements and /friends below:
+      // a client with full write access here could forge `status`,
+      // `generatedLevels`/`questionsCount`, or write self-authored
+      // `levels/*/questions/*` content with a known-correct answerIndex,
+      // bypassing every economy/moderation check those functions enforce.
+      // The only legitimate client write left is deleteAiTopic's
+      // status -> 'deleted' transition.
       match /ai_topics/{topicId} {
-        allow read, create, update, delete: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
 
+        allow create: if false;
+
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'deletedAt', 'updatedAt'])
+          && request.resource.data.status == 'deleted';
+
+        allow delete: if false;
+
         match /{document=**} {
-          allow read, create, update, delete: if request.auth != null
+          allow read: if request.auth != null
             && request.auth.uid == userId;
+          allow write: if false;
         }
       }
 

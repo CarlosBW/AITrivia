@@ -23,8 +23,16 @@ class EconomyService {
 
   static const int firstAiTopicFreePasses = 1;
   static const int createAiTopicCost = 600;
-  static const int regenerateAiQuestionsCost = 150;
+  // Mirrors functions/src/index.ts's REGENERATE_AI_QUESTIONS_COST_PER_LEVEL
+  // — regenerating scales with how many levels there actually are to redo,
+  // instead of a flat cost letting a heavily-buffered/expanded topic
+  // regenerate everything for the same price a fresh 2-level topic pays.
+  static const int regenerateAiQuestionsCostPerLevel = 75;
   static const int expandAiTopicCost = 300;
+
+  static int regenerateAiQuestionsCostFor(int generatedLevels) {
+    return regenerateAiQuestionsCostPerLevel * generatedLevels;
+  }
 
   // ============================================================
   // AI TOPICS CONFIG

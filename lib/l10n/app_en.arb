@@ -1191,6 +1191,7 @@
   "aiTopicsStatusFailed": "Failed",
   "aiTopicsStatusDeleted": "Deleted",
   "aiTopicsStatusInvalid": "Needs repair",
+  "aiTopicsStatusBlocked": "Blocked",
   "aiTopicsStatusPreparing": "Preparing",
   "aiTopicsTitle": "AI Topics",
   "aiTopicsCreateTopic": "Create Topic",
@@ -1217,9 +1218,7 @@
       "questions": {"type": "int"}
     }
   },
-  "aiTopicsTapRetry": "Tap to retry generation.",
-  "aiTopicsNeedsRegeneration": "This topic needs to be regenerated.",
-  "aiTopicsTapContinuePreparing": "Tap to continue preparing this topic.",
+  "aiTopicsUnavailableSubtitle": "This topic couldn't be generated. Swipe to delete it and get your cost back.",
   "aiTopicsFree": "Free",
   "aiTopicsCoinsCost": "{cost} coins",
   "@aiTopicsCoinsCost": {
@@ -1239,7 +1238,6 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsGeneratingSnackbar": "Generating topic...",
   "aiTopicsRegenerateDialogTitle": "Regenerate questions",
   "aiTopicsRegenerateDialogBody": "This replaces the questions for \"{title}\" with new ones.\n\nCost: {cost} coins\nYou have: {coins} coins",
   "@aiTopicsRegenerateDialogBody": {

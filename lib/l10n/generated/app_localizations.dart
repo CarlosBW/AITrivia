@@ -3358,6 +3358,12 @@ abstract class AppLocalizations {
   /// **'Necesita reparación'**
   String get aiTopicsStatusInvalid;
 
+  /// No description provided for @aiTopicsStatusBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueado'**
+  String get aiTopicsStatusBlocked;
+
   /// No description provided for @aiTopicsStatusPreparing.
   ///
   /// In es, this message translates to:
@@ -3418,23 +3424,11 @@ abstract class AppLocalizations {
   /// **'{levels} niveles • {questions} preguntas'**
   String aiTopicsLevelsQuestions(int levels, int questions);
 
-  /// No description provided for @aiTopicsTapRetry.
+  /// No description provided for @aiTopicsUnavailableSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Toca para reintentar la generación.'**
-  String get aiTopicsTapRetry;
-
-  /// No description provided for @aiTopicsNeedsRegeneration.
-  ///
-  /// In es, this message translates to:
-  /// **'Este tema necesita ser regenerado.'**
-  String get aiTopicsNeedsRegeneration;
-
-  /// No description provided for @aiTopicsTapContinuePreparing.
-  ///
-  /// In es, this message translates to:
-  /// **'Toca para seguir preparando este tema.'**
-  String get aiTopicsTapContinuePreparing;
+  /// **'No se pudo generar este tema. Desliza para eliminarlo y recuperar tu costo.'**
+  String get aiTopicsUnavailableSubtitle;
 
   /// No description provided for @aiTopicsFree.
   ///
@@ -3459,12 +3453,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ampliar tema (+10 niveles) — {cost} monedas'**
   String aiTopicsExpandMenuItem(int cost);
-
-  /// No description provided for @aiTopicsGeneratingSnackbar.
-  ///
-  /// In es, this message translates to:
-  /// **'Generando tema...'**
-  String get aiTopicsGeneratingSnackbar;
 
   /// No description provided for @aiTopicsRegenerateDialogTitle.
   ///

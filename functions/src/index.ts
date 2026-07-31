@@ -2821,17 +2821,24 @@ export const verifyCoinPurchase = onCall(async (request) => {
 // ============================================================
 // AI TOPICS ECONOMY
 //
-// Content generation is deterministic mock data (not a real AI call), so
-// each function generates first and only charges after the generation
-// succeeds — if generation throws, nothing was ever charged, so there's
-// no refund case to handle for new topics. `refundAiTopicCost` remains as
-// a safety net solely for topics created before this migration that may
-// still be sitting in a `failed`/`invalid` state from the old two-step
-// client flow.
+// Content generation is a real Claude Haiku 4.5 call, so it can fail —
+// transiently, or because the topic's title turns out to be blocked
+// (blocked_ai_topics / AI_TOPIC_SYSTEM_PROMPT). `createAiTopic` still
+// only charges after generation succeeds, so a failure there is free.
+// `ensureAiTopicLevelsGenerated`/`regenerateAiTopicQuestions` operate on
+// an *already-charged* topic though, so a failure partway through marks
+// the topic `status: "blocked"` instead — `refundAiTopicCost` (called
+// from `deleteAiTopic`) is how the player gets their coins back for one
+// of those, not just a safety net for pre-migration topics anymore.
 // ============================================================
 
 const CREATE_AI_TOPIC_COST = 600;
-const REGENERATE_AI_QUESTIONS_COST = 150;
+// Regenerating scales with how much content there actually is to redo —
+// a flat cost let a topic buffered/expanded to 10+ levels regenerate all
+// of them for the same price a fresh 2-level topic would pay. 75/level
+// keeps the common case (regenerating the initial 2 levels) at the same
+// 150 coins as before.
+const REGENERATE_AI_QUESTIONS_COST_PER_LEVEL = 75;
 const EXPAND_AI_TOPIC_COST = 300;
 const MAX_AI_TOPICS_PER_USER = 20;
 const FIRST_AI_TOPIC_FREE_PASSES = 1;
@@ -2948,6 +2955,27 @@ async function recordBlockedTopic(
   }, {merge: true});
 }
 
+/**
+ * Thrown by `requestAiQuestionsFromClaude` when the topic's title is
+ * blocked (previously recorded, or refused by Claude just now) — a
+ * distinct type from `HttpsError` so callers (createAiTopic,
+ * ensureAiTopicLevelsGenerated, regenerateAiTopicQuestions) can tell a
+ * "this exact topic is blocked" failure apart from any other error and
+ * react accordingly (e.g. marking the topic doc `status: "blocked"`)
+ * instead of string-matching on an error message.
+ */
+class TopicBlockedError extends Error {}
+
+/**
+ * @return {HttpsError} The client-facing error for a blocked topic.
+ */
+function topicBlockedHttpsError(): HttpsError {
+  return new HttpsError(
+    "failed-precondition",
+    "No se pudo generar ese tema. Intenta con otro título."
+  );
+}
+
 interface GeneratedAiQuestion {
   q: string;
   options: string[];
@@ -2993,10 +3021,7 @@ async function requestAiQuestionsFromClaude(
   // createAiTopic check — so a topic that got refused on a later level
   // doesn't keep burning API calls on every subsequent level attempt.
   if (await isTopicPreviouslyBlocked(moderationKey)) {
-    throw new HttpsError(
-      "invalid-argument",
-      "No se pudo generar ese tema. Intenta con otro título."
-    );
+    throw new TopicBlockedError("Topic previously blocked.");
   }
 
   const client = new Anthropic({apiKey: anthropicApiKey.value()});
@@ -3053,10 +3078,7 @@ async function requestAiQuestionsFromClaude(
       // the retry budget.
       if (response.stop_reason === "refusal") {
         await recordBlockedTopic(title, moderationKey, "model_refusal");
-        throw new HttpsError(
-          "invalid-argument",
-          "No se pudo generar ese tema. Intenta con otro título."
-        );
+        throw new TopicBlockedError("Topic refused by model.");
       }
 
       const block = response.content[0];
@@ -3091,7 +3113,9 @@ async function requestAiQuestionsFromClaude(
 
       return questions;
     } catch (error) {
-      if (error instanceof HttpsError) throw error;
+      if (error instanceof HttpsError || error instanceof TopicBlockedError) {
+        throw error;
+      }
       lastError = error;
     }
   }
@@ -3142,6 +3166,31 @@ async function generateAiTopicLevel(
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
+
+  await batch.commit();
+}
+
+/**
+ * Deletes every `levels/*` doc (and nested `questions/*`) under a topic
+ * ref — used to clean up orphaned content when a multi-level generation
+ * loop fails partway through, so a failed level 2 doesn't leave level 1's
+ * questions sitting under a topic id that never gets a parent doc.
+ * @param {FirebaseFirestore.DocumentReference} topicRef Topic document ref.
+ * @return {Promise<void>} Resolves once cleanup commits (no-op if empty).
+ */
+async function deleteAiTopicLevelsSubtree(
+  topicRef: FirebaseFirestore.DocumentReference
+): Promise<void> {
+  const levelsSnap = await topicRef.collection("levels").get();
+  if (levelsSnap.empty) return;
+
+  const batch = db.batch();
+
+  for (const levelDoc of levelsSnap.docs) {
+    const questionsSnap = await levelDoc.ref.collection("questions").get();
+    questionsSnap.docs.forEach((q) => batch.delete(q.ref));
+    batch.delete(levelDoc.ref);
+  }
 
   await batch.commit();
 }
@@ -3238,10 +3287,22 @@ export const createAiTopic = onCall({
 
   const topicRef = topicsCol.doc();
 
-  for (let level = 1; level <= AI_INITIAL_GENERATED_LEVELS; level++) {
-    await generateAiTopicLevel(
-      topicRef, level, cleanTitle, userData.languageCode
-    );
+  try {
+    for (let level = 1; level <= AI_INITIAL_GENERATED_LEVELS; level++) {
+      await generateAiTopicLevel(
+        topicRef, level, cleanTitle, userData.languageCode
+      );
+    }
+  } catch (error) {
+    // No topic doc/charge exist yet at this point either way — just make
+    // sure a level that did succeed before a later one failed doesn't
+    // leave orphaned content under a topic id nothing will ever reference.
+    await deleteAiTopicLevelsSubtree(topicRef);
+
+    if (error instanceof TopicBlockedError) {
+      throw topicBlockedHttpsError();
+    }
+    throw error;
   }
 
   await topicRef.set({
@@ -3296,6 +3357,13 @@ export const regenerateAiTopicQuestions = onCall({
   if (!topicData) {
     throw new HttpsError("not-found", "Este tema ya no existe.");
   }
+  if (topicData.status === "blocked") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Este tema fue bloqueado y no se puede regenerar. Elimínalo para " +
+      "recuperar tu costo."
+    );
+  }
   if (topicData.status !== "ready") {
     throw new HttpsError(
       "failed-precondition", "El tema todavía se está preparando."
@@ -3304,49 +3372,65 @@ export const regenerateAiTopicQuestions = onCall({
 
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
-  const coins = safeInt(userSnap.data()?.coins, 0);
-
-  if (coins < REGENERATE_AI_QUESTIONS_COST) {
-    throw new HttpsError(
-      "failed-precondition",
-      `Necesitas ${REGENERATE_AI_QUESTIONS_COST} monedas para regenerar ` +
-      "las preguntas."
-    );
-  }
+  const languageCode = userSnap.data()?.languageCode;
 
   const generatedLevels = safeInt(topicData.generatedLevels, 0);
   const title = String(topicData.title || "Custom Topic");
-  const languageCode = userSnap.data()?.languageCode;
+  const cost = REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * generatedLevels;
 
-  for (let level = 1; level <= generatedLevels; level++) {
-    await generateAiTopicLevel(topicRef, level, title, languageCode);
-  }
-
-  return db.runTransaction(async (tx) => {
+  // Charge first (atomically) — generating first and charging after, as
+  // this used to, left a window where a concurrent balance change could
+  // grant a free regeneration since the already-generated content was
+  // durably written regardless of whether the later charge succeeded.
+  // Refund below if generation then fails.
+  await db.runTransaction(async (tx) => {
     const freshSnap = await tx.get(userRef);
     const freshCoins = safeInt(freshSnap.data()?.coins, 0);
 
-    if (freshCoins < REGENERATE_AI_QUESTIONS_COST) {
+    if (freshCoins < cost) {
       throw new HttpsError(
         "failed-precondition",
-        `Necesitas ${REGENERATE_AI_QUESTIONS_COST} monedas para regenerar ` +
-        "las preguntas."
+        `Necesitas ${cost} monedas para regenerar las preguntas.`
       );
     }
 
     tx.set(
       userRef,
       {
-        coins: admin.firestore.FieldValue.increment(
-          -REGENERATE_AI_QUESTIONS_COST
-        ),
+        coins: admin.firestore.FieldValue.increment(-cost),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+  });
+
+  try {
+    for (let level = 1; level <= generatedLevels; level++) {
+      await generateAiTopicLevel(topicRef, level, title, languageCode);
+    }
+  } catch (error) {
+    await userRef.set(
+      {
+        coins: admin.firestore.FieldValue.increment(cost),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true}
     );
 
-    return {success: true};
-  });
+    if (error instanceof TopicBlockedError) {
+      await topicRef.set(
+        {
+          status: "blocked",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+      throw topicBlockedHttpsError();
+    }
+    throw error;
+  }
+
+  return {success: true};
 });
 
 export const expandAiTopic = onCall(async (request) => {
@@ -3367,6 +3451,13 @@ export const expandAiTopic = onCall(async (request) => {
 
   if (!topicData) {
     throw new HttpsError("not-found", "Este tema ya no existe.");
+  }
+  if (topicData.status === "blocked") {
+    throw new HttpsError(
+      "failed-precondition",
+      "Este tema fue bloqueado y no se puede ampliar. Elimínalo para " +
+      "recuperar tu costo."
+    );
   }
   if (topicData.status !== "ready") {
     throw new HttpsError(
@@ -3468,12 +3559,35 @@ export const ensureAiTopicLevelsGenerated = onCall({
   const languageCode = userSnap.data()?.languageCode;
   const title = String(topicData.title || "Custom Topic");
 
-  for (
-    let level = generatedLevels + 1;
-    level <= desiredGeneratedLevel;
-    level++
-  ) {
-    await generateAiTopicLevel(topicRef, level, title, languageCode);
+  let lastSuccessfulLevel = generatedLevels;
+
+  try {
+    for (
+      let level = generatedLevels + 1;
+      level <= desiredGeneratedLevel;
+      level++
+    ) {
+      await generateAiTopicLevel(topicRef, level, title, languageCode);
+      lastSuccessfulLevel = level;
+    }
+  } catch (error) {
+    // Persist whatever succeeded before the failure so `generatedLevels`
+    // never understates what's actually in Firestore. This call is
+    // best-effort from the client (errors are swallowed as "buffering
+    // will retry next time" — see ensureAiTopicBuffer), so for a blocked
+    // topic the `status: "blocked"` write below — not the thrown error —
+    // is what actually reaches the player, via the reactive topics list.
+    await topicRef.set({
+      generatedLevels: lastSuccessfulLevel,
+      questionsCount: lastSuccessfulLevel * AI_QUESTIONS_PER_LEVEL,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...(error instanceof TopicBlockedError ? {status: "blocked"} : {}),
+    }, {merge: true});
+
+    if (error instanceof TopicBlockedError) {
+      throw topicBlockedHttpsError();
+    }
+    throw error;
   }
 
   await topicRef.set({
@@ -3486,10 +3600,17 @@ export const ensureAiTopicLevelsGenerated = onCall({
 });
 
 /**
- * Safety net for topics created under the old client-side flow that may
- * still be stuck `failed`/`invalid` from before this migration. Mirrors
- * ai_topic_service.dart's `_refundAiTopicCostIfNeeded` exactly, including
- * the `costRefunded` guard against a double refund on repeated retries.
+ * Refunds the coins/free pass spent creating a topic that never became
+ * (or stopped being) usable — called by `deleteAiTopic` for any topic
+ * whose `status` isn't `"ready"` (including `"blocked"`, set by
+ * `ensureAiTopicLevelsGenerated`/`regenerateAiTopicQuestions` when a
+ * later level gets refused). Also the safety net for topics stuck
+ * `failed`/`invalid` from the old client-side flow, before this
+ * migration. Mirrors ai_topic_service.dart's `refundAiTopicCostIfNeeded`
+ * exactly, including the `costRefunded` guard against a double refund on
+ * repeated retries, plus a `status === "ready"` guard so a topic that
+ * actually generated fine can't be refunded — only Cloud Functions may
+ * write `status`, so that check is authoritative.
  */
 export const refundAiTopicCost = onCall(async (request) => {
   const uid = request.auth?.uid;
@@ -3510,7 +3631,11 @@ export const refundAiTopicCost = onCall(async (request) => {
     const topicSnap = await tx.get(topicRef);
     const topicData = topicSnap.data();
 
-    if (!topicData || topicData.costRefunded === true) {
+    if (
+      !topicData ||
+      topicData.costRefunded === true ||
+      topicData.status === "ready"
+    ) {
       return {refunded: false};
     }
 

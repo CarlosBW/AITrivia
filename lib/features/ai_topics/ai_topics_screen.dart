@@ -16,11 +16,11 @@ class AiTopicsScreen extends StatelessWidget {
       case 'ready':
         return Colors.green;
       case 'failed':
+      case 'invalid':
+      case 'blocked':
         return Colors.redAccent;
       case 'deleted':
         return Colors.grey;
-      case 'invalid':
-        return Colors.redAccent;
       case 'pending_generation':
       default:
         return Colors.orange;
@@ -37,6 +37,8 @@ class AiTopicsScreen extends StatelessWidget {
         return l10n.aiTopicsStatusDeleted;
       case 'invalid':
         return l10n.aiTopicsStatusInvalid;
+      case 'blocked':
+        return l10n.aiTopicsStatusBlocked;
       case 'pending_generation':
       default:
         return l10n.aiTopicsStatusPreparing;
@@ -133,6 +135,7 @@ class AiTopicsScreen extends StatelessWidget {
     required String action,
     required String topicId,
     required String topicTitle,
+    required int generatedLevels,
   }) async {
     final uid = AiTopicService.instance.uid;
     final userSnap =
@@ -144,13 +147,16 @@ class AiTopicsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     if (action == 'regenerate') {
+      final regenerateCost =
+          EconomyService.regenerateAiQuestionsCostFor(generatedLevels);
+
       await _confirmAndRun(
         context: context,
         l10n: l10n,
         title: l10n.aiTopicsRegenerateDialogTitle,
         message: l10n.aiTopicsRegenerateDialogBody(
           topicTitle,
-          EconomyService.regenerateAiQuestionsCost,
+          regenerateCost,
           coins,
         ),
         action: () => AiTopicService.instance.regenerateTopicQuestions(
@@ -236,6 +242,8 @@ class AiTopicsScreen extends StatelessWidget {
               final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
               final questionsCount =
                   ((data['questionsCount'] ?? 0) as num).toInt();
+              final generatedLevels =
+                  ((data['generatedLevels'] ?? 0) as num).toInt();
               final usedFreePass = data['usedFreePass'] == true;
               final cost = ((data['generationCostCoins'] ?? 0) as num).toInt();
 
@@ -307,11 +315,7 @@ class AiTopicsScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(status == 'ready'
                           ? l10n.aiTopicsLevelsQuestions(levelsCount, questionsCount)
-                          : status == 'failed'
-                              ? l10n.aiTopicsTapRetry
-                              : status == 'invalid'
-                                  ? l10n.aiTopicsNeedsRegeneration
-                                  : l10n.aiTopicsTapContinuePreparing),
+                          : l10n.aiTopicsUnavailableSubtitle),
                     ),
                     trailing: status == 'ready'
                         ? Row(
@@ -330,13 +334,17 @@ class AiTopicsScreen extends StatelessWidget {
                                   action: action,
                                   topicId: doc.id,
                                   topicTitle: title,
+                                  generatedLevels: generatedLevels,
                                 ),
                                 itemBuilder: (context) => [
                                   PopupMenuItem(
                                     value: 'regenerate',
                                     child: Text(
                                       l10n.aiTopicsRegenerateMenuItem(
-                                        EconomyService.regenerateAiQuestionsCost,
+                                        EconomyService
+                                            .regenerateAiQuestionsCostFor(
+                                          generatedLevels,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -360,47 +368,26 @@ class AiTopicsScreen extends StatelessWidget {
                             cost: cost,
                           ),
                     onTap: () async {
-                      if (status == 'pending_generation' ||
-                          status == 'failed' ||
-                          status == 'invalid') {
+                      if (status != 'ready') {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(l10n.aiTopicsGeneratingSnackbar),
+                            content: Text(l10n.aiTopicsUnavailableSubtitle),
                           ),
                         );
-
-                        try {
-                          await AiTopicService.instance.generateMockTopic(
-                            topicId: doc.id,
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                e.toString().replaceFirst('Exception: ', ''),
-                              ),
-                            ),
-                          );
-                        }
-
                         return;
                       }
 
-                      if (status == 'ready') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LevelSelectScreen(
-                              categoryId: doc.id,
-                              categoryName: title,
-                              isAiTopic: true,
-                              aiTopicId: doc.id,
-                            ),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => LevelSelectScreen(
+                            categoryId: doc.id,
+                            categoryName: title,
+                            isAiTopic: true,
+                            aiTopicId: doc.id,
                           ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   ),
                 ),

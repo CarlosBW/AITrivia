@@ -1219,6 +1219,7 @@
   "aiTopicsStatusFailed": "Falló",
   "aiTopicsStatusDeleted": "Eliminado",
   "aiTopicsStatusInvalid": "Necesita reparación",
+  "aiTopicsStatusBlocked": "Bloqueado",
   "aiTopicsStatusPreparing": "Preparando",
   "aiTopicsTitle": "Temas IA",
   "aiTopicsCreateTopic": "Crear tema",
@@ -1245,9 +1246,7 @@
       "questions": {"type": "int"}
     }
   },
-  "aiTopicsTapRetry": "Toca para reintentar la generación.",
-  "aiTopicsNeedsRegeneration": "Este tema necesita ser regenerado.",
-  "aiTopicsTapContinuePreparing": "Toca para seguir preparando este tema.",
+  "aiTopicsUnavailableSubtitle": "No se pudo generar este tema. Desliza para eliminarlo y recuperar tu costo.",
   "aiTopicsFree": "Gratis",
   "aiTopicsCoinsCost": "{cost} monedas",
   "@aiTopicsCoinsCost": {
@@ -1267,7 +1266,6 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsGeneratingSnackbar": "Generando tema...",
   "aiTopicsRegenerateDialogTitle": "Regenerar preguntas",
   "aiTopicsRegenerateDialogBody": "Esto reemplaza las preguntas de \"{title}\" por otras nuevas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
   "@aiTopicsRegenerateDialogBody": {

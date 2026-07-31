@@ -917,17 +917,24 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ..._reportReasonKeys.map(
-                (key) => RadioListTile<String>(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  value: key,
-                  groupValue: selectedReason,
-                  title: Text(_reportReasonLabel(l10n, key)),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setDialogState(() => selectedReason = value);
-                  },
+              RadioGroup<String>(
+                groupValue: selectedReason,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setDialogState(() => selectedReason = value);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _reportReasonKeys
+                      .map(
+                        (key) => RadioListTile<String>(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          value: key,
+                          title: Text(_reportReasonLabel(l10n, key)),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
               const SizedBox(height: 8),

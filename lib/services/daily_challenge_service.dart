@@ -371,8 +371,10 @@ class DailyChallengeService {
     final dateId = todayDateId();
     final weekId = WeeklyLeagueService.instance.currentWeekId();
 
-    final callable =
-        FirebaseFunctions.instance.httpsCallable('submitDailyChallengeResult');
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'submitDailyChallengeResult',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+    );
     final response = await callable.call({
       'correct': correct,
       'totalAnswered': totalAnswered,

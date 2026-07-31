@@ -2282,6 +2282,26 @@ const AI_INITIAL_GENERATED_LEVELS = 2;
 const AI_GENERATION_BUFFER_LEVELS = 2;
 const AI_MODEL = "claude-haiku-4-5";
 
+// The only content-safety gate in the AI-topic pipeline besides Claude's
+// own built-in refusal classifier (see `stop_reason === "refusal"` below)
+// — there's no keyword blocklist, so this system prompt is doing the real
+// work of keeping topics appropriate for a general-audience, all-ages app
+// distributed on the Play Store / App Store.
+const AI_TOPIC_SYSTEM_PROMPT = "You generate trivia questions for a " +
+  "general-audience mobile game available to players of all ages on the " +
+  "Google Play Store and Apple App Store. Refuse to generate questions " +
+  "(produce no content) if the requested topic is about suicide or " +
+  "self-harm; sexual content, pornography, or content sexualizing " +
+  "minors; extreme or graphic violence; instructions for making weapons, " +
+  "drugs, or other dangerous items; hate speech or content that " +
+  "promotes discrimination against a group; terrorism or extremist " +
+  "content; or is otherwise inappropriate for a general audience that " +
+  "includes children. For legitimate topics that touch sensitive subject " +
+  "matter (e.g. history of a war, a disease, addiction as a public-" +
+  "health subject), keep every question strictly factual, encyclopedic, " +
+  "and free of graphic or gratuitous detail — write it the way a " +
+  "school textbook or family-friendly encyclopedia would.";
+
 /**
  * Mirrors level_play_screen.dart's `_calculateLevelRewards`.
  * @param {number} correct Correct answers in this level attempt.
@@ -2914,6 +2934,7 @@ async function requestAiQuestionsFromClaude(
       const response = await client.messages.create({
         model: AI_MODEL,
         max_tokens: 4096,
+        system: AI_TOPIC_SYSTEM_PROMPT,
         messages: [{role: "user", content: prompt}],
         output_config: {format: {type: "json_schema", schema}},
       });

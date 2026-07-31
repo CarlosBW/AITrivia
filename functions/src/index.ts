@@ -2282,11 +2282,10 @@ const AI_INITIAL_GENERATED_LEVELS = 2;
 const AI_GENERATION_BUFFER_LEVELS = 2;
 const AI_MODEL = "claude-haiku-4-5";
 
-// The only content-safety gate in the AI-topic pipeline besides Claude's
-// own built-in refusal classifier (see `stop_reason === "refusal"` below)
-// — there's no keyword blocklist, so this system prompt is doing the real
-// work of keeping topics appropriate for a general-audience, all-ages app
-// distributed on the Play Store / App Store.
+// Steers Claude's own judgment for the broad cases (hate speech, graphic
+// historical violence, etc.) that BLOCKED_TOPIC_KEYWORDS below deliberately
+// doesn't try to catch — keeping topics appropriate for a general-audience,
+// all-ages app distributed on the Play Store / App Store.
 const AI_TOPIC_SYSTEM_PROMPT = "You generate trivia questions for a " +
   "general-audience mobile game available to players of all ages on the " +
   "Google Play Store and Apple App Store. Refuse to generate questions " +
@@ -2853,6 +2852,102 @@ function normalizeTopicTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+/**
+ * Lowercases, strips accents, and collapses everything but letters/digits
+ * to single spaces — so blocklist matching in `matchesBlockedKeyword`
+ * isn't defeated by accents, punctuation, or hyphenation
+ * (e.g. "S-U-I-C-I-D-I-O" or "autolesión").
+ * @param {string} title Raw title.
+ * @return {string} Normalized title for moderation matching.
+ */
+function normalizeForModeration(title: string): string {
+  return title
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+// Deliberately narrow to bright-line categories where a plain keyword
+// match is reliable — suicide/self-harm, sexual content (including
+// CSAM-adjacent terms), and explicit dangerous-instructions phrasing.
+// Broader judgment calls (hate speech, graphic historical violence, etc.)
+// are left to AI_TOPIC_SYSTEM_PROMPT, since a blunt keyword list would
+// false-positive on legitimate sensitive trivia topics (e.g. "World War
+// II", "the opioid epidemic"). This is a fast, free pre-filter for the
+// obvious cases, not meant to be exhaustive — normalizeForModeration
+// resists simple bypasses, but a keyword list alone never will be.
+const BLOCKED_TOPIC_KEYWORDS = [
+  // Suicide / self-harm
+  "suicide", "suicidio", "suicidal",
+  "self harm", "autolesion", "autolesiones", "automutilacion",
+  "kill myself", "matarme", "quitarme la vida",
+  // Sexual content / pornography (including CSAM)
+  "porn", "porno", "pornography", "pornografia",
+  "hentai", "nsfw", "xxx",
+  "nude", "nudes", "desnudo", "desnudos", "desnuda", "desnudas",
+  "erotic", "erotica", "erotico",
+  "incest", "incesto",
+  "child porn", "csam", "pedophile", "pedophilia", "pedofilo", "pedofilia",
+  // Explicit dangerous instructions
+  "how to make a bomb", "como hacer una bomba",
+  "how to build a bomb", "como construir una bomba",
+  "how to make explosives", "como fabricar explosivos",
+  "how to make meth", "como fabricar metanfetamina",
+].map(normalizeForModeration);
+
+/**
+ * @param {string} normalizedTitle Title run through
+ * `normalizeForModeration`.
+ * @return {boolean} True if it contains a blocked keyword/phrase.
+ */
+function matchesBlockedKeyword(normalizedTitle: string): boolean {
+  return BLOCKED_TOPIC_KEYWORDS.some((term) =>
+    normalizedTitle.includes(term)
+  );
+}
+
+/**
+ * Whether this normalized title was already blocked before — by keyword
+ * match or a prior Claude refusal — so rewording the same rejected idea
+ * slightly doesn't buy unlimited retries against the API.
+ * @param {string} normalizedTitle Title run through
+ * `normalizeForModeration`.
+ * @return {Promise<boolean>} True if previously blocked.
+ */
+async function isTopicPreviouslyBlocked(
+  normalizedTitle: string
+): Promise<boolean> {
+  const snap = await db.collection("blocked_ai_topics")
+    .doc(normalizedTitle).get();
+  return snap.exists;
+}
+
+/**
+ * Records a blocked topic attempt so future attempts — from any user —
+ * with the same normalized title are rejected immediately, without
+ * spending another API call.
+ * @param {string} title Original (non-normalized) title, for debugging.
+ * @param {string} normalizedTitle Title run through
+ * `normalizeForModeration` (used as the doc id).
+ * @param {"keyword" | "model_refusal"} reason How it was blocked.
+ * @return {Promise<void>} Resolves once the record is written.
+ */
+async function recordBlockedTopic(
+  title: string,
+  normalizedTitle: string,
+  reason: "keyword" | "model_refusal"
+): Promise<void> {
+  await db.collection("blocked_ai_topics").doc(normalizedTitle).set({
+    title,
+    normalizedTitle,
+    reason,
+    lastBlockedAt: admin.firestore.FieldValue.serverTimestamp(),
+    blockedCount: admin.firestore.FieldValue.increment(1),
+  }, {merge: true});
+}
+
 interface GeneratedAiQuestion {
   q: string;
   options: string[];
@@ -2891,6 +2986,19 @@ async function requestAiQuestionsFromClaude(
   levelNumber: number,
   languageCode: unknown
 ): Promise<GeneratedAiQuestion[]> {
+  const moderationKey = normalizeForModeration(title);
+
+  // Covers regenerate/expand/buffer calls too (they all funnel through
+  // here reusing the topic's already-stored title), not just the initial
+  // createAiTopic check — so a topic that got refused on a later level
+  // doesn't keep burning API calls on every subsequent level attempt.
+  if (await isTopicPreviouslyBlocked(moderationKey)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "No se pudo generar ese tema. Intenta con otro título."
+    );
+  }
+
   const client = new Anthropic({apiKey: anthropicApiKey.value()});
   const outputLanguage = pickText(languageCode, "Spanish", "English");
   const difficulty = aiLevelDifficultyLabel(levelNumber, languageCode);
@@ -2944,6 +3052,7 @@ async function requestAiQuestionsFromClaude(
       // fail fast with a message the player can act on instead of burning
       // the retry budget.
       if (response.stop_reason === "refusal") {
+        await recordBlockedTopic(title, moderationKey, "model_refusal");
         throw new HttpsError(
           "invalid-argument",
           "No se pudo generar ese tema. Intenta con otro título."
@@ -3063,6 +3172,23 @@ export const createAiTopic = onCall({
   if (RESERVED_TOPIC_NAMES.has(normalizedTitle)) {
     throw new HttpsError(
       "failed-precondition", "Ese tema ya existe como categoría oficial."
+    );
+  }
+
+  const moderationKey = normalizeForModeration(cleanTitle);
+
+  if (matchesBlockedKeyword(moderationKey)) {
+    await recordBlockedTopic(cleanTitle, moderationKey, "keyword");
+    throw new HttpsError(
+      "invalid-argument",
+      "No se pudo generar ese tema. Intenta con otro título."
+    );
+  }
+
+  if (await isTopicPreviouslyBlocked(moderationKey)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "No se pudo generar ese tema. Intenta con otro título."
     );
   }
 

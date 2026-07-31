@@ -175,12 +175,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileTitle => 'Perfil de jugador';
 
   @override
-  String get profileEditUsername => 'Editar nombre de usuario';
-
-  @override
-  String get profileEnterUsername => 'Ingresa tu nombre de usuario';
-
-  @override
   String get profileUsernameHelper => 'Debe ser único. Usa 3 a 20 caracteres.';
 
   @override
@@ -195,12 +189,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileUsernameTaken => 'Ese nombre de usuario ya existe.';
 
   @override
-  String profileUpdateError(String error) {
-    return 'Error actualizando perfil: $error';
-  }
+  String get usernamePickerTitle => 'Elige tu nombre de usuario';
 
   @override
-  String get profileUpdated => 'Perfil actualizado';
+  String get usernamePickerSubtitle =>
+      'Tus amigos te encontrarán por este nombre. No podrás cambiarlo después.';
+
+  @override
+  String get usernamePickerHint => 'Nombre de usuario';
+
+  @override
+  String get usernamePickerContinue => 'Continuar';
 
   @override
   String get profileAvatarCollection => 'Colección de avatares';

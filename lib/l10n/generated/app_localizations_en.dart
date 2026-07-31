@@ -176,12 +176,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTitle => 'Player Profile';
 
   @override
-  String get profileEditUsername => 'Edit username';
-
-  @override
-  String get profileEnterUsername => 'Enter username';
-
-  @override
   String get profileUsernameHelper => 'Must be unique. Use 3 to 20 characters.';
 
   @override
@@ -196,12 +190,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUsernameTaken => 'That username already exists.';
 
   @override
-  String profileUpdateError(String error) {
-    return 'Error updating profile: $error';
-  }
+  String get usernamePickerTitle => 'Choose your username';
 
   @override
-  String get profileUpdated => 'Profile updated';
+  String get usernamePickerSubtitle =>
+      'Friends will find you by this name. You won\'t be able to change it later.';
+
+  @override
+  String get usernamePickerHint => 'Username';
+
+  @override
+  String get usernamePickerContinue => 'Continue';
 
   @override
   String get profileAvatarCollection => 'Avatar Collection';

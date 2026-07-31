@@ -78,19 +78,15 @@
   "homeReward": "Reward!",
 
   "profileTitle": "Player Profile",
-  "profileEditUsername": "Edit username",
-  "profileEnterUsername": "Enter username",
   "profileUsernameHelper": "Must be unique. Use 3 to 20 characters.",
   "profileUsernameLengthError": "The username must be between 3 and 20 characters.",
   "profileUsernameCharsError": "Use only letters, numbers, and underscore.",
   "profileUsernameTaken": "That username already exists.",
-  "profileUpdateError": "Error updating profile: {error}",
-  "@profileUpdateError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "profileUpdated": "Profile updated",
+
+  "usernamePickerTitle": "Choose your username",
+  "usernamePickerSubtitle": "Friends will find you by this name. You won't be able to change it later.",
+  "usernamePickerHint": "Username",
+  "usernamePickerContinue": "Continue",
   "profileAvatarCollection": "Avatar Collection",
   "profileUnlockedCount": "Unlocked {count} / {total}",
   "@profileUnlockedCount": {

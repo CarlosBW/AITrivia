@@ -101,19 +101,15 @@
   "homeReward": "¡Recompensa!",
 
   "profileTitle": "Perfil de jugador",
-  "profileEditUsername": "Editar nombre de usuario",
-  "profileEnterUsername": "Ingresa tu nombre de usuario",
   "profileUsernameHelper": "Debe ser único. Usa 3 a 20 caracteres.",
   "profileUsernameLengthError": "El nombre de usuario debe tener entre 3 y 20 caracteres.",
   "profileUsernameCharsError": "Usa solo letras, números y guion bajo.",
   "profileUsernameTaken": "Ese nombre de usuario ya existe.",
-  "profileUpdateError": "Error actualizando perfil: {error}",
-  "@profileUpdateError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
-  "profileUpdated": "Perfil actualizado",
+
+  "usernamePickerTitle": "Elige tu nombre de usuario",
+  "usernamePickerSubtitle": "Tus amigos te encontrarán por este nombre. No podrás cambiarlo después.",
+  "usernamePickerHint": "Nombre de usuario",
+  "usernamePickerContinue": "Continuar",
   "profileAvatarCollection": "Colección de avatares",
   "profileUnlockedCount": "Desbloqueados {count} / {total}",
   "@profileUnlockedCount": {

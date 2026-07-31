@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../theme/app_theme.dart';
 import 'daily_leaderboard_screen.dart';
 
 class DailyChallengeResultScreen extends StatelessWidget {
@@ -46,31 +47,55 @@ class DailyChallengeResultScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            _ResultRow(
-              label: l10n.dailyResultCorrectAnswers,
-              value: '${result.correct}',
-            ),
-
-            _ResultRow(
-              label: l10n.dailyResultTotalAnswered,
-              value: '${result.totalAnswered}',
-            ),
-
-            _ResultRow(
-              label: l10n.dailyResultCoinsEarned,
-              value: '+${result.totalCoinsEarned}',
-            ),
-
-            _ResultRow(
-              label: l10n.dailyResultStreakLabel,
-              value: l10n.dailyResultDaysValue(result.streak),
-            ),
-
-            if (result.streakBonusCoins > 0)
-              _ResultRow(
-                label: l10n.dailyResultStreakBonus,
-                value: '+${result.streakBonusCoins}',
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
+              child: Column(
+                children: [
+                  _ResultRow(
+                    icon: Icons.check_circle_outline,
+                    accent: AppColors.success,
+                    background: AppColors.successBg,
+                    label: l10n.dailyResultCorrectAnswers,
+                    value: '${result.correct}',
+                  ),
+                  _ResultRow(
+                    icon: Icons.quiz_outlined,
+                    accent: Theme.of(context).colorScheme.primary,
+                    background:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    label: l10n.dailyResultTotalAnswered,
+                    value: '${result.totalAnswered}',
+                  ),
+                  _ResultRow(
+                    icon: Icons.monetization_on_outlined,
+                    accent: AppColors.reward,
+                    background: AppColors.rewardBg,
+                    label: l10n.dailyResultCoinsEarned,
+                    value: '+${result.totalCoinsEarned}',
+                  ),
+                  _ResultRow(
+                    icon: Icons.local_fire_department_outlined,
+                    accent: AppColors.reward,
+                    background: AppColors.rewardBg,
+                    label: l10n.dailyResultStreakLabel,
+                    value: l10n.dailyResultDaysValue(result.streak),
+                  ),
+                  if (result.streakBonusCoins > 0)
+                    _ResultRow(
+                      icon: Icons.bolt_outlined,
+                      accent: AppColors.reward,
+                      background: AppColors.rewardBg,
+                      label: l10n.dailyResultStreakBonus,
+                      value: '+${result.streakBonusCoins}',
+                    ),
+                ],
+              ),
+            ),
 
             if (result.alreadyPlayed) ...[
               const SizedBox(height: 16),
@@ -170,10 +195,16 @@ class _ResetCountdownState extends State<_ResetCountdown> {
 }
 
 class _ResultRow extends StatelessWidget {
+  final IconData icon;
+  final Color accent;
+  final Color background;
   final String label;
   final String value;
 
   const _ResultRow({
+    required this.icon,
+    required this.accent,
+    required this.background,
     required this.label,
     required this.value,
   });
@@ -183,11 +214,23 @@ class _ResultRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 18),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: background,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 20, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
           Text(
             value,

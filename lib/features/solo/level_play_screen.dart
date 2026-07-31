@@ -13,6 +13,7 @@ import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/question_answer_card.dart';
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
@@ -1118,161 +1119,19 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               ],
             ),
             const SizedBox(height: 22),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                qText,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                  color: Colors.white,
-                ),
+            QuestionAnswerCard(
+              qText: qText,
+              options: options,
+              answerIndex: answerIndex,
+              selectedIndex: _selected,
+              locked: _locked,
+              timedOut: _timedOut,
+              timeoutAnswerIndex: _timeoutAnswerIndex,
+              onTapAnswer: (i) => _onTapAnswer(
+                tappedIndex: i,
+                answerIndex: answerIndex,
               ),
             ),
-            const SizedBox(height: 20),
-            ...List.generate(options.length, (i) {
-              final isSelected = _selected == i;
-              final isCorrect = i == answerIndex;
-              final letter = String.fromCharCode(65 + i);
-
-              Color? fillColor;
-              if (_locked && !_timedOut) {
-                if (isCorrect) fillColor = AppColors.success.withValues(alpha: 0.16);
-                if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withValues(alpha: 0.16);
-                }
-              } else if (!_locked && isSelected) {
-                fillColor = colorScheme.surfaceContainerHighest;
-              }
-
-              Color borderColor = colorScheme.outline;
-              double borderWidth = 1;
-
-              if (_timedOut && _timeoutAnswerIndex != null) {
-                if (i == _timeoutAnswerIndex) {
-                  borderColor = AppColors.reward;
-                  borderWidth = 3;
-                }
-              } else if (_locked) {
-                if (isCorrect) {
-                  borderColor = AppColors.success;
-                  borderWidth = 2;
-                }
-                if (isSelected && !isCorrect) {
-                  borderColor = AppColors.danger;
-                  borderWidth = 2;
-                }
-              } else if (isSelected) {
-                borderColor = colorScheme.primary;
-                borderWidth = 2;
-              }
-
-              final badgeColor = (_locked && isCorrect)
-                  ? AppColors.success
-                  : (_locked && isSelected && !isCorrect)
-                      ? AppColors.danger
-                      : (!_locked && isSelected)
-                          ? colorScheme.primary
-                          : colorScheme.surfaceContainerHighest;
-
-              final badgeTextColor =
-                  badgeColor == colorScheme.surfaceContainerHighest
-                      ? colorScheme.onSurfaceVariant
-                      : Colors.white;
-
-              IconData? trailingIcon;
-              Color? trailingIconColor;
-              if (_locked && !_timedOut) {
-                if (isCorrect) {
-                  trailingIcon = Icons.check_circle;
-                  trailingIconColor = AppColors.success;
-                } else if (isSelected) {
-                  trailingIcon = Icons.cancel;
-                  trailingIconColor = AppColors.danger;
-                }
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => _onTapAnswer(
-                    tappedIndex: i,
-                    answerIndex: answerIndex,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: fillColor ?? colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: borderColor,
-                        width: borderWidth,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Row(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: badgeColor,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            letter,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: badgeTextColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            options[i],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if (trailingIcon != null) ...[
-                          const SizedBox(width: 8),
-                          Icon(trailingIcon, color: trailingIconColor),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
             SizedBox(
               height: 22,
               child: _statusMsg == null

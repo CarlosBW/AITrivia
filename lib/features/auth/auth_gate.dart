@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'user_bootstrap.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../onboarding/username_picker_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
@@ -17,16 +18,18 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _loading = true;
+  bool _needsUsername = false;
   bool _hasSeenOnboarding = true;
+  String? _uid;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _signInAndBootstrap();
+    _start();
   }
 
-  Future<void> _signInAndBootstrap() async {
+  Future<void> _start() async {
     try {
       final auth = FirebaseAuth.instance;
 
@@ -36,22 +39,22 @@ class _AuthGateState extends State<AuthGate> {
 
       final uid = auth.currentUser!.uid;
 
-      final hasSeenOnboarding = await _runWithFirestoreRetry(
-        () => bootstrapUserDoc(uid),
-      );
-
-      PresenceService.instance.markReady();
-
-      await MatchService().recoverMyRealtimeStateOnAppStart();
-      await PresenceService.instance.setOnline();
+      final exists = await _runWithFirestoreRetry(() => userDocExists(uid));
 
       if (!mounted) return;
 
-      setState(() {
-        _hasSeenOnboarding = hasSeenOnboarding;
-        _loading = false;
-        _error = null;
-      });
+      if (!exists) {
+        // Brand-new account — gate on picking a permanent, unique
+        // username before creating the Firestore user doc at all.
+        setState(() {
+          _uid = uid;
+          _needsUsername = true;
+          _loading = false;
+        });
+        return;
+      }
+
+      await _finishBootstrap(uid);
     } catch (e) {
       if (!mounted) return;
 
@@ -60,6 +63,26 @@ class _AuthGateState extends State<AuthGate> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _finishBootstrap(String uid, {String? username}) async {
+    final hasSeenOnboarding = await _runWithFirestoreRetry(
+      () => bootstrapUserDoc(uid, requestedUsername: username),
+    );
+
+    PresenceService.instance.markReady();
+
+    await MatchService().recoverMyRealtimeStateOnAppStart();
+    await PresenceService.instance.setOnline();
+
+    if (!mounted) return;
+
+    setState(() {
+      _needsUsername = false;
+      _hasSeenOnboarding = hasSeenOnboarding;
+      _loading = false;
+      _error = null;
+    });
   }
 
   Future<T> _runWithFirestoreRetry<T>(
@@ -107,6 +130,12 @@ class _AuthGateState extends State<AuthGate> {
             ),
           ),
         ),
+      );
+    }
+
+    if (_needsUsername) {
+      return UsernamePickerScreen(
+        onSubmit: (username) => _finishBootstrap(_uid!, username: username),
       );
     }
 

@@ -76,13 +76,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     if (!mounted) return;
 
+    // Always land on MainNavigationScreen as the new root route first, so
+    // there's a "home" left to pop back to — DailyChallengeScreen is then
+    // pushed on top rather than replacing everything, otherwise its result
+    // screen's "back home" button has nothing below it to pop to.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => goToDailyChallenge
-            ? DailyChallengeScreen(uid: uid)
-            : const MainNavigationScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
     );
+
+    if (goToDailyChallenge) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => DailyChallengeScreen(uid: uid)),
+      );
+    }
   }
 
   @override

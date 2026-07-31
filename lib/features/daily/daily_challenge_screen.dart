@@ -7,6 +7,7 @@ import '../../services/daily_challenge_service.dart';
 import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/question_answer_card.dart';
 import 'daily_challenge_result_screen.dart';
 
 class DailyChallengeScreen extends StatefulWidget {
@@ -37,7 +38,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   bool _savingResults = false;
 
   int? _selectedIndex;
-  bool? _lastCorrect;
   Color _flashColor = Colors.transparent;
 
   String? _coinPopupText;
@@ -144,7 +144,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
           ? AppColors.success.withValues(alpha: 0.18)
           : AppColors.danger.withValues(alpha: 0.18);
       _selectedIndex = index;
-      _lastCorrect = isCorrect;
       _totalAnswered++;
 
       if (isCorrect) {
@@ -168,7 +167,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     setState(() {
       _currentIndex++;
       _selectedIndex = null;
-      _lastCorrect = null;
       _flashColor = Colors.transparent;
     });
   }
@@ -238,27 +236,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   int _answerIndex(Map<String, dynamic> q) {
     return ((q['answerIndex'] ?? q['correctIndex'] ?? 0) as num).toInt();
-  }
-
-  Color _buttonColor(int index, int correctIndex) {
-    if (_selectedIndex == null) return Theme.of(context).colorScheme.primary;
-
-    if (index == correctIndex) return AppColors.success;
-
-    if (index == _selectedIndex) {
-      return _lastCorrect == true ? AppColors.success : AppColors.danger;
-    }
-
-    return Theme.of(context).colorScheme.surfaceContainerHighest;
-  }
-
-  Color _buttonTextColor(int index, int correctIndex) {
-    if (_selectedIndex != null &&
-        index != correctIndex &&
-        index != _selectedIndex) {
-      return Theme.of(context).colorScheme.onSurfaceVariant;
-    }
-    return Colors.white;
   }
 
   String _formatTime(int seconds) {
@@ -399,41 +376,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      _questionText(q),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                    QuestionAnswerCard(
+                      qText: _questionText(q),
+                      options: options,
+                      answerIndex: correctIndex,
+                      selectedIndex: _selectedIndex,
+                      locked: _selectedIndex != null,
+                      onTapAnswer: (i) => _answer(i, correctIndex),
                     ),
-                    const SizedBox(height: 24),
-                    ...List.generate(options.length, (i) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _buttonColor(i, correctIndex),
-                              foregroundColor:
-                                  _buttonTextColor(i, correctIndex),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                                horizontal: 16,
-                              ),
-                            ),
-                            onPressed: _selectedIndex != null || _savingResults
-                                ? null
-                                : () => _answer(i, correctIndex),
-                            child: Text(
-                              options[i],
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
                     const Spacer(),
                     Text(
                       l10n.dailyChallengeAnsweredCount(_totalAnswered),

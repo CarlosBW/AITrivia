@@ -386,18 +386,6 @@ abstract class AppLocalizations {
   /// **'Perfil de jugador'**
   String get profileTitle;
 
-  /// No description provided for @profileEditUsername.
-  ///
-  /// In es, this message translates to:
-  /// **'Editar nombre de usuario'**
-  String get profileEditUsername;
-
-  /// No description provided for @profileEnterUsername.
-  ///
-  /// In es, this message translates to:
-  /// **'Ingresa tu nombre de usuario'**
-  String get profileEnterUsername;
-
   /// No description provided for @profileUsernameHelper.
   ///
   /// In es, this message translates to:
@@ -422,17 +410,29 @@ abstract class AppLocalizations {
   /// **'Ese nombre de usuario ya existe.'**
   String get profileUsernameTaken;
 
-  /// No description provided for @profileUpdateError.
+  /// No description provided for @usernamePickerTitle.
   ///
   /// In es, this message translates to:
-  /// **'Error actualizando perfil: {error}'**
-  String profileUpdateError(String error);
+  /// **'Elige tu nombre de usuario'**
+  String get usernamePickerTitle;
 
-  /// No description provided for @profileUpdated.
+  /// No description provided for @usernamePickerSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Perfil actualizado'**
-  String get profileUpdated;
+  /// **'Tus amigos te encontrarán por este nombre. No podrás cambiarlo después.'**
+  String get usernamePickerSubtitle;
+
+  /// No description provided for @usernamePickerHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre de usuario'**
+  String get usernamePickerHint;
+
+  /// No description provided for @usernamePickerContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get usernamePickerContinue;
 
   /// No description provided for @profileAvatarCollection.
   ///

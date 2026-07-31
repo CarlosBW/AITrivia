@@ -14,26 +14,39 @@ String _todayDateId([DateTime? now]) {
   return '$y-$m-$day';
 }
 
-Future<bool> bootstrapUserDoc(String uid) async {
+/// Thrown by [bootstrapUserDoc] when the requested `username` is already
+/// reserved by another account.
+class UsernameTakenException implements Exception {}
+
+/// Whether the Firestore user doc for [uid] already exists — used by
+/// `AuthGate` to decide whether this is a brand-new account that still
+/// needs to go through the username picker.
+Future<bool> userDocExists(String uid) async {
+  final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  return snap.exists;
+}
+
+Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   final db = FirebaseFirestore.instance;
   final ref = db.collection('users').doc(uid);
 
   final snap = await ref.get();
 
   final defaultUsername = 'Player${uid.substring(0, 8)}';
-  final defaultUsernameLower = defaultUsername.toLowerCase();
+  final chosenUsername = requestedUsername ?? defaultUsername;
+  final chosenUsernameLower = chosenUsername.toLowerCase();
 
   if (!snap.exists) {
     final defaultPvpLeague = PvpLeagueService.instance.leagueForRating(1000);
 
-    await ref.set({
+    final newUserFields = {
       'coins': 0,
       'xp': 0,
       'freeTopicPasses': 1,
 
-      'username': defaultUsername,
-      'usernameLower': defaultUsernameLower,
-      'displayName': defaultUsername,
+      'username': chosenUsername,
+      'usernameLower': chosenUsernameLower,
+      'displayName': chosenUsername,
 
       'avatarId': 'avatar_1',
       'unlockedAvatars': AvatarService.instance.defaultUnlockedAvatarIds(),
@@ -84,7 +97,33 @@ Future<bool> bootstrapUserDoc(String uid) async {
 
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    };
+
+    if (requestedUsername != null) {
+      // A caller-supplied username must be reserved atomically with the
+      // account doc, or two brand-new accounts could race onto the same
+      // name (the random-default path below has no such collision risk).
+      final usernameRef = db.collection('usernames').doc(chosenUsernameLower);
+
+      await db.runTransaction((tx) async {
+        final usernameSnap = await tx.get(usernameRef);
+
+        if (usernameSnap.exists) {
+          throw UsernameTakenException();
+        }
+
+        tx.set(ref, newUserFields);
+        tx.set(usernameRef, {
+          'uid': uid,
+          'username': chosenUsername,
+          'usernameLower': chosenUsernameLower,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      });
+    } else {
+      await ref.set(newUserFields);
+    }
 
     try {
       await AnalyticsService.instance.logSignUp();

@@ -1431,6 +1431,7 @@ const DAILY_STREAK_7_DAYS_COINS = 15;
 const DAILY_STREAK_14_DAYS_COINS = 30;
 const DAILY_LEVEL_UP_COINS = 15;
 const DAILY_QUESTION_LIMIT = 60;
+const DAILY_DURATION_SECONDS = 120;
 
 type LeagueInfo = {
   id: string;
@@ -1934,6 +1935,198 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       xpEarned,
     };
   });
+});
+
+/**
+ * Formats a UTC Date as yyyy-MM-dd, matching the dateId format used
+ * throughout (todayDateId in daily_challenge_service.dart).
+ * @param {Date} date Date to format (interpreted in UTC).
+ * @return {string} yyyy-MM-dd.
+ */
+function formatDateId(date: Date): string {
+  const y = date.getUTCFullYear().toString().padStart(4, "0");
+  const m = (date.getUTCMonth() + 1).toString().padStart(2, "0");
+  const d = date.getUTCDate().toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * `dateId` (yyyy-MM-dd), `days` days earlier.
+ * @param {string} dateId Reference date id.
+ * @param {number} days Number of days to subtract.
+ * @return {string} The resulting date id.
+ */
+function dateIdMinusDays(dateId: string, days: number): string {
+  const d = new Date(`${dateId}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return formatDateId(d);
+}
+
+/**
+ * Mirrors DailyChallengeService's `_recentlyUsedQuestionIds` — question
+ * ids this user was already served on the last 2 Daily Challenges, so
+ * today's pick can avoid repeating them.
+ * @param {admin.firestore.DocumentReference} userRef The user's doc ref.
+ * @param {string} dateId Today's date id.
+ * @return {Promise<Set<string>>} Recently-served `sourceQuestionId`s.
+ */
+async function recentlyUsedDailyQuestionIds(
+  userRef: admin.firestore.DocumentReference, dateId: string
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+
+  for (let i = 1; i <= 2; i++) {
+    const pastDateId = dateIdMinusDays(dateId, i);
+    const snap = await userRef.collection("daily_challenges")
+      .doc(pastDateId).get();
+    const questions = snap.data()?.questions;
+    if (!Array.isArray(questions)) continue;
+
+    for (const q of questions) {
+      if (q && typeof q === "object") {
+        const sourceQuestionId =
+          (q as Record<string, unknown>).sourceQuestionId;
+        if (sourceQuestionId) ids.add(String(sourceQuestionId));
+      }
+    }
+  }
+
+  return ids;
+}
+
+/**
+ * Mirrors DailyChallengeService's `loadRandomQuestions` — reads every
+ * active fixed-pool category/difficulty question bank and returns a
+ * random `DAILY_QUESTION_LIMIT`-sized subset, preferring questions not in
+ * `excludeQuestionIds`.
+ * @param {Set<string>} excludeQuestionIds Recently-served question ids to
+ * avoid repeating when enough fresh ones are available.
+ * @return {Promise<Record<string, unknown>[]>} The chosen questions.
+ */
+async function loadRandomDailyQuestions(
+  excludeQuestionIds: Set<string>
+): Promise<Record<string, unknown>[]> {
+  const categoriesSnap = await db.collection("fixed_categories")
+    .where("isActive", "==", true).get();
+
+  let categoryIds = categoriesSnap.docs.map((d) => d.id);
+
+  if (categoryIds.length === 0) {
+    const poolsSnap = await db.collection("fixed_pools").get();
+    categoryIds = poolsSnap.docs.map((d) => d.id);
+  }
+
+  if (categoryIds.length === 0) {
+    throw new HttpsError(
+      "failed-precondition", "No active daily categories."
+    );
+  }
+
+  const all: Record<string, unknown>[] = [];
+
+  for (const categoryId of categoryIds) {
+    for (const difficulty of [1, 2, 3]) {
+      const snap = await db.collection("fixed_pools").doc(categoryId)
+        .collection(`difficulty_${difficulty}`).doc("pool")
+        .collection("questions").get();
+
+      for (const doc of snap.docs) {
+        all.push({
+          ...doc.data(),
+          sourceCategoryId: categoryId,
+          sourceDifficulty: difficulty,
+          sourceQuestionId: doc.id,
+        });
+      }
+    }
+  }
+
+  if (all.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions in pools.");
+  }
+
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+
+  const limit = Math.min(DAILY_QUESTION_LIMIT, all.length);
+  if (excludeQuestionIds.size === 0) {
+    return all.slice(0, limit);
+  }
+
+  const fresh: Record<string, unknown>[] = [];
+  const recentlyUsed: Record<string, unknown>[] = [];
+  for (const q of all) {
+    if (excludeQuestionIds.has(String(q.sourceQuestionId))) {
+      recentlyUsed.push(q);
+    } else {
+      fresh.push(q);
+    }
+  }
+
+  const selected = fresh.slice(0, limit);
+  if (selected.length < limit) {
+    selected.push(...recentlyUsed.slice(0, limit - selected.length));
+  }
+  return selected;
+}
+
+/**
+ * Server-authoritative replacement for daily_challenge_service.dart's
+ * `createTodaySession` — a client used to read the real fixed-pool
+ * question data and write its own copy straight into
+ * `daily_challenges/{dateId}`, which `submitDailyChallengeResult` then
+ * trusted as ground truth (via computeVerifiedQuizResult). That let a
+ * modified client write a session with self-chosen "correct" answers
+ * unrelated to the real content. This function does the same
+ * question-selection the client used to do, but server-side against the
+ * authoritative `fixed_pools`/`fixed_categories` data, then writes the
+ * session doc itself — firestore.rules now denies client `create` on
+ * `daily_challenges`, so this is the only thing that can populate it.
+ */
+export const ensureDailyChallengeSession = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const dateId = String(request.data?.dateId || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateId)) {
+    throw new HttpsError("invalid-argument", "Invalid dateId.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const dailyRef = userRef.collection("daily_challenges").doc(dateId);
+
+  const existing = await dailyRef.get();
+  if (existing.exists) {
+    return {created: false};
+  }
+
+  const excludeQuestionIds = await recentlyUsedDailyQuestionIds(
+    userRef, dateId
+  );
+  const questions = await loadRandomDailyQuestions(excludeQuestionIds);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(dailyRef);
+    if (snap.exists) return;
+
+    tx.set(dailyRef, {
+      dateId,
+      played: false,
+      durationSeconds: DAILY_DURATION_SECONDS,
+      questions,
+      correct: 0,
+      totalAnswered: 0,
+      coinsEarned: 0,
+      score: 0,
+      startedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  });
+
+  return {created: true};
 });
 
 // ============================================================
@@ -2576,6 +2769,194 @@ export const submitSoloLevelResult = onCall(async (request) => {
       shouldEnsureAiBuffer,
     };
   });
+});
+
+/**
+ * Mirrors level_play_screen.dart's `_difficultyForLevel`.
+ * @param {number} levelNumber The solo level number (1-based).
+ * @return {number} The fixed-pool difficulty tier (1-3) for that level.
+ */
+function difficultyForLevel(levelNumber: number): number {
+  if (levelNumber <= 3) return 1;
+  if (levelNumber <= 7) return 2;
+  return 3;
+}
+
+/**
+ * Mirrors level_play_screen.dart's `_fnv1a32` — used only to seed a
+ * deterministic pool shuffle, not for any security property.
+ * @param {string} input The string to hash.
+ * @return {number} A 32-bit unsigned hash.
+ */
+function fnv1a32(input: string): number {
+  const fnvPrime = 16777619;
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, fnvPrime) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Deterministic seeded shuffle (mulberry32 PRNG + Fisher-Yates) so the same
+ * (uid, categoryId, levelNumber) always picks the same pool subset.
+ * @param {number} length Number of pool questions to shuffle.
+ * @param {number} seed Seed from {@link fnv1a32}.
+ * @return {number[]} `length` pool indices in shuffled order.
+ */
+function seededShuffleIndices(length: number, seed: number): number[] {
+  let a = seed;
+  const rand = () => {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  const indices = Array.from({length}, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices;
+}
+
+/**
+ * Server-authoritative replacement for level_play_screen.dart's
+ * `_ensureSession` — a client used to read the real level/pool questions
+ * and write its own copy (including `answerIndex`) straight into
+ * `sessions_ai`/`sessions_fixed`, which `submitSoloLevelResult` then
+ * trusted as ground truth. That let a modified client write a session
+ * with self-chosen "correct" answers unrelated to the real content. This
+ * function does the same question-selection the client used to do, but
+ * server-side against the authoritative `ai_topics/*\/levels/*\/questions`
+ * / `fixed_pools` data (both Cloud-Function/admin-only), then writes the
+ * session doc itself — firestore.rules now denies client `create` on
+ * `sessions_ai`/`sessions_fixed`, so this is the only thing that can
+ * populate them.
+ */
+export const ensureSoloLevelSession = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const isAiTopic = request.data?.isAiTopic === true;
+  const categoryId = String(request.data?.categoryId || "");
+  const aiTopicId = request.data?.aiTopicId ?
+    String(request.data.aiTopicId) : null;
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+
+  if (levelNumber < 1) {
+    throw new HttpsError("invalid-argument", "Invalid levelNumber.");
+  }
+  if (isAiTopic && !aiTopicId) {
+    throw new HttpsError("invalid-argument", "Missing aiTopicId.");
+  }
+  if (!isAiTopic && !categoryId) {
+    throw new HttpsError("invalid-argument", "Missing categoryId.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const sessionId = isAiTopic ?
+    `${aiTopicId}_${levelNumber}` : `${categoryId}_${levelNumber}`;
+  const sessionRef = userRef
+    .collection(isAiTopic ? "sessions_ai" : "sessions_fixed").doc(sessionId);
+
+  const existing = await sessionRef.get();
+  if (existing.exists) {
+    return {created: false};
+  }
+
+  if (isAiTopic) {
+    const levelRef = userRef.collection("ai_topics").doc(aiTopicId as string)
+      .collection("levels").doc(`level_${levelNumber}`);
+
+    const levelSnap = await levelRef.get();
+    const reportedCounts: Record<string, unknown> =
+      levelSnap.data()?.reportedQuestionCounts || {};
+
+    const questionsSnap = await levelRef.collection("questions").get();
+    if (questionsSnap.empty) {
+      throw new HttpsError(
+        "not-found", "No questions found for this level."
+      );
+    }
+
+    const usableDocs = questionsSnap.docs.filter((doc) => {
+      const count = safeInt(reportedCounts[doc.id], 0);
+      return count < AI_QUESTION_REPORT_THRESHOLD;
+    });
+    const docsToUse = usableDocs.length > 0 ? usableDocs : questionsSnap.docs;
+
+    const chosen = docsToUse.map((doc) => ({
+      ...doc.data(),
+      questionId: doc.id,
+    }));
+
+    await db.runTransaction(async (tx) => {
+      const sesSnap = await tx.get(sessionRef);
+      if (sesSnap.exists) return;
+
+      tx.set(sessionRef, {
+        categoryId: aiTopicId,
+        levelNumber,
+        difficulty: 1,
+        total: chosen.length,
+        questions: chosen,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    return {created: true};
+  }
+
+  const preferredDifficulty = difficultyForLevel(levelNumber);
+  const difficulties = Array.from(new Set([preferredDifficulty, 1, 2, 3]));
+
+  let poolDocs: admin.firestore.QueryDocumentSnapshot[] = [];
+  let usedDifficulty = 0;
+
+  for (const diff of difficulties) {
+    const snap = await db.collection("fixed_pools").doc(categoryId)
+      .collection(`difficulty_${diff}`).doc("pool")
+      .collection("questions").get();
+
+    if (!snap.empty) {
+      poolDocs = snap.docs;
+      usedDifficulty = diff;
+      break;
+    }
+  }
+
+  if (poolDocs.length === 0) {
+    throw new HttpsError(
+      "not-found", `No questions available for ${categoryId}.`
+    );
+  }
+
+  const seed = fnv1a32(`${uid}|${categoryId}|${levelNumber}`);
+  const order = seededShuffleIndices(poolDocs.length, seed);
+  const take = Math.min(10, poolDocs.length);
+  const chosen = order.slice(0, take).map((i) => poolDocs[i].data());
+
+  await db.runTransaction(async (tx) => {
+    const sesSnap = await tx.get(sessionRef);
+    if (sesSnap.exists) return;
+
+    tx.set(sessionRef, {
+      categoryId,
+      levelNumber,
+      difficulty: usedDifficulty,
+      total: take,
+      seed,
+      questions: chosen,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {created: true};
 });
 
 // ============================================================

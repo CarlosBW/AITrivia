@@ -89,10 +89,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
-  // Mirrors AI_QUESTION_REPORT_THRESHOLD in functions/src/index.ts — a
-  // question reported this many times gets excluded from this level's
-  // question pool going forward (see _ensureSession's AI-topic branch).
-  static const int _reportExclusionThreshold = 3;
   bool _reportingQuestion = false;
 
   @override
@@ -554,8 +550,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       Future.microtask(() async {
                         try {
                           await _ensureSession(
-                            db: db,
-                            uid: uid,
                             sessionRef: sessionRef,
                           );
                         } catch (e) {
@@ -1152,132 +1146,27 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     );
   }
 
-  int _difficultyForLevel(int levelNumber) {
-    if (levelNumber <= 3) return 1;
-    if (levelNumber <= 7) return 2;
-    return 3;
-  }
-
-  int _fnv1a32(String input) {
-    const int fnvPrime = 16777619;
-    int hash = 2166136261;
-    for (final codeUnit in input.codeUnits) {
-      hash ^= codeUnit;
-      hash = (hash * fnvPrime) & 0xFFFFFFFF;
-    }
-    return hash;
-  }
-
+  // Session creation moved server-side (ensureSoloLevelSession Cloud
+  // Function) — the client used to read the real level/pool questions and
+  // write its own copy (including answerIndex) straight into
+  // sessions_ai/sessions_fixed, which submitSoloLevelResult then trusted
+  // as ground truth, letting a modified client farm rewards with
+  // self-chosen "correct" answers. firestore.rules now denies client
+  // `create` on those collections, so this call is the only way to
+  // populate them.
   Future<void> _ensureSession({
-    required FirebaseFirestore db,
-    required String uid,
     required DocumentReference<Map<String, dynamic>> sessionRef,
   }) async {
     final existing = await sessionRef.get();
     if (existing.exists) return;
 
-    if (widget.isAiTopic) {
-      final levelRef = db
-          .collection('users')
-          .doc(uid)
-          .collection('ai_topics')
-          .doc(widget.aiTopicId)
-          .collection('levels')
-          .doc('level_${widget.levelNumber}');
-
-      final levelSnap = await levelRef.get();
-      final reportedCounts = Map<String, dynamic>.from(
-        levelSnap.data()?['reportedQuestionCounts'] as Map? ?? {},
-      );
-
-      final questionsSnap = await levelRef.collection('questions').get();
-
-      if (questionsSnap.docs.isEmpty) {
-        throw Exception(
-          'No questions found for AI topic level ${widget.levelNumber}',
-        );
-      }
-
-      // Questions reported _reportExclusionThreshold+ times get skipped —
-      // but if that would empty out the whole level (everything flagged),
-      // fall back to using them all rather than showing a dead end.
-      final usableDocs = questionsSnap.docs.where((doc) {
-        final count = ((reportedCounts[doc.id] ?? 0) as num).toInt();
-        return count < _reportExclusionThreshold;
-      }).toList();
-
-      final docsToUse =
-          usableDocs.isNotEmpty ? usableDocs : questionsSnap.docs;
-
-      final chosen = docsToUse
-          .map((doc) => {...doc.data(), 'questionId': doc.id})
-          .toList();
-
-      await sessionRef.set({
-        'categoryId': widget.aiTopicId,
-        'levelNumber': widget.levelNumber,
-        'difficulty': 1,
-        'total': chosen.length,
-        'questions': chosen,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      return;
-    }
-
-    final preferredDifficulty = _difficultyForLevel(widget.levelNumber);
-    final difficulties = {preferredDifficulty, 1, 2, 3}.toList();
-
-    QuerySnapshot<Map<String, dynamic>>? poolSnap;
-    int? usedDifficulty;
-
-    for (final diff in difficulties) {
-      final col = db
-          .collection('fixed_pools')
-          .doc(widget.categoryId)
-          .collection('difficulty_$diff')
-          .doc('pool')
-          .collection('questions');
-
-      final snap = await col.get();
-
-      if (snap.docs.isNotEmpty) {
-        poolSnap = snap;
-        usedDifficulty = diff;
-        break;
-      }
-    }
-
-    if (poolSnap == null) {
-      throw Exception(
-        'No hay preguntas disponibles en ninguna dificultad para ${widget.categoryId}',
-      );
-    }
-
-    final poolDocs = poolSnap.docs;
-
-    final seed = _fnv1a32('$uid|${widget.categoryId}|${widget.levelNumber}');
-    final rnd = math.Random(seed);
-
-    final indices = List<int>.generate(poolDocs.length, (i) => i);
-    indices.shuffle(rnd);
-
-    final take = math.min(10, poolDocs.length);
-    final chosen = indices.take(take).map((i) => poolDocs[i].data()).toList();
-
-    await db.runTransaction((tx) async {
-      final sesSnap = await tx.get(sessionRef);
-      if (sesSnap.exists) return;
-
-      tx.set(sessionRef, {
-        'categoryId': widget.categoryId,
-        'levelNumber': widget.levelNumber,
-        'difficulty': usedDifficulty,
-        'total': take,
-        'seed': seed,
-        'questions': chosen,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+    await FirebaseFunctions.instance
+        .httpsCallable('ensureSoloLevelSession')
+        .call({
+      'isAiTopic': widget.isAiTopic,
+      'categoryId': widget.categoryId,
+      'aiTopicId': widget.aiTopicId,
+      'levelNumber': widget.levelNumber,
     });
   }
 

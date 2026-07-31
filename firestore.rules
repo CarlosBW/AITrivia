@@ -177,17 +177,19 @@ service cloud.firestore {
           && request.auth.uid == userId;
       }
 
-      // Same reasoning as /daily_challenges — the client only ever needs
-      // to create a level's session once (LevelPlayScreen._ensureSession,
-      // no-op if it already exists); submitSoloLevelResult (Cloud
-      // Function) is the only thing that reads it afterward, so a client
-      // can't rewrite its stored `questions` to ones it already knows the
-      // answers to before finishing the level.
+      // Cloud-Function-only (ensureSoloLevelSession, Admin SDK — bypasses
+      // these rules). A client `create` here used to be allowed on the
+      // reasoning that it could only ever write its own session once
+      // (LevelPlayScreen._ensureSession, no-op if it already exists) — but
+      // submitSoloLevelResult trusts this doc's own stored `questions`
+      // (including `answerIndex`) as ground truth, so a client `create`
+      // could write self-chosen "correct" answers unrelated to the real
+      // fixed_pools content and farm rewards. ensureSoloLevelSession now
+      // selects the question set server-side against fixed_pools instead.
       match /sessions_fixed/{docId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
-        allow create: if request.auth != null
-          && request.auth.uid == userId;
+        allow create: if false;
         allow update: if false;
         allow delete: if false;
       }
@@ -197,26 +199,26 @@ service cloud.firestore {
           && request.auth.uid == userId;
       }
 
-      // Same reasoning as /sessions_fixed above.
+      // Same reasoning as /sessions_fixed above, against
+      // ai_topics/*/levels/*/questions instead of fixed_pools.
       match /sessions_ai/{sessionId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
-        allow create: if request.auth != null
-          && request.auth.uid == userId;
+        allow create: if false;
         allow update: if false;
         allow delete: if false;
       }
 
-      // The client only ever needs to create today's session once
-      // (createTodaySession, no-op if it already exists) — after that,
-      // only submitDailyChallengeResult (Cloud Function) writes it, so a
-      // client can't rewrite its stored `questions` to ones it already
-      // knows the answers to before finishing the session.
+      // Same reasoning as /sessions_fixed above — the client used to read
+      // the real fixed-pool question data and write its own copy straight
+      // into this doc, which submitDailyChallengeResult then trusted as
+      // ground truth. Only ensureDailyChallengeSession (Cloud Function,
+      // creates it once, no-op if it already exists) and
+      // submitDailyChallengeResult now write it.
       match /daily_challenges/{dateId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
-        allow create: if request.auth != null
-          && request.auth.uid == userId;
+        allow create: if false;
         allow update: if false;
         allow delete: if false;
       }

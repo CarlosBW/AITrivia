@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -8,9 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
 import 'analytics_service.dart';
-import 'locale_controller.dart';
-import '../l10n/generated/app_localizations.dart';
-import '../l10n/l10n_for.dart';
 
 class DailyChallengeSession {
   final String dateId;
@@ -77,17 +73,11 @@ class DailyChallengeService {
   static final instance = DailyChallengeService._();
 
   static const int defaultDurationSeconds = 120;
-  static const int defaultQuestionLimit = 60;
   static const int coinsPerBlock = EconomyService.dailyCoinsPerBlock;
   static const int correctPerCoinBlock =
     EconomyService.dailyCorrectPerCoinBlock;
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
-
-  // Resolved from the acting user's own device locale — correct for
-  // exceptions, since they always surface back to whoever called this.
-  AppLocalizations get _l10n =>
-      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   String todayDateId([DateTime? now]) {
     final d = now ?? DateTime.now();
@@ -187,171 +177,38 @@ class DailyChallengeService {
     );
   }
 
+  /// Ensures today's session exists via the `ensureDailyChallengeSession`
+  /// Cloud Function, then reads it back. Session creation moved
+  /// server-side — the client used to read the real fixed-pool question
+  /// data and write its own copy straight into `daily_challenges/{dateId}`,
+  /// which `submitDailyChallengeResult` then trusted as ground truth,
+  /// letting a modified client farm rewards with self-chosen "correct"
+  /// answers. firestore.rules now denies client `create` on that
+  /// collection, so this call is the only way to populate it.
   Future<DailyChallengeSession> createTodaySession({
     required String uid,
-    int durationSeconds = defaultDurationSeconds,
-    int questionLimit = defaultQuestionLimit,
   }) async {
     final dateId = todayDateId();
-    final ref = _dailyRef(uid: uid, dateId: dateId);
 
-    final existing = await ref.get();
-    final existingData = existing.data();
-    if (existingData != null) {
-      final rawQuestions = existingData['questions'] as List<dynamic>? ?? [];
-      final questions = rawQuestions
-          .whereType<Map>()
-          .map((q) => Map<String, dynamic>.from(q))
-          .toList();
+    final existing = await getTodaySession(uid);
+    if (existing != null) return existing;
 
-      final startedAtRaw = existingData['startedAt'];
-      final startedAt =
-          startedAtRaw is Timestamp ? startedAtRaw.toDate() : null;
-
-      return DailyChallengeSession(
-        dateId: dateId,
-        durationSeconds:
-            ((existingData['durationSeconds'] ?? durationSeconds) as num)
-                .toInt(),
-        questions: questions,
-        played: existingData['played'] == true,
-        startedAt: startedAt,
-      );
-    }
-
-    final excludeQuestionIds = await _recentlyUsedQuestionIds(uid: uid);
-    final questions = await loadRandomQuestions(
-      limit: questionLimit,
-      excludeQuestionIds: excludeQuestionIds,
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'ensureDailyChallengeSession',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
     );
-    final startedAt = DateTime.now();
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (snap.exists) return;
-
-      tx.set(
-          ref,
-          {
-            'dateId': dateId,
-            'played': false,
-            'durationSeconds': durationSeconds,
-            'questions': questions,
-            'correct': 0,
-            'totalAnswered': 0,
-            'coinsEarned': 0,
-            'score': 0,
-            'startedAt': Timestamp.fromDate(startedAt),
-          },
-          SetOptions(merge: true));
-    });
+    await callable.call({'dateId': dateId});
 
     final session = await getTodaySession(uid);
     if (session != null) return session;
 
     return DailyChallengeSession(
       dateId: dateId,
-      durationSeconds: durationSeconds,
-      questions: questions,
+      durationSeconds: defaultDurationSeconds,
+      questions: const [],
       played: false,
-      startedAt: startedAt,
+      startedAt: DateTime.now(),
     );
-  }
-
-  /// Question ids (`sourceQuestionId`) this user was already served on the
-  /// last [days] Daily Challenges, so `loadRandomQuestions` can avoid
-  /// repeating them — the random draw from `fixed_pools` has no memory of
-  /// its own, so without this a question can resurface the very next day.
-  Future<Set<String>> _recentlyUsedQuestionIds({
-    required String uid,
-    int days = 2,
-  }) async {
-    final ids = <String>{};
-    final now = DateTime.now();
-
-    for (var i = 1; i <= days; i++) {
-      final dateId = todayDateId(now.subtract(Duration(days: i)));
-      final snap = await _dailyRef(uid: uid, dateId: dateId).get();
-      final rawQuestions = snap.data()?['questions'] as List<dynamic>? ?? [];
-      for (final q in rawQuestions) {
-        if (q is Map && q['sourceQuestionId'] != null) {
-          ids.add(q['sourceQuestionId'].toString());
-        }
-      }
-    }
-
-    return ids;
-  }
-
-  Future<List<Map<String, dynamic>>> loadRandomQuestions({
-    int limit = defaultQuestionLimit,
-    Set<String> excludeQuestionIds = const {},
-  }) async {
-    final categoriesSnap = await _db
-        .collection('fixed_categories')
-        .where('isActive', isEqualTo: true)
-        .get();
-
-    var categoryIds = categoriesSnap.docs.map((d) => d.id).toList();
-
-    if (categoryIds.isEmpty) {
-      final poolsSnap = await _db.collection('fixed_pools').get();
-      categoryIds = poolsSnap.docs.map((d) => d.id).toList();
-    }
-
-    if (categoryIds.isEmpty) {
-      throw Exception(_l10n.serviceNoActiveDailyCategories);
-    }
-
-    final all = <Map<String, dynamic>>[];
-
-    for (final categoryId in categoryIds) {
-      for (final difficulty in [1, 2, 3]) {
-        final snap = await _db
-            .collection('fixed_pools')
-            .doc(categoryId)
-            .collection('difficulty_$difficulty')
-            .doc('pool')
-            .collection('questions')
-            .get();
-
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          all.add({
-            ...data,
-            'sourceCategoryId': categoryId,
-            'sourceDifficulty': difficulty,
-            'sourceQuestionId': doc.id,
-          });
-        }
-      }
-    }
-
-    if (all.isEmpty) {
-      throw Exception(_l10n.serviceNoQuestionsInPools);
-    }
-
-    all.shuffle(Random());
-
-    if (excludeQuestionIds.isEmpty) {
-      return all.take(min(limit, all.length)).toList();
-    }
-
-    final fresh = <Map<String, dynamic>>[];
-    final recentlyUsed = <Map<String, dynamic>>[];
-    for (final q in all) {
-      if (excludeQuestionIds.contains(q['sourceQuestionId'])) {
-        recentlyUsed.add(q);
-      } else {
-        fresh.add(q);
-      }
-    }
-
-    final selected = fresh.take(limit).toList();
-    if (selected.length < limit) {
-      selected.addAll(recentlyUsed.take(limit - selected.length));
-    }
-    return selected;
   }
 
   /// Grants the Daily Challenge result via the `submitDailyChallengeResult`

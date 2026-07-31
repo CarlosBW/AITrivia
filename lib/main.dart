@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -197,12 +199,62 @@ Future<void> _setupNotifications() async {
   await _scheduleDailyChallengeReminder();
 }
 
+// Play Integrity (Android) / App Attest (iOS) in release builds, debug
+// tokens in debug builds. Enforcement itself is a separate, later step —
+// this only activates the client SDK so it starts minting tokens; nothing
+// rejects requests until App Check is registered for this app in the
+// Firebase Console and enforcement is turned on for Firestore/Functions
+// (see the launch checklist — turning enforcement on before that
+// registration exists would lock every real user out).
+Future<void> _setupAppCheck() async {
+  if (kIsWeb) {
+    // No reCAPTCHA site key registered yet for the web app — skip until
+    // App Check is set up for the web target in the Firebase Console.
+    return;
+  }
+
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider:
+          kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    );
+  } catch (e) {
+    debugPrint('App Check activation failed: $e');
+  }
+}
+
+// No web support in firebase_crashlytics — Crashlytics is Android/iOS/
+// desktop-native only. Disabled in debug builds so local dev crashes don't
+// pollute the production crash-free-rate metric.
+Future<void> _setupCrashlytics() async {
+  if (kIsWeb) return;
+
+  try {
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
+
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+    WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } catch (e) {
+    debugPrint('Crashlytics setup failed: $e');
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await _setupAppCheck();
+  await _setupCrashlytics();
 
   WidgetsBinding.instance.addObserver(presenceObserver);
 

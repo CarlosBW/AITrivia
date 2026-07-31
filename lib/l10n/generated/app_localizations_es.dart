@@ -245,6 +245,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileAchievements => 'Logros';
 
   @override
+  String get profileLegalSectionTitle => 'Legal';
+
+  @override
+  String get profilePrivacyPolicy => 'Política de Privacidad';
+
+  @override
+  String get profileTermsOfService => 'Términos de Servicio';
+
+  @override
+  String get profileLinkOpenFailed => 'No se pudo abrir el enlace.';
+
+  @override
+  String get profileDangerZoneTitle => 'Zona peligrosa';
+
+  @override
+  String get profileDeleteAccount => 'Eliminar cuenta';
+
+  @override
+  String get profileDeleteAccountConfirmTitle => '¿Eliminar tu cuenta?';
+
+  @override
+  String get profileDeleteAccountConfirmBody =>
+      'Esto borra tu perfil, progreso, monedas, amigos y temas creados de forma permanente. No se puede deshacer.';
+
+  @override
+  String get profileDeleteAccountConfirmAction => 'Eliminar permanentemente';
+
+  @override
   String get profileAchievementsSubtitle => 'Revisa tu progreso y recompensas';
 
   @override

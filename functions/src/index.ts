@@ -2918,6 +2918,17 @@ async function requestAiQuestionsFromClaude(
         output_config: {format: {type: "json_schema", schema}},
       });
 
+      // Claude's safety classifiers declined the topic (HTTP 200, empty
+      // content) — retrying the identical prompt will refuse again, so
+      // fail fast with a message the player can act on instead of burning
+      // the retry budget.
+      if (response.stop_reason === "refusal") {
+        throw new HttpsError(
+          "invalid-argument",
+          "No se pudo generar ese tema. Intenta con otro título."
+        );
+      }
+
       const block = response.content[0];
       if (!block || block.type !== "text") {
         throw new Error("Unexpected response block type from Claude.");
@@ -2950,6 +2961,7 @@ async function requestAiQuestionsFromClaude(
 
       return questions;
     } catch (error) {
+      if (error instanceof HttpsError) throw error;
       lastError = error;
     }
   }
@@ -4054,4 +4066,39 @@ export const removeFriend = onCall(async (request) => {
   });
 
   return {removed: true};
+});
+
+/**
+ * Deletes the caller's account: their `users/{uid}` doc and every
+ * subcollection under it (ai_topics, match_history, friends, notifications,
+ * etc.), their reserved `usernames/{usernameLower}` doc, and their Firebase
+ * Auth record. Required by Apple/Google app-store policy — any app that
+ * lets a user create an account must let them delete it from within the
+ * app. Doesn't touch other users' `friends`/`match_history` entries that
+ * reference this uid — those become harmless dangling references to a
+ * deleted account, same as any other player who stops playing.
+ */
+export const deleteMyAccount = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const usernameLower = userSnap.data()?.usernameLower;
+
+  await db.recursiveDelete(userRef);
+
+  if (usernameLower) {
+    const usernameRef = db.collection("usernames").doc(String(usernameLower));
+    const usernameSnap = await usernameRef.get();
+    if (usernameSnap.exists && usernameSnap.data()?.uid === uid) {
+      await usernameRef.delete();
+    }
+  }
+
+  await admin.auth().deleteUser(uid);
+
+  return {deleted: true};
 });

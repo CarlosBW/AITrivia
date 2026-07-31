@@ -494,6 +494,60 @@ abstract class AppLocalizations {
   /// **'Logros'**
   String get profileAchievements;
 
+  /// No description provided for @profileLegalSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Legal'**
+  String get profileLegalSectionTitle;
+
+  /// No description provided for @profilePrivacyPolicy.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Privacidad'**
+  String get profilePrivacyPolicy;
+
+  /// No description provided for @profileTermsOfService.
+  ///
+  /// In es, this message translates to:
+  /// **'Términos de Servicio'**
+  String get profileTermsOfService;
+
+  /// No description provided for @profileLinkOpenFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo abrir el enlace.'**
+  String get profileLinkOpenFailed;
+
+  /// No description provided for @profileDangerZoneTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Zona peligrosa'**
+  String get profileDangerZoneTitle;
+
+  /// No description provided for @profileDeleteAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar cuenta'**
+  String get profileDeleteAccount;
+
+  /// No description provided for @profileDeleteAccountConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar tu cuenta?'**
+  String get profileDeleteAccountConfirmTitle;
+
+  /// No description provided for @profileDeleteAccountConfirmBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Esto borra tu perfil, progreso, monedas, amigos y temas creados de forma permanente. No se puede deshacer.'**
+  String get profileDeleteAccountConfirmBody;
+
+  /// No description provided for @profileDeleteAccountConfirmAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar permanentemente'**
+  String get profileDeleteAccountConfirmAction;
+
   /// No description provided for @profileAchievementsSubtitle.
   ///
   /// In es, this message translates to:

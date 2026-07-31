@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../app/app.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
@@ -16,6 +20,9 @@ import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+
+const _kPrivacyPolicyUrl = 'https://trivia-ia-app.web.app/privacy.html';
+const _kTermsOfServiceUrl = 'https://trivia-ia-app.web.app/terms.html';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -79,6 +86,65 @@ class _ProfileScreenState extends State<ProfileScreen>
         _loading = false;
         _error = e.toString();
       });
+    }
+  }
+
+  Future<void> _openLegalUrl(String url) async {
+    final uri = Uri.parse(url);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).profileLinkOpenFailed)),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final l10n = AppLocalizations.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.profileDeleteAccountConfirmTitle),
+        content: Text(l10n.profileDeleteAccountConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              l10n.profileDeleteAccountConfirmAction,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _saving = true);
+
+    try {
+      await FirebaseFunctions.instance.httpsCallable('deleteMyAccount').call();
+      await FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      // Full app restart: AuthGate signs back in anonymously as a brand
+      // new account, matching what a fresh install would see.
+      runApp(const TriviaIAApp());
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _saving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
     }
   }
 
@@ -1259,6 +1325,49 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 10),
               _RecentMatchHistory(uid: uid),
+              const SizedBox(height: 24),
+              Text(
+                l10n.profileLegalSectionTitle,
+                style: GoogleFonts.baloo2(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _LegalLinkTile(
+                icon: Icons.privacy_tip_outlined,
+                label: l10n.profilePrivacyPolicy,
+                onTap: () => _openLegalUrl(_kPrivacyPolicyUrl),
+              ),
+              _LegalLinkTile(
+                icon: Icons.description_outlined,
+                label: l10n.profileTermsOfService,
+                onTap: () => _openLegalUrl(_kTermsOfServiceUrl),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                l10n.profileDangerZoneTitle,
+                style: GoogleFonts.baloo2(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.red,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.red),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  title: Text(
+                    l10n.profileDeleteAccount,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  onTap: _saving ? null : _confirmDeleteAccount,
+                ),
+              ),
             ],
           ),
           if (_saving)
@@ -1596,6 +1705,34 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _LegalLinkTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _LegalLinkTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(label),
+        trailing: const Icon(Icons.open_in_new, size: 18),
+        onTap: onTap,
+      ),
+    );
+  }
 }
 
 class _WideStatTile extends StatelessWidget {

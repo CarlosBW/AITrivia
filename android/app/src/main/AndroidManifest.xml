@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="trivia_ia_flutter"
+        android:label="TriviaIA"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

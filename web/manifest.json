@@ -1,11 +1,11 @@
 {
-    "name": "trivia_ia_flutter",
-    "short_name": "trivia_ia_flutter",
+    "name": "TriviaIA",
+    "short_name": "TriviaIA",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#3C3489",
     "theme_color": "#3C3489",
-    "description": "A new Flutter project.",
+    "description": "TriviaIA — trivia game with solo play, live and async PvP, weekly leagues, and AI-generated topics.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

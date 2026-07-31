@@ -2,34 +2,37 @@
 
 Este documento cubre lo que **queda pendiente y no se puede resolver con código** — son acciones manuales en consolas/cuentas que solo tú puedes hacer. Todo lo demás (código, tests, CI, políticas legales, App Check, Crashlytics, eliminación de cuenta) ya está resuelto en este repo.
 
+**Estado actual:** todo lo que no depende de las cuentas de las tiendas está cerrado. Lo único que falta de verdad son los puntos 2 (parte final) y 4 — ambos bloqueados hasta que gestiones las cuentas de Play Console y App Store Connect, como acordamos dejar para el final.
+
 ## 1. Deploy pendiente
 
-- [ ] Correr `firebase deploy --only hosting` (o `firebase deploy` completo) para publicar `public/privacy.html` y `public/terms.html`. No pude hacerlo desde esta sesión porque `firebase-tools` no está autenticado aquí.
-- [ ] Correr `npm run deploy` en `functions/` para publicar `deleteMyAccount`, el manejo de `refusal` en la generación de IA, y el resto de cambios de esta sesión.
+- [x] `firebase deploy --only hosting` — hecho, `public/privacy.html` y `public/terms.html` están en vivo con el nombre legal correcto (Massive Dynamics Peru S.A.C.).
+- [x] `npm run deploy` en `functions/` — hecho, `deleteMyAccount` y el manejo de `refusal` ya están en producción.
 
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 
-El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta que lo registres**:
+El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta que lo registres**. Se divide en dos partes porque el registro depende del `applicationId`/bundle ID final:
 
-- [ ] Firebase Console → App Check → registrar la app Android con **Play Integrity API** (necesitas habilitar esa API en Google Cloud Console primero) y la app iOS con **App Attest**.
-- [ ] Una vez registrado y verificado que la app real está mandando tokens válidos (puedes verlo en la consola), **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
+- [x] Habilitar la **Play Integrity API** en Google Cloud Console (proyecto `trivia-ia-app`) — a nivel de proyecto, no depende del package name, ya se puede hacer.
+- [ ] **Junto con el punto 4** (cuando definamos el `applicationId`/bundle ID real): registrar la app Android con Play Integrity y la app iOS con App Attest en Firebase Console → App Check. Hacerlo ahora contra el placeholder `com.example.*` significaría rehacerlo después.
+- [ ] Una vez registrado y verificado que la app real está mandando tokens válidos, **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
 - [ ] Web no está cubierto todavía (necesita una site key de reCAPTCHA) — si vas a lanzar la versión web, avísame y lo agrego.
 
-## 3. Alertas de presupuesto (gasto real de dinero ahora)
+## 3. Alertas de presupuesto (gasto real de dinero ahora) — guía entregada
 
-- [ ] Google Cloud Console → Billing → Budgets & alerts: configura una alerta sobre el proyecto `trivia-ia-app` (plan Blaze).
-- [ ] Consola de Anthropic → configura límites de gasto/alertas para la API key de `ANTHROPIC_API_KEY`.
+- [x] Guía paso a paso entregada (Google Cloud Console → Billing → Budgets & alerts, y Anthropic Console → Billing/Limits), incluyendo estimado de costo por tema de IA generado (~$0.03–0.05 USD por tema completo con Haiku 4.5). Ejecución pendiente de tu lado — es tu decisión de negocio qué monto poner.
 
 ## 4. Cuentas de las tiendas (fuera de alcance por ahora, como acordamos)
 
 - [ ] Play Console: crear la app, definir `applicationId` real (hoy es `com.example.trivia_ia_flutter`), generar keystore de release.
 - [ ] App Store Connect: crear la app, definir bundle ID real (hoy es `com.example.triviaIaFlutter`).
 - [ ] Una vez tengas los IDs reales, hay que regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure`.
+- [ ] **Junto con esto:** registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID que se define aquí.
 - [ ] Formulario de "Data Safety" (Google Play) y "Privacy Nutrition Label" (Apple) — usa el contenido de `public/privacy.html` como base.
 
-## 5. Revisión legal
+## 5. Revisión legal — guía entregada
 
-- [ ] `public/privacy.html` y `public/terms.html` son un borrador funcional basado en lo que la app realmente recolecta (cuenta anónima, progreso de juego, amigos, notificaciones push, títulos de temas de IA enviados a Anthropic). **No reemplaza asesoría legal** — recomendamos que un abogado los revise antes del lanzamiento, especialmente la sección de ley aplicable (hoy asume Perú) y cualquier requisito GDPR si vas a tener usuarios en la Unión Europea.
+- [x] `public/privacy.html` y `public/terms.html` son un borrador funcional basado en lo que la app realmente recolecta (cuenta anónima, progreso de juego, amigos, notificaciones push, títulos de temas de IA enviados a Anthropic), ya con el nombre legal correcto (Massive Dynamics Peru S.A.C.). **No reemplaza asesoría legal.** Puntos específicos a llevarle a un abogado: la sección de ley aplicable (hoy asume Perú), necesidad de lenguaje GDPR si vas a tener usuarios en la UE, la cláusula de privacidad de menores, y (más adelante) la de reembolsos cuando actives compras dentro de la app. Si tu empresa ya tiene abogado/notario de la constitución, es el candidato natural para esta revisión.
 
 ## 6. Monetización (Coin Shop)
 

@@ -300,6 +300,16 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // `create`/`update` used to also allow `auth.uid == userId` (the
+      // inbox owner, i.e. the request's target) — that let a client write
+      // an arbitrary `requesterId` into their own inbox with no real
+      // request ever sent, then `acceptFriendRequest` it to fabricate a
+      // friendship and farm the friends_5/friends_10 achievements. Only
+      // the real requester may write their own entry now (still covers
+      // the legitimate "resend after rejection" case, since that's an
+      // update by the same requester); accepting/rejecting is
+      // Cloud-Function-only (acceptFriendRequest/rejectFriendRequest,
+      // Admin SDK — bypasses this rule).
       match /friend_requests/{requesterId} {
         allow read: if request.auth != null
           && (
@@ -307,22 +317,26 @@ service cloud.firestore {
             request.auth.uid == requesterId
           );
 
-        allow create, update, delete: if request.auth != null
-          && (
-            request.auth.uid == userId ||
-            request.auth.uid == requesterId
-          );
+        allow create, update: if request.auth != null
+          && request.auth.uid == requesterId;
+
+        allow delete: if false;
       }
 
+      // Same reasoning as /friend_requests above — `create`/`update` used
+      // to also allow `auth.uid == targetId` (needed when accept/reject
+      // still wrote both mirror docs directly from the client), but that
+      // let a client write into a *stranger's* outgoing-requests list.
+      // Now only the collection owner (the actual sender) writes here;
+      // the target's side of accept/reject is Cloud-Function-only.
       match /sent_friend_requests/{targetId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
 
-        allow create, update, delete: if request.auth != null
-          && (
-            request.auth.uid == userId ||
-            request.auth.uid == targetId
-          );
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId;
+
+        allow delete: if false;
       }
 
       match /notifications/{notificationId} {

@@ -109,6 +109,12 @@ class FriendService {
 
     final requestRef = _requestsCol(targetUid).doc(uid);
     final sentRequestRef = _sentRequestsCol(uid).doc(targetUid);
+    // The other direction — did they already request me? Search results
+    // are a point-in-time snapshot, so it's possible for their request to
+    // land in the window between rendering the "Add" button and tapping
+    // it; without this check that would create a second, opposite-facing
+    // pending request instead of surfacing the one already waiting.
+    final reverseRequestRef = _requestsCol(uid).doc(targetUid);
 
     String notificationDisplayName = 'Player${uid.substring(0, 4)}';
 
@@ -118,6 +124,7 @@ class FriendService {
       final myFriendSnap = await tx.get(myFriendRef);
       final targetFriendSnap = await tx.get(targetFriendRef);
       final requestSnap = await tx.get(requestRef);
+      final reverseRequestSnap = await tx.get(reverseRequestRef);
 
       if (!targetSnap.exists) {
         throw Exception(_l10n.serviceUserNotFound);
@@ -130,6 +137,11 @@ class FriendService {
       if (requestSnap.exists &&
           (requestSnap.data()?['status'] ?? 'pending') == 'pending') {
         throw Exception(_l10n.serviceRequestAlreadySent);
+      }
+
+      if (reverseRequestSnap.exists &&
+          (reverseRequestSnap.data()?['status'] ?? 'pending') == 'pending') {
+        throw Exception(_l10n.serviceRequestAlreadyReceived);
       }
 
       final myData = mySnap.data() ?? {};
@@ -240,6 +252,10 @@ class FriendService {
     }
   }
 
+  // Cloud-Function-only, same reasoning as acceptFriendRequest — rejecting
+  // used to write directly into the requester's own `sent_friend_requests`
+  // doc, which required a rule letting the target write into a stranger's
+  // collection, letting a client forge entries there too.
   Future<void> rejectFriendRequest({
     required String requesterUid,
   }) async {
@@ -247,30 +263,16 @@ class FriendService {
       throw Exception(_l10n.serviceInvalidRequest);
     }
 
-    final requestRef = _requestsCol(uid).doc(requesterUid);
-    final requesterSentRequestRef = _sentRequestsCol(requesterUid).doc(uid);
-
-    await _db.runTransaction((tx) async {
-      final now = FieldValue.serverTimestamp();
-
-      tx.set(
-        requestRef,
-        {
-          'status': 'rejected',
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        requesterSentRequestRef,
-        {
-          'status': 'rejected',
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-    });
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'rejectFriendRequest',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'requesterUid': requesterUid});
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceCouldNotRejectRequest);
+    }
   }
 
   Future<void> removeFriend({

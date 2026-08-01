@@ -227,55 +227,71 @@ class RealtimeInviteService {
 
     final now = FieldValue.serverTimestamp();
 
-    await matchRef.set({
-      'createdAt': now,
-      'updatedAt': now,
-      'status': 'waiting',
-      'mode': 'fixed',
-      'source': 'friend_invite',
-      'inviteId': inviteId,
-      'categoryId': resolvedCategoryId,
-      'requestedCategoryId': categoryId,
-      'difficulty': difficulty,
-      'totalQuestions': totalQuestions,
-      'timePerQuestionSec': timePerQuestionSec,
-      'winReward': winReward,
-      'loseReward': 0,
-      'ranked': false,
-      'affectsPvpRating': false,
-      'hostUid': fromUid,
-      'guestUid': toUid,
-      'player1Uid': fromUid,
-      'player1Name': fromName,
-      'player1Ready': false,
-      'player2Uid': toUid,
-      'player2Name': toName,
-      'player2Ready': false,
-      'players': {
-        fromUid: {
-          'displayName': fromName,
-          'score': 0,
-          'ready': false,
-          'finished': false,
-        },
-        toUid: {
-          'displayName': toName,
-          'score': 0,
-          'ready': false,
-          'finished': false,
-        },
-      },
-      'questions': questions,
-      'startAt': null,
-      'endedAt': null,
-      'winnerUid': null,
-      'rewarded': false,
-    });
+    // Re-check status and transition atomically — a plain read-then-write
+    // here let two near-simultaneous accepts (double-tap, a retried
+    // request that actually succeeded) both see "pending" and each create
+    // their own match from the same invite. Firestore retries this
+    // transaction if the invite doc changes between the read and the
+    // commit, so only one of two racing calls can win.
+    await _db.runTransaction((tx) async {
+      final freshInviteSnap = await tx.get(inviteRef);
+      final freshStatus =
+          (freshInviteSnap.data()?['status'] ?? '').toString();
 
-    await inviteRef.update({
-      'status': 'accepted',
-      'matchId': matchRef.id,
-      'updatedAt': now,
+      if (freshStatus != 'pending') {
+        throw Exception(_l10n.serviceInviteNoLongerAvailable);
+      }
+
+      tx.set(matchRef, {
+        'createdAt': now,
+        'updatedAt': now,
+        'status': 'waiting',
+        'mode': 'fixed',
+        'source': 'friend_invite',
+        'inviteId': inviteId,
+        'categoryId': resolvedCategoryId,
+        'requestedCategoryId': categoryId,
+        'difficulty': difficulty,
+        'totalQuestions': totalQuestions,
+        'timePerQuestionSec': timePerQuestionSec,
+        'winReward': winReward,
+        'loseReward': 0,
+        'ranked': false,
+        'affectsPvpRating': false,
+        'hostUid': fromUid,
+        'guestUid': toUid,
+        'player1Uid': fromUid,
+        'player1Name': fromName,
+        'player1Ready': false,
+        'player2Uid': toUid,
+        'player2Name': toName,
+        'player2Ready': false,
+        'players': {
+          fromUid: {
+            'displayName': fromName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+          toUid: {
+            'displayName': toName,
+            'score': 0,
+            'ready': false,
+            'finished': false,
+          },
+        },
+        'questions': questions,
+        'startAt': null,
+        'endedAt': null,
+        'winnerUid': null,
+        'rewarded': false,
+      });
+
+      tx.update(inviteRef, {
+        'status': 'accepted',
+        'matchId': matchRef.id,
+        'updatedAt': now,
+      });
     });
 
     final fromRecipientL10n =
@@ -426,26 +442,4 @@ class RealtimeInviteService {
     });
   }
 
-  Future<void> markExpiredInvites() async {
-    final cutoff = Timestamp.fromDate(
-      DateTime.now().subtract(const Duration(minutes: 5)),
-    );
-
-    final snap = await _invitesCol
-        .where('status', isEqualTo: 'pending')
-        .where('createdAt', isLessThan: cutoff)
-        .limit(20)
-        .get();
-
-    final batch = _db.batch();
-
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {
-        'status': 'expired',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    await batch.commit();
-  }
 }

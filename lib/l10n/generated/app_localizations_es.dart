@@ -2413,10 +2413,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get serviceRequestAlreadySent => 'Solicitud ya enviada.';
 
   @override
+  String get serviceRequestAlreadyReceived =>
+      'Ese jugador ya te envió una solicitud — revisa tus solicitudes recibidas.';
+
+  @override
   String get serviceInvalidRequest => 'Solicitud inválida.';
 
   @override
   String get serviceCouldNotAcceptRequest => 'No se pudo aceptar la solicitud.';
+
+  @override
+  String get serviceCouldNotRejectRequest =>
+      'No se pudo rechazar la solicitud.';
 
   @override
   String get serviceInvalidFriend => 'Amigo inválido.';

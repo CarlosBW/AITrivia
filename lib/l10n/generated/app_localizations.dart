@@ -4114,6 +4114,12 @@ abstract class AppLocalizations {
   /// **'Solicitud ya enviada.'**
   String get serviceRequestAlreadySent;
 
+  /// No description provided for @serviceRequestAlreadyReceived.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese jugador ya te envió una solicitud — revisa tus solicitudes recibidas.'**
+  String get serviceRequestAlreadyReceived;
+
   /// No description provided for @serviceInvalidRequest.
   ///
   /// In es, this message translates to:
@@ -4125,6 +4131,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo aceptar la solicitud.'**
   String get serviceCouldNotAcceptRequest;
+
+  /// No description provided for @serviceCouldNotRejectRequest.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo rechazar la solicitud.'**
+  String get serviceCouldNotRejectRequest;
 
   /// No description provided for @serviceInvalidFriend.
   ///

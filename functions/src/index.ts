@@ -4721,6 +4721,10 @@ export const acceptFriendRequest = onCall(async (request) => {
       );
     }
 
+    if (!requesterSnap.exists) {
+      throw new HttpsError("not-found", "That player no longer exists.");
+    }
+
     const myData = mySnap.data() || {};
     const requesterData = requesterSnap.data() || {};
 
@@ -4777,6 +4781,55 @@ export const acceptFriendRequest = onCall(async (request) => {
   return {accepted: true};
 });
 
+/**
+ * Rejects a pending friend request. Cloud-Function-only (like
+ * acceptFriendRequest) since firestore.rules no longer lets the target of
+ * a request write into either mirror doc directly — the target used to
+ * write `sent_friend_requests` under the *requester's* own collection,
+ * which also meant a client could write into a stranger's outgoing list.
+ */
+export const rejectFriendRequest = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const requesterUid = String(request.data?.requesterUid || "");
+  if (!requesterUid || requesterUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid request.");
+  }
+
+  const requestRef = db.collection("users").doc(uid)
+    .collection("friend_requests").doc(requesterUid);
+  const requesterSentRequestRef = db.collection("users").doc(requesterUid)
+    .collection("sent_friend_requests").doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    const requestSnap = await tx.get(requestRef);
+
+    if (!requestSnap.exists) {
+      throw new HttpsError(
+        "failed-precondition", "The request no longer exists."
+      );
+    }
+
+    const requestStatus = String(requestSnap.data()?.status || "pending");
+    if (requestStatus !== "pending") {
+      throw new HttpsError(
+        "failed-precondition", "The request was already processed."
+      );
+    }
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    tx.set(requestRef, {status: "rejected", updatedAt: now}, {merge: true});
+    tx.set(requesterSentRequestRef, {status: "rejected", updatedAt: now},
+      {merge: true});
+  });
+
+  return {rejected: true};
+});
+
 export const removeFriend = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -4800,6 +4853,41 @@ export const removeFriend = onCall(async (request) => {
 
   return {removed: true};
 });
+
+/**
+ * Sweeps pending realtime-invite docs older than 5 minutes to
+ * `status: "expired"`, so an unanswered live-challenge invite doesn't sit
+ * at "pending" forever. This has to run server-side: firestore.rules only
+ * lets a player touch an invite where they're fromUid/toUid, but a global
+ * sweep needs to touch every stale pending invite regardless of who's on
+ * it — a client-side version of this (which existed before, unreachable
+ * from any screen) could never have actually worked for that reason.
+ */
+export const expireStaleRealtimeInvites = onSchedule(
+  {schedule: "*/10 * * * *"},
+  async () => {
+    const cutoff = admin.firestore.Timestamp.fromMillis(
+      Date.now() - 5 * 60 * 1000
+    );
+
+    const snap = await db.collection("realtime_invites")
+      .where("status", "==", "pending")
+      .where("createdAt", "<", cutoff)
+      .limit(200)
+      .get();
+
+    if (snap.empty) return;
+
+    const batch = db.batch();
+    for (const doc of snap.docs) {
+      batch.update(doc.ref, {
+        status: "expired",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
+);
 
 /**
  * Deletes the caller's account: their `users/{uid}` doc and every

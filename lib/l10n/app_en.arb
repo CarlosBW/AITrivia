@@ -38,7 +38,7 @@
   },
   "homeAchievementUnlockedTitle": "🏆 Achievement unlocked!",
   "homeAchievementUnlockedSubtitle": "{icon} {title}",
-  "homeAchievementUnlockedRewards": "+{coins} coins · +{xp} XP",
+  "homeAchievementUnlockedRewards": "Reward ready: +{coins} coins · +{xp} XP — claim it in Achievements",
   "homeAvatarUnlockedTitle": "🎁 New avatar unlocked!",
   "homeAvatarUnlockedSubtitle": "{emoji} {name}",
   "homeLoginStreakCoins": "+{coins} coins",
@@ -559,6 +559,7 @@
   "asyncFindPlayersCannotChallengeSelf": "You can't challenge yourself.",
   "asyncFindPlayersTitle": "Find player (async)",
   "asyncFindPlayersSearchLabel": "Search by name",
+  "asyncFindPlayersSearchPrompt": "Type a username to search for players.",
   "asyncFindPlayersNoneToShow": "No players to show.",
   "asyncFindPlayersChallengeButton": "Challenge",
 
@@ -1157,10 +1158,11 @@
   },
 
   "achievementsTitle": "Achievements",
-  "achievementsRewardClaimed": "🎉 Reward claimed: +{coins} coins",
+  "achievementsRewardClaimed": "🎉 Reward claimed: +{coins} coins, +{xp} XP",
   "@achievementsRewardClaimed": {
     "placeholders": {
-      "coins": {"type": "int"}
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
     }
   },
   "achievementsErrorLoading": "Error loading achievements:\n{error}",
@@ -1465,10 +1467,7 @@
       "remaining": {"type": "String"}
     }
   },
-  "serviceAiTopicEmpty": "AI topic can't be empty",
   "serviceRoomNotFound": "Room doesn't exist",
-  "serviceRoomAlreadyStartedOrEnded": "The room already started or ended",
-  "serviceRoomFull": "Room full",
   "serviceNotInRoom": "You're not in this room",
   "serviceMatchNotFound": "Match not found",
   "serviceChallengedUidEmpty": "challengedUid empty",
@@ -1477,7 +1476,6 @@
   "serviceNotYourChallenge": "This challenge isn't yours",
   "serviceAsyncMatchNotFound": "Async match doesn't exist",
   "serviceNotYourMatch": "This match isn't yours",
-  "serviceCodeNotFound": "Code not found",
   "servicePoolEmptyForCategory": "Empty pool for {categoryId}",
   "@servicePoolEmptyForCategory": {
     "placeholders": {
@@ -1551,14 +1549,7 @@
   "achievementWeeklyTopics3Title": "Weekly Explorer",
   "achievementWeeklyTopics3Description": "Complete 3 Weekly Topics.",
   "achievementCategoriesExplored5Title": "Curious Mind",
-  "achievementCategoriesExplored5Description": "Pass at least one level in 5 different Solo categories.",
-  "serviceAchievementCompletedTitle": "Achievement completed",
-  "serviceAchievementCompletedBody": "You completed \"{title}\". Claim your reward.",
-  "@serviceAchievementCompletedBody": {
-    "placeholders": {
-      "title": {"type": "String"}
-    }
-  },
+  "achievementCategoriesExplored5Description": "Pass at least one level in 5 different fixed Solo categories (AI-generated topics don't count).",
   "serviceAchievementNotFound": "Achievement not found.",
   "serviceCouldNotClaimReward": "Couldn't claim the reward.",
   "pvpWindowSameLeagueLabel": "Same league",

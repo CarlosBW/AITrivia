@@ -49,7 +49,7 @@
       "title": {"type": "String"}
     }
   },
-  "homeAchievementUnlockedRewards": "+{coins} monedas · +{xp} XP",
+  "homeAchievementUnlockedRewards": "Recompensa lista: +{coins} monedas · +{xp} XP — reclámala en Logros",
   "@homeAchievementUnlockedRewards": {
     "placeholders": {
       "coins": {"type": "int"},
@@ -582,6 +582,7 @@
   "asyncFindPlayersCannotChallengeSelf": "No puedes retarte a ti mismo.",
   "asyncFindPlayersTitle": "Buscar jugador (asíncrono)",
   "asyncFindPlayersSearchLabel": "Buscar por nombre",
+  "asyncFindPlayersSearchPrompt": "Escribe un nombre de usuario para buscar jugadores.",
   "asyncFindPlayersNoneToShow": "No hay jugadores para mostrar.",
   "asyncFindPlayersChallengeButton": "Retar",
 
@@ -1185,10 +1186,11 @@
   },
 
   "achievementsTitle": "Logros",
-  "achievementsRewardClaimed": "🎉 Recompensa reclamada: +{coins} monedas",
+  "achievementsRewardClaimed": "🎉 Recompensa reclamada: +{coins} monedas, +{xp} XP",
   "@achievementsRewardClaimed": {
     "placeholders": {
-      "coins": {"type": "int"}
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
     }
   },
   "achievementsErrorLoading": "Error cargando logros:\n{error}",
@@ -1498,10 +1500,7 @@
       "remaining": {"type": "String"}
     }
   },
-  "serviceAiTopicEmpty": "Tema IA no puede estar vacío",
   "serviceRoomNotFound": "Sala no existe",
-  "serviceRoomAlreadyStartedOrEnded": "La sala ya inició o terminó",
-  "serviceRoomFull": "Sala llena",
   "serviceNotInRoom": "No estás dentro de esta sala",
   "serviceMatchNotFound": "Match no encontrado",
   "serviceChallengedUidEmpty": "challengedUid vacío",
@@ -1510,7 +1509,6 @@
   "serviceNotYourChallenge": "No perteneces a este reto",
   "serviceAsyncMatchNotFound": "Async match no existe",
   "serviceNotYourMatch": "No perteneces a este match",
-  "serviceCodeNotFound": "Código no encontrado",
   "servicePoolEmptyForCategory": "Pool vacío para {categoryId}",
   "@servicePoolEmptyForCategory": {
     "placeholders": {
@@ -1584,14 +1582,7 @@
   "achievementWeeklyTopics3Title": "Explorador semanal",
   "achievementWeeklyTopics3Description": "Completa 3 Temas Semanales.",
   "achievementCategoriesExplored5Title": "Mente curiosa",
-  "achievementCategoriesExplored5Description": "Aprueba al menos un nivel en 5 categorías distintas del modo Solo.",
-  "serviceAchievementCompletedTitle": "Logro completado",
-  "serviceAchievementCompletedBody": "Completaste \"{title}\". Reclama tu recompensa.",
-  "@serviceAchievementCompletedBody": {
-    "placeholders": {
-      "title": {"type": "String"}
-    }
-  },
+  "achievementCategoriesExplored5Description": "Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas de IA).",
   "serviceAchievementNotFound": "Logro no encontrado.",
   "serviceCouldNotClaimReward": "No se pudo reclamar la recompensa.",
   "pvpWindowSameLeagueLabel": "Misma liga",

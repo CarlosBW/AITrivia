@@ -72,6 +72,9 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
     try {
       final db = FirebaseFirestore.instance.collection('async_matches');
 
+      // Two separate queries per "finished"/"waiting" bucket below because
+      // Firestore can't OR across two different fields (challengerUid vs
+      // challengedUid) in one query — merged and re-sorted client-side.
       final results = await Future.wait([
         _safeGet(
           db
@@ -86,21 +89,52 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
               .where('challengedStatus', isEqualTo: 'pending')
               .orderBy('createdAt', descending: true),
         ),
+        // The mirror of the query above — I already finished my side as
+        // the *challenged* player, still waiting on the challenger. This
+        // bucket was previously missing entirely, so a match in this state
+        // was invisible here until the challenger acted.
         _safeGet(
           db
-              .where('participants', arrayContains: uid)
+              .where('challengedUid', isEqualTo: uid)
+              .where('challengedStatus', isEqualTo: 'finished')
+              .where('challengerStatus', isEqualTo: 'pending')
+              .orderBy('createdAt', descending: true),
+        ),
+        // `participants`/`updatedAt` are never actually written to an
+        // async_matches doc — this query could never return anything.
+        // `challengerUid`/`challengedUid`/`status`/`endedAt` are real
+        // fields (finalizeAsyncPvpMatch and expireStaleAsyncMatches both
+        // set them).
+        _safeGet(
+          db
+              .where('challengerUid', isEqualTo: uid)
               .where('status', isEqualTo: 'completed')
-              .orderBy('updatedAt', descending: true)
+              .orderBy('endedAt', descending: true)
+              .limit(20),
+        ),
+        _safeGet(
+          db
+              .where('challengedUid', isEqualTo: uid)
+              .where('status', isEqualTo: 'completed')
+              .orderBy('endedAt', descending: true)
               .limit(20),
         ),
       ]);
 
       if (!mounted) return;
 
+      final finished = [...results[3].docs, ...results[4].docs]
+        ..sort((a, b) {
+          final aTime = a.data()['endedAt'] as Timestamp?;
+          final bTime = b.data()['endedAt'] as Timestamp?;
+          if (aTime == null || bTime == null) return 0;
+          return bTime.compareTo(aTime);
+        });
+
       setState(() {
         _yourTurn = results[0].docs;
-        _waitingOpponent = results[1].docs;
-        _finished = results[2].docs;
+        _waitingOpponent = [...results[1].docs, ...results[2].docs];
+        _finished = finished;
         _loading = false;
         _softError = null;
       });

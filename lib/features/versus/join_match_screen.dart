@@ -33,8 +33,7 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
     });
 
     try {
-      final matchId = await _service.resolveMatchIdByCode(code);
-      await _service.joinMatch(matchId: matchId, displayName: 'Guest');
+      final matchId = await _service.joinMatchByCode(code);
 
       if (!mounted) return;
 

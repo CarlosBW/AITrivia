@@ -62,7 +62,7 @@ service cloud.firestore {
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
         'unlockedAvatars', 'dynamicAvatars',
-        'categoriesExploredCount'
+        'categoriesExploredCount', 'weeklyTopicsCompletedCount'
       ];
     }
 
@@ -379,13 +379,21 @@ service cloud.firestore {
     // it. `create` covers both a fresh match (creator lists themself as
     // hostUid) and a rematch doc (creator may be listed as guestUid,
     // since either player can trigger rematch creation). `update` also
-    // allows a brand-new joiner to claim an empty guestUid slot
-    // (MatchService.joinMatch), since at that moment they aren't yet
-    // host or guest on the existing doc. `questions` is locked immutable
-    // post-creation — finalizePvpMatch now recomputes each player's real
-    // score from their `players.{uid}.answers` against this exact array,
-    // so a player rewriting it mid-match (e.g. to questions they already
-    // know the answers to) would otherwise let them rig their own result.
+    // allows a brand-new joiner to claim an empty guestUid slot — though
+    // that path is now Cloud-Function-only in practice too (joinMatchByCode,
+    // Admin SDK) since the client could never actually read a match it
+    // wasn't host/guest on yet to join it in the first place; this clause
+    // stays as a fallback for any future client-side join path.
+    // `questions` is locked immutable post-creation — finalizePvpMatch now
+    // recomputes each player's real score from their `players.{uid}.answers`
+    // against this exact array, so a player rewriting it mid-match (e.g. to
+    // questions they already know the answers to) would otherwise let them
+    // rig their own result. `winnerUid`/`finishReason`/`rewarded` are
+    // Cloud-Function-only too (finalizePvpMatch / claimOpponentDisconnected)
+    // — a client used to be able to write these directly (the old
+    // forceFinishMatchByDisconnect flow), which let a losing player
+    // self-declare a win and get their opponent hit with a rating penalty
+    // with zero server verification anyone actually disconnected.
     match /matches/{matchId} {
       allow read: if request.auth != null
         && (
@@ -406,11 +414,15 @@ service cloud.firestore {
           request.auth.uid == resource.data.guestUid ||
           (
             resource.data.guestUid == null &&
-            request.resource.data.guestUid == request.auth.uid
+            request.resource.data.guestUid == request.auth.uid &&
+            request.resource.data.guestUid != resource.data.hostUid
           )
         )
         && request.resource.data.winReward == resource.data.winReward
-        && request.resource.data.questions == resource.data.questions;
+        && request.resource.data.questions == resource.data.questions
+        && request.resource.data.winnerUid == resource.data.winnerUid
+        && request.resource.data.finishReason == resource.data.finishReason
+        && request.resource.data.rewarded == resource.data.rewarded;
     }
 
     // The "current" weekly topic (and its rewardCoins/rewardAvatarId) is
@@ -440,6 +452,8 @@ service cloud.firestore {
           request.auth.uid == request.resource.data.challengerUid ||
           request.auth.uid == request.resource.data.challengedUid
         )
+        && request.resource.data.challengerUid
+            != request.resource.data.challengedUid
         && isSanctionedWinReward(request.resource.data.winReward);
 
       allow update: if request.auth != null
@@ -470,8 +484,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Cloud-Function-only for anything cross-user (tryFindLiveOpponent,
+    // Admin SDK) — pairing used to happen client-side, which meant even a
+    // narrowly-scoped update rule still had to let a client write a
+    // "you've been matched" claim onto another player's doc, and couldn't
+    // fully stop a fake matchId being planted on an actively-searching
+    // victim's entry. Now the client only ever touches its own queue doc.
     match /live_search/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null
+        && request.auth.uid == docId;
     }
   }
 }

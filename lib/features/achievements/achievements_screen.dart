@@ -47,7 +47,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context).achievementsRewardClaimed(achievement?.rewardCoins ?? 0),
+            AppLocalizations.of(context).achievementsRewardClaimed(
+              achievement?.rewardCoins ?? 0,
+              achievement?.rewardXp ?? 0,
+            ),
           ),
         ),
       );

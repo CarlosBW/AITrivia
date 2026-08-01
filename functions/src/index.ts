@@ -8,6 +8,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import Anthropic from "@anthropic-ai/sdk";
+import * as crypto from "crypto";
 
 setGlobalOptions({maxInstances: 10});
 
@@ -55,11 +56,15 @@ const ACHIEVEMENT_TITLES: Record<string, {es: string; en: string}> = {
 const DEFAULT_RATING = 1000;
 const K_FACTOR = 32;
 
-// Max coins a match can pay its winner. Mirrors the highest stake the UI
-// actually offers (create_match_screen.dart's dropdown: 1/2/3/5 coins) — a
-// modified client can store any winReward it likes on the match doc before
-// finishing it, so this is clamped server-side rather than trusted.
-const MAX_WIN_REWARD = 5;
+// Max coins a match can pay its winner. Matches firestore.rules'
+// isSanctionedWinReward (only winReward == 2 is ever allowed to be
+// created/joined) — the UI itself only ever creates matches with
+// EconomyService.defaultPvpWinReward (2), no stake picker exists. A
+// modified client can still store any winReward it likes on the match doc
+// before finishing it, so this is clamped server-side rather than
+// trusted, but it should reflect the real current ceiling, not a wider
+// one that gives a false sense of the actual sanctioned range.
+const MAX_WIN_REWARD = 2;
 
 // Mirrors match_service.dart's ranked-disconnect constants exactly.
 const RANKED_DISCONNECT_WINNER_BONUS = 12;
@@ -176,6 +181,57 @@ function computeVerifiedPvpScore(questions: unknown, answers: unknown): number {
     if (safeInt(selected, -2) === correctIndex) score++;
   }
   return score;
+}
+
+/**
+ * Question-count avatar unlocks (100/1000 answered) are granted here rather
+ * than by a client-side follow-up write, since `unlockedAvatars` is locked
+ * against direct client writes in firestore.rules. Shared across every path
+ * that increments correctAnswers/wrongAnswers (Daily Challenge, Solo, live
+ * and async PvP) so the threshold reflects answers across all game modes,
+ * not just whichever mode happens to compute it.
+ * @param {unknown} existingUnlockedAvatars The user doc's current
+ * `unlockedAvatars` array.
+ * @param {number} totalQuestionsAnswered Correct + wrong answers so far,
+ * including this update.
+ * @return {Record<string, unknown>} Firestore patch fields to merge into
+ * the user doc, or `{}` if nothing newly unlocked.
+ */
+function questionCountAvatarUnlockPatch(
+  existingUnlockedAvatars: unknown, totalQuestionsAnswered: number
+): Record<string, unknown> {
+  const owned: string[] = Array.isArray(existingUnlockedAvatars) ?
+    existingUnlockedAvatars.map((v) => String(v)) : [];
+
+  const newlyUnlockedAvatarIds: string[] = [];
+  if (
+    totalQuestionsAnswered >= 100 &&
+    !owned.includes("achievement_100_questions")
+  ) {
+    newlyUnlockedAvatarIds.push("achievement_100_questions");
+  }
+  if (
+    totalQuestionsAnswered >= 1000 &&
+    !owned.includes("achievement_1000_questions")
+  ) {
+    newlyUnlockedAvatarIds.push("achievement_1000_questions");
+  }
+
+  if (newlyUnlockedAvatarIds.length === 0) return {};
+
+  const latestUnlockedAvatarId =
+    newlyUnlockedAvatarIds[newlyUnlockedAvatarIds.length - 1];
+
+  return {
+    unlockedAvatars: admin.firestore.FieldValue.arrayUnion(
+      ...newlyUnlockedAvatarIds
+    ),
+    lastUnlockedAvatarId: latestUnlockedAvatarId,
+    lastUnlockedAvatarReason:
+      latestUnlockedAvatarId === "achievement_1000_questions" ?
+        "Answered 1000 questions" : "Answered 100 questions",
+    lastUnlockedAvatarAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
 }
 
 // Shared daily cap on coins earned from PvP wins (live + async combined).
@@ -689,6 +745,10 @@ export const finalizePvpMatch = onDocumentUpdated(
       const guestScore = computeVerifiedPvpScore(
         fresh.questions, freshGuest.answers
       );
+      const matchQuestionCount = Array.isArray(fresh.questions) ?
+        fresh.questions.length : 0;
+      const hostWrongCount = Math.max(matchQuestionCount - hostScore, 0);
+      const guestWrongCount = Math.max(matchQuestionCount - guestScore, 0);
 
       let winnerUid: string | null = null;
 
@@ -768,9 +828,8 @@ export const finalizePvpMatch = onDocumentUpdated(
         });
 
         applyPvpAchievementProgress(
-          tx, hostUid, PVP_ACHIEVEMENTS[0], hostReward.newStreak > 0 ?
-            safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0) :
-            safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0),
+          tx, hostUid, PVP_ACHIEVEMENTS[0],
+          safeInt(hostUser.wins1v1, 0) + (hostWon ? 1 : 0),
           hostFirstWinSnap, hostUser.languageCode
         );
         applyPvpAchievementProgress(
@@ -858,6 +917,16 @@ export const finalizePvpMatch = onDocumentUpdated(
             ...hostCoinClamp.patch,
             lastRankedXpEarned: hostReward.xpEarned,
             lastRankedCoinsEarned: hostCoinClamp.payable,
+            ...(matchQuestionCount > 0 ? {
+              correctAnswers: admin.firestore.FieldValue.increment(hostScore),
+              wrongAnswers:
+                admin.firestore.FieldValue.increment(hostWrongCount),
+            } : {}),
+            ...questionCountAvatarUnlockPatch(
+              hostUser.unlockedAvatars,
+              safeInt(hostUser.correctAnswers, 0) +
+                safeInt(hostUser.wrongAnswers, 0) + matchQuestionCount
+            ),
             ...(isDisconnect && !hostWon ? {
               pvpAbandonCount: admin.firestore.FieldValue.increment(1),
               pvpCooldownUntil: admin.firestore.Timestamp.fromMillis(
@@ -891,6 +960,16 @@ export const finalizePvpMatch = onDocumentUpdated(
             ...guestCoinClamp.patch,
             lastRankedXpEarned: guestReward.xpEarned,
             lastRankedCoinsEarned: guestCoinClamp.payable,
+            ...(matchQuestionCount > 0 ? {
+              correctAnswers: admin.firestore.FieldValue.increment(guestScore),
+              wrongAnswers:
+                admin.firestore.FieldValue.increment(guestWrongCount),
+            } : {}),
+            ...questionCountAvatarUnlockPatch(
+              guestUser.unlockedAvatars,
+              safeInt(guestUser.correctAnswers, 0) +
+                safeInt(guestUser.wrongAnswers, 0) + matchQuestionCount
+            ),
             ...(isDisconnect && !guestWon ? {
               pvpAbandonCount: admin.firestore.FieldValue.increment(1),
               pvpCooldownUntil: admin.firestore.Timestamp.fromMillis(
@@ -974,6 +1053,16 @@ export const finalizePvpMatch = onDocumentUpdated(
               hostCoinClamp.payable
             ),
             ...hostCoinClamp.patch,
+            ...(matchQuestionCount > 0 ? {
+              correctAnswers: admin.firestore.FieldValue.increment(hostScore),
+              wrongAnswers:
+                admin.firestore.FieldValue.increment(hostWrongCount),
+            } : {}),
+            ...questionCountAvatarUnlockPatch(
+              hostUser.unlockedAvatars,
+              safeInt(hostUser.correctAnswers, 0) +
+                safeInt(hostUser.wrongAnswers, 0) + matchQuestionCount
+            ),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true}
@@ -992,6 +1081,16 @@ export const finalizePvpMatch = onDocumentUpdated(
               guestCoinClamp.payable
             ),
             ...guestCoinClamp.patch,
+            ...(matchQuestionCount > 0 ? {
+              correctAnswers: admin.firestore.FieldValue.increment(guestScore),
+              wrongAnswers:
+                admin.firestore.FieldValue.increment(guestWrongCount),
+            } : {}),
+            ...questionCountAvatarUnlockPatch(
+              guestUser.unlockedAvatars,
+              safeInt(guestUser.correctAnswers, 0) +
+                safeInt(guestUser.wrongAnswers, 0) + matchQuestionCount
+            ),
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           {merge: true}
@@ -1058,6 +1157,564 @@ export const finalizePvpMatch = onDocumentUpdated(
   }
 );
 
+// Mirrors presence_service.dart's `onlineMaxAge` exactly — a live match's
+// disconnect claim has to judge staleness the same way the client's own
+// `isProbablyOnline` does, or a still-genuinely-connected opponent could
+// get treated as disconnected right at the boundary.
+const PRESENCE_ONLINE_MAX_AGE_MS = 45 * 1000;
+
+/**
+ * Lets a player claim their opponent disconnected mid-match, ending it in
+ * their favor — but unlike the client-side flow this replaces
+ * (match_service.dart's old `forceFinishMatchByDisconnect`, which trusted
+ * a client-supplied `winnerUid` with no verification at all), this
+ * independently re-reads the *opponent's* own `presence` doc server-side
+ * and only honors the claim if they genuinely look stale. Without this, a
+ * losing player could self-declare a win instantly — pocketing the
+ * winReward/rating bonus while their still-actively-playing opponent gets
+ * hit with a real rating penalty and cooldown as if *they* had
+ * disconnected. `winnerUid`/`finishReason`/`rewarded` are now
+ * Cloud-Function-only in firestore.rules, so this and finalizePvpMatch are
+ * the only ways those fields can change.
+ */
+export const claimOpponentDisconnected = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const matchId = String(request.data?.matchId || "");
+  if (!matchId) {
+    throw new HttpsError("invalid-argument", "Missing matchId.");
+  }
+
+  const matchRef = db.collection("matches").doc(matchId);
+
+  return db.runTransaction(async (tx) => {
+    const matchSnap = await tx.get(matchRef);
+    const matchData = matchSnap.data();
+
+    if (!matchData) {
+      throw new HttpsError("not-found", "Match not found.");
+    }
+    if (matchData.status !== "playing") {
+      throw new HttpsError(
+        "failed-precondition", "This match isn't in progress."
+      );
+    }
+
+    const hostUid = String(matchData.hostUid || "");
+    const guestUid = String(matchData.guestUid || "");
+
+    if (uid !== hostUid && uid !== guestUid) {
+      throw new HttpsError(
+        "permission-denied", "You're not a player in this match."
+      );
+    }
+
+    const opponentUid = uid === hostUid ? guestUid : hostUid;
+    if (!opponentUid) {
+      throw new HttpsError(
+        "failed-precondition", "This match has no opponent yet."
+      );
+    }
+
+    const opponentSnap = await tx.get(
+      db.collection("users").doc(opponentUid)
+    );
+    const presence = (opponentSnap.data() || {}).presence || {};
+
+    const presenceStatus = String(presence.status || "offline");
+    const inMatch = presence.inMatch === true;
+    const updatedAt = presence.updatedAt;
+
+    const isFresh = updatedAt instanceof admin.firestore.Timestamp &&
+      (Date.now() - updatedAt.toMillis()) <= PRESENCE_ONLINE_MAX_AGE_MS;
+
+    const opponentLooksActive =
+      isFresh && presenceStatus === "in_match" && inMatch;
+
+    if (opponentLooksActive) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Your opponent still looks active. Try again in a moment."
+      );
+    }
+
+    const players = matchData.players || {};
+    if (!players[uid]) {
+      throw new HttpsError(
+        "failed-precondition", "You're not seated in this match."
+      );
+    }
+
+    tx.update(matchRef, {
+      winnerUid: uid,
+      finishReason: "opponent_disconnected",
+      [`players.${uid}.finished`]: true,
+      [`players.${opponentUid}.finished`]: true,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {claimed: true};
+  });
+});
+
+/**
+ * Server-side replacement for match_service.dart's old
+ * `resolveMatchIdByCode` + `joinMatch` two-step, which never actually
+ * worked for the joiner: `joinMatch`'s own transaction needs to read the
+ * match doc before the caller is host/guest on it, but firestore.rules'
+ * `/matches` read rule only allows host/guest to read it — so "Join Match
+ * by Code" silently failed with permission-denied for anyone using it as
+ * intended. Admin SDK bypasses that read restriction, so this does the
+ * code lookup and the guest-slot claim itself, server-side.
+ */
+export const joinMatchByCode = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const code = String(request.data?.code || "").trim().toUpperCase();
+  if (!code) {
+    throw new HttpsError("invalid-argument", "Missing code.");
+  }
+
+  const matchesQuery = await db.collection("matches")
+    .where("matchCode", "==", code)
+    .limit(1)
+    .get();
+
+  if (matchesQuery.empty) {
+    throw new HttpsError("not-found", "Code not found.");
+  }
+
+  const matchRef = matchesQuery.docs[0].ref;
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  const userData = userSnap.data() || {};
+
+  const displayName = String(
+    userData.displayName || userData.username || "Guest"
+  );
+  const avatarId = String(userData.avatarId || "avatar_1");
+  const frameId = String(userData.equippedFrame || "");
+  const bestLeagueId = String(userData.bestLeagueId || "");
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const data = snap.data();
+
+    if (!data) {
+      throw new HttpsError("not-found", "Room not found.");
+    }
+
+    const status = String(data.status || "waiting");
+    if (status !== "waiting") {
+      throw new HttpsError(
+        "failed-precondition", "This room already started or ended."
+      );
+    }
+
+    const hostUid = String(data.hostUid || "");
+    const guestUid = data.guestUid || null;
+
+    if (hostUid === uid) {
+      throw new HttpsError(
+        "failed-precondition", "You can't join your own room."
+      );
+    }
+    if (guestUid === uid) {
+      return;
+    }
+    if (guestUid) {
+      throw new HttpsError("failed-precondition", "This room is full.");
+    }
+
+    tx.update(matchRef, {
+      guestUid: uid,
+      [`players.${uid}`]: {
+        displayName,
+        avatarId,
+        equippedFrame: frameId,
+        bestLeagueId,
+        score: 0,
+        ready: false,
+        finished: false,
+      },
+    });
+  });
+
+  return {matchId: matchRef.id};
+});
+
+// Mirrors match_service.dart's `_liveSearchMaxAge` exactly.
+const LIVE_SEARCH_MAX_AGE_MS = 30 * 1000;
+
+/**
+ * Mirrors match_service.dart's `_isLiveQueueEntryValid`.
+ * @param {FirebaseFirestore.DocumentData | undefined} data live_search doc.
+ * @return {boolean} True if still a valid, actively-searching entry.
+ */
+function isLiveQueueEntryValid(
+  data: FirebaseFirestore.DocumentData | undefined
+): boolean {
+  if (!data) return false;
+  if (data.status !== "searching") return false;
+  if (data.matchId != null) return false;
+
+  const ts = data.lastHeartbeatAt || data.updatedAt;
+  if (!(ts instanceof admin.firestore.Timestamp)) return true;
+
+  return (Date.now() - ts.toMillis()) <= LIVE_SEARCH_MAX_AGE_MS;
+}
+
+/**
+ * Mirrors match_service.dart's `_isAvailableForLiveMatch`.
+ * @param {FirebaseFirestore.DocumentData | undefined} userData users/{uid}
+ * doc data.
+ * @return {boolean} True if this player's presence looks like a genuine,
+ * actively-searching candidate.
+ */
+function isAvailableForLiveMatch(
+  userData: FirebaseFirestore.DocumentData | undefined
+): boolean {
+  const presence = (userData || {}).presence || {};
+  const status = String(presence.status || "offline");
+  const inMatch = presence.inMatch === true;
+
+  if (inMatch) return false;
+  if (status !== "searching_match") return false;
+
+  const ts = presence.updatedAt || presence.lastSeenAt;
+  if (!(ts instanceof admin.firestore.Timestamp)) return true;
+
+  return (Date.now() - ts.toMillis()) <= PRESENCE_ONLINE_MAX_AGE_MS;
+}
+
+/**
+ * Mirrors match_service.dart's `_searchAgeSeconds`.
+ * @param {FirebaseFirestore.DocumentData | undefined} data live_search doc.
+ * @return {number} Seconds since this queue entry started searching.
+ */
+function searchAgeSeconds(
+  data: FirebaseFirestore.DocumentData | undefined
+): number {
+  const ts = data?.searchStartedAt || data?.createdAt;
+  if (!(ts instanceof admin.firestore.Timestamp)) return 0;
+
+  const age = Math.floor((Date.now() - ts.toMillis()) / 1000);
+  return age < 0 ? 0 : age;
+}
+
+/**
+ * Mirrors pvp_league_service.dart's `PvpLeagueService.windowForSearchSeconds`
+ * rating-gap bands exactly.
+ * @param {number} seconds How long the longer-waiting side has searched.
+ * @return {number} Max allowed rating gap for a ranked pairing right now.
+ */
+function allowedRatingGapForSearchSeconds(seconds: number): number {
+  if (seconds < 10) return 100;
+  if (seconds < 20) return 250;
+  if (seconds < 30) return 500;
+  return 999999;
+}
+
+/**
+ * Mirrors match_service.dart's `_ratingsAreCompatible`.
+ * @param {FirebaseFirestore.DocumentData | undefined} myQueue Caller's
+ * live_search doc.
+ * @param {FirebaseFirestore.DocumentData | undefined} opponentQueue
+ * Candidate's live_search doc.
+ * @return {boolean} True if the two ratings are close enough to pair,
+ * given how long either side has been searching.
+ */
+function ratingsAreCompatible(
+  myQueue: FirebaseFirestore.DocumentData | undefined,
+  opponentQueue: FirebaseFirestore.DocumentData | undefined
+): boolean {
+  const myRating = safeInt(myQueue?.pvpRating, DEFAULT_RATING);
+  const opponentRating = safeInt(opponentQueue?.pvpRating, DEFAULT_RATING);
+
+  const longestSearchAge = Math.max(
+    searchAgeSeconds(myQueue), searchAgeSeconds(opponentQueue)
+  );
+
+  const allowedGap = allowedRatingGapForSearchSeconds(longestSearchAge);
+  return Math.abs(myRating - opponentRating) <= allowedGap;
+}
+
+/**
+ * Mirrors match_service.dart's `_generateFixedQuestions` /
+ * `_generateRandomAcrossCategories`, reading the same `fixed_pools`/
+ * `fixed_categories` data server-side instead of trusting a client-chosen
+ * question set.
+ * @param {string} categoryId Category id, or "random" to pick across all
+ * active categories.
+ * @param {number} difficulty Difficulty bucket (1-3).
+ * @param {number} total How many questions to select.
+ * @return {Promise<Record<string, unknown>[]>} Selected questions.
+ */
+async function selectFixedMatchQuestions(
+  categoryId: string,
+  difficulty: number,
+  total: number
+): Promise<Record<string, unknown>[]> {
+  if (categoryId === "random") {
+    return selectRandomAcrossCategories(difficulty, total);
+  }
+
+  const snap = await db.collection("fixed_pools").doc(categoryId)
+    .collection(`difficulty_${difficulty}`).doc("pool")
+    .collection("questions").get();
+
+  if (snap.empty) {
+    throw new HttpsError(
+      "failed-precondition", `Empty pool for ${categoryId}.`
+    );
+  }
+
+  const docs = [...snap.docs];
+  for (let i = docs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [docs[i], docs[j]] = [docs[j], docs[i]];
+  }
+
+  return docs.slice(0, Math.min(total, docs.length)).map((d) => d.data());
+}
+
+/**
+ * @param {number} difficulty Difficulty bucket (1-3).
+ * @param {number} total How many questions to select.
+ * @return {Promise<Record<string, unknown>[]>} Selected questions, one
+ * random pick per iteration across all active categories.
+ */
+async function selectRandomAcrossCategories(
+  difficulty: number,
+  total: number
+): Promise<Record<string, unknown>[]> {
+  const catsSnap = await db.collection("fixed_categories")
+    .where("isActive", "==", true).get();
+
+  const categories = catsSnap.docs.map((d) => d.id);
+  if (categories.length === 0) {
+    throw new HttpsError("failed-precondition", "No active categories.");
+  }
+
+  const out: Record<string, unknown>[] = [];
+  // The client-side original this mirrors loops unconditionally until
+  // `total` is reached, which is harmless (just a hung UI) if every pool
+  // for this difficulty happens to be empty — server-side that would be a
+  // stuck/expensive function execution instead, so this caps attempts.
+  let attempts = 0;
+  const maxAttempts = total * 10;
+
+  while (out.length < total && attempts < maxAttempts) {
+    attempts++;
+    const cat = categories[Math.floor(Math.random() * categories.length)];
+
+    const snap = await db.collection("fixed_pools").doc(cat)
+      .collection(`difficulty_${difficulty}`).doc("pool")
+      .collection("questions").get();
+
+    if (snap.empty) continue;
+
+    const pick = snap.docs[Math.floor(Math.random() * snap.docs.length)];
+    out.push(pick.data());
+  }
+
+  return out;
+}
+
+/**
+ * @param {number} len Code length.
+ * @return {string} A cryptographically random room code.
+ */
+function randomMatchCode(len: number): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += chars[crypto.randomInt(chars.length)];
+  }
+  return out;
+}
+
+/**
+ * Server-side replacement for match_service.dart's old client-driven
+ * `tryFindLiveOpponent`, which read/wrote other players' `live_search`
+ * docs directly from the client — firestore.rules could only narrow that
+ * down to one specific transition shape, never fully prevent a client
+ * from writing a fake "matched" claim (with a bogus matchId) onto an
+ * actively-searching victim's queue doc. Admin SDK bypasses rules
+ * entirely, so this does the candidate scan and the claim transaction
+ * itself; the client only needs read/write on its own `live_search` doc
+ * now. Takes no input beyond the caller's identity — every match
+ * parameter (category, difficulty, ranked, reward, etc.) is read from the
+ * caller's own queue doc, already written by `startLiveSearch`, rather
+ * than trusted fresh on every poll call.
+ */
+export const tryFindLiveOpponent = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const meRef = db.collection("live_search").doc(uid);
+  const meSnap = await meRef.get();
+  const meData = meSnap.data();
+
+  if (!isLiveQueueEntryValid(meData)) {
+    return {matchId: null};
+  }
+
+  const categoryId = String(meData?.categoryId || "");
+  const difficulty = safeInt(meData?.difficulty, 1);
+  const ranked = meData?.ranked === true;
+  const totalQuestions = safeInt(meData?.totalQuestions, 10);
+  const timePerQuestionSec = safeInt(meData?.timePerQuestionSec, 10);
+  const winReward = clampWinReward(safeInt(meData?.winReward, 2));
+
+  const candidatesSnap = await db.collection("live_search")
+    .where("status", "==", "searching")
+    .where("categoryId", "==", categoryId)
+    .where("difficulty", "==", difficulty)
+    .where("ranked", "==", ranked)
+    .limit(20)
+    .get();
+
+  const candidates = candidatesSnap.docs.filter((d) => d.id !== uid);
+
+  for (const oppDoc of candidates) {
+    const oppUid = oppDoc.id;
+    const matchRef = db.collection("matches").doc();
+
+    const claimed = await db.runTransaction<boolean>(async (tx) => {
+      const oppRef = db.collection("live_search").doc(oppUid);
+      const meUserRef = db.collection("users").doc(uid);
+      const oppUserRef = db.collection("users").doc(oppUid);
+
+      const [meTxSnap, oppTxSnap, meUserSnap, oppUserSnap] =
+        await Promise.all([
+          tx.get(meRef), tx.get(oppRef), tx.get(meUserRef), tx.get(oppUserRef),
+        ]);
+
+      const meTx = meTxSnap.data();
+      const oppTx = oppTxSnap.data();
+      const meUser = meUserSnap.data();
+      const oppUser = oppUserSnap.data();
+
+      if (!isLiveQueueEntryValid(meTx)) return false;
+      if (!isLiveQueueEntryValid(oppTx)) return false;
+      if (!isAvailableForLiveMatch(meUser)) return false;
+      if (!isAvailableForLiveMatch(oppUser)) return false;
+      if ((meTx?.ranked === true) !== ranked) return false;
+      if ((oppTx?.ranked === true) !== ranked) return false;
+      if (ranked && !ratingsAreCompatible(meTx, oppTx)) return false;
+
+      const now = admin.firestore.FieldValue.serverTimestamp();
+
+      tx.update(meRef, {
+        status: "matched", matchId: matchRef.id, opponentUid: oppUid,
+        updatedAt: now,
+      });
+      tx.update(oppRef, {
+        status: "matched", matchId: matchRef.id, opponentUid: uid,
+        updatedAt: now,
+      });
+
+      tx.set(meUserRef, {
+        presence: {
+          status: "in_match", inMatch: true, lastSeenAt: now, updatedAt: now,
+        },
+        updatedAt: now,
+      }, {merge: true});
+
+      tx.set(oppUserRef, {
+        presence: {
+          status: "in_match", inMatch: true, lastSeenAt: now, updatedAt: now,
+        },
+        updatedAt: now,
+      }, {merge: true});
+
+      return true;
+    });
+
+    if (!claimed) continue;
+
+    const oppData = oppDoc.data();
+
+    const myRating = safeInt(meData?.pvpRating, DEFAULT_RATING);
+    const oppRating = safeInt(oppData.pvpRating, DEFAULT_RATING);
+    const myLeague = leagueForRating(myRating);
+    const oppLeague = leagueForRating(oppRating);
+
+    const questions = await selectFixedMatchQuestions(
+      categoryId, difficulty, totalQuestions
+    );
+
+    const myName = String(meData?.displayName || "Player").trim() ||
+      "Player";
+    const oppName = String(oppData.displayName || "Player").trim() ||
+      "Player";
+
+    await matchRef.set({
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      status: "waiting",
+      mode: "fixed",
+      matchmakingType: ranked ? "ranked_flexible_mmr" : "casual_public",
+      ranked,
+      affectsPvpRating: ranked,
+      hostInitialPvpRating: myRating,
+      guestInitialPvpRating: oppRating,
+      matchmakingRatingGap: Math.abs(myRating - oppRating),
+      hostPvpLeagueId: myLeague.id,
+      guestPvpLeagueId: oppLeague.id,
+      hostPvpLeagueName: myLeague.name,
+      guestPvpLeagueName: oppLeague.name,
+      matchmakingWaitSec: Math.max(
+        searchAgeSeconds(meData), searchAgeSeconds(oppData)
+      ),
+      categoryId,
+      difficulty,
+      aiTopic: null,
+      entryFee: 0,
+      winReward,
+      loseReward: 0,
+      totalQuestions,
+      timePerQuestionSec,
+      questions,
+      hostUid: uid,
+      guestUid: oppUid,
+      players: {
+        [uid]: {
+          displayName: myName,
+          avatarId: String(meData?.avatarId || "avatar_1"),
+          equippedFrame: String(meData?.equippedFrame || ""),
+          bestLeagueId: String(meData?.bestLeagueId || ""),
+          score: 0, ready: false, finished: false,
+        },
+        [oppUid]: {
+          displayName: oppName,
+          avatarId: String(oppData.avatarId || "avatar_1"),
+          equippedFrame: String(oppData.equippedFrame || ""),
+          bestLeagueId: String(oppData.bestLeagueId || ""),
+          score: 0, ready: false, finished: false,
+        },
+      },
+      startAt: null,
+      endedAt: null,
+      winnerUid: null,
+      rewarded: false,
+      matchCode: randomMatchCode(5),
+    });
+
+    return {matchId: matchRef.id};
+  }
+
+  return {matchId: null};
+});
+
 /**
  * Async (deferred) 1v1 matches never carry a ranked/affectsPvpRating flag
  * today (createAsyncFixedMatch never sets one) — this trigger only ever
@@ -1099,6 +1756,12 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
       const challengedScore = computeVerifiedPvpScore(
         fresh.questions, fresh.challenged?.answers
       );
+      const matchQuestionCount = Array.isArray(fresh.questions) ?
+        fresh.questions.length : 0;
+      const challengerWrongCount =
+        Math.max(matchQuestionCount - challengerScore, 0);
+      const challengedWrongCount =
+        Math.max(matchQuestionCount - challengedScore, 0);
 
       let winnerUid: string | null = null;
       if (challengerScore > challengedScore) winnerUid = challengerUid;
@@ -1140,6 +1803,64 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
         challengedUser, challengedWon ? winReward : 0
       );
 
+      // Async matches never fed first_pvp_win/pvp_wins_10/pvp_streak_5/
+      // pvp_wins_25 progress — finalizePvpMatch (live matches) always did,
+      // via the identical calls below, so a player who only plays async
+      // could win 25+ matches and see wins1v1/currentWinStreak1v1 climb
+      // correctly while these four achievements stayed stuck at 0.
+      const [challengerAchSnaps, challengedAchSnaps] = await Promise.all([
+        readPvpAchievementSnaps(tx, challengerUid),
+        readPvpAchievementSnaps(tx, challengedUid),
+      ]);
+
+      const [
+        challengerFirstWinSnap, challengerWins10Snap,
+        challengerStreak5Snap, challengerWins25Snap,
+      ] = challengerAchSnaps;
+      const [
+        challengedFirstWinSnap, challengedWins10Snap,
+        challengedStreak5Snap, challengedWins25Snap,
+      ] = challengedAchSnaps;
+
+      applyPvpAchievementProgress(
+        tx, challengerUid, PVP_ACHIEVEMENTS[0],
+        safeInt(challengerUser.wins1v1, 0) + (challengerWon ? 1 : 0),
+        challengerFirstWinSnap, challengerUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengerUid, PVP_ACHIEVEMENTS[1],
+        safeInt(challengerUser.wins1v1, 0) + (challengerWon ? 1 : 0),
+        challengerWins10Snap, challengerUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengerUid, PVP_ACHIEVEMENTS[2], challengerNewStreak,
+        challengerStreak5Snap, challengerUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengerUid, PVP_ACHIEVEMENTS[3],
+        safeInt(challengerUser.wins1v1, 0) + (challengerWon ? 1 : 0),
+        challengerWins25Snap, challengerUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengedUid, PVP_ACHIEVEMENTS[0],
+        safeInt(challengedUser.wins1v1, 0) + (challengedWon ? 1 : 0),
+        challengedFirstWinSnap, challengedUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengedUid, PVP_ACHIEVEMENTS[1],
+        safeInt(challengedUser.wins1v1, 0) + (challengedWon ? 1 : 0),
+        challengedWins10Snap, challengedUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengedUid, PVP_ACHIEVEMENTS[2], challengedNewStreak,
+        challengedStreak5Snap, challengedUser.languageCode
+      );
+      applyPvpAchievementProgress(
+        tx, challengedUid, PVP_ACHIEVEMENTS[3],
+        safeInt(challengedUser.wins1v1, 0) + (challengedWon ? 1 : 0),
+        challengedWins25Snap, challengedUser.languageCode
+      );
+
       tx.set(
         challengerRef,
         {
@@ -1157,6 +1878,17 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
             challengerCoinClamp.payable
           ),
           ...challengerCoinClamp.patch,
+          ...(matchQuestionCount > 0 ? {
+            correctAnswers:
+              admin.firestore.FieldValue.increment(challengerScore),
+            wrongAnswers:
+              admin.firestore.FieldValue.increment(challengerWrongCount),
+          } : {}),
+          ...questionCountAvatarUnlockPatch(
+            challengerUser.unlockedAvatars,
+            safeInt(challengerUser.correctAnswers, 0) +
+              safeInt(challengerUser.wrongAnswers, 0) + matchQuestionCount
+          ),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -1181,6 +1913,17 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
             challengedCoinClamp.payable
           ),
           ...challengedCoinClamp.patch,
+          ...(matchQuestionCount > 0 ? {
+            correctAnswers:
+              admin.firestore.FieldValue.increment(challengedScore),
+            wrongAnswers:
+              admin.firestore.FieldValue.increment(challengedWrongCount),
+          } : {}),
+          ...questionCountAvatarUnlockPatch(
+            challengedUser.unlockedAvatars,
+            safeInt(challengedUser.correctAnswers, 0) +
+              safeInt(challengedUser.wrongAnswers, 0) + matchQuestionCount
+          ),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -1259,6 +2002,150 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
     });
   }
 );
+
+// A stale one-sided async match forfeits after this long with no response
+// from the other side — otherwise a losing/absent player could dodge the
+// result forever, and the player who did engage never gets their reward.
+const ASYNC_MATCH_FORFEIT_DAYS = 7;
+
+/**
+ * Sweeps `async_matches` where exactly one side finished and the other
+ * never responded within ASYNC_MATCH_FORFEIT_DAYS, and force-completes
+ * them: the side that engaged wins (same reward shape as
+ * finalizeAsyncPvpMatch's normal casual-branch payout, including
+ * achievement progress), the non-responder takes the loss. Both
+ * challenger-pending and challenged-pending directions are already caught
+ * by the same query since it only checks "exactly one side finished."
+ */
+export const expireStaleAsyncMatches = onSchedule(
+  {schedule: "0 */6 * * *"},
+  async () => {
+    const cutoff = admin.firestore.Timestamp.fromMillis(
+      Date.now() - ASYNC_MATCH_FORFEIT_DAYS * 24 * 60 * 60 * 1000
+    );
+
+    const snap = await db.collection("async_matches")
+      .where("rewarded", "==", false)
+      .where("lastUpdatedAt", "<", cutoff)
+      .limit(100)
+      .get();
+
+    for (const doc of snap.docs) {
+      await forfeitStaleAsyncMatch(doc.ref);
+    }
+  }
+);
+
+/**
+ * @param {FirebaseFirestore.DocumentReference} matchRef Async match ref.
+ * @return {Promise<void>} Resolves once the forfeit (or no-op) commits.
+ */
+async function forfeitStaleAsyncMatch(
+  matchRef: FirebaseFirestore.DocumentReference
+): Promise<void> {
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const data = snap.data();
+
+    if (!data) return;
+    if (data.rewarded === true) return;
+    if (data.status === "declined") return;
+
+    const challengerFinished = data.challengerStatus === "finished";
+    const challengedFinished = data.challengedStatus === "finished";
+
+    // Only forfeit the one-sided case — if neither side ever played,
+    // there's nothing to award; if both finished, finalizeAsyncPvpMatch's
+    // own trigger already handled it and rewarded would be true by now.
+    if (challengerFinished === challengedFinished) return;
+
+    const winnerUid = String(
+      challengerFinished ? data.challengerUid : data.challengedUid
+    );
+    const loserUid = String(
+      challengerFinished ? data.challengedUid : data.challengerUid
+    );
+    if (!winnerUid || !loserUid) return;
+
+    const winnerRef = db.collection("users").doc(winnerUid);
+    const loserRef = db.collection("users").doc(loserUid);
+
+    const winnerSnap = await tx.get(winnerRef);
+    const winnerUser = winnerSnap.data() || {};
+
+    const winReward = clampWinReward(safeInt(data.winReward, 0));
+    const winnerCoinClamp = clampDailyPvpCoins(winnerUser, winReward);
+
+    const winnerNewStreak = safeInt(winnerUser.currentWinStreak1v1, 0) + 1;
+    const winnerBestStreakSoFar = safeInt(winnerUser.bestWinStreak1v1, 0);
+
+    const [
+      winnerFirstWinSnap, winnerWins10Snap,
+      winnerStreak5Snap, winnerWins25Snap,
+    ] = await readPvpAchievementSnaps(tx, winnerUid);
+
+    applyPvpAchievementProgress(
+      tx, winnerUid, PVP_ACHIEVEMENTS[0],
+      safeInt(winnerUser.wins1v1, 0) + 1, winnerFirstWinSnap,
+      winnerUser.languageCode
+    );
+    applyPvpAchievementProgress(
+      tx, winnerUid, PVP_ACHIEVEMENTS[1],
+      safeInt(winnerUser.wins1v1, 0) + 1, winnerWins10Snap,
+      winnerUser.languageCode
+    );
+    applyPvpAchievementProgress(
+      tx, winnerUid, PVP_ACHIEVEMENTS[2], winnerNewStreak,
+      winnerStreak5Snap, winnerUser.languageCode
+    );
+    applyPvpAchievementProgress(
+      tx, winnerUid, PVP_ACHIEVEMENTS[3],
+      safeInt(winnerUser.wins1v1, 0) + 1, winnerWins25Snap,
+      winnerUser.languageCode
+    );
+
+    tx.set(winnerRef, {
+      matches1v1: admin.firestore.FieldValue.increment(1),
+      wins1v1: admin.firestore.FieldValue.increment(1),
+      currentWinStreak1v1: winnerNewStreak,
+      bestWinStreak1v1: Math.max(winnerBestStreakSoFar, winnerNewStreak),
+      coins: admin.firestore.FieldValue.increment(winnerCoinClamp.payable),
+      ...winnerCoinClamp.patch,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    tx.set(loserRef, {
+      matches1v1: admin.firestore.FieldValue.increment(1),
+      losses1v1: admin.firestore.FieldValue.increment(1),
+      currentWinStreak1v1: 0,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    tx.update(matchRef, {
+      status: "completed",
+      winnerUid,
+      finishReason: "opponent_forfeited",
+      rewarded: true,
+      endedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    tx.set(winnerRef.collection("notifications").doc(), {
+      type: "match_result",
+      title: pickText(
+        winnerUser.languageCode, "¡Ganaste por abandono!", "You won by forfeit!"
+      ),
+      body: pickText(
+        winnerUser.languageCode,
+        "Tu rival no respondió a tiempo. Ganaste la partida.",
+        "Your opponent didn't respond in time. You won the match."
+      ),
+      data: {matchId: matchRef.id},
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+}
 
 /**
  * Callable replacement for pvp_season_service.dart's
@@ -1831,41 +2718,12 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       userPatch.bestDailyScore = score;
     }
 
-    // Question-count achievement avatars are granted here (rather than by
-    // a client-side follow-up write) since `unlockedAvatars` is locked
-    // against direct client writes in firestore.rules — this is the one
-    // place totalQuestionsAnswered is already computed authoritatively.
-    const existingUnlockedAvatars: string[] =
-      Array.isArray(userData.unlockedAvatars) ?
-        userData.unlockedAvatars.map((v: unknown) => String(v)) : [];
-
-    const newlyUnlockedAvatarIds: string[] = [];
-    if (
-      totalQuestionsAnswered >= 100 &&
-      !existingUnlockedAvatars.includes("achievement_100_questions")
-    ) {
-      newlyUnlockedAvatarIds.push("achievement_100_questions");
-    }
-    if (
-      totalQuestionsAnswered >= 1000 &&
-      !existingUnlockedAvatars.includes("achievement_1000_questions")
-    ) {
-      newlyUnlockedAvatarIds.push("achievement_1000_questions");
-    }
-
-    if (newlyUnlockedAvatarIds.length > 0) {
-      userPatch.unlockedAvatars =
-        admin.firestore.FieldValue.arrayUnion(...newlyUnlockedAvatarIds);
-
-      const latestUnlockedAvatarId =
-        newlyUnlockedAvatarIds[newlyUnlockedAvatarIds.length - 1];
-      userPatch.lastUnlockedAvatarId = latestUnlockedAvatarId;
-      userPatch.lastUnlockedAvatarReason =
-        latestUnlockedAvatarId === "achievement_1000_questions" ?
-          "Answered 1000 questions" : "Answered 100 questions";
-      userPatch.lastUnlockedAvatarAt =
-        admin.firestore.FieldValue.serverTimestamp();
-    }
+    Object.assign(
+      userPatch,
+      questionCountAvatarUnlockPatch(
+        userData.unlockedAvatars, totalQuestionsAnswered
+      )
+    );
 
     tx.set(userRef, userPatch, {merge: true});
 
@@ -2761,6 +3619,18 @@ export const submitSoloLevelResult = onCall(async (request) => {
           {coins: admin.firestore.FieldValue.increment(grantedCoins)} : {}),
         ...(newCategoriesExploredCount !== null ?
           {categoriesExploredCount: newCategoriesExploredCount} : {}),
+        // correctAnswers/wrongAnswers feed the profile accuracy stat and
+        // the 100/1000-questions avatar unlock — both used to only count
+        // Daily Challenge answers, leaving Solo/PvP-only players stuck at 0.
+        ...(total > 0 ? {
+          correctAnswers: admin.firestore.FieldValue.increment(correct),
+          wrongAnswers: admin.firestore.FieldValue.increment(total - correct),
+        } : {}),
+        ...questionCountAvatarUnlockPatch(
+          userData.unlockedAvatars,
+          safeInt(userData.correctAnswers, 0) +
+            safeInt(userData.wrongAnswers, 0) + total
+        ),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true}
@@ -2991,9 +3861,14 @@ export const ensureSoloLevelSession = onCall(async (request) => {
 // ============================================================
 // ACHIEVEMENTS
 //
-// Only the final reward claim moves here — setProgress/incrementProgress
-// keep writing achievements/{id} straight from the client (not economy
-// protected). Mirrors achievement_service.dart's `achievements` list
+// All progress is Cloud-Function-only now (applyPvpAchievementProgress /
+// submitSoloLevelResult / submitDailyChallengeResult /
+// syncFriendsAchievementProgress / claimWeeklyTopicCompletionReward, etc.)
+// — firestore.rules locks users/{uid}/achievements/{id} to
+// `allow write: if false`, and the client-side setProgress/
+// syncPvpAchievements methods this used to describe were removed from
+// achievement_service.dart since they could never actually write there
+// anymore. Mirrors achievement_service.dart's `achievements` list
 // exactly; keep both in sync.
 // ============================================================
 

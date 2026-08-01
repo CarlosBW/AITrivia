@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +27,16 @@ class MatchLobbyScreen extends StatefulWidget {
 
 class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   final _presenceService = PresenceService.instance;
+  final _service = MatchService();
 
   bool _navigatingToMatch = false;
+
+  // Updated on every StreamBuilder snapshot so the periodic presence timer
+  // below always checks the current opponent, not a stale one captured at
+  // initState time.
+  String? _opponentUid;
+  DateTime? _opponentUnavailableSince;
+  Timer? _opponentPresenceTimer;
 
   @override
   void initState() {
@@ -37,15 +47,61 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         await _presenceService.setInMatch();
       } catch (_) {}
     });
+
+    // No per-second countdown exists in the lobby (unlike match_play_screen)
+    // to naturally keep rebuilding, so this timer is what actually drives
+    // periodic re-checks — without it, a player left alone here after the
+    // other side leaves would wait forever with no way out.
+    _opponentPresenceTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _checkOpponentPresence();
+    });
   }
 
   @override
   void dispose() {
+    _opponentPresenceTimer?.cancel();
+
     if (!_navigatingToMatch) {
       _presenceService.setAvailable();
     }
 
     super.dispose();
+  }
+
+  Future<void> _checkOpponentPresence() async {
+    if (!mounted) return;
+
+    final opponentUid = _opponentUid;
+    if (opponentUid == null || opponentUid.isEmpty) return;
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(opponentUid)
+          .get();
+
+      final presence = Map<String, dynamic>.from(
+        snap.data()?['presence'] as Map? ?? {},
+      );
+
+      if (_presenceService.isProbablyOnline(presence)) {
+        _opponentUnavailableSince = null;
+        return;
+      }
+
+      _opponentUnavailableSince ??= DateTime.now();
+
+      final unavailableFor = DateTime.now().difference(
+        _opponentUnavailableSince!,
+      );
+
+      if (unavailableFor < const Duration(seconds: 30)) return;
+
+      // Sets status: 'cancelled' — the existing StreamBuilder below already
+      // watches for that and leaves with a snackbar, so no new UI is needed
+      // here beyond triggering it.
+      await _service.cancelWaitingMatch(widget.matchId);
+    } catch (_) {}
   }
 
   Future<void> _leaveBecauseMatchUnavailable(String message) async {
@@ -162,6 +218,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
           final hostUid = (data['hostUid'] ?? '').toString();
           final guestUid = (data['guestUid'] ?? '').toString();
+
+          final opponentUid = uid == hostUid ? guestUid : hostUid;
+          _opponentUid = opponentUid.isEmpty ? null : opponentUid;
 
           final players = Map<String, dynamic>.from(data['players'] ?? {});
 

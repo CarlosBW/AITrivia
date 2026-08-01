@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'notification_service.dart';
-import 'analytics_service.dart';
 import 'locale_controller.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
@@ -32,7 +30,6 @@ class AchievementService {
   static final AchievementService instance = AchievementService._();
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
-  final _notificationService = NotificationService.instance;
 
   // Resolved from the acting user's own device locale — correct for
   // exceptions and achievement-completed notifications, since both always
@@ -160,17 +157,6 @@ class AchievementService {
     return null;
   }
 
-  DocumentReference<Map<String, dynamic>> _achievementRef({
-    required String uid,
-    required String achievementId,
-  }) {
-    return _db
-        .collection('users')
-        .doc(uid)
-        .collection('achievements')
-        .doc(achievementId);
-  }
-
   Stream<QuerySnapshot<Map<String, dynamic>>> watchUserAchievements({
     required String uid,
   }) {
@@ -179,79 +165,6 @@ class AchievementService {
         .doc(uid)
         .collection('achievements')
         .snapshots();
-  }
-
-  Future<void> setProgress({
-    required String uid,
-    required String achievementId,
-    required int progress,
-  }) async {
-    final achievement = getAchievementById(achievementId);
-    if (achievement == null) return;
-
-    final ref = _achievementRef(
-      uid: uid,
-      achievementId: achievementId,
-    );
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-
-      final alreadyClaimed = data['claimed'] == true;
-      final currentProgress = ((data['progress'] ?? 0) as num).toInt();
-
-      if (alreadyClaimed) return;
-      if (progress <= currentProgress) return;
-
-      final completed = progress >= achievement.target;
-
-      tx.set(
-        ref,
-        {
-          'id': achievementId,
-          'progress': progress.clamp(0, achievement.target),
-          'target': achievement.target,
-          'completed': completed,
-          'claimed': false,
-          'updatedAt': FieldValue.serverTimestamp(),
-          if (completed) 'completedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    });
-
-    // =========================================================
-    // ACHIEVEMENT NOTIFICATION
-    // =========================================================
-
-    try {
-      final snap = await ref.get();
-      final data = snap.data();
-
-      if (data != null &&
-          data['completed'] == true &&
-          data['notificationSent'] != true) {
-        await ref.set({
-          'notificationSent': true,
-          'notificationSentAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        await _notificationService.createNotification(
-          targetUid: uid,
-          type: 'achievement_completed',
-          title: _l10n.serviceAchievementCompletedTitle,
-          body: _l10n.serviceAchievementCompletedBody(achievement.title),
-          data: {
-            'achievementId': achievement.id,
-          },
-        );
-
-        await AnalyticsService.instance.logAchievementUnlocked(
-          achievementId: achievement.id,
-        );
-      }
-    } catch (_) {}
   }
 
   Future<void> claimAchievement({
@@ -272,29 +185,5 @@ class AchievementService {
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotClaimReward);
     }
-  }
-
-  Future<void> syncPvpAchievements({
-    required String uid,
-    required int wins,
-    required int currentWinStreak,
-  }) async {
-    await Future.wait([
-      setProgress(
-        uid: uid,
-        achievementId: 'first_pvp_win',
-        progress: wins,
-      ),
-      setProgress(
-        uid: uid,
-        achievementId: 'pvp_wins_10',
-        progress: wins,
-      ),
-      setProgress(
-        uid: uid,
-        achievementId: 'pvp_streak_5',
-        progress: currentWinStreak,
-      ),
-    ]);
   }
 }

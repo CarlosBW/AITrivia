@@ -319,12 +319,12 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       if (unavailableFor < const Duration(seconds: 30)) return;
 
       _disconnectFinalizing = true;
-      await _service.forceFinishMatchByDisconnect(
-        matchId: widget.matchId,
-        winnerUid: myUid,
-      );
+      await _service.claimOpponentDisconnected(widget.matchId);
     } catch (_) {
-      // No romper UX si la lectura falla momentáneamente.
+      // Includes the server rejecting the claim (opponent still looks
+      // active) — reset so the next poll can re-check instead of this
+      // match session silently disabling disconnect-checking forever.
+      _disconnectFinalizing = false;
     } finally {
       _disconnectCheckRunning = false;
     }

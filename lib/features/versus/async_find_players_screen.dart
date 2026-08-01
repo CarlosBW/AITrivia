@@ -43,7 +43,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
   final _uid = FirebaseAuth.instance.currentUser!.uid;
 
   final _searchCtrl = TextEditingController();
-  String _q = '';
+  Future<QuerySnapshot<Map<String, dynamic>>>? _searchFuture;
 
   String? _error;
   String? _loadingUid;
@@ -54,8 +54,24 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
     super.dispose();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _usersStream() {
-    return _db.collection('users').limit(50).snapshots();
+  // Search-by-username instead of browsing every user — the old
+  // `.collection('users').limit(50).snapshots()` + client-side filter only
+  // ever showed the first 50 users in arbitrary Firestore order, making
+  // most players unreachable once the userbase grew past that. Mirrors
+  // FriendService.searchUsersByUsername's prefix-search pattern.
+  void _onSearchChanged(String value) {
+    final q = value.trim().toLowerCase();
+
+    setState(() {
+      _searchFuture = q.isEmpty
+          ? null
+          : _db
+              .collection('users')
+              .where('usernameLower', isGreaterThanOrEqualTo: q)
+              .where('usernameLower', isLessThan: '$q')
+              .limit(20)
+              .get();
+    });
   }
 
   Future<String> _getMyDisplayName() async {
@@ -129,7 +145,6 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final query = _q.trim().toLowerCase();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.asyncFindPlayersTitle)),
@@ -160,7 +175,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
               ),
-              onChanged: (v) => setState(() => _q = v),
+              onChanged: _onSearchChanged,
             ),
             const SizedBox(height: 12),
 
@@ -176,32 +191,22 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
             ],
 
             Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream: _usersStream(),
+              child: _searchFuture == null
+                  ? Center(child: Text(l10n.asyncFindPlayersSearchPrompt))
+                  : FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                future: _searchFuture,
                 builder: (context, snap) {
-                  if (!snap.hasData) {
+                  if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // Lista completa
-                  final allDocs =
-                      snap.data!.docs.where((d) => d.id != _uid).toList();
+                  final docs = snap.data?.docs ?? [];
+                  final allDocs = docs.where((d) => d.id != _uid).toList();
 
-                  // Convertir a items
-                  final items = allDocs.map((d) {
+                  final filtered = allDocs.map((d) {
                     final name = _safeDisplayName(d.data());
                     return _UserItem(doc: d, name: name);
                   }).toList();
-
-                  // Filtrar por búsqueda
-                  List<_UserItem> filtered;
-                  if (query.isEmpty) {
-                    filtered = items;
-                  } else {
-                    filtered = items.where((x) {
-                      return x.name.toLowerCase().contains(query);
-                    }).toList();
-                  }
 
                   if (filtered.isEmpty) {
                     return Center(

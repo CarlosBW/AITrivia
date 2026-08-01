@@ -275,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeAchievementUnlockedRewards.
   ///
   /// In es, this message translates to:
-  /// **'+{coins} monedas · +{xp} XP'**
+  /// **'Recompensa lista: +{coins} monedas · +{xp} XP — reclámala en Logros'**
   String homeAchievementUnlockedRewards(int coins, int xp);
 
   /// No description provided for @homeAvatarUnlockedTitle.
@@ -1838,6 +1838,12 @@ abstract class AppLocalizations {
   /// **'Buscar por nombre'**
   String get asyncFindPlayersSearchLabel;
 
+  /// No description provided for @asyncFindPlayersSearchPrompt.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un nombre de usuario para buscar jugadores.'**
+  String get asyncFindPlayersSearchPrompt;
+
   /// No description provided for @asyncFindPlayersNoneToShow.
   ///
   /// In es, this message translates to:
@@ -3289,8 +3295,8 @@ abstract class AppLocalizations {
   /// No description provided for @achievementsRewardClaimed.
   ///
   /// In es, this message translates to:
-  /// **'🎉 Recompensa reclamada: +{coins} monedas'**
-  String achievementsRewardClaimed(int coins);
+  /// **'🎉 Recompensa reclamada: +{coins} monedas, +{xp} XP'**
+  String achievementsRewardClaimed(int coins, int xp);
 
   /// No description provided for @achievementsErrorLoading.
   ///
@@ -4168,29 +4174,11 @@ abstract class AppLocalizations {
   /// **'Tienes cooldown de ranked por abandono. Intenta de nuevo en {remaining}.'**
   String serviceRankedCooldown(String remaining);
 
-  /// No description provided for @serviceAiTopicEmpty.
-  ///
-  /// In es, this message translates to:
-  /// **'Tema IA no puede estar vacío'**
-  String get serviceAiTopicEmpty;
-
   /// No description provided for @serviceRoomNotFound.
   ///
   /// In es, this message translates to:
   /// **'Sala no existe'**
   String get serviceRoomNotFound;
-
-  /// No description provided for @serviceRoomAlreadyStartedOrEnded.
-  ///
-  /// In es, this message translates to:
-  /// **'La sala ya inició o terminó'**
-  String get serviceRoomAlreadyStartedOrEnded;
-
-  /// No description provided for @serviceRoomFull.
-  ///
-  /// In es, this message translates to:
-  /// **'Sala llena'**
-  String get serviceRoomFull;
 
   /// No description provided for @serviceNotInRoom.
   ///
@@ -4239,12 +4227,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No perteneces a este match'**
   String get serviceNotYourMatch;
-
-  /// No description provided for @serviceCodeNotFound.
-  ///
-  /// In es, this message translates to:
-  /// **'Código no encontrado'**
-  String get serviceCodeNotFound;
 
   /// No description provided for @servicePoolEmptyForCategory.
   ///
@@ -4507,20 +4489,8 @@ abstract class AppLocalizations {
   /// No description provided for @achievementCategoriesExplored5Description.
   ///
   /// In es, this message translates to:
-  /// **'Aprueba al menos un nivel en 5 categorías distintas del modo Solo.'**
+  /// **'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas de IA).'**
   String get achievementCategoriesExplored5Description;
-
-  /// No description provided for @serviceAchievementCompletedTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Logro completado'**
-  String get serviceAchievementCompletedTitle;
-
-  /// No description provided for @serviceAchievementCompletedBody.
-  ///
-  /// In es, this message translates to:
-  /// **'Completaste \"{title}\". Reclama tu recompensa.'**
-  String serviceAchievementCompletedBody(String title);
 
   /// No description provided for @serviceAchievementNotFound.
   ///

@@ -204,15 +204,17 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
     _matchAttemptRunning = true;
 
     try {
-      await _service.tryFindLiveOpponent(
-        categoryId: widget.categoryId,
-        difficulty: widget.difficulty,
-        totalQuestions: widget.totalQuestions,
-        timePerQuestionSec: widget.timePerQuestionSec,
-        winReward: widget.winReward,
-        myDisplayName: widget.displayName,
-        ranked: widget.ranked,
-      );
+      // Keeps lastHeartbeatAt fresh — without this, _isLiveQueueEntryValid
+      // (both here and in the opponent's own pairing attempt) starts
+      // rejecting this session as stale after the first 30s, silently
+      // making it unmatchable for the rest of the search.
+      await _service.updateLiveSearchHeartbeat();
+
+      // Pairing (category/difficulty/ranked/reward, etc.) is now entirely
+      // server-side — the Cloud Function reads it all from this session's
+      // own live_search doc (already written by startLiveSearch), so no
+      // arguments are needed here anymore.
+      await _service.tryFindLiveOpponent();
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString());

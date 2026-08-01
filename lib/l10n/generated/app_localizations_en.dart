@@ -105,7 +105,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeAchievementUnlockedRewards(int coins, int xp) {
-    return '+$coins coins · +$xp XP';
+    return 'Reward ready: +$coins coins · +$xp XP — claim it in Achievements';
   }
 
   @override
@@ -1020,6 +1020,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get asyncFindPlayersSearchLabel => 'Search by name';
 
   @override
+  String get asyncFindPlayersSearchPrompt =>
+      'Type a username to search for players.';
+
+  @override
   String get asyncFindPlayersNoneToShow => 'No players to show.';
 
   @override
@@ -1912,8 +1916,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementsTitle => 'Achievements';
 
   @override
-  String achievementsRewardClaimed(int coins) {
-    return '🎉 Reward claimed: +$coins coins';
+  String achievementsRewardClaimed(int coins, int xp) {
+    return '🎉 Reward claimed: +$coins coins, +$xp XP';
   }
 
   @override
@@ -2431,17 +2435,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get serviceAiTopicEmpty => 'AI topic can\'t be empty';
-
-  @override
   String get serviceRoomNotFound => 'Room doesn\'t exist';
-
-  @override
-  String get serviceRoomAlreadyStartedOrEnded =>
-      'The room already started or ended';
-
-  @override
-  String get serviceRoomFull => 'Room full';
 
   @override
   String get serviceNotInRoom => 'You\'re not in this room';
@@ -2467,9 +2461,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceNotYourMatch => 'This match isn\'t yours';
-
-  @override
-  String get serviceCodeNotFound => 'Code not found';
 
   @override
   String servicePoolEmptyForCategory(String categoryId) {
@@ -2624,15 +2615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementCategoriesExplored5Description =>
-      'Pass at least one level in 5 different Solo categories.';
-
-  @override
-  String get serviceAchievementCompletedTitle => 'Achievement completed';
-
-  @override
-  String serviceAchievementCompletedBody(String title) {
-    return 'You completed \"$title\". Claim your reward.';
-  }
+      'Pass at least one level in 5 different fixed Solo categories (AI-generated topics don\'t count).';
 
   @override
   String get serviceAchievementNotFound => 'Achievement not found.';

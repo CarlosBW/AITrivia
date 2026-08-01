@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'economy_service.dart';
 import 'locale_controller.dart';
@@ -194,7 +195,6 @@ class MatchService {
   }
 
   static const Duration _liveSearchMaxAge = Duration(seconds: 30);
-  static const Duration _presenceMaxAge = Duration(seconds: 45);
 
   static const int _defaultPvpRating = 1000;
 
@@ -244,43 +244,6 @@ class MatchService {
     return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
-  int _searchAgeSeconds(Map<String, dynamic>? data) {
-    if (data == null) return 0;
-
-    final raw = data['searchStartedAt'] ?? data['createdAt'];
-    if (raw is! Timestamp) return 0;
-
-    final age = DateTime.now().difference(raw.toDate()).inSeconds;
-    return age < 0 ? 0 : age;
-  }
-
-  int _allowedRatingGapForSearchAge(int secondsSearching) {
-    return PvpLeagueService.instance
-        .windowForSearchSeconds(secondsSearching)
-        .allowedRatingGap;
-  }
-
-  bool _ratingsAreCompatible({
-    required Map<String, dynamic>? myQueue,
-    required Map<String, dynamic>? opponentQueue,
-  }) {
-    final myRating = _safeInt(myQueue?['pvpRating'], _defaultPvpRating);
-    final opponentRating = _safeInt(
-      opponentQueue?['pvpRating'],
-      _defaultPvpRating,
-    );
-
-    final longestSearchAge = max(
-      _searchAgeSeconds(myQueue),
-      _searchAgeSeconds(opponentQueue),
-    );
-
-    final allowedGap = _allowedRatingGapForSearchAge(longestSearchAge);
-    final ratingGap = (myRating - opponentRating).abs();
-
-    return ratingGap <= allowedGap;
-  }
-
   bool _isLiveQueueEntryValid(Map<String, dynamic>? data) {
     if (data == null) return false;
 
@@ -294,230 +257,29 @@ class MatchService {
     );
   }
 
-  bool _isAvailableForLiveMatch(Map<String, dynamic>? userData) {
-    final presence = Map<String, dynamic>.from(
-      userData?['presence'] as Map? ?? {},
-    );
+  /// Finds and pairs with a live opponent — entirely server-side
+  /// (tryFindLiveOpponent Cloud Function), since the candidate scan and
+  /// claim used to write directly to *other* players' `live_search` docs
+  /// from the client. firestore.rules could narrow that down but never
+  /// fully close it (a client could still plant a fake "matched" claim on
+  /// an actively-searching victim's queue entry); Admin SDK bypasses that
+  /// problem entirely. Every match parameter (category, difficulty,
+  /// ranked, reward, etc.) is read server-side from the caller's own
+  /// queue doc, already written by `startLiveSearch` — this call takes no
+  /// arguments. Returns matchId if paired, null if no opponent yet.
+  Future<String?> tryFindLiveOpponent() async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'tryFindLiveOpponent',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 20)),
+          )
+          .call();
 
-    final status = (presence['status'] ?? 'offline').toString();
-    final inMatch = presence['inMatch'] == true;
-
-    if (inMatch) return false;
-
-    // Para matchmaking público exigimos que el jugador esté activamente
-    // buscando. Esto evita emparejar usuarios online que ya salieron de cola.
-    if (status != 'searching_match') return false;
-
-    return _timestampIsRecent(
-      presence['updatedAt'] ?? presence['lastSeenAt'],
-      maxAge: _presenceMaxAge,
-    );
-  }
-
-  /// Busca candidatos con query normal (FUERA del transaction),
-  /// y luego intenta reclamar a uno con transaction.
-  ///
-  /// Además valida Presence dentro del transaction para evitar emparejar
-  /// usuarios offline, en otra partida o atrapados en una cola vieja.
-  ///
-  /// Retorna matchId si logró crear/reclamar match, o null si no.
-  Future<String?> tryFindLiveOpponent({
-    required String categoryId,
-    int difficulty = 1,
-    int totalQuestions = 10,
-    int timePerQuestionSec = 10,
-    int winReward = EconomyService.defaultPvpWinReward,
-    String myDisplayName = 'Host',
-    bool ranked = false,
-  }) async {
-    final meRef = _liveSearchRef(uid);
-    final meUserRef = _userRef(uid);
-
-    final meSnap = await meRef.get();
-    final meData = meSnap.data();
-    if (!_isLiveQueueEntryValid(meData)) {
+      return (result.data as Map)['matchId'] as String?;
+    } on FirebaseFunctionsException {
       return null;
     }
-
-    final myTotal = (meData?['totalQuestions'] as int?) ?? totalQuestions;
-    final myTime =
-        (meData?['timePerQuestionSec'] as int?) ?? timePerQuestionSec;
-    final myWinReward = (meData?['winReward'] as int?) ?? winReward;
-
-    final qs = await _db
-        .collection('live_search')
-        .where('status', isEqualTo: 'searching')
-        .where('categoryId', isEqualTo: categoryId)
-        .where('difficulty', isEqualTo: difficulty)
-        .where('ranked', isEqualTo: ranked)
-        .limit(20)
-        .get();
-
-    final candidates = qs.docs.where((d) => d.id != uid).toList();
-    if (candidates.isEmpty) return null;
-
-    for (final oppDoc in candidates) {
-      final oppUid = oppDoc.id;
-      final oppRef = _liveSearchRef(oppUid);
-      final oppUserRef = _userRef(oppUid);
-      final matchId = _db.collection('matches').doc().id;
-
-      final claimed = await _db.runTransaction<bool>((tx) async {
-        final meTxSnap = await tx.get(meRef);
-        final oppTxSnap = await tx.get(oppRef);
-        final meUserSnap = await tx.get(meUserRef);
-        final oppUserSnap = await tx.get(oppUserRef);
-
-        final meTx = meTxSnap.data();
-        final oppTx = oppTxSnap.data();
-        final meUser = meUserSnap.data();
-        final oppUser = oppUserSnap.data();
-
-        if (!_isLiveQueueEntryValid(meTx)) return false;
-        if (!_isLiveQueueEntryValid(oppTx)) return false;
-        if (!_isAvailableForLiveMatch(meUser)) return false;
-        if (!_isAvailableForLiveMatch(oppUser)) return false;
-        if ((meTx?['ranked'] == true) != ranked) return false;
-        if ((oppTx?['ranked'] == true) != ranked) return false;
-        if (ranked &&
-            !_ratingsAreCompatible(
-              myQueue: meTx,
-              opponentQueue: oppTx,
-            )) {
-          return false;
-        }
-
-        tx.update(meRef, {
-          'status': 'matched',
-          'matchId': matchId,
-          'opponentUid': oppUid,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        tx.update(oppRef, {
-          'status': 'matched',
-          'matchId': matchId,
-          'opponentUid': uid,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        tx.set(
-          meUserRef,
-          {
-            'presence': {
-              'status': 'in_match',
-              'inMatch': true,
-              'lastSeenAt': FieldValue.serverTimestamp(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-
-        return true;
-      });
-
-      if (!claimed) continue;
-
-      final matchRef = _db.collection('matches').doc(matchId);
-      final oppName = (oppDoc.data()['displayName'] ?? 'Guest').toString();
-      final myAvatarId = (meData?['avatarId'] ?? 'avatar_1').toString();
-      final myFrameId = (meData?['equippedFrame'] ?? '').toString();
-      final myBestLeagueId = (meData?['bestLeagueId'] ?? '').toString();
-
-      final oppAvatarId = (oppDoc.data()['avatarId'] ?? 'avatar_1').toString();
-      final oppFrameId = (oppDoc.data()['equippedFrame'] ?? '').toString();
-      final oppBestLeagueId = (oppDoc.data()['bestLeagueId'] ?? '').toString();
-
-      final questions = await _generateFixedQuestions(
-        categoryId: categoryId,
-        difficulty: difficulty,
-        total: myTotal,
-      );
-
-      final code = _randomCode(5);
-
-      final myName =
-          (meData?['displayName'] ?? myDisplayName).toString().trim();
-
-      final finalMyName = myName.isEmpty ? 'Player' : myName;
-
-      await matchRef.set({
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'waiting',
-        'mode': 'fixed',
-        'matchmakingType': ranked ? 'ranked_flexible_mmr' : 'casual_public',
-        'ranked': ranked,
-        'affectsPvpRating': ranked,
-        'hostInitialPvpRating':
-            _safeInt(meData?['pvpRating'], _defaultPvpRating),
-        'guestInitialPvpRating':
-            _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating),
-        'matchmakingRatingGap':
-            (_safeInt(meData?['pvpRating'], _defaultPvpRating) -
-                    _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
-                .abs(),
-        'hostPvpLeagueId': PvpLeagueService.instance
-            .leagueForRating(_safeInt(meData?['pvpRating'], _defaultPvpRating))
-            .id,
-        'guestPvpLeagueId': PvpLeagueService.instance
-            .leagueForRating(
-                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
-            .id,
-        'hostPvpLeagueName': PvpLeagueService.instance
-            .leagueForRating(_safeInt(meData?['pvpRating'], _defaultPvpRating))
-            .name,
-        'guestPvpLeagueName': PvpLeagueService.instance
-            .leagueForRating(
-                _safeInt(oppDoc.data()['pvpRating'], _defaultPvpRating))
-            .name,
-        'matchmakingWaitSec': max(
-          _searchAgeSeconds(meData),
-          _searchAgeSeconds(oppDoc.data()),
-        ),
-        'categoryId': categoryId,
-        'difficulty': difficulty,
-        'aiTopic': null,
-        'entryFee': 0,
-        'winReward': myWinReward,
-        'loseReward': 0,
-        'totalQuestions': myTotal,
-        'timePerQuestionSec': myTime,
-        'questions': questions,
-        'hostUid': uid,
-        'guestUid': oppUid,
-        'players': {
-          uid: {
-            'displayName': finalMyName,
-            'avatarId': myAvatarId,
-            'equippedFrame': myFrameId,
-            'bestLeagueId': myBestLeagueId,
-            'score': 0,
-            'ready': false,
-            'finished': false,
-          },
-          oppUid: {
-            'displayName': oppName,
-            'avatarId': oppAvatarId,
-            'equippedFrame': oppFrameId,
-            'bestLeagueId': oppBestLeagueId,
-            'score': 0,
-            'ready': false,
-            'finished': false,
-          },
-        },
-        'startAt': null,
-        'endedAt': null,
-        'winnerUid': null,
-        'rewarded': false,
-        'matchCode': code,
-      });
-
-      return matchId;
-    }
-
-    return null;
   }
 
   // ============================================================
@@ -588,107 +350,26 @@ class MatchService {
     return matchRef.id;
   }
 
-  Future<String> createAiPlaceholderMatch({
-    required String categoryId,
-    required int difficulty,
-    required String topic,
-    required int entryFee,
-    required int winReward,
-    int totalQuestions = 10,
-    int timePerQuestionSec = 10,
-    String displayName = 'Host',
-  }) async {
-    if (topic.trim().isEmpty) {
-      throw Exception(_l10n.serviceAiTopicEmpty);
+  /// Looks up a private room by its shared code and claims the guest slot
+  /// — entirely server-side (joinMatchByCode Cloud Function), since the
+  /// old client-side two-step (resolveMatchIdByCode + joinMatch) could
+  /// never actually work: joinMatch's own read of the match doc needs
+  /// firestore.rules' host/guest check to pass, but the joiner isn't
+  /// either yet at that point, so it was always rejected with
+  /// permission-denied.
+  Future<String> joinMatchByCode(String code) async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'joinMatchByCode',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'code': code});
+
+      return (result.data as Map)['matchId'].toString();
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceRoomNotFound);
     }
-
-    final matchRef = _db.collection('matches').doc();
-    final code = _randomCode(5);
-
-    final userSnap = await _userRef(uid).get();
-    final userData = userSnap.data() ?? {};
-
-    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
-    final frameId = (userData['equippedFrame'] ?? '').toString();
-    final bestLeagueId = (userData['bestLeagueId'] ?? '').toString();
-
-    await matchRef.set({
-      'createdAt': FieldValue.serverTimestamp(),
-      'status': 'waiting',
-      'mode': 'ai',
-      'categoryId': categoryId,
-      'difficulty': difficulty,
-      'aiTopic': topic.trim(),
-      'entryFee': entryFee,
-      'winReward': winReward,
-      'loseReward': 0,
-      'totalQuestions': totalQuestions,
-      'timePerQuestionSec': timePerQuestionSec,
-      'questions': [],
-      'hostUid': uid,
-      'guestUid': null,
-      'players': {
-        uid: {
-          'displayName': displayName,
-          'avatarId': avatarId,
-          'equippedFrame': frameId,
-          'bestLeagueId': bestLeagueId,
-          'score': 0,
-          'ready': false,
-          'finished': false,
-        },
-      },
-      'startAt': null,
-      'endedAt': null,
-      'winnerUid': null,
-      'rewarded': false,
-      'matchCode': code,
-    });
-
-    return matchRef.id;
-  }
-
-  Future<void> joinMatch({
-    required String matchId,
-    String displayName = 'Guest',
-  }) async {
-    final ref = _db.collection('matches').doc(matchId);
-    final userSnap = await _userRef(uid).get();
-    final userData = userSnap.data() ?? {};
-
-    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
-    final frameId = (userData['equippedFrame'] ?? '').toString();
-    final bestLeagueId = (userData['bestLeagueId'] ?? '').toString();
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) throw Exception(_l10n.serviceRoomNotFound);
-
-      final data = snap.data() as Map<String, dynamic>;
-      final status = (data['status'] ?? 'waiting').toString();
-      if (status != 'waiting') {
-        throw Exception(_l10n.serviceRoomAlreadyStartedOrEnded);
-      }
-
-      final hostUid = data['hostUid'] as String?;
-      final guestUid = data['guestUid'] as String?;
-
-      if (hostUid == uid || guestUid == uid) return;
-      if (guestUid != null) throw Exception(_l10n.serviceRoomFull);
-
-      tx.update(ref, {
-        'guestUid': uid,
-        'players.$uid': {
-          'displayName': displayName,
-          'avatarId': avatarId,
-          'equippedFrame': frameId,
-          'bestLeagueId': bestLeagueId,
-          'score': 0,
-          'ready': false,
-          'finished': false,
-        },
-      });
-    });
   }
 
   Future<void> setReady(String matchId, bool ready) async {
@@ -740,6 +421,27 @@ class MatchService {
         'status': 'playing',
         'startAt': FieldValue.serverTimestamp(),
       });
+    });
+  }
+
+  /// Cancels a match still in the lobby (`status == 'waiting'`, nothing of
+  /// economic consequence has happened yet) — used when the other player
+  /// goes stale before both are ready, so the remaining player isn't stuck
+  /// on match_lobby_screen.dart forever with no way out. `status` isn't
+  /// locked in firestore.rules (tryStartMatchIfReady already transitions
+  /// it client-side), so no rules change is needed for this.
+  Future<void> cancelWaitingMatch(String matchId) async {
+    final ref = _db.collection('matches').doc(matchId);
+
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (data == null) return;
+
+      final status = (data['status'] ?? 'waiting').toString();
+      if (status != 'waiting') return;
+
+      tx.update(ref, {'status': 'cancelled'});
     });
   }
 
@@ -991,43 +693,19 @@ class MatchService {
     });
   }
 
-  /// Marks a live match finished when the opponent disconnects. This only
-  /// sets match-doc status fields — it does NOT compute or write any
-  /// reward/rating itself. Setting both players' `finished:true` here (with
-  /// `rewarded` left unset) lets the server-side `finalizePvpMatch` Cloud
-  /// Function's trigger guard fire, which then computes and applies the
-  /// disconnect bonus/penalty authoritatively.
-  Future<void> forceFinishMatchByDisconnect({
-    required String matchId,
-    required String winnerUid,
-  }) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) return;
-
-      final status = (data['status'] ?? '').toString();
-      if (status == 'finished') return;
-
-      final hostUid = (data['hostUid'] ?? '').toString();
-      final guestUid = (data['guestUid'] ?? '').toString();
-      if (winnerUid != hostUid && winnerUid != guestUid) return;
-
-      final loserUid = winnerUid == hostUid ? guestUid : hostUid;
-      if (loserUid.isEmpty || loserUid == winnerUid) return;
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-      if (!players.containsKey(winnerUid)) return;
-
-      tx.update(ref, {
-        'winnerUid': winnerUid,
-        'finishReason': 'opponent_disconnected',
-        'players.$winnerUid.finished': true,
-        'players.$loserUid.finished': true,
-      });
-    });
+  /// Claims that the opponent in a live match has disconnected, ending it
+  /// in the caller's favor — server-verified (claimOpponentDisconnected
+  /// Cloud Function independently re-reads the opponent's own presence
+  /// doc before honoring this), since firestore.rules no longer lets a
+  /// client write `winnerUid`/`finishReason` directly. Throws if the
+  /// server disagrees (opponent still looks active).
+  Future<void> claimOpponentDisconnected(String matchId) async {
+    await FirebaseFunctions.instance
+        .httpsCallable(
+          'claimOpponentDisconnected',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({'matchId': matchId});
   }
   // ============================================================
   // ASYNC (diferido) 1 vs 1 (async_matches) - existente
@@ -1262,41 +940,6 @@ class MatchService {
     // triggered by the challengerStatus/challengedStatus update above.
   }
 
-  // ============================================================
-  // ASYNC SEARCH (para elegir a quién retar)
-  // Colección: async_search/{uid}
-  // ============================================================
-
-  DocumentReference<Map<String, dynamic>> _asyncSearchRef(String userId) =>
-      _db.collection('async_search').doc(userId);
-
-  /// Me marca como "available" o "offline" para aparecer en la lista de retos.
-  Future<void> setAsyncChallengeAvailability({
-    required bool available,
-    String displayName = 'Player',
-  }) async {
-    final ref = _asyncSearchRef(uid);
-    await ref.set({
-      'uid': uid,
-      'displayName': displayName,
-      'status': available ? 'available' : 'offline', // available | offline
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-  }
-
-  /// Stream de candidatos disponibles (para listar y elegir rival).
-  /// Nota: filtra tu propio uid en la UI.
-  Stream<QuerySnapshot<Map<String, dynamic>>> watchAsyncChallengeCandidates({
-    int limit = 50,
-  }) {
-    return _db
-        .collection('async_search')
-        .where('status', isEqualTo: 'available')
-        .orderBy('updatedAt', descending: true)
-        .limit(limit)
-        .snapshots();
-  }
-
   /// Inbox de retos: soy el retado.
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyAsyncChallengesInbox({
     int limit = 50,
@@ -1335,25 +978,13 @@ class MatchService {
     return fallback;
   }
 
-  Future<String> resolveMatchIdByCode(String code) async {
-    final snap = await _db
-        .collection('matches')
-        .where('matchCode', isEqualTo: code.trim().toUpperCase())
-        .limit(1)
-        .get();
-
-    if (snap.docs.isEmpty) throw Exception(_l10n.serviceCodeNotFound);
-    return snap.docs.first.id;
-  }
+  final _secureRandom = Random.secure();
 
   String _randomCode(int len) {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final now = DateTime.now().microsecondsSinceEpoch;
-    var x = now;
     final b = StringBuffer();
     for (int i = 0; i < len; i++) {
-      x = (x * 1103515245 + 12345) & 0x7fffffff;
-      b.write(chars[x % chars.length]);
+      b.write(chars[_secureRandom.nextInt(chars.length)]);
     }
     return b.toString();
   }

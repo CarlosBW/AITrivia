@@ -104,7 +104,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String homeAchievementUnlockedRewards(int coins, int xp) {
-    return '+$coins monedas · +$xp XP';
+    return 'Recompensa lista: +$coins monedas · +$xp XP — reclámala en Logros';
   }
 
   @override
@@ -1021,6 +1021,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get asyncFindPlayersSearchLabel => 'Buscar por nombre';
 
   @override
+  String get asyncFindPlayersSearchPrompt =>
+      'Escribe un nombre de usuario para buscar jugadores.';
+
+  @override
   String get asyncFindPlayersNoneToShow => 'No hay jugadores para mostrar.';
 
   @override
@@ -1926,8 +1930,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get achievementsTitle => 'Logros';
 
   @override
-  String achievementsRewardClaimed(int coins) {
-    return '🎉 Recompensa reclamada: +$coins monedas';
+  String achievementsRewardClaimed(int coins, int xp) {
+    return '🎉 Recompensa reclamada: +$coins monedas, +$xp XP';
   }
 
   @override
@@ -2446,16 +2450,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get serviceAiTopicEmpty => 'Tema IA no puede estar vacío';
-
-  @override
   String get serviceRoomNotFound => 'Sala no existe';
-
-  @override
-  String get serviceRoomAlreadyStartedOrEnded => 'La sala ya inició o terminó';
-
-  @override
-  String get serviceRoomFull => 'Sala llena';
 
   @override
   String get serviceNotInRoom => 'No estás dentro de esta sala';
@@ -2481,9 +2476,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get serviceNotYourMatch => 'No perteneces a este match';
-
-  @override
-  String get serviceCodeNotFound => 'Código no encontrado';
 
   @override
   String servicePoolEmptyForCategory(String categoryId) {
@@ -2642,15 +2634,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementCategoriesExplored5Description =>
-      'Aprueba al menos un nivel en 5 categorías distintas del modo Solo.';
-
-  @override
-  String get serviceAchievementCompletedTitle => 'Logro completado';
-
-  @override
-  String serviceAchievementCompletedBody(String title) {
-    return 'Completaste \"$title\". Reclama tu recompensa.';
-  }
+      'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas de IA).';
 
   @override
   String get serviceAchievementNotFound => 'Logro no encontrado.';

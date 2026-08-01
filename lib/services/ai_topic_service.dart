@@ -97,7 +97,10 @@ class AiTopicService {
   }) async {
     try {
       final result = await FirebaseFunctions.instance
-          .httpsCallable('createAiTopic')
+          .httpsCallable(
+            'createAiTopic',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+          )
           .call({'title': title});
 
       return (result.data as Map)['topicId'].toString();
@@ -144,7 +147,10 @@ class AiTopicService {
   }) async {
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('ensureAiTopicLevelsGenerated')
+          .httpsCallable(
+            'ensureAiTopicLevelsGenerated',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+          )
           .call({'topicId': topicId, 'completedLevel': completedLevel});
     } on FirebaseFunctionsException {
       // Best-effort buffering: a failure here just means the next level
@@ -160,7 +166,10 @@ class AiTopicService {
   Future<void> refundAiTopicCostIfNeeded({required String topicId}) async {
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('refundAiTopicCost')
+          .httpsCallable(
+            'refundAiTopicCost',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'topicId': topicId});
     } catch (_) {
       // Best-effort refund — don't block deleting the topic if this fails.
@@ -172,7 +181,10 @@ class AiTopicService {
   }) async {
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('regenerateAiTopicQuestions')
+          .httpsCallable(
+            'regenerateAiTopicQuestions',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+          )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? 'No se pudieron regenerar las preguntas.');
@@ -184,7 +196,10 @@ class AiTopicService {
   }) async {
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('expandAiTopic')
+          .httpsCallable(
+            'expandAiTopic',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? 'No se pudo ampliar el tema.');

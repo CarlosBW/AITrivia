@@ -102,7 +102,10 @@ class PurchaseService {
   Future<void> _verifyAndCredit(PurchaseDetails purchase) async {
     try {
       final result = await FirebaseFunctions.instance
-          .httpsCallable('verifyCoinPurchase')
+          .httpsCallable(
+            'verifyCoinPurchase',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({
         'productId': purchase.productID,
         'source': purchase.verificationData.source,

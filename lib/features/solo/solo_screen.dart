@@ -83,17 +83,44 @@ class _SoloScreenState extends State<SoloScreen> {
                   .map((e) => (e as num).toInt())
                   .toSet();
 
+          // Same passedLevels-or-migrate-from-levelStats fallback as
+          // level_select_screen.dart, for progress docs saved before the
+          // passedLevels field existed.
+          final levelStats = Map<String, dynamic>.from(
+            progressData['levelStats'] as Map? ?? {},
+          );
+
+          final migratedPassedLevels = <int>{};
+          for (final entry in levelStats.entries) {
+            final level = int.tryParse(entry.key);
+            final stat = Map<String, dynamic>.from(entry.value as Map? ?? {});
+            final percent = ((stat['percent'] ?? 0.0) as num).toDouble();
+
+            if (level != null && percent >= 0.4) {
+              migratedPassedLevels.add(level);
+            }
+          }
+
+          final passedLevels = (progressData['passedLevels'] as List<dynamic>?)
+                  ?.map((e) => (e as num).toInt())
+                  .toSet() ??
+              migratedPassedLevels;
+
           final completedCount = completedLevels.length;
           final progress = levelCount == 0
               ? 0.0
               : (completedCount / levelCount).clamp(0.0, 1.0);
 
+          // Uses passedLevels (actually passed >=40%), not completedLevels
+          // (attempted, pass or fail), so Continue can't drop a player past
+          // a level they failed — matching level_select_screen.dart's
+          // lock/unlock logic, which also keys off passedLevels.
           int nextLevel = 1;
-          if (completedLevels.isNotEmpty) {
-            final highestCompleted = completedLevels.reduce(
+          if (passedLevels.isNotEmpty) {
+            final highestPassed = passedLevels.reduce(
               (a, b) => a > b ? a : b,
             );
-            nextLevel = highestCompleted + 1;
+            nextLevel = highestPassed + 1;
           }
 
           if (nextLevel > levelCount) {

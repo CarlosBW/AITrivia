@@ -61,7 +61,8 @@ service cloud.firestore {
         'gamesPlayed', 'correctAnswers', 'wrongAnswers',
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
-        'unlockedAvatars', 'dynamicAvatars'
+        'unlockedAvatars', 'dynamicAvatars',
+        'categoriesExploredCount'
       ];
     }
 
@@ -172,9 +173,17 @@ service cloud.firestore {
         }
       }
 
+      // Cloud-Function-only (submitSoloLevelResult, Admin SDK — bypasses
+      // these rules). A client `write` here used to be allowed, but
+      // submitSoloLevelResult trusts this doc's own `passedLevels`/
+      // `completedLevels`/`categoryRewardGranted` as its record of which
+      // level rewards were already granted — a client could rewrite this
+      // doc directly to drop a level from `passedLevels` (or reset
+      // `categoryRewardGranted`) and re-claim its coin reward indefinitely.
       match /progress_fixed/{docId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+        allow write: if false;
       }
 
       // Cloud-Function-only (ensureSoloLevelSession, Admin SDK — bypasses
@@ -194,9 +203,11 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Same reasoning as /progress_fixed above.
       match /progress_ai/{topicId} {
-        allow read, write: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid == userId;
+        allow write: if false;
       }
 
       // Same reasoning as /sessions_fixed above, against

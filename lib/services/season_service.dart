@@ -278,8 +278,10 @@ class SeasonService {
   Future<ClaimSeasonRewardsResult> claimAllPendingRewards({
     required String uid,
   }) async {
-    final callable =
-        FirebaseFunctions.instance.httpsCallable('claimWeeklySeasonRewards');
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'claimWeeklySeasonRewards',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+    );
     final response = await callable.call();
     final data = Map<String, dynamic>.from(response.data as Map);
 

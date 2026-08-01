@@ -127,7 +127,10 @@ class WeeklyTopicService {
     required List<Map<String, dynamic>> answers,
   }) async {
     final result = await FirebaseFunctions.instance
-        .httpsCallable('submitWeeklyTopicRound')
+        .httpsCallable(
+          'submitWeeklyTopicRound',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
         .call({
       'weekId': weekId,
       'categoryId': categoryId,
@@ -180,7 +183,10 @@ class WeeklyTopicService {
     required int rewardCoins,
   }) async {
     final result = await FirebaseFunctions.instance
-        .httpsCallable('claimWeeklyTopicCoinReward')
+        .httpsCallable(
+          'claimWeeklyTopicCoinReward',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
         .call({'weekId': weekId});
 
     return (result.data as Map)['claimed'] == true;
@@ -197,7 +203,10 @@ class WeeklyTopicService {
     if (rewardAvatarId.trim().isEmpty) return false;
 
     final result = await FirebaseFunctions.instance
-        .httpsCallable('claimWeeklyTopicCompletionReward')
+        .httpsCallable(
+          'claimWeeklyTopicCompletionReward',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
         .call({'weekId': weekId});
 
     return (result.data as Map)['claimed'] == true;

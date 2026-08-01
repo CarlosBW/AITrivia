@@ -129,7 +129,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     setState(() => _saving = true);
 
     try {
-      await FirebaseFunctions.instance.httpsCallable('deleteMyAccount').call();
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'deleteMyAccount',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call();
       await FirebaseAuth.instance.signOut();
 
       if (!mounted) return;

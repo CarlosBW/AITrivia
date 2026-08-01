@@ -212,7 +212,10 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   if (loginStreakIncreased) {
     try {
       final response = await FirebaseFunctions.instance
-          .httpsCallable('claimLoginStreakBonus')
+          .httpsCallable(
+            'claimLoginStreakBonus',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'todayDateId': today});
 
       final result = Map<String, dynamic>.from(response.data as Map);

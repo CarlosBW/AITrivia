@@ -2495,7 +2495,8 @@ const AI_TOPIC_SYSTEM_PROMPT = "You generate trivia questions for a " +
   "school textbook or family-friendly encyclopedia would.";
 
 /**
- * Mirrors level_play_screen.dart's `_calculateLevelRewards`.
+ * Reward math for a single Solo level attempt — fully server-side now,
+ * no client-side equivalent to mirror.
  * @param {number} correct Correct answers in this level attempt.
  * @param {number} total Total questions in this level attempt.
  * @return {{xp:number, coins:number}} Reward for this attempt.
@@ -2575,6 +2576,10 @@ export const submitSoloLevelResult = onCall(async (request) => {
     const catSnap = await db
       .collection("fixed_categories").doc(categoryId).get();
     levelCount = safeInt(catSnap.data()?.levelCount, 0);
+  }
+
+  if (levelCount > 0 && levelNumber > levelCount) {
+    throw new HttpsError("invalid-argument", "Invalid level result.");
   }
 
   return db.runTransaction(async (tx) => {
@@ -2741,23 +2746,25 @@ export const submitSoloLevelResult = onCall(async (request) => {
 
     tx.set(progressRef, progressPatch, {merge: true});
 
-    if (
-      grantedXp > 0 || grantedCoins > 0 || newCategoriesExploredCount !== null
-    ) {
-      tx.set(
-        userRef,
-        {
-          ...(grantedXp > 0 ?
-            {xp: admin.firestore.FieldValue.increment(grantedXp)} : {}),
-          ...(grantedCoins > 0 ?
-            {coins: admin.firestore.FieldValue.increment(grantedCoins)} : {}),
-          ...(newCategoriesExploredCount !== null ?
-            {categoriesExploredCount: newCategoriesExploredCount} : {}),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        {merge: true}
-      );
-    }
+    // gamesPlayed increments once per level attempt (pass or fail), same
+    // semantics as submitDailyChallengeResult's increment — it gates
+    // LifeService.tryConsumeWrongAnswer's new-player grace period, which
+    // was previously only bumped by Daily Challenge, leaving it permanent
+    // or absent for players who never (or not yet) touch Daily Challenge.
+    tx.set(
+      userRef,
+      {
+        gamesPlayed: admin.firestore.FieldValue.increment(1),
+        ...(grantedXp > 0 ?
+          {xp: admin.firestore.FieldValue.increment(grantedXp)} : {}),
+        ...(grantedCoins > 0 ?
+          {coins: admin.firestore.FieldValue.increment(grantedCoins)} : {}),
+        ...(newCategoriesExploredCount !== null ?
+          {categoriesExploredCount: newCategoriesExploredCount} : {}),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
 
     return {
       grantedXp,
@@ -2867,6 +2874,28 @@ export const ensureSoloLevelSession = onCall(async (request) => {
   const existing = await sessionRef.get();
   if (existing.exists) {
     return {created: false};
+  }
+
+  // "Locked" was previously only a client-side UI affordance — neither
+  // this function nor submitSoloLevelResult checked level-unlock ordering,
+  // so any client could request a session for an arbitrary levelNumber
+  // directly. Level 1 always needs no prior progress; every other level
+  // requires the one before it to already be in passedLevels.
+  if (levelNumber > 1) {
+    const progressRef = isAiTopic ?
+      userRef.collection("progress_ai").doc(aiTopicId as string) :
+      userRef.collection("progress_fixed").doc(categoryId);
+    const progressSnap = await progressRef.get();
+    const passedLevels = new Set<number>(
+      ((progressSnap.data()?.passedLevels as unknown[]) || [])
+        .map((e) => safeInt(e, 0))
+    );
+
+    if (!passedLevels.has(levelNumber - 1)) {
+      throw new HttpsError(
+        "failed-precondition", "This level is locked."
+      );
+    }
   }
 
   if (isAiTopic) {
@@ -3615,12 +3644,12 @@ export const createAiTopic = onCall({
     );
   }
 
-  if (await isTopicPreviouslyBlocked(moderationKey)) {
-    throw new HttpsError(
-      "invalid-argument",
-      "No se pudo generar ese tema. Intenta con otro título."
-    );
-  }
+  // No separate isTopicPreviouslyBlocked check here — the generation loop
+  // below calls requestAiQuestionsFromClaude for level 1 first, which
+  // checks it before making any Claude API call, so a previously-blocked
+  // title still fails fast with the same user-facing message, just via
+  // topicBlockedHttpsError() in the catch block instead of a duplicate
+  // read here.
 
   const topicsCol = db.collection("users").doc(uid).collection("ai_topics");
 
@@ -3686,33 +3715,84 @@ export const createAiTopic = onCall({
     throw error;
   }
 
-  await topicRef.set({
-    topicId: topicRef.id,
-    title: cleanTitle,
-    normalizedTitle,
-    status: "ready",
-    source: "ai",
-    targetLevels: AI_LEVELS_PER_TOPIC,
-    levelCount: AI_LEVELS_PER_TOPIC,
-    levelsCount: AI_LEVELS_PER_TOPIC,
-    generatedLevels: AI_INITIAL_GENERATED_LEVELS,
-    questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
-    generationMode: "claude_haiku_4_5",
-    generationCostCoins: cost,
-    usedFreePass: usesFreePass,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  // Charge and create the topic doc atomically, re-reading fresh
+  // free-pass/coin balance and topic count at charge time (not the
+  // pre-generation snapshot read above) — two concurrent createAiTopic
+  // calls (double-submit, or two devices on one account) could otherwise
+  // both pass the earlier plain-read checks before either one's charge
+  // lands, double-spending a single free pass or slipping both past the
+  // topic cap. Mirrors the transactional charge pattern in
+  // regenerateAiTopicQuestions/expandAiTopic. This can't prevent the
+  // wasted Claude generation calls in a genuine race, only the
+  // double-charge/double-free-pass/cap-bypass outcome.
+  try {
+    await db.runTransaction(async (tx) => {
+      const freshUserSnap = await tx.get(userRef);
+      const freshUserData = freshUserSnap.data() || {};
+      const freshCoins = safeInt(freshUserData.coins, 0);
+      const freshFreePasses = safeInt(
+        freshUserData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
+      );
+      const freshUsesFreePass = freshFreePasses > 0;
+      const freshCost = freshUsesFreePass ? 0 : CREATE_AI_TOPIC_COST;
 
-  await userRef.set(
-    {
-      ...(usesFreePass ?
-        {freeTopicPasses: admin.firestore.FieldValue.increment(-1)} :
-        {coins: admin.firestore.FieldValue.increment(-cost)}),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    {merge: true}
-  );
+      if (!freshUsesFreePass && freshCoins < freshCost) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Necesitas ${freshCost} monedas para crear un tema IA.`
+        );
+      }
+
+      const freshActiveTopicsSnap = await tx.get(
+        topicsCol
+          .where("status", "in", ["pending_generation", "ready", "failed"])
+          .limit(MAX_AI_TOPICS_PER_USER)
+      );
+
+      if (freshActiveTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
+        throw new HttpsError(
+          "resource-exhausted",
+          `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+          "Delete one to create another."
+        );
+      }
+
+      tx.set(topicRef, {
+        topicId: topicRef.id,
+        title: cleanTitle,
+        normalizedTitle,
+        status: "ready",
+        source: "ai",
+        targetLevels: AI_LEVELS_PER_TOPIC,
+        levelCount: AI_LEVELS_PER_TOPIC,
+        levelsCount: AI_LEVELS_PER_TOPIC,
+        generatedLevels: AI_INITIAL_GENERATED_LEVELS,
+        questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
+        generationMode: "claude_haiku_4_5",
+        generationCostCoins: freshCost,
+        usedFreePass: freshUsesFreePass,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      tx.set(
+        userRef,
+        {
+          ...(freshUsesFreePass ?
+            {freeTopicPasses: admin.firestore.FieldValue.increment(-1)} :
+            {coins: admin.firestore.FieldValue.increment(-freshCost)}),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+    });
+  } catch (error) {
+    // Generated content already sits under topicRef with no charge/topic
+    // doc to reference it — same cleanup as the generation-loop catch
+    // above.
+    await deleteAiTopicLevelsSubtree(topicRef);
+    throw error;
+  }
 
   return {topicId: topicRef.id};
 });

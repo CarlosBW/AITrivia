@@ -400,6 +400,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             ? originalIndexByShuffled[tappedIndex]
             : tappedIndex;
 
+    // A mid-level life refill can bring the player back to the same
+    // question (see _buyLifeMidLevel) — replace any earlier attempt at
+    // this questionIndex instead of appending a second entry, or the
+    // server-side scoring in submitSoloLevelResult would see two answers
+    // for one question and could drop the legitimate retry.
+    _answers.removeWhere((a) => a['questionIndex'] == _index);
     _answers.add({
       'questionIndex': _index,
       'selectedIndex': originalSelectedIndex,
@@ -553,6 +559,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             sessionRef: sessionRef,
                           );
                         } catch (e) {
+                          // The life for this level entry was already
+                          // charged in _checkAndConsumeLife before session
+                          // creation was attempted — refund it here so a
+                          // failed session creation (empty pool, transient
+                          // error) doesn't leave the player down a life for
+                          // nothing. _lifeChecked is reset by the Retry
+                          // button below, not here, so this doesn't loop.
+                          await LifeService.instance.refundLevelEntry(uid);
                           _sessionError = e.toString();
                         } finally {
                           if (mounted) {
@@ -588,6 +602,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                   setState(() {
                                     _sessionError = null;
                                     _creatingSession = false;
+                                    // Refunded above — re-run the life
+                                    // gate so retrying charges again
+                                    // instead of skipping the life check.
+                                    _lifeChecked = false;
                                   });
                                 },
                                 child: Text(l10n.commonRetry),
@@ -978,7 +996,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     setState(() => _reportingQuestion = true);
 
     try {
-      await FirebaseFunctions.instance.httpsCallable('reportAiQuestion').call({
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'reportAiQuestion',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({
         'topicId': widget.aiTopicId,
         'levelNumber': widget.levelNumber,
         'questionId': questionId,
@@ -1161,7 +1184,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     if (existing.exists) return;
 
     await FirebaseFunctions.instance
-        .httpsCallable('ensureSoloLevelSession')
+        .httpsCallable(
+          'ensureSoloLevelSession',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
         .call({
       'isAiTopic': widget.isAiTopic,
       'categoryId': widget.categoryId,
@@ -1179,8 +1205,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
 
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('submitSoloLevelResult');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'submitSoloLevelResult',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      );
 
       final response = await callable.call({
         'isAiTopic': widget.isAiTopic,

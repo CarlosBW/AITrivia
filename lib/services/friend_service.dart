@@ -230,7 +230,10 @@ class FriendService {
 
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('acceptFriendRequest')
+          .httpsCallable(
+            'acceptFriendRequest',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'requesterUid': requesterUid});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotAcceptRequest);
@@ -279,7 +282,10 @@ class FriendService {
 
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('removeFriend')
+          .httpsCallable(
+            'removeFriend',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'friendUid': friendUid});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotRemoveFriend);

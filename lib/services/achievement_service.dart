@@ -264,7 +264,10 @@ class AchievementService {
 
     try {
       await FirebaseFunctions.instance
-          .httpsCallable('claimAchievementReward')
+          .httpsCallable(
+            'claimAchievementReward',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
           .call({'achievementId': achievementId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotClaimReward);

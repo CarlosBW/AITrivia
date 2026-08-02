@@ -11,6 +11,23 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
+    // Cloud-Function-only (createAiTopic / ensureAiTopicLevelsGenerated /
+    // regenerateAiTopicQuestions / ensureTopicAdoptedIntoPool, Admin SDK —
+    // bypasses these rules). Shared AI-topic content pool, same trust level
+    // as fixed_pools above: read-open to any signed-in user since it's
+    // moderated, non-personal content, but only Cloud Functions may write
+    // it (a client write here could forge `usageCount`/`status` or plant
+    // self-authored question content shared across every reuser).
+    match /ai_topic_pool/{poolId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+
+      match /{document=**} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
     match /usernames/{usernameLower} {
       allow read: if request.auth != null;
 

@@ -3946,6 +3946,36 @@ abstract class AppLocalizations {
   /// **'Creando...'**
   String get createAiTopicCreatingButton;
 
+  /// No description provided for @createAiTopicPopularSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Temas Populares'**
+  String get createAiTopicPopularSectionTitle;
+
+  /// No description provided for @createAiTopicPopularSectionHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige un tema ya creado por otros jugadores y ahorra monedas'**
+  String get createAiTopicPopularSectionHint;
+
+  /// No description provided for @createAiTopicPopularUsedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'Usado {count} veces'**
+  String createAiTopicPopularUsedCount(int count);
+
+  /// No description provided for @createAiTopicPopularCostLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'{cost} monedas'**
+  String createAiTopicPopularCostLabel(int cost);
+
+  /// No description provided for @createAiTopicPopularSelectedHint.
+  ///
+  /// In es, this message translates to:
+  /// **'🔥 Tema popular seleccionado: costo con descuento'**
+  String get createAiTopicPopularSelectedHint;
+
   /// No description provided for @coinShopTitle.
   ///
   /// In es, this message translates to:
@@ -4419,6 +4449,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.'**
   String get spotlightFramesBody;
+
+  /// No description provided for @spotlightAiTopicsPopularTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Temas Populares'**
+  String get spotlightAiTopicsPopularTitle;
+
+  /// No description provided for @spotlightAiTopicsPopularBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.'**
+  String get spotlightAiTopicsPopularBody;
 
   /// No description provided for @notificationBellTooltip.
   ///

@@ -1390,6 +1390,21 @@
   },
   "createAiTopicIncludesHint": "Incluye 10 niveles con 10 preguntas cada uno, preparados de a poco mientras juegas.",
   "createAiTopicCreatingButton": "Creando...",
+  "createAiTopicPopularSectionTitle": "Temas Populares",
+  "createAiTopicPopularSectionHint": "Elige un tema ya creado por otros jugadores y ahorra monedas",
+  "createAiTopicPopularUsedCount": "Usado {count} veces",
+  "@createAiTopicPopularUsedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "createAiTopicPopularCostLabel": "{cost} monedas",
+  "@createAiTopicPopularCostLabel": {
+    "placeholders": {
+      "cost": {"type": "int"}
+    }
+  },
+  "createAiTopicPopularSelectedHint": "🔥 Tema popular seleccionado: costo con descuento",
 
   "coinShopTitle": "Comprar monedas",
   "coinShopPurchaseSuccess": "+{coins} monedas",
@@ -1538,6 +1553,8 @@
   "spotlightAchievementsBody": "Cumple objetivos jugando y reclama su recompensa en monedas y XP tocando la tarjeta cuando esté completa.",
   "spotlightFramesTitle": "Marcos de perfil",
   "spotlightFramesBody": "Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.",
+  "spotlightAiTopicsPopularTitle": "Temas Populares",
+  "spotlightAiTopicsPopularBody": "Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.",
   "notificationBellTooltip": "Notificaciones",
   "buyCoinsButtonLabel": "Comprar monedas",
   "profileErrorLoadingMatchHistory": "Error cargando historial de partidas:\n{error}",

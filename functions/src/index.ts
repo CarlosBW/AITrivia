@@ -3886,7 +3886,19 @@ export const ensureSoloLevelSession = onCall(async (request) => {
   }
 
   if (isAiTopic) {
-    const levelRef = userRef.collection("ai_topics").doc(aiTopicId as string)
+    const topicRef = userRef.collection("ai_topics").doc(aiTopicId as string);
+    const topicSnap = await topicRef.get();
+    const topicData = topicSnap.data();
+
+    if (!topicData) {
+      throw new HttpsError("not-found", "This topic no longer exists.");
+    }
+
+    const ownerSnap = await userRef.get();
+    const poolId = await ensureTopicAdoptedIntoPool(
+      uid, topicRef, topicData, ownerSnap.data()?.languageCode
+    );
+    const levelRef = db.collection("ai_topic_pool").doc(poolId)
       .collection("levels").doc(`level_${levelNumber}`);
 
     const levelSnap = await levelRef.get();
@@ -4450,6 +4462,11 @@ export const verifyCoinPurchase = onCall(async (request) => {
 // ============================================================
 
 const CREATE_AI_TOPIC_COST = 600;
+// Charged instead of CREATE_AI_TOPIC_COST when the requested title+language
+// already has a ready shared pool entry — no Claude call needed, so it's
+// discounted to reflect the real (zero) generation cost. Keep in sync with
+// lib/services/economy_service.dart's `createAiTopicFromPoolCost`.
+const CREATE_AI_TOPIC_FROM_POOL_COST = 300;
 // Regenerating scales with how much content there actually is to redo —
 // a flat cost let a topic buffered/expanded to 10+ levels regenerate all
 // of them for the same price a fresh 2-level topic would pay. 75/level
@@ -4747,14 +4764,19 @@ async function requestAiQuestionsFromClaude(
  * Generates one level's worth of real AI trivia questions via Claude
  * Haiku 4.5 and writes them to Firestore. Writes the same schema the old
  * mock generator used, so no client-side rendering changes are needed.
- * @param {FirebaseFirestore.DocumentReference} topicRef Topic document ref.
+ *
+ * Always writes into the shared `ai_topic_pool` entry, never into a
+ * per-user topic doc — every AI topic's actual question content lives in
+ * the pool now (see the "Shared AI-topic content pool" plan), so every
+ * caller passes the resolved pool ref here.
+ * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
  * @param {number} levelNumber Level to (re)generate.
  * @param {string} title Topic title, used as the generation subject.
  * @param {unknown} languageCode Recipient's stored languageCode.
  * @return {Promise<void>} Resolves once the batch commits.
  */
 async function generateAiTopicLevel(
-  topicRef: FirebaseFirestore.DocumentReference,
+  poolRef: FirebaseFirestore.DocumentReference,
   levelNumber: number,
   title: string,
   languageCode: unknown
@@ -4763,7 +4785,7 @@ async function generateAiTopicLevel(
     title, levelNumber, languageCode
   );
 
-  const levelRef = topicRef.collection("levels").doc(`level_${levelNumber}`);
+  const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
   const batch = db.batch();
 
   batch.set(levelRef, {
@@ -4810,6 +4832,176 @@ async function deleteAiTopicLevelsSubtree(
   }
 
   await batch.commit();
+}
+
+/**
+ * Deterministic doc id for the shared content pool entry backing a given
+ * title+language — collapsing accents/punctuation so trivial variations
+ * (accents, case, extra punctuation) still land on the same pool entry,
+ * maximizing reuse. Two independent pool entries can exist for the same
+ * title in different languages, since content is generated in the
+ * requester's own language (see requestAiQuestionsFromClaude).
+ * @param {string} normalizedTitle Title run through `normalizeTopicTitle`.
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @return {string} Deterministic `ai_topic_pool` doc id.
+ */
+function aiTopicPoolId(normalizedTitle: string, languageCode: unknown): string {
+  const lang = languageCode === "en" ? "en" : "es";
+  const slug = normalizedTitle
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${lang}__${slug || "topic"}`;
+}
+
+/**
+ * Transactional get-or-create for the shared pool entry backing a given
+ * title+language. Doesn't generate any content — callers decide whether to
+ * generate against the returned ref based on `poolData.status`/
+ * `generatedLevels`.
+ * @param {string} normalizedTitle Title run through `normalizeTopicTitle`.
+ * @param {string} title Original (non-normalized) title.
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @param {string} uid Requesting user's uid (audit only, never shown).
+ * @return {Promise<Object>} The resolved pool doc ref (`poolRef`), its
+ * current data (`poolData`), and whether this call is what created it
+ * (`created`).
+ */
+async function getOrCreatePoolEntry(
+  normalizedTitle: string,
+  title: string,
+  languageCode: unknown,
+  uid: string
+): Promise<{
+  poolRef: FirebaseFirestore.DocumentReference;
+  poolData: FirebaseFirestore.DocumentData;
+  created: boolean;
+}> {
+  const poolRef = db.collection("ai_topic_pool")
+    .doc(aiTopicPoolId(normalizedTitle, languageCode));
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(poolRef);
+    if (snap.exists) {
+      return {poolRef, poolData: snap.data() || {}, created: false};
+    }
+
+    const poolData = {
+      title,
+      normalizedTitle,
+      languageCode: languageCode === "en" ? "en" : "es",
+      status: "pending_generation",
+      generatedLevels: 0,
+      targetLevels: AI_INITIAL_GENERATED_LEVELS,
+      usageCount: 1,
+      createdByUid: uid,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    tx.set(poolRef, poolData);
+    return {poolRef, poolData, created: true};
+  });
+}
+
+/**
+ * Lazily adopts a pre-migration per-user topic into the shared content
+ * pool the first time anything touches it after this migration shipped —
+ * called at the top of `ensureAiTopicLevelsGenerated`,
+ * `regenerateAiTopicQuestions`, and `ensureSoloLevelSession`'s AI branch,
+ * before they read/generate content. No-op once `topicData.poolId` is
+ * already set — this only ever runs once per legacy topic.
+ *
+ * If this is the first topic ever seen for its title+language, its own
+ * already-generated content becomes the pool's seed content (moved, not
+ * copied — the per-user copy is deleted once the pool has it). Otherwise
+ * a pool entry already exists (another user's topic adopted first, or was
+ * created directly post-migration): this topic's own content is simply
+ * redundant and gets deleted, with no economic event either way — no
+ * `usageCount` bump (this user generated their own copy originally, not a
+ * new discounted reuse) and no charge/refund (pure storage cleanup).
+ * @param {string} uid Topic owner's uid.
+ * @param {FirebaseFirestore.DocumentReference} topicRef Per-user topic ref.
+ * @param {FirebaseFirestore.DocumentData} topicData Topic's current data.
+ * @param {unknown} languageCode Topic owner's stored languageCode.
+ * @return {Promise<string>} The topic's (now guaranteed-set) poolId.
+ */
+async function ensureTopicAdoptedIntoPool(
+  uid: string,
+  topicRef: FirebaseFirestore.DocumentReference,
+  topicData: FirebaseFirestore.DocumentData,
+  languageCode: unknown
+): Promise<string> {
+  if (topicData.poolId) {
+    return String(topicData.poolId);
+  }
+
+  const normalizedTitle = String(
+    topicData.normalizedTitle ||
+    normalizeTopicTitle(String(topicData.title || ""))
+  );
+  const title = String(topicData.title || "Custom Topic");
+  const ownGeneratedLevels = safeInt(topicData.generatedLevels, 0);
+  const ownTargetLevels = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
+
+  const {poolRef, poolData, created} = await getOrCreatePoolEntry(
+    normalizedTitle, title, languageCode, uid
+  );
+
+  if (ownGeneratedLevels > 0) {
+    if (created) {
+      const levelsSnap = await topicRef.collection("levels").get();
+      const batch = db.batch();
+
+      for (const levelDoc of levelsSnap.docs) {
+        const questionsSnap = await levelDoc.ref.collection("questions").get();
+        const poolLevelRef = poolRef.collection("levels").doc(levelDoc.id);
+        batch.set(poolLevelRef, levelDoc.data());
+        questionsSnap.docs.forEach((q) => {
+          batch.set(poolLevelRef.collection("questions").doc(q.id), q.data());
+        });
+      }
+
+      batch.set(poolRef, {
+        status: "ready",
+        generatedLevels: ownGeneratedLevels,
+        targetLevels: Math.max(ownTargetLevels, ownGeneratedLevels),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      await batch.commit();
+    } else {
+      const poolGeneratedLevels = safeInt(poolData.generatedLevels, 0);
+
+      if (ownGeneratedLevels > poolGeneratedLevels) {
+        for (
+          let level = poolGeneratedLevels + 1;
+          level <= ownGeneratedLevels;
+          level++
+        ) {
+          await generateAiTopicLevel(poolRef, level, title, languageCode);
+        }
+
+        await poolRef.set({
+          generatedLevels: ownGeneratedLevels,
+          targetLevels: Math.max(
+            safeInt(poolData.targetLevels, 0), ownGeneratedLevels
+          ),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
+    }
+
+    await deleteAiTopicLevelsSubtree(topicRef);
+  }
+
+  await topicRef.set({
+    poolId: poolRef.id,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+
+  return poolRef.id;
 }
 
 export const createAiTopic = onCall({
@@ -4889,12 +5081,25 @@ export const createAiTopic = onCall({
   const userSnap = await userRef.get();
   const userData = userSnap.data() || {};
 
-  const coins = safeInt(userData.coins, 0);
   const freePasses = safeInt(
     userData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
   );
   const usesFreePass = freePasses > 0;
-  const cost = usesFreePass ? 0 : CREATE_AI_TOPIC_COST;
+
+  // Resolve (or create) the shared pool entry for this title+language
+  // before deciding whether any Claude call is even needed — see the
+  // "Shared AI-topic content pool" plan. `status === "ready"` means
+  // someone (this user or another) already generated this exact
+  // title+language before, so this create can skip generation entirely
+  // and charge the discounted reuse price instead.
+  const {poolRef, poolData} = await getOrCreatePoolEntry(
+    normalizedTitle, cleanTitle, userData.languageCode, uid
+  );
+  const reuseFromPool = poolData.status === "ready";
+
+  const coins = safeInt(userData.coins, 0);
+  const cost = usesFreePass ? 0 :
+    (reuseFromPool ? CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_COST);
 
   if (!usesFreePass && coins < cost) {
     throw new HttpsError(
@@ -4902,25 +5107,35 @@ export const createAiTopic = onCall({
     );
   }
 
-  const topicRef = topicsCol.doc();
+  if (!reuseFromPool) {
+    // Deterministic level doc ids (level_1, level_2, ...) make this
+    // self-healing: unlike the old per-user flow, a failure here is never
+    // cleaned up — the pool doc simply stays `pending_generation` and the
+    // next attempt (by this user or anyone else typing the same title)
+    // just resumes/overwrites from where it left off. Deleting shared pool
+    // content on failure would risk destroying a concurrent attempt's
+    // work for a title two users happened to create at the same time.
+    const startLevel = safeInt(poolData.generatedLevels, 0) + 1;
 
-  try {
-    for (let level = 1; level <= AI_INITIAL_GENERATED_LEVELS; level++) {
-      await generateAiTopicLevel(
-        topicRef, level, cleanTitle, userData.languageCode
-      );
+    try {
+      for (
+        let level = startLevel;
+        level <= AI_INITIAL_GENERATED_LEVELS;
+        level++
+      ) {
+        await generateAiTopicLevel(
+          poolRef, level, cleanTitle, userData.languageCode
+        );
+      }
+    } catch (error) {
+      if (error instanceof TopicBlockedError) {
+        throw topicBlockedHttpsError();
+      }
+      throw error;
     }
-  } catch (error) {
-    // No topic doc/charge exist yet at this point either way — just make
-    // sure a level that did succeed before a later one failed doesn't
-    // leave orphaned content under a topic id nothing will ever reference.
-    await deleteAiTopicLevelsSubtree(topicRef);
-
-    if (error instanceof TopicBlockedError) {
-      throw topicBlockedHttpsError();
-    }
-    throw error;
   }
+
+  const topicRef = topicsCol.doc();
 
   // Charge and create the topic doc atomically, re-reading fresh
   // free-pass/coin balance and topic count at charge time (not the
@@ -4932,76 +5147,89 @@ export const createAiTopic = onCall({
   // regenerateAiTopicQuestions/expandAiTopic. This can't prevent the
   // wasted Claude generation calls in a genuine race, only the
   // double-charge/double-free-pass/cap-bypass outcome.
-  try {
-    await db.runTransaction(async (tx) => {
-      const freshUserSnap = await tx.get(userRef);
-      const freshUserData = freshUserSnap.data() || {};
-      const freshCoins = safeInt(freshUserData.coins, 0);
-      const freshFreePasses = safeInt(
-        freshUserData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
+  return db.runTransaction(async (tx) => {
+    const freshUserSnap = await tx.get(userRef);
+    const freshUserData = freshUserSnap.data() || {};
+    const freshCoins = safeInt(freshUserData.coins, 0);
+    const freshFreePasses = safeInt(
+      freshUserData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
+    );
+    const freshUsesFreePass = freshFreePasses > 0;
+    const freshCost = freshUsesFreePass ? 0 :
+      (reuseFromPool ? CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_COST);
+
+    if (!freshUsesFreePass && freshCoins < freshCost) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Necesitas ${freshCost} monedas para crear un tema IA.`
       );
-      const freshUsesFreePass = freshFreePasses > 0;
-      const freshCost = freshUsesFreePass ? 0 : CREATE_AI_TOPIC_COST;
+    }
 
-      if (!freshUsesFreePass && freshCoins < freshCost) {
-        throw new HttpsError(
-          "failed-precondition",
-          `Necesitas ${freshCost} monedas para crear un tema IA.`
-        );
-      }
+    const freshActiveTopicsSnap = await tx.get(
+      topicsCol
+        .where("status", "in", ["pending_generation", "ready", "failed"])
+        .limit(MAX_AI_TOPICS_PER_USER)
+    );
 
-      const freshActiveTopicsSnap = await tx.get(
-        topicsCol
-          .where("status", "in", ["pending_generation", "ready", "failed"])
-          .limit(MAX_AI_TOPICS_PER_USER)
+    if (freshActiveTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
+      throw new HttpsError(
+        "resource-exhausted",
+        `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+        "Delete one to create another."
       );
+    }
 
-      if (freshActiveTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
-        throw new HttpsError(
-          "resource-exhausted",
-          `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
-          "Delete one to create another."
-        );
-      }
+    const freshPoolSnap = await tx.get(poolRef);
+    const freshPoolData = freshPoolSnap.data() || {};
+    const freshPoolGeneratedLevels = Math.max(
+      safeInt(freshPoolData.generatedLevels, 0), AI_INITIAL_GENERATED_LEVELS
+    );
 
-      tx.set(topicRef, {
-        topicId: topicRef.id,
-        title: cleanTitle,
-        normalizedTitle,
-        status: "ready",
-        source: "ai",
-        targetLevels: AI_LEVELS_PER_TOPIC,
-        levelCount: AI_LEVELS_PER_TOPIC,
-        levelsCount: AI_LEVELS_PER_TOPIC,
-        generatedLevels: AI_INITIAL_GENERATED_LEVELS,
-        questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
-        generationMode: "claude_haiku_4_5",
-        generationCostCoins: freshCost,
-        usedFreePass: freshUsesFreePass,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      tx.set(
-        userRef,
-        {
-          ...(freshUsesFreePass ?
-            {freeTopicPasses: admin.firestore.FieldValue.increment(-1)} :
-            {coins: admin.firestore.FieldValue.increment(-freshCost)}),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        {merge: true}
-      );
+    tx.set(topicRef, {
+      topicId: topicRef.id,
+      title: cleanTitle,
+      normalizedTitle,
+      status: "ready",
+      source: "ai",
+      poolId: poolRef.id,
+      targetLevels: AI_LEVELS_PER_TOPIC,
+      levelCount: AI_LEVELS_PER_TOPIC,
+      levelsCount: AI_LEVELS_PER_TOPIC,
+      generatedLevels: AI_INITIAL_GENERATED_LEVELS,
+      questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
+      generationMode: "claude_haiku_4_5",
+      generationCostCoins: freshCost,
+      usedFreePass: freshUsesFreePass,
+      reusedFromPool: reuseFromPool,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
-  } catch (error) {
-    // Generated content already sits under topicRef with no charge/topic
-    // doc to reference it — same cleanup as the generation-loop catch
-    // above.
-    await deleteAiTopicLevelsSubtree(topicRef);
-    throw error;
-  }
 
-  return {topicId: topicRef.id};
+    tx.set(poolRef, reuseFromPool ? {
+      usageCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    } : {
+      status: "ready",
+      generatedLevels: freshPoolGeneratedLevels,
+      targetLevels: Math.max(
+        safeInt(freshPoolData.targetLevels, 0), freshPoolGeneratedLevels
+      ),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    tx.set(
+      userRef,
+      {
+        ...(freshUsesFreePass ?
+          {freeTopicPasses: admin.firestore.FieldValue.increment(-1)} :
+          {coins: admin.firestore.FieldValue.increment(-freshCost)}),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {topicId: topicRef.id};
+  });
 });
 
 export const regenerateAiTopicQuestions = onCall({
@@ -5042,6 +5270,16 @@ export const regenerateAiTopicQuestions = onCall({
   const userSnap = await userRef.get();
   const languageCode = userSnap.data()?.languageCode;
 
+  // NOTE: this topic's content may be shared with other users via the
+  // pool — see ensureTopicAdoptedIntoPool. Regenerating it regenerates the
+  // SAME shared levels those other users are playing too, not just this
+  // user's own copy (there is no longer a separate copy once adopted).
+  // Flagged as an explicit product-behavior callout in the pool plan.
+  const poolId = await ensureTopicAdoptedIntoPool(
+    uid, topicRef, topicData, languageCode
+  );
+  const poolRef = db.collection("ai_topic_pool").doc(poolId);
+
   const generatedLevels = safeInt(topicData.generatedLevels, 0);
   const title = String(topicData.title || "Custom Topic");
   const cost = REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * generatedLevels;
@@ -5074,7 +5312,7 @@ export const regenerateAiTopicQuestions = onCall({
 
   try {
     for (let level = 1; level <= generatedLevels; level++) {
-      await generateAiTopicLevel(topicRef, level, title, languageCode);
+      await generateAiTopicLevel(poolRef, level, title, languageCode);
     }
   } catch (error) {
     await userRef.set(
@@ -5143,6 +5381,17 @@ export const expandAiTopic = onCall(async (request) => {
       `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`
     );
   }
+
+  // Only adopts (no generation) — bumping targetLevels here doesn't
+  // itself generate anything; ensureAiTopicLevelsGenerated does that
+  // lazily as the player progresses, against the pool once adopted. If
+  // the pool already covers the new target (another user expanded it
+  // further already), buffering finds nothing left to generate and this
+  // expand is still charged the same — paying to raise your own ceiling,
+  // not for the generation itself.
+  await ensureTopicAdoptedIntoPool(
+    uid, topicRef, topicData, userSnap.data()?.languageCode
+  );
 
   const currentTarget = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
   const newTarget = currentTarget + AI_LEVELS_PER_TOPIC;
@@ -5213,6 +5462,22 @@ export const ensureAiTopicLevelsGenerated = onCall({
     return {generatedLevels: safeInt(topicData?.generatedLevels, 0)};
   }
 
+  // `generatedLevels` on the per-user topic doc means "how deep *this
+  // user* has unlocked" — it's capped by, but doesn't have to equal,
+  // `generatedLevels` on the shared pool doc ("how deep *anyone* has
+  // generated"). Unlocking a level the pool already has costs nothing
+  // (no Claude call); only unlocking past the pool's current depth
+  // actually generates anything, deepening the pool for every future
+  // reuser too.
+  const userSnap = await db.collection("users").doc(uid).get();
+  const languageCode = userSnap.data()?.languageCode;
+  const title = String(topicData.title || "Custom Topic");
+
+  const poolId = await ensureTopicAdoptedIntoPool(
+    uid, topicRef, topicData, languageCode
+  );
+  const poolRef = db.collection("ai_topic_pool").doc(poolId);
+
   const generatedLevels = safeInt(topicData.generatedLevels, 0);
   const targetLevels = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
   const desiredGeneratedLevel = Math.max(0, Math.min(
@@ -5223,11 +5488,12 @@ export const ensureAiTopicLevelsGenerated = onCall({
     return {generatedLevels};
   }
 
-  const userSnap = await db.collection("users").doc(uid).get();
-  const languageCode = userSnap.data()?.languageCode;
-  const title = String(topicData.title || "Custom Topic");
+  const poolSnap = await poolRef.get();
+  const poolGeneratedLevels = safeInt(poolSnap.data()?.generatedLevels, 0);
+  const poolTargetLevels = safeInt(poolSnap.data()?.targetLevels, 0);
 
-  let lastSuccessfulLevel = generatedLevels;
+  let lastSuccessfulUserLevel = generatedLevels;
+  let lastSuccessfulPoolLevel = poolGeneratedLevels;
 
   try {
     for (
@@ -5235,8 +5501,11 @@ export const ensureAiTopicLevelsGenerated = onCall({
       level <= desiredGeneratedLevel;
       level++
     ) {
-      await generateAiTopicLevel(topicRef, level, title, languageCode);
-      lastSuccessfulLevel = level;
+      if (level > lastSuccessfulPoolLevel) {
+        await generateAiTopicLevel(poolRef, level, title, languageCode);
+        lastSuccessfulPoolLevel = level;
+      }
+      lastSuccessfulUserLevel = level;
     }
   } catch (error) {
     // Persist whatever succeeded before the failure so `generatedLevels`
@@ -5246,11 +5515,19 @@ export const ensureAiTopicLevelsGenerated = onCall({
     // topic the `status: "blocked"` write below — not the thrown error —
     // is what actually reaches the player, via the reactive topics list.
     await topicRef.set({
-      generatedLevels: lastSuccessfulLevel,
-      questionsCount: lastSuccessfulLevel * AI_QUESTIONS_PER_LEVEL,
+      generatedLevels: lastSuccessfulUserLevel,
+      questionsCount: lastSuccessfulUserLevel * AI_QUESTIONS_PER_LEVEL,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       ...(error instanceof TopicBlockedError ? {status: "blocked"} : {}),
     }, {merge: true});
+
+    if (lastSuccessfulPoolLevel > poolGeneratedLevels) {
+      await poolRef.set({
+        generatedLevels: lastSuccessfulPoolLevel,
+        targetLevels: Math.max(poolTargetLevels, lastSuccessfulPoolLevel),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
 
     if (error instanceof TopicBlockedError) {
       throw topicBlockedHttpsError();
@@ -5263,6 +5540,14 @@ export const ensureAiTopicLevelsGenerated = onCall({
     questionsCount: desiredGeneratedLevel * AI_QUESTIONS_PER_LEVEL,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});
+
+  if (lastSuccessfulPoolLevel > poolGeneratedLevels) {
+    await poolRef.set({
+      generatedLevels: lastSuccessfulPoolLevel,
+      targetLevels: Math.max(poolTargetLevels, lastSuccessfulPoolLevel),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
 
   return {generatedLevels: desiredGeneratedLevel};
 });
@@ -5376,15 +5661,27 @@ export const reportAiQuestion = onCall(async (request) => {
 
   const userRef = db.collection("users").doc(uid);
   const topicRef = userRef.collection("ai_topics").doc(topicId);
-  const levelRef = topicRef.collection("levels").doc(`level_${levelNumber}`);
   const sessionRef = userRef.collection("sessions_ai")
     .doc(`${topicId}_${levelNumber}`);
   const reportRef = db.collection("ai_question_reports").doc();
 
   const topicSnap = await topicRef.get();
-  if (!topicSnap.exists) {
+  const topicData = topicSnap.data();
+  if (!topicData) {
     throw new HttpsError("not-found", "Topic not found.");
   }
+
+  // reportedQuestionCounts lives on the shared pool's level doc (not the
+  // per-user topic's, which no longer holds content once adopted) —
+  // ensureSoloLevelSession has always already adopted this topic by the
+  // time a report can happen (you can't report a question you haven't
+  // played), so this is a no-op read in the common case.
+  const ownerSnap = await userRef.get();
+  const poolId = await ensureTopicAdoptedIntoPool(
+    uid, topicRef, topicData, ownerSnap.data()?.languageCode
+  );
+  const levelRef = db.collection("ai_topic_pool").doc(poolId)
+    .collection("levels").doc(`level_${levelNumber}`);
 
   return db.runTransaction(async (tx) => {
     const levelSnap = await tx.get(levelRef);

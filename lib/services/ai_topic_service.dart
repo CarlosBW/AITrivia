@@ -38,6 +38,27 @@ class AiTopicService {
         .snapshots();
   }
 
+  /// Ready shared pool entries in the caller's own language, most-reused
+  /// first — surfaced as the "Popular Topics" picker on the create screen.
+  /// Picking one of these and creating from it skips AI generation
+  /// entirely (see createAiTopic's server-side pool-reuse logic), so it's
+  /// discounted to [EconomyService.createAiTopicFromPoolCost].
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchPopularAiTopics({
+    String? languageCode,
+    int limit = 20,
+  }) {
+    final lang = languageCode ??
+        LocaleController.instance.locale.value.languageCode;
+
+    return _db
+        .collection('ai_topic_pool')
+        .where('status', isEqualTo: 'ready')
+        .where('languageCode', isEqualTo: lang)
+        .orderBy('usageCount', descending: true)
+        .limit(limit)
+        .snapshots();
+  }
+
   static const Set<String> _reservedTopicNames = {
     'movies',
     'movie',
@@ -98,8 +119,13 @@ class AiTopicService {
     return title.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 
+  /// [fromPoolId] is purely an optional hint from the "Popular Topics"
+  /// picker — the server always auto-detects an exact title+language pool
+  /// match itself (see createAiTopic in functions/src/index.ts), so this
+  /// is safe to omit and doesn't affect pricing on its own.
   Future<String> createAiTopic({
     required String title,
+    String? fromPoolId,
   }) async {
     try {
       final result = await FirebaseFunctions.instance
@@ -107,7 +133,10 @@ class AiTopicService {
             'createAiTopic',
             options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
           )
-          .call({'title': title});
+          .call({
+            'title': title,
+            if (fromPoolId != null) 'fromPoolId': fromPoolId,
+          });
 
       return (result.data as Map)['topicId'].toString();
     } on FirebaseFunctionsException catch (e) {

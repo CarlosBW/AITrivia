@@ -23,6 +23,11 @@ class EconomyService {
 
   static const int firstAiTopicFreePasses = 1;
   static const int createAiTopicCost = 600;
+  // Charged instead of createAiTopicCost when the title (in the user's own
+  // language) already has a ready shared pool entry — no AI generation
+  // needed, so it's discounted. Mirrors functions/src/index.ts's
+  // CREATE_AI_TOPIC_FROM_POOL_COST — keep both in sync.
+  static const int createAiTopicFromPoolCost = 300;
   // Mirrors functions/src/index.ts's REGENERATE_AI_QUESTIONS_COST_PER_LEVEL
   // — regenerating scales with how many levels there actually are to redo,
   // instead of a flat cost letting a heavily-buffered/expanded topic

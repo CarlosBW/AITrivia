@@ -2297,6 +2297,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createAiTopicCreatingButton => 'Creando...';
 
   @override
+  String get createAiTopicPopularSectionTitle => 'Temas Populares';
+
+  @override
+  String get createAiTopicPopularSectionHint =>
+      'Elige un tema ya creado por otros jugadores y ahorra monedas';
+
+  @override
+  String createAiTopicPopularUsedCount(int count) {
+    return 'Usado $count veces';
+  }
+
+  @override
+  String createAiTopicPopularCostLabel(int cost) {
+    return '$cost monedas';
+  }
+
+  @override
+  String get createAiTopicPopularSelectedHint =>
+      '🔥 Tema popular seleccionado: costo con descuento';
+
+  @override
   String get coinShopTitle => 'Comprar monedas';
 
   @override
@@ -2568,6 +2589,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get spotlightFramesBody =>
       'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.';
+
+  @override
+  String get spotlightAiTopicsPopularTitle => 'Temas Populares';
+
+  @override
+  String get spotlightAiTopicsPopularBody =>
+      'Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.';
 
   @override
   String get notificationBellTooltip => 'Notificaciones';

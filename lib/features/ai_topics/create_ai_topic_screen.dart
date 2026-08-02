@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/spotlight_hint.dart';
 
 class CreateAiTopicScreen extends StatefulWidget {
   const CreateAiTopicScreen({super.key});
@@ -20,6 +21,36 @@ class _CreateAiTopicScreenState
   final _controller = TextEditingController();
 
   bool _loading = false;
+  String? _selectedPoolId;
+  String? _selectedPoolTitle;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTitleChanged);
+  }
+
+  void _onTitleChanged() {
+    // Picking a popular topic pre-fills the exact title it discounts —
+    // editing away from that exact text falls back to the normal
+    // full-price flow (the server still auto-detects a matching title on
+    // its own either way, this is purely a UI-clarity guard).
+    if (_selectedPoolId != null &&
+        _controller.text.trim() != _selectedPoolTitle) {
+      setState(() {
+        _selectedPoolId = null;
+        _selectedPoolTitle = null;
+      });
+    }
+  }
+
+  void _selectPopularTopic(String poolId, String title) {
+    setState(() {
+      _selectedPoolId = poolId;
+      _selectedPoolTitle = title;
+      _controller.text = title;
+    });
+  }
 
   Future<void> _createTopic() async {
     final title = _controller.text.trim();
@@ -38,6 +69,7 @@ class _CreateAiTopicScreenState
     try {
       await AiTopicService.instance.createAiTopic(
         title: title,
+        fromPoolId: _selectedPoolId,
       );
 
       if (!mounted) return;
@@ -68,6 +100,7 @@ class _CreateAiTopicScreenState
 
   @override
   void dispose() {
+    _controller.removeListener(_onTitleChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -108,6 +141,11 @@ class _CreateAiTopicScreenState
 
             const SizedBox(height: 24),
 
+            _PopularTopicsSection(
+              selectedPoolId: _selectedPoolId,
+              onSelect: _selectPopularTopic,
+            ),
+
             TextField(
               controller: _controller,
               maxLength: 60,
@@ -124,6 +162,7 @@ class _CreateAiTopicScreenState
 
             _PricingCard(
               uid: FirebaseAuth.instance.currentUser!.uid,
+              poolDiscount: _selectedPoolId != null,
             ),
 
             const SizedBox(height: 24),
@@ -157,8 +196,9 @@ class _CreateAiTopicScreenState
 
 class _PricingCard extends StatelessWidget {
   final String uid;
+  final bool poolDiscount;
 
-  const _PricingCard({required this.uid});
+  const _PricingCard({required this.uid, required this.poolDiscount});
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +212,9 @@ class _PricingCard extends StatelessWidget {
         final coins = ((data['coins'] ?? 0) as num).toInt();
         final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
         final hasFreePass = freePasses > 0;
-        final cost = EconomyService.createAiTopicCost;
+        final cost = poolDiscount
+            ? EconomyService.createAiTopicFromPoolCost
+            : EconomyService.createAiTopicCost;
         final canAfford = hasFreePass || coins >= cost;
 
         final accentColor = canAfford ? Colors.green : Colors.redAccent;
@@ -204,6 +246,14 @@ class _PricingCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (!hasFreePass && poolDiscount) ...[
+                const SizedBox(height: 4),
+                Text(
+                  l10n.createAiTopicPopularSelectedHint,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
               if (!hasFreePass && !canAfford) ...[
                 const SizedBox(height: 4),
                 Text(
@@ -224,6 +274,168 @@ class _PricingCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Ready shared pool entries the player can create from at a discount
+/// instead of paying full price — see AiTopicService.watchPopularAiTopics.
+/// Renders nothing while the pool is empty/cold-start (no "no popular
+/// topics yet" placeholder), so it never gets in the way of just typing a
+/// new title.
+class _PopularTopicsSection extends StatelessWidget {
+  final String? selectedPoolId;
+  final void Function(String poolId, String title) onSelect;
+
+  const _PopularTopicsSection({
+    required this.selectedPoolId,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: AiTopicService.instance.watchPopularAiTopics(),
+      builder: (context, snap) {
+        final docs = snap.data?.docs ?? [];
+        if (docs.isEmpty) return const SizedBox.shrink();
+
+        return SpotlightHint(
+          id: 'ai_topics_popular_discount',
+          title: l10n.spotlightAiTopicsPopularTitle,
+          description: l10n.spotlightAiTopicsPopularBody,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.createAiTopicPopularSectionTitle,
+                  style: GoogleFonts.baloo2(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.createAiTopicPopularSectionHint,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: docs.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final data = docs[index].data();
+                      final title = (data['title'] ?? '').toString();
+                      final usageCount =
+                          ((data['usageCount'] ?? 0) as num).toInt();
+
+                      return _PopularTopicCard(
+                        title: title,
+                        usageCount: usageCount,
+                        selected: docs[index].id == selectedPoolId,
+                        onTap: () => onSelect(docs[index].id, title),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PopularTopicCard extends StatelessWidget {
+  final String title;
+  final int usageCount;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PopularTopicCard({
+    required this.title,
+    required this.usageCount,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final accentColor = selected ? scheme.primary : scheme.outline;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: selected
+              ? scheme.primary.withValues(alpha: 0.1)
+              : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: accentColor.withValues(alpha: selected ? 0.6 : 0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            Text(
+              l10n.createAiTopicPopularUsedCount(usageCount),
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+            Row(
+              children: [
+                Text(
+                  l10n.createAiTopicPopularCostLabel(
+                    EconomyService.createAiTopicCost,
+                  ),
+                  style: TextStyle(
+                    fontSize: 11,
+                    decoration: TextDecoration.lineThrough,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  l10n.createAiTopicPopularCostLabel(
+                    EconomyService.createAiTopicFromPoolCost,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

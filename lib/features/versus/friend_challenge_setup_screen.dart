@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -7,6 +8,13 @@ import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+
+class _CategoryOption {
+  final String id;
+  final String name;
+
+  const _CategoryOption({required this.id, required this.name});
+}
 
 class FriendChallengeSetupScreen extends StatefulWidget {
   final String friendUid;
@@ -39,12 +47,33 @@ class _FriendChallengeSetupScreenState
   int _totalQuestions = 10;
   int _timePerQuestionSec = 10;
 
-  final List<String> _categories = const [
-    'random',
-    'cine',
-    'historia',
-    'videojuegos',
-  ];
+  late final Future<List<_CategoryOption>> _categoriesFuture =
+      _loadCategories();
+
+  // Mirrors live_menu_screen.dart's _loadCategories — reads the same
+  // fixed_categories collection instead of a hand-maintained list that
+  // drifts as categories are added/renamed/deactivated.
+  Future<List<_CategoryOption>> _loadCategories() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('fixed_categories')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final ao = ((a.data()['order'] ?? 999) as num).toInt();
+        final bo = ((b.data()['order'] ?? 999) as num).toInt();
+        return ao.compareTo(bo);
+      });
+
+    return [
+      for (final doc in docs)
+        _CategoryOption(
+          id: doc.id,
+          name: (doc.data()['name'] ?? doc.id).toString(),
+        ),
+    ];
+  }
 
   Future<void> _sendChallenge() async {
     if (_loading) return;
@@ -238,28 +267,39 @@ class _FriendChallengeSetupScreenState
                 style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                initialValue: _categoryId,
-                decoration: InputDecoration(
-                  labelText: l10n.createMatchCategory,
-                  border: const OutlineInputBorder(),
-                ),
-                items: _categories
-                    .map(
-                      (category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(
-                          category == 'random' ? l10n.friendChallengeCategoryRandom : category,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _loading
-                    ? null
-                    : (value) {
-                        if (value == null) return;
-                        setState(() => _categoryId = value);
-                      },
+              FutureBuilder<List<_CategoryOption>>(
+                future: _categoriesFuture,
+                builder: (context, snap) {
+                  final options = [
+                    _CategoryOption(
+                      id: 'random',
+                      name: l10n.friendChallengeCategoryRandom,
+                    ),
+                    ...?snap.data,
+                  ];
+
+                  return DropdownButtonFormField<String>(
+                    initialValue: _categoryId,
+                    decoration: InputDecoration(
+                      labelText: l10n.createMatchCategory,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: options
+                        .map(
+                          (category) => DropdownMenuItem(
+                            value: category.id,
+                            child: Text(category.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _loading
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() => _categoryId = value);
+                          },
+                  );
+                },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(

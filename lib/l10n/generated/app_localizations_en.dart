@@ -1057,6 +1057,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get realtimeInvitesEmpty => 'No realtime invites right now.';
 
   @override
+  String get realtimeInvitesReceivedTab => 'Received';
+
+  @override
+  String get realtimeInvitesSentTab => 'Sent';
+
+  @override
+  String realtimeInvitesSentTo(String name) {
+    return 'You invited $name';
+  }
+
+  @override
+  String get realtimeInvitesWaitingResponse => 'Waiting for response...';
+
+  @override
+  String get realtimeInvitesCancel => 'Cancel';
+
+  @override
+  String get realtimeInvitesCancelled => 'Invite cancelled';
+
+  @override
+  String get realtimeInvitesSentEmpty =>
+      'You haven\'t sent any invites right now.';
+
+  @override
   String get friendChallengeNotOnline =>
       'Your friend isn\'t connected to play in real time.';
 

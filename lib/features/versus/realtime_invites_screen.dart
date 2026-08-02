@@ -84,17 +84,77 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
     }
   }
 
+  Future<void> _cancelInvite(String inviteId) async {
+    if (_loadingAction) return;
+
+    setState(() => _loadingAction = true);
+
+    try {
+      await _service.cancelInvite(inviteId: inviteId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).realtimeInvitesCancelled)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _loadingAction = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.pvpRealtimeInvitesTitle),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.pvpRealtimeInvitesTitle),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: l10n.realtimeInvitesReceivedTab),
+              Tab(text: l10n.realtimeInvitesSentTab),
+            ],
+          ),
+        ),
+        body: Stack(
+          children: [
+            TabBarView(
+              children: [
+                _buildIncomingList(context),
+                _buildOutgoingList(context),
+              ],
+            ),
+            if (_loadingAction)
+              Container(
+                color: Colors.black.withValues(alpha: 0.25),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
+        ),
       ),
-      body: Stack(
-        children: [
-          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    );
+  }
+
+  Widget _buildIncomingList(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _service.watchMyIncomingInvites(),
             builder: (context, snap) {
               if (snap.hasError) {
@@ -215,15 +275,143 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                 },
               );
             },
-          ),
-          if (_loadingAction)
-            Container(
-              color: Colors.black.withValues(alpha: 0.25),
-              child: const Center(
-                child: CircularProgressIndicator(),
+          );
+  }
+
+  Widget _buildOutgoingList(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _service.watchMyOutgoingInvites(),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                l10n.realtimeInvitesErrorLoading(snap.error.toString()),
+                textAlign: TextAlign.center,
               ),
             ),
-        ],
+          );
+        }
+
+        if (!snap.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        final docs = snap.data!.docs;
+
+        if (docs.isEmpty) {
+          return const _EmptyOutgoingInvites();
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: docs.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final doc = docs[index];
+            final data = doc.data();
+
+            final toName = (data['toName'] ?? 'Player').toString();
+            final categoryId = (data['categoryId'] ?? 'random').toString();
+
+            return Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
+                          child: const Icon(Icons.schedule_outlined),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            l10n.realtimeInvitesSentTo(toName),
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.realtimeInvitesSubtitle(categoryId),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.realtimeInvitesWaitingResponse,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _loadingAction
+                            ? null
+                            : () => _cancelInvite(doc.id),
+                        icon: const Icon(Icons.close),
+                        label: Text(l10n.realtimeInvitesCancel),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _EmptyOutgoingInvites extends StatelessWidget {
+  const _EmptyOutgoingInvites();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.schedule_outlined, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context).realtimeInvitesSentEmpty,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

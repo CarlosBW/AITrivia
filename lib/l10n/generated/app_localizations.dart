@@ -1898,6 +1898,48 @@ abstract class AppLocalizations {
   /// **'No tienes invitaciones en vivo por ahora.'**
   String get realtimeInvitesEmpty;
 
+  /// No description provided for @realtimeInvitesReceivedTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Recibidas'**
+  String get realtimeInvitesReceivedTab;
+
+  /// No description provided for @realtimeInvitesSentTab.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviadas'**
+  String get realtimeInvitesSentTab;
+
+  /// No description provided for @realtimeInvitesSentTo.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitaste a {name}'**
+  String realtimeInvitesSentTo(String name);
+
+  /// No description provided for @realtimeInvitesWaitingResponse.
+  ///
+  /// In es, this message translates to:
+  /// **'Esperando respuesta...'**
+  String get realtimeInvitesWaitingResponse;
+
+  /// No description provided for @realtimeInvitesCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get realtimeInvitesCancel;
+
+  /// No description provided for @realtimeInvitesCancelled.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitación cancelada'**
+  String get realtimeInvitesCancelled;
+
+  /// No description provided for @realtimeInvitesSentEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No tienes invitaciones enviadas por ahora.'**
+  String get realtimeInvitesSentEmpty;
+
   /// No description provided for @friendChallengeNotOnline.
   ///
   /// In es, this message translates to:

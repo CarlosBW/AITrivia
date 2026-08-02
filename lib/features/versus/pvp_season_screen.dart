@@ -358,7 +358,7 @@ class _LeaderboardPlayer {
   int get matches => wins + losses + draws;
 }
 
-class _FriendsLeaderboardList extends StatelessWidget {
+class _FriendsLeaderboardList extends StatefulWidget {
   final String currentUid;
   final String Function(String avatarId) avatarBuilder;
 
@@ -367,7 +367,28 @@ class _FriendsLeaderboardList extends StatelessWidget {
     required this.avatarBuilder,
   });
 
+  @override
+  State<_FriendsLeaderboardList> createState() =>
+      _FriendsLeaderboardListState();
+}
+
+class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
+  late Future<List<_LeaderboardPlayer>> _playersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _playersFuture = _loadPlayers();
+  }
+
+  Future<void> _refresh() async {
+    final future = _loadPlayers();
+    setState(() => _playersFuture = future);
+    await future;
+  }
+
   Future<List<_LeaderboardPlayer>> _loadPlayers() async {
+    final currentUid = widget.currentUid;
     final db = FirebaseFirestore.instance;
 
     final friendsSnap = await db
@@ -427,7 +448,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return FutureBuilder<List<_LeaderboardPlayer>>(
-      future: _loadPlayers(),
+      future: _playersFuture,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -485,12 +506,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: () async {
-            // Rebuilds the FutureBuilder by changing the element tree through setState
-            // is not available here because this widget is stateless. Pull refresh still
-            // completes after re-fetching through a new navigation/rebuild cycle.
-            await _loadPlayers();
-          },
+          onRefresh: _refresh,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -498,7 +514,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final player = players[i];
-              final isMe = player.uid == currentUid;
+              final isMe = player.uid == widget.currentUid;
               final league = PvpLeagueService.instance.leagueForRating(
                 player.rating,
               );
@@ -527,7 +543,7 @@ class _FriendsLeaderboardList extends StatelessWidget {
                     ),
                     CircleAvatar(
                       backgroundColor: Colors.white70,
-                      child: Text(avatarBuilder(player.avatarId)),
+                      child: Text(widget.avatarBuilder(player.avatarId)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

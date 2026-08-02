@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/economy_service.dart';
@@ -5,6 +6,13 @@ import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+
+class _CategoryOption {
+  final String id;
+  final String name;
+
+  const _CategoryOption({required this.id, required this.name});
+}
 
 class CreateMatchScreen extends StatefulWidget {
   const CreateMatchScreen({super.key});
@@ -16,11 +24,46 @@ class CreateMatchScreen extends StatefulWidget {
 class _CreateMatchScreenState extends State<CreateMatchScreen> {
   final _service = MatchService();
 
-  // ✅ defaults seguros
-  String _categoryId = 'cine'; // puedes cambiar a 'random' si quieres
+  late final Future<List<_CategoryOption>> _categoriesFuture =
+      _loadCategories();
+
+  // Placeholder until _categoriesFuture resolves and the dropdown swaps in
+  // a real category id — matches live_menu_screen.dart's pattern.
+  String? _categoryId;
   int _difficulty = 1;
   int _timePerQuestionSec = 10;
   int _totalQuestions = 10;
+
+  // Mirrors live_menu_screen.dart's _loadCategories — reads the same
+  // fixed_categories collection Solo/Live matchmaking use, instead of a
+  // hand-maintained list that drifts as categories are added/renamed.
+  Future<List<_CategoryOption>> _loadCategories() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('fixed_categories')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    final docs = snap.docs.toList()
+      ..sort((a, b) {
+        final ao = ((a.data()['order'] ?? 999) as num).toInt();
+        final bo = ((b.data()['order'] ?? 999) as num).toInt();
+        return ao.compareTo(bo);
+      });
+
+    final options = [
+      for (final doc in docs)
+        _CategoryOption(
+          id: doc.id,
+          name: (doc.data()['name'] ?? doc.id).toString(),
+        ),
+    ];
+
+    if (options.isNotEmpty && mounted && _categoryId == null) {
+      setState(() => _categoryId = options.first.id);
+    }
+
+    return options;
+  }
 
   // Fijo, igual que el matchmaking público — evita que el jugador siempre
   // elija la recompensa máxima al crear su propia sala.
@@ -39,7 +82,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   }
 
   Future<void> _createRoom() async {
-    if (_loading) return;
+    if (_loading || _categoryId == null) return;
 
     setState(() {
       _loading = true;
@@ -48,7 +91,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
     try {
       final matchId = await _service.createFixedMatch(
-        categoryId: _categoryId,
+        categoryId: _categoryId!,
         difficulty: _difficulty,
         totalQuestions: _totalQuestions,
         timePerQuestionSec: _timePerQuestionSec,
@@ -73,11 +116,13 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   }
 
   void _goToMatchmaking() {
+    if (_categoryId == null) return;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => LiveMatchmakingScreen(
-          categoryId: _categoryId,
+          categoryId: _categoryId!,
           difficulty: _difficulty,
           totalQuestions: _totalQuestions,
           timePerQuestionSec: _timePerQuestionSec,
@@ -91,7 +136,6 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final categories = <String>['cine', 'historia', 'videojuegos', 'random'];
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.createMatchTitle)),
@@ -113,16 +157,40 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             ),
             const SizedBox(height: 12),
 
-            DropdownButtonFormField<String>(
-              initialValue: _categoryId,
-              items: categories
-                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                  .toList(),
-              onChanged: _loading ? null : (v) => setState(() => _categoryId = v ?? 'cine'),
-              decoration: InputDecoration(
-                labelText: l10n.createMatchCategory,
-                border: const OutlineInputBorder(),
-              ),
+            FutureBuilder<List<_CategoryOption>>(
+              future: _categoriesFuture,
+              builder: (context, snap) {
+                final options = [
+                  _CategoryOption(
+                    id: 'random',
+                    name: l10n.friendChallengeCategoryRandom,
+                  ),
+                  ...?snap.data,
+                ];
+
+                return DropdownButtonFormField<String>(
+                  // Re-keying once the real default (options.first.id) loads
+                  // forces this FormField to re-read `initialValue` — it's
+                  // otherwise only consulted on the field's first build.
+                  key: ValueKey(_categoryId),
+                  initialValue: _categoryId,
+                  items: options
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text(c.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: _loading || !snap.hasData
+                      ? null
+                      : (v) => setState(() => _categoryId = v),
+                  decoration: InputDecoration(
+                    labelText: l10n.createMatchCategory,
+                    border: const OutlineInputBorder(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
@@ -182,14 +250,16 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
             // ✅ Matchmaking (auto)
             FilledButton(
-              onPressed: _loading ? null : _goToMatchmaking,
+              onPressed:
+                  _loading || _categoryId == null ? null : _goToMatchmaking,
               child: Text(l10n.createMatchAutoSearch),
             ),
             const SizedBox(height: 12),
 
             // ✅ Crear sala manual
             FilledButton.tonal(
-              onPressed: _loading ? null : _createRoom,
+              onPressed:
+                  _loading || _categoryId == null ? null : _createRoom,
               child: _loading
                   ? const SizedBox(
                       height: 18,

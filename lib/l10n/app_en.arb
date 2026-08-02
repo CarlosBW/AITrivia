@@ -585,6 +585,18 @@
   "realtimeInvitesDecline": "Decline",
   "realtimeInvitesAccept": "Accept",
   "realtimeInvitesEmpty": "No realtime invites right now.",
+  "realtimeInvitesReceivedTab": "Received",
+  "realtimeInvitesSentTab": "Sent",
+  "realtimeInvitesSentTo": "You invited {name}",
+  "@realtimeInvitesSentTo": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "realtimeInvitesWaitingResponse": "Waiting for response...",
+  "realtimeInvitesCancel": "Cancel",
+  "realtimeInvitesCancelled": "Invite cancelled",
+  "realtimeInvitesSentEmpty": "You haven't sent any invites right now.",
 
   "friendChallengeNotOnline": "Your friend isn't connected to play in real time.",
   "friendChallengeRealtimeSent": "Realtime challenge sent to {name}",

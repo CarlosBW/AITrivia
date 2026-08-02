@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       storedUnlockedAvatars: storedUnlockedAvatars,
     );
 
-    final avatars = AvatarService.instance.allAvatars;
+    final avatars = AvatarService.instance.allAvatarsFor(l10n);
     final currentAvatar = AvatarService.instance.avatarById(currentAvatarId);
     final unlockedCount =
         avatars.where((avatar) => unlockedIds.contains(avatar.id)).length;

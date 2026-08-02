@@ -3,6 +3,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'economy_service.dart';
+import 'locale_controller.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 import 'dart:async';
 
 class AiTopicService {
@@ -18,6 +21,9 @@ class AiTopicService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String get uid => _auth.currentUser!.uid;
+
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   CollectionReference<Map<String, dynamic>> _topicsCol(String userId) {
     return _db.collection('users').doc(userId).collection('ai_topics');
@@ -105,7 +111,7 @@ class AiTopicService {
 
       return (result.data as Map)['topicId'].toString();
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudo crear el tema.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotCreateTopic);
     }
   }
 
@@ -187,7 +193,7 @@ class AiTopicService {
           )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudieron regenerar las preguntas.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotRegenerateQuestions);
     }
   }
 
@@ -202,7 +208,7 @@ class AiTopicService {
           )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? 'No se pudo ampliar el tema.');
+      throw Exception(e.message ?? _l10n.serviceCouldNotExpandTopic);
     }
   }
 }

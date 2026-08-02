@@ -393,6 +393,162 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarCategoryAiUnique => 'IA ÚNICO';
 
   @override
+  String get avatarNameBrain => 'Cerebro';
+
+  @override
+  String get avatarNameRocket => 'Cohete';
+
+  @override
+  String get avatarNameGamer => 'Gamer';
+
+  @override
+  String get avatarNameFire => 'Fuego';
+
+  @override
+  String get avatarNameStar => 'Estrella';
+
+  @override
+  String get avatarNameCat => 'Gato';
+
+  @override
+  String get avatarNameRobot => 'Robot';
+
+  @override
+  String get avatarNameTrophy => 'Trofeo';
+
+  @override
+  String get avatarUnlockDefault => 'Avatar por defecto';
+
+  @override
+  String get avatarNamePvpBronze => 'Retador de Bronce';
+
+  @override
+  String get avatarNamePvpSilver => 'Retador de Plata';
+
+  @override
+  String get avatarNamePvpGold => 'Campeón de Oro';
+
+  @override
+  String get avatarNamePvpPlatinum => 'Élite de Platino';
+
+  @override
+  String get avatarNamePvpDiamond => 'Élite de Diamante';
+
+  @override
+  String get avatarNamePvpMaster => 'Campeón Maestro';
+
+  @override
+  String get avatarUnlockReachBronze => 'Alcanza la Liga Bronce';
+
+  @override
+  String get avatarUnlockReachSilver => 'Alcanza la Liga Plata';
+
+  @override
+  String get avatarUnlockReachGold => 'Alcanza la Liga Oro';
+
+  @override
+  String get avatarUnlockReachPlatinum => 'Alcanza la Liga Platino';
+
+  @override
+  String get avatarUnlockReachDiamond => 'Alcanza la Liga Diamante';
+
+  @override
+  String get avatarUnlockReachMaster => 'Alcanza la Liga Maestro';
+
+  @override
+  String get avatarNameWeeklyCine => 'Experto en Cine';
+
+  @override
+  String get avatarNameWeeklyHistory => 'Erudito de Historia';
+
+  @override
+  String get avatarNameWeeklyScience => 'Mente Científica';
+
+  @override
+  String get avatarNameWeeklySports => 'Campeón Deportivo';
+
+  @override
+  String get avatarNameWeeklyMusic => 'Maestro Musical';
+
+  @override
+  String get avatarNameWeeklyArt => 'Conocedor de Arte';
+
+  @override
+  String get avatarNameWeeklyGeography => 'Trotamundos';
+
+  @override
+  String get avatarNameWeeklyVideogames => 'Maestro de Juegos';
+
+  @override
+  String get avatarNameWeeklyBooks => 'Ratón de Biblioteca';
+
+  @override
+  String get avatarUnlockWeeklyCine => 'Completa un Tema Semanal de Cine';
+
+  @override
+  String get avatarUnlockWeeklyHistory =>
+      'Completa un Tema Semanal de Historia';
+
+  @override
+  String get avatarUnlockWeeklyScience => 'Completa un Tema Semanal de Ciencia';
+
+  @override
+  String get avatarUnlockWeeklySports => 'Completa un Tema Semanal de Deportes';
+
+  @override
+  String get avatarUnlockWeeklyMusic => 'Completa un Tema Semanal de Música';
+
+  @override
+  String get avatarUnlockWeeklyArt => 'Completa un Tema Semanal de Arte';
+
+  @override
+  String get avatarUnlockWeeklyGeography =>
+      'Completa un Tema Semanal de Geografía';
+
+  @override
+  String get avatarUnlockWeeklyVideogames =>
+      'Completa un Tema Semanal de Videojuegos';
+
+  @override
+  String get avatarUnlockWeeklyBooks => 'Completa un Tema Semanal de Libros';
+
+  @override
+  String get avatarName100Questions => '100 Respuestas';
+
+  @override
+  String get avatarUnlock100Questions => 'Responde 100 preguntas';
+
+  @override
+  String get avatarName1000Questions => 'Leyenda del Trivia';
+
+  @override
+  String get avatarUnlock1000Questions => 'Responde 1000 preguntas';
+
+  @override
+  String get avatarNameAiTopicMaster => 'Maestro de Temas IA';
+
+  @override
+  String get avatarUnlockAiTopicMaster => 'Completa un tema generado por IA';
+
+  @override
+  String get frameNameBronze => 'Marco de Bronce';
+
+  @override
+  String get frameNameSilver => 'Marco de Plata';
+
+  @override
+  String get frameNameGold => 'Marco de Oro';
+
+  @override
+  String get frameNamePlatinum => 'Marco de Platino';
+
+  @override
+  String get frameNameDiamond => 'Marco de Diamante';
+
+  @override
+  String get frameNameMaster => 'Marco Maestro';
+
+  @override
   String get livesNoLivesTitle => 'Sin vidas suficientes';
 
   @override
@@ -2682,6 +2838,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get serviceCouldNotClaimReward => 'No se pudo reclamar la recompensa.';
+
+  @override
+  String get serviceCouldNotCreateTopic => 'No se pudo crear el tema.';
+
+  @override
+  String get serviceCouldNotRegenerateQuestions =>
+      'No se pudieron regenerar las preguntas.';
+
+  @override
+  String get serviceCouldNotExpandTopic => 'No se pudo ampliar el tema.';
 
   @override
   String get pvpWindowSameLeagueLabel => 'Misma liga';

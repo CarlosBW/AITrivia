@@ -776,6 +776,312 @@ abstract class AppLocalizations {
   /// **'IA ÚNICO'**
   String get avatarCategoryAiUnique;
 
+  /// No description provided for @avatarNameBrain.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerebro'**
+  String get avatarNameBrain;
+
+  /// No description provided for @avatarNameRocket.
+  ///
+  /// In es, this message translates to:
+  /// **'Cohete'**
+  String get avatarNameRocket;
+
+  /// No description provided for @avatarNameGamer.
+  ///
+  /// In es, this message translates to:
+  /// **'Gamer'**
+  String get avatarNameGamer;
+
+  /// No description provided for @avatarNameFire.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuego'**
+  String get avatarNameFire;
+
+  /// No description provided for @avatarNameStar.
+  ///
+  /// In es, this message translates to:
+  /// **'Estrella'**
+  String get avatarNameStar;
+
+  /// No description provided for @avatarNameCat.
+  ///
+  /// In es, this message translates to:
+  /// **'Gato'**
+  String get avatarNameCat;
+
+  /// No description provided for @avatarNameRobot.
+  ///
+  /// In es, this message translates to:
+  /// **'Robot'**
+  String get avatarNameRobot;
+
+  /// No description provided for @avatarNameTrophy.
+  ///
+  /// In es, this message translates to:
+  /// **'Trofeo'**
+  String get avatarNameTrophy;
+
+  /// No description provided for @avatarUnlockDefault.
+  ///
+  /// In es, this message translates to:
+  /// **'Avatar por defecto'**
+  String get avatarUnlockDefault;
+
+  /// No description provided for @avatarNamePvpBronze.
+  ///
+  /// In es, this message translates to:
+  /// **'Retador de Bronce'**
+  String get avatarNamePvpBronze;
+
+  /// No description provided for @avatarNamePvpSilver.
+  ///
+  /// In es, this message translates to:
+  /// **'Retador de Plata'**
+  String get avatarNamePvpSilver;
+
+  /// No description provided for @avatarNamePvpGold.
+  ///
+  /// In es, this message translates to:
+  /// **'Campeón de Oro'**
+  String get avatarNamePvpGold;
+
+  /// No description provided for @avatarNamePvpPlatinum.
+  ///
+  /// In es, this message translates to:
+  /// **'Élite de Platino'**
+  String get avatarNamePvpPlatinum;
+
+  /// No description provided for @avatarNamePvpDiamond.
+  ///
+  /// In es, this message translates to:
+  /// **'Élite de Diamante'**
+  String get avatarNamePvpDiamond;
+
+  /// No description provided for @avatarNamePvpMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Campeón Maestro'**
+  String get avatarNamePvpMaster;
+
+  /// No description provided for @avatarUnlockReachBronze.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Bronce'**
+  String get avatarUnlockReachBronze;
+
+  /// No description provided for @avatarUnlockReachSilver.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Plata'**
+  String get avatarUnlockReachSilver;
+
+  /// No description provided for @avatarUnlockReachGold.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Oro'**
+  String get avatarUnlockReachGold;
+
+  /// No description provided for @avatarUnlockReachPlatinum.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Platino'**
+  String get avatarUnlockReachPlatinum;
+
+  /// No description provided for @avatarUnlockReachDiamond.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Diamante'**
+  String get avatarUnlockReachDiamond;
+
+  /// No description provided for @avatarUnlockReachMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Alcanza la Liga Maestro'**
+  String get avatarUnlockReachMaster;
+
+  /// No description provided for @avatarNameWeeklyCine.
+  ///
+  /// In es, this message translates to:
+  /// **'Experto en Cine'**
+  String get avatarNameWeeklyCine;
+
+  /// No description provided for @avatarNameWeeklyHistory.
+  ///
+  /// In es, this message translates to:
+  /// **'Erudito de Historia'**
+  String get avatarNameWeeklyHistory;
+
+  /// No description provided for @avatarNameWeeklyScience.
+  ///
+  /// In es, this message translates to:
+  /// **'Mente Científica'**
+  String get avatarNameWeeklyScience;
+
+  /// No description provided for @avatarNameWeeklySports.
+  ///
+  /// In es, this message translates to:
+  /// **'Campeón Deportivo'**
+  String get avatarNameWeeklySports;
+
+  /// No description provided for @avatarNameWeeklyMusic.
+  ///
+  /// In es, this message translates to:
+  /// **'Maestro Musical'**
+  String get avatarNameWeeklyMusic;
+
+  /// No description provided for @avatarNameWeeklyArt.
+  ///
+  /// In es, this message translates to:
+  /// **'Conocedor de Arte'**
+  String get avatarNameWeeklyArt;
+
+  /// No description provided for @avatarNameWeeklyGeography.
+  ///
+  /// In es, this message translates to:
+  /// **'Trotamundos'**
+  String get avatarNameWeeklyGeography;
+
+  /// No description provided for @avatarNameWeeklyVideogames.
+  ///
+  /// In es, this message translates to:
+  /// **'Maestro de Juegos'**
+  String get avatarNameWeeklyVideogames;
+
+  /// No description provided for @avatarNameWeeklyBooks.
+  ///
+  /// In es, this message translates to:
+  /// **'Ratón de Biblioteca'**
+  String get avatarNameWeeklyBooks;
+
+  /// No description provided for @avatarUnlockWeeklyCine.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Cine'**
+  String get avatarUnlockWeeklyCine;
+
+  /// No description provided for @avatarUnlockWeeklyHistory.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Historia'**
+  String get avatarUnlockWeeklyHistory;
+
+  /// No description provided for @avatarUnlockWeeklyScience.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Ciencia'**
+  String get avatarUnlockWeeklyScience;
+
+  /// No description provided for @avatarUnlockWeeklySports.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Deportes'**
+  String get avatarUnlockWeeklySports;
+
+  /// No description provided for @avatarUnlockWeeklyMusic.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Música'**
+  String get avatarUnlockWeeklyMusic;
+
+  /// No description provided for @avatarUnlockWeeklyArt.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Arte'**
+  String get avatarUnlockWeeklyArt;
+
+  /// No description provided for @avatarUnlockWeeklyGeography.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Geografía'**
+  String get avatarUnlockWeeklyGeography;
+
+  /// No description provided for @avatarUnlockWeeklyVideogames.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Videojuegos'**
+  String get avatarUnlockWeeklyVideogames;
+
+  /// No description provided for @avatarUnlockWeeklyBooks.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un Tema Semanal de Libros'**
+  String get avatarUnlockWeeklyBooks;
+
+  /// No description provided for @avatarName100Questions.
+  ///
+  /// In es, this message translates to:
+  /// **'100 Respuestas'**
+  String get avatarName100Questions;
+
+  /// No description provided for @avatarUnlock100Questions.
+  ///
+  /// In es, this message translates to:
+  /// **'Responde 100 preguntas'**
+  String get avatarUnlock100Questions;
+
+  /// No description provided for @avatarName1000Questions.
+  ///
+  /// In es, this message translates to:
+  /// **'Leyenda del Trivia'**
+  String get avatarName1000Questions;
+
+  /// No description provided for @avatarUnlock1000Questions.
+  ///
+  /// In es, this message translates to:
+  /// **'Responde 1000 preguntas'**
+  String get avatarUnlock1000Questions;
+
+  /// No description provided for @avatarNameAiTopicMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Maestro de Temas IA'**
+  String get avatarNameAiTopicMaster;
+
+  /// No description provided for @avatarUnlockAiTopicMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa un tema generado por IA'**
+  String get avatarUnlockAiTopicMaster;
+
+  /// No description provided for @frameNameBronze.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco de Bronce'**
+  String get frameNameBronze;
+
+  /// No description provided for @frameNameSilver.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco de Plata'**
+  String get frameNameSilver;
+
+  /// No description provided for @frameNameGold.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco de Oro'**
+  String get frameNameGold;
+
+  /// No description provided for @frameNamePlatinum.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco de Platino'**
+  String get frameNamePlatinum;
+
+  /// No description provided for @frameNameDiamond.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco de Diamante'**
+  String get frameNameDiamond;
+
+  /// No description provided for @frameNameMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Marco Maestro'**
+  String get frameNameMaster;
+
   /// No description provided for @livesNoLivesTitle.
   ///
   /// In es, this message translates to:
@@ -4575,6 +4881,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo reclamar la recompensa.'**
   String get serviceCouldNotClaimReward;
+
+  /// No description provided for @serviceCouldNotCreateTopic.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo crear el tema.'**
+  String get serviceCouldNotCreateTopic;
+
+  /// No description provided for @serviceCouldNotRegenerateQuestions.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron regenerar las preguntas.'**
+  String get serviceCouldNotRegenerateQuestions;
+
+  /// No description provided for @serviceCouldNotExpandTopic.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo ampliar el tema.'**
+  String get serviceCouldNotExpandTopic;
 
   /// No description provided for @pvpWindowSameLeagueLabel.
   ///

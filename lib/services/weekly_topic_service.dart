@@ -158,20 +158,6 @@ class WeeklyTopicService {
     return correctAnswers >= completionRewardThreshold && !claimed;
   }
 
-  Future<void> createTestWeeklyTopic() async {
-    await currentTopicRef.set({
-      'active': true,
-      'weekId': '2026-W24',
-      'title': 'Cine Week',
-      'description_es': 'Completa niveles de cine y gana recompensas.',
-      'description_en': 'Complete cinema levels and earn rewards.',
-      'categoryId': 'cine',
-      'rewardCoins': 10,
-      'rewardAvatarId': 'weekly_cine',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-  }
-
   /// `rewardCoins` is accepted for call-site compatibility but ignored —
   /// the Cloud Function reads the authoritative amount from
   /// `weekly_topics/current` itself, since that doc is now locked against

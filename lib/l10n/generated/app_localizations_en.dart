@@ -2211,6 +2211,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsEmptyState => 'No notifications yet.';
 
   @override
+  String get presenceStatusOnline => 'Online';
+
+  @override
+  String get presenceStatusInMatch => 'In match';
+
+  @override
+  String get presenceStatusSearching => 'Searching match';
+
+  @override
   String get friendsOfflineLabel => 'Offline';
 
   @override
@@ -2539,6 +2548,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get serviceNoActiveCategoriesAvailable =>
       'No active categories available.';
+
+  @override
+  String get serviceSeasonRewardNotificationTitle => 'Weekly reward available';
+
+  @override
+  String get serviceSeasonRewardNotificationBody =>
+      'Your weekly league reward is ready to claim.';
 
   @override
   String get serviceRealtimeChallengeTitle => 'Realtime challenge';

@@ -3778,6 +3778,24 @@ abstract class AppLocalizations {
   /// **'Aún no tienes notificaciones.'**
   String get notificationsEmptyState;
 
+  /// No description provided for @presenceStatusOnline.
+  ///
+  /// In es, this message translates to:
+  /// **'Online'**
+  String get presenceStatusOnline;
+
+  /// No description provided for @presenceStatusInMatch.
+  ///
+  /// In es, this message translates to:
+  /// **'En partida'**
+  String get presenceStatusInMatch;
+
+  /// No description provided for @presenceStatusSearching.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando partida'**
+  String get presenceStatusSearching;
+
   /// No description provided for @friendsOfflineLabel.
   ///
   /// In es, this message translates to:
@@ -4353,6 +4371,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No hay categorías activas disponibles.'**
   String get serviceNoActiveCategoriesAvailable;
+
+  /// No description provided for @serviceSeasonRewardNotificationTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recompensa semanal disponible'**
+  String get serviceSeasonRewardNotificationTitle;
+
+  /// No description provided for @serviceSeasonRewardNotificationBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu recompensa de la liga semanal está lista para reclamar.'**
+  String get serviceSeasonRewardNotificationBody;
 
   /// No description provided for @serviceRealtimeChallengeTitle.
   ///

@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'locale_controller.dart';
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
+
 class PresenceService {
   PresenceService._();
 
@@ -10,6 +14,12 @@ class PresenceService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Resolved from the acting user's own device locale — correct here since
+  // presenceLabel always describes presence to the user currently viewing
+  // the screen (friends list, etc.), not the presence subject.
+  AppLocalizations get _l10n =>
+      l10nFor(LocaleController.instance.locale.value.languageCode);
 
   Timer? _heartbeatTimer;
   bool _ready = false;
@@ -164,13 +174,13 @@ class PresenceService {
 
     switch (status) {
       case 'online':
-        return 'Online';
+        return _l10n.presenceStatusOnline;
       case 'in_match':
-        return 'In match';
+        return _l10n.presenceStatusInMatch;
       case 'searching_match':
-        return 'Searching match';
+        return _l10n.presenceStatusSearching;
       default:
-        return 'Offline';
+        return _l10n.friendsOfflineLabel;
     }
   }
 

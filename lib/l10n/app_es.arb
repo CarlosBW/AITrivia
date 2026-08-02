@@ -1394,6 +1394,10 @@
   },
   "notificationsEmptyState": "Aún no tienes notificaciones.",
 
+  "presenceStatusOnline": "Online",
+  "presenceStatusInMatch": "En partida",
+  "presenceStatusSearching": "Buscando partida",
+
   "friendsOfflineLabel": "Sin conexión",
   "friendsLastSeenJustNow": "Visto justo ahora",
   "friendsLastSeenMinutes": "Visto hace {minutes}m",
@@ -1555,6 +1559,8 @@
   "serviceInviteNoLongerAvailable": "Esta invitación ya no está disponible.",
   "serviceNoQuestionsForCategory": "No hay preguntas disponibles para esta categoría.",
   "serviceNoActiveCategoriesAvailable": "No hay categorías activas disponibles.",
+  "serviceSeasonRewardNotificationTitle": "Recompensa semanal disponible",
+  "serviceSeasonRewardNotificationBody": "Tu recompensa de la liga semanal está lista para reclamar.",
   "serviceRealtimeChallengeTitle": "Reto en tiempo real",
   "serviceRealtimeChallengeBody": "{name} te invitó a una partida 1 vs 1 en tiempo real.",
   "@serviceRealtimeChallengeBody": {

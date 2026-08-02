@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
+import '../../services/player_level_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
@@ -1783,24 +1784,31 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
     });
   }
 
-  int _playerLevelFromXp(int xp) => (xp ~/ 100) + 1;
-
-  int _xpFloorForLevel(int playerLevel) => (playerLevel - 1) * 100;
-
-  int _xpCeilForLevel(int playerLevel) => playerLevel * 100;
+  // Mirrors PlayerLevelService's actual (non-flat) per-level XP cost — used
+  // to only assume a flat 100 XP/level here, which silently diverged from
+  // the real level/progress shown on the profile screen as soon as XP grew
+  // past level 1 (e.g. 500 XP is level 4 for real, but showed as level 6
+  // here).
+  _XpLevelBounds _levelBoundsForXp(int xp) {
+    final info = PlayerLevelService.instance.getLevelInfo(xp);
+    final floor = xp - info.currentLevelXp;
+    return _XpLevelBounds(
+      level: info.level,
+      floorXp: floor,
+      ceilXp: floor + info.xpRequired,
+    );
+  }
 
   List<_XpSegment> _buildSegments(int previousXp, int currentXp) {
     if (currentXp <= previousXp) {
-      final level = _playerLevelFromXp(currentXp);
-      final floor = _xpFloorForLevel(level);
-      final ceil = _xpCeilForLevel(level);
+      final bounds = _levelBoundsForXp(currentXp);
       return [
         _XpSegment(
-          level: level,
+          level: bounds.level,
           startXp: currentXp,
           endXp: currentXp,
-          floorXp: floor,
-          ceilXp: ceil,
+          floorXp: bounds.floorXp,
+          ceilXp: bounds.ceilXp,
         ),
       ];
     }
@@ -1809,18 +1817,16 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
     int cursor = previousXp;
 
     while (cursor < currentXp) {
-      final level = _playerLevelFromXp(cursor);
-      final floor = _xpFloorForLevel(level);
-      final ceil = _xpCeilForLevel(level);
-      final segmentEnd = currentXp < ceil ? currentXp : ceil;
+      final bounds = _levelBoundsForXp(cursor);
+      final segmentEnd = currentXp < bounds.ceilXp ? currentXp : bounds.ceilXp;
 
       segments.add(
         _XpSegment(
-          level: level,
+          level: bounds.level,
           startXp: cursor,
           endXp: segmentEnd,
-          floorXp: floor,
-          ceilXp: ceil,
+          floorXp: bounds.floorXp,
+          ceilXp: bounds.ceilXp,
         ),
       );
 
@@ -1834,7 +1840,9 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final currentLevel = _playerLevelFromXp(widget.currentXp);
+    final currentLevel = PlayerLevelService.instance
+        .getLevelInfo(widget.currentXp)
+        .level;
 
     return Container(
       width: double.infinity,
@@ -1896,6 +1904,18 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
       ),
     );
   }
+}
+
+class _XpLevelBounds {
+  final int level;
+  final int floorXp;
+  final int ceilXp;
+
+  const _XpLevelBounds({
+    required this.level,
+    required this.floorXp,
+    required this.ceilXp,
+  });
 }
 
 class _XpSegment {

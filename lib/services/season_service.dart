@@ -5,6 +5,7 @@ import 'league_service.dart';
 import 'weekly_league_service.dart';
 import 'notification_service.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/l10n_for.dart';
 
 /// Which rank-based bonus tier a weekly-league reward falls into. Kept as
 /// an enum (rather than a pre-localized string) so the display text can be
@@ -322,11 +323,13 @@ class SeasonService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      final l10n = l10nFor(data['languageCode'] as String?);
+
       await _notificationService.createNotification(
         targetUid: uid,
         type: 'season_reward',
-        title: 'Weekly reward available',
-        body: 'Your weekly league reward is ready to claim.',
+        title: l10n.serviceSeasonRewardNotificationTitle,
+        body: l10n.serviceSeasonRewardNotificationBody,
         data: {
           'seasonId': latestSeason,
         },

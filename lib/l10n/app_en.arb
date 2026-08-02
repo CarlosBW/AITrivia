@@ -1366,6 +1366,10 @@
   },
   "notificationsEmptyState": "No notifications yet.",
 
+  "presenceStatusOnline": "Online",
+  "presenceStatusInMatch": "In match",
+  "presenceStatusSearching": "Searching match",
+
   "friendsOfflineLabel": "Offline",
   "friendsLastSeenJustNow": "Last seen just now",
   "friendsLastSeenMinutes": "Last seen {minutes}m ago",
@@ -1522,6 +1526,8 @@
   "serviceInviteNoLongerAvailable": "This invite is no longer available.",
   "serviceNoQuestionsForCategory": "No questions available for this category.",
   "serviceNoActiveCategoriesAvailable": "No active categories available.",
+  "serviceSeasonRewardNotificationTitle": "Weekly reward available",
+  "serviceSeasonRewardNotificationBody": "Your weekly league reward is ready to claim.",
   "serviceRealtimeChallengeTitle": "Realtime challenge",
   "serviceRealtimeChallengeBody": "{name} invited you to a realtime 1 vs 1 match.",
   "@serviceRealtimeChallengeBody": {

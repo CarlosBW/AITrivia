@@ -421,15 +421,16 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     presenceData?['presence'] as Map<String, dynamic>?;
                 final online = _presenceService.isProbablyOnline(presence);
                 final statusText = _presenceService.presenceLabel(presence);
+                final rawStatus = (presence?['status'] ?? '').toString();
 
                 return _UserTile(
                   player: data,
                   title: displayName,
                   subtitle: online ? statusText : _offlineLabel(l10n, presence),
                   statusColor: online
-                      ? (statusText == 'In match'
+                      ? (rawStatus == 'in_match'
                           ? Colors.orangeAccent
-                          : statusText == 'Searching match'
+                          : rawStatus == 'searching_match'
                               ? Colors.blueAccent
                               : Colors.greenAccent)
                       : Colors.grey,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -23,12 +25,21 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   Map<String, ProductDetails> _products = {};
   String? _purchasingProductId;
 
+  StreamSubscription<PurchaseResult>? _purchaseResultsSub;
+
   @override
   void initState() {
     super.initState();
     PurchaseService.instance.start();
-    PurchaseService.instance.purchaseResults.listen(_onPurchaseResult);
+    _purchaseResultsSub =
+        PurchaseService.instance.purchaseResults.listen(_onPurchaseResult);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _purchaseResultsSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {

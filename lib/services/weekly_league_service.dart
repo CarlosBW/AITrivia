@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'league_service.dart';
-
 class WeeklyLeagueService {
   WeeklyLeagueService._();
 
@@ -43,38 +41,6 @@ class WeeklyLeagueService {
         .doc(weekId)
         .collection(leagueId)
         .doc(uid);
-  }
-
-  Future<void> addWeeklyScore({
-    required String uid,
-    required String username,
-    required String avatarId,
-    required int scoreToAdd,
-    required int level,
-    required int streak,
-    required LeagueInfo league,
-  }) async {
-    final weekId = currentWeekId();
-
-    final ref = weeklyPlayerRef(
-      uid: uid,
-      weekId: weekId,
-      leagueId: league.id,
-    );
-
-    await ref.set({
-      'uid': uid,
-      'username': username,
-      'displayName': username,
-      'avatarId': avatarId,
-      'weekId': weekId,
-      'leagueId': league.id,
-      'leagueName': league.name,
-      'weeklyScore': FieldValue.increment(scoreToAdd),
-      'level': level,
-      'streak': streak,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Query<Map<String, dynamic>> weeklyLeaderboardQuery({

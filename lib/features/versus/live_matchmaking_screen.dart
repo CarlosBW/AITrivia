@@ -4,12 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/economy_service.dart';
+import '../../services/locale_controller.dart';
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/pvp_league_service.dart';
 import 'match_lobby_screen.dart';
 import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/l10n_for.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
   final String categoryId;
@@ -53,10 +55,34 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   String? _error;
   bool _timedOut = false;
 
+  late final Future<String> _categoryDisplayNameFuture =
+      _resolveCategoryDisplayName();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  // Shows the real fixed_categories name (e.g. "Música") instead of the
+  // raw doc id (e.g. "musica") the widget is constructed with.
+  Future<String> _resolveCategoryDisplayName() async {
+    if (widget.categoryId == 'random') {
+      return l10nFor(LocaleController.instance.locale.value.languageCode)
+          .friendChallengeCategoryRandom;
+    }
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('fixed_categories')
+          .doc(widget.categoryId)
+          .get();
+      final name = snap.data()?['name'];
+      if (name is String && name.isNotEmpty) return name;
+    } catch (_) {}
+
+    if (widget.categoryId.isEmpty) return widget.categoryId;
+    return widget.categoryId[0].toUpperCase() + widget.categoryId.substring(1);
   }
 
   @override
@@ -306,7 +332,16 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                 Text(l10n.liveMatchmakingTypeLine(
                   widget.ranked ? l10n.profileRanked : l10n.profileCasual,
                 )),
-                Text(l10n.liveMatchmakingCategoryLine(widget.categoryId)),
+                FutureBuilder<String>(
+                  future: _categoryDisplayNameFuture,
+                  builder: (context, snap) {
+                    return Text(
+                      l10n.liveMatchmakingCategoryLine(
+                        snap.data ?? widget.categoryId,
+                      ),
+                    );
+                  },
+                ),
                 Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
                 Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
                 Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),

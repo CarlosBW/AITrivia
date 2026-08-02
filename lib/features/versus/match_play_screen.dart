@@ -72,8 +72,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   void initState() {
     super.initState();
 
+    // Forces a rebuild every 10s so the StreamBuilder below re-runs
+    // _checkOpponentDisconnect against its last cached snapshot even when
+    // nothing else is triggering a rebuild — the per-question countdown
+    // timer stops doing that once this player has answered all questions
+    // and is just waiting on the opponent, which is exactly when detecting
+    // a real disconnect matters most.
     _disconnectWatchTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      // La validación se ejecuta desde build con el último snapshot del match.
+      if (mounted) setState(() {});
     });
 
     Future.microtask(() async {

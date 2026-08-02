@@ -38,6 +38,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   DateTime? _opponentUnavailableSince;
   Timer? _opponentPresenceTimer;
 
+  // Memoized so the fixed_categories lookup only ever runs once per
+  // categoryId, no matter how many times the StreamBuilder below rebuilds.
+  final Map<String, Future<String>> _categoryNameFutures = {};
+
   @override
   void initState() {
     super.initState();
@@ -122,10 +126,28 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     Navigator.pop(context);
   }
 
-  String _displayCategory(AppLocalizations l10n, String categoryId) {
-    if (categoryId == 'random') return l10n.friendChallengeCategoryRandom;
-    if (categoryId.isEmpty) return l10n.createMatchCategory;
-    return categoryId[0].toUpperCase() + categoryId.substring(1);
+  // Shows the real fixed_categories name (e.g. "Música") instead of the
+  // raw doc id (e.g. "musica") stored on the match doc.
+  Future<String> _displayCategory(AppLocalizations l10n, String categoryId) {
+    if (categoryId == 'random') {
+      return Future.value(l10n.friendChallengeCategoryRandom);
+    }
+    if (categoryId.isEmpty) {
+      return Future.value(l10n.createMatchCategory);
+    }
+
+    return _categoryNameFutures.putIfAbsent(categoryId, () async {
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('fixed_categories')
+            .doc(categoryId)
+            .get();
+        final name = snap.data()?['name'];
+        if (name is String && name.isNotEmpty) return name;
+      } catch (_) {}
+
+      return categoryId[0].toUpperCase() + categoryId.substring(1);
+    });
   }
 
   String _statusText(
@@ -295,10 +317,15 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 const SizedBox(height: 16),
                 _InfoCard(
                   children: [
-                    _InfoRow(
-                      icon: Icons.category_outlined,
-                      label: l10n.matchLobbyTopicLabel,
-                      value: _displayCategory(l10n, categoryId),
+                    FutureBuilder<String>(
+                      future: _displayCategory(l10n, categoryId),
+                      builder: (context, snap) {
+                        return _InfoRow(
+                          icon: Icons.category_outlined,
+                          label: l10n.matchLobbyTopicLabel,
+                          value: snap.data ?? categoryId,
+                        );
+                      },
                     ),
                     _InfoRow(
                       icon: Icons.auto_awesome_outlined,

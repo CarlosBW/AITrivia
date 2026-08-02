@@ -362,16 +362,16 @@ service cloud.firestore {
     // submitDailyChallengeResult (Cloud Function) may write those, so a
     // client can no longer fabricate its own leaderboard entry to claim an
     // inflated reward. The player may still touch their own doc's cosmetic
-    // mirror fields directly (username/displayName/avatarId), so editing
-    // your profile mid-week updates the weekly board immediately instead
-    // of waiting for the next daily-challenge play.
+    // mirror fields directly (username/displayName/avatarId/equippedFrame),
+    // so editing your profile mid-week updates the weekly board immediately
+    // instead of waiting for the next daily-challenge play.
     match /weekly_leagues/{weekId}/{leagueId}/{playerId} {
       allow read: if request.auth != null;
       allow create: if false;
       allow update: if request.auth != null
         && request.auth.uid == playerId
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['username', 'displayName', 'avatarId', 'updatedAt']);
+            .hasOnly(['username', 'displayName', 'avatarId', 'equippedFrame', 'updatedAt']);
       allow delete: if false;
     }
 

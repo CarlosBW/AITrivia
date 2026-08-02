@@ -157,6 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     required String uid,
     String? username,
     String? avatarId,
+    String? equippedFrame,
   }) async {
     final dateId = DailyChallengeService.instance.todayDateId();
 
@@ -182,6 +183,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       update['avatarId'] = avatarId;
     }
 
+    if (equippedFrame != null) {
+      update['equippedFrame'] = equippedFrame;
+    }
+
     await leaderboardRef.set(update, SetOptions(merge: true));
   }
 
@@ -190,6 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     required Map<String, dynamic> latestUserData,
     String? username,
     String? avatarId,
+    String? equippedFrame,
   }) async {
     final leagueScore = ((latestUserData['leagueScore'] ?? 0) as num).toInt();
     final league = LeagueService.instance.getLeagueFromScore(leagueScore);
@@ -217,12 +223,17 @@ class _ProfileScreenState extends State<ProfileScreen>
       update['avatarId'] = avatarId;
     }
 
+    if (equippedFrame != null) {
+      update['equippedFrame'] = equippedFrame;
+    }
+
     await weeklyRef.set(update, SetOptions(merge: true));
   }
 
   Future<void> _syncLeaderboardProfiles({
     String? username,
     String? avatarId,
+    String? equippedFrame,
   }) async {
     final latestUserSnap = await userRef.get();
     final latestUserData = latestUserSnap.data() ?? {};
@@ -232,12 +243,14 @@ class _ProfileScreenState extends State<ProfileScreen>
         uid: uid,
         username: username,
         avatarId: avatarId,
+        equippedFrame: equippedFrame,
       ),
       _syncCurrentWeeklyLeaderboardProfile(
         uid: uid,
         latestUserData: latestUserData,
         username: username,
         avatarId: avatarId,
+        equippedFrame: equippedFrame,
       ),
     ]);
   }
@@ -585,6 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         SetOptions(merge: true),
       );
 
+      await _syncLeaderboardProfiles(equippedFrame: selectedFrameId);
       await _loadProfile(showLoading: false);
 
       if (!context.mounted) return;

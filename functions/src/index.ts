@@ -1936,6 +1936,59 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
         fresh.challengedDisplayName || "Player"
       );
 
+      // Async matches never wrote match_history entries — only live matches
+      // did (see finalizePvpMatch above) — so an async-only player's
+      // Profile "Recent Matches" section always showed empty despite
+      // wins1v1/losses1v1/matches1v1 tracking correctly. Async has no
+      // ranking/MMR system, so the rating fields are always null here.
+      tx.set(
+        challengerRef.collection("match_history").doc(matchId),
+        {
+          matchId,
+          mode: "casual",
+          ranked: false,
+          result: resultFor(challengerUid, winnerUid),
+          opponentUid: challengedUid,
+          opponentName: challengedName,
+          myScore: challengerScore,
+          opponentScore: challengedScore,
+          oldRating: null,
+          newRating: null,
+          ratingDelta: null,
+          xpEarned: null,
+          coinsEarned: challengerCoinClamp.payable,
+          winStreak: challengerNewStreak,
+          oldLeagueName: null,
+          newLeagueName: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+
+      tx.set(
+        challengedRef.collection("match_history").doc(matchId),
+        {
+          matchId,
+          mode: "casual",
+          ranked: false,
+          result: resultFor(challengedUid, winnerUid),
+          opponentUid: challengerUid,
+          opponentName: challengerName,
+          myScore: challengedScore,
+          opponentScore: challengerScore,
+          oldRating: null,
+          newRating: null,
+          ratingDelta: null,
+          xpEarned: null,
+          coinsEarned: challengedCoinClamp.payable,
+          winStreak: challengedNewStreak,
+          oldLeagueName: null,
+          newLeagueName: null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+
       const notify = (
         targetUid: string,
         esTitle: string,
@@ -2129,6 +2182,70 @@ async function forfeitStaleAsyncMatch(
       endedAt: admin.firestore.FieldValue.serverTimestamp(),
       lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    const matchId = matchRef.id;
+    const winnerName = String(
+      challengerFinished ?
+        data.challengerDisplayName : data.challengedDisplayName
+    ) || "Player";
+    const loserName = String(
+      challengerFinished ?
+        data.challengedDisplayName : data.challengerDisplayName
+    ) || "Player";
+    const winnerScore = safeInt(
+      challengerFinished ? data.challengerScore : data.challengedScore, 0
+    );
+    const loserScore = safeInt(
+      challengerFinished ? data.challengedScore : data.challengerScore, 0
+    );
+
+    tx.set(
+      winnerRef.collection("match_history").doc(matchId),
+      {
+        matchId,
+        mode: "casual",
+        ranked: false,
+        result: "victory",
+        opponentUid: loserUid,
+        opponentName: loserName,
+        myScore: winnerScore,
+        opponentScore: loserScore,
+        oldRating: null,
+        newRating: null,
+        ratingDelta: null,
+        xpEarned: null,
+        coinsEarned: winnerCoinClamp.payable,
+        winStreak: winnerNewStreak,
+        oldLeagueName: null,
+        newLeagueName: null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    tx.set(
+      loserRef.collection("match_history").doc(matchId),
+      {
+        matchId,
+        mode: "casual",
+        ranked: false,
+        result: "defeat",
+        opponentUid: winnerUid,
+        opponentName: winnerName,
+        myScore: loserScore,
+        opponentScore: winnerScore,
+        oldRating: null,
+        newRating: null,
+        ratingDelta: null,
+        xpEarned: null,
+        coinsEarned: 0,
+        winStreak: 0,
+        oldLeagueName: null,
+        newLeagueName: null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
 
     tx.set(winnerRef.collection("notifications").doc(), {
       type: "match_result",
@@ -5792,6 +5909,34 @@ export const deleteMyAccount = onCall(async (request) => {
     if (usernameSnap.exists && usernameSnap.data()?.uid === uid) {
       await usernameRef.delete();
     }
+  }
+
+  // recursiveDelete(userRef) only clears this account's own subtree. Two
+  // kinds of cross-user orphan survive it: a live_search entry other
+  // players' tryFindLiveOpponent could still match against, and pending
+  // friend-request mirror docs sitting in *other* users' subtrees that
+  // point at this now-deleted account (friend_requests/sent_friend_requests
+  // are two-sided — one doc per side, each stored under its own owner's
+  // subtree, so deleting only this user's side leaves the other player's
+  // mirror pointing at a ghost).
+  await db.collection("live_search").doc(uid).delete();
+
+  const [incomingMirrors, outgoingMirrors] = await Promise.all([
+    db.collectionGroup("sent_friend_requests")
+      .where("targetUid", "==", uid).get(),
+    db.collectionGroup("friend_requests")
+      .where("requesterUid", "==", uid).get(),
+  ]);
+
+  const staleMirrorRefs = [
+    ...incomingMirrors.docs.map((d) => d.ref),
+    ...outgoingMirrors.docs.map((d) => d.ref),
+  ];
+
+  if (staleMirrorRefs.length > 0) {
+    const batch = db.batch();
+    for (const ref of staleMirrorRefs) batch.delete(ref);
+    await batch.commit();
   }
 
   await admin.auth().deleteUser(uid);

@@ -59,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _achievementPopupCoins = 0;
   int _achievementPopupXp = 0;
 
+  bool _livesFailed = false;
+
   DateTime? _lastSeenAvatarUnlockAt;
   bool _showAvatarUnlockPopup = false;
   String _avatarUnlockEmoji = '';
@@ -76,6 +78,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initLives() async {
+    if (mounted) {
+      setState(() {
+        _loadingLives = true;
+        _livesFailed = false;
+      });
+    }
+
     try {
       await LifeService.instance.ensureUserLifeDoc(uid);
       final state = await LifeService.instance.refreshLives(uid);
@@ -88,7 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _loadingLives = false);
+      // `_lifeState` stays null here, and the lives card renders on
+      // `_loadingLives || _lifeState == null` — so without this explicit
+      // failure flag the card would spin forever instead of ever telling
+      // the player something went wrong (which is exactly what happened
+      // when `refreshUserLives` wasn't deployed).
+      setState(() {
+        _loadingLives = false;
+        _livesFailed = true;
+      });
     }
   }
 
@@ -429,22 +446,42 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          _loadingLives || _lifeState == null
-                              ? const LinearProgressIndicator()
-                              : Column(
+                          _livesFailed
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    _LivesCard(
-                                      livesText:
-                                          '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])}/${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
-                                      isFull: _lifeState!['lifeUnits'] >=
-                                          _lifeState!['maxLifeUnits'],
-                                      countdownText: _formatCountdown(
-                                        _lifeState!['secondsToNextHalfLife'],
+                                    Flexible(
+                                      child: Text(
+                                        l10n.homeLivesUnavailable,
+                                        style: const TextStyle(
+                                          color: Colors.redAccent,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
+                                    TextButton(
+                                      onPressed: _initLives,
+                                      child: Text(l10n.commonRetry),
+                                    ),
                                   ],
-                                ),
+                                )
+                              : _loadingLives || _lifeState == null
+                                  ? const LinearProgressIndicator()
+                                  : Column(
+                                      children: [
+                                        _LivesCard(
+                                          livesText:
+                                              '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])}/${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
+                                          isFull: _lifeState!['lifeUnits'] >=
+                                              _lifeState!['maxLifeUnits'],
+                                          countdownText: _formatCountdown(
+                                            _lifeState![
+                                                'secondsToNextHalfLife'],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                      ],
+                                    ),
                           Row(
                             children: [
                               Expanded(
@@ -492,9 +529,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: userRef.snapshots(),
                   builder: (context, snap) {
-                    final streak = ((snap.data?.data()?['dailyStreak'] ?? 0)
-                            as num)
-                        .toInt();
+                    final streak =
+                        ((snap.data?.data()?['dailyStreak'] ?? 0) as num)
+                            .toInt();
 
                     return _DailyChallengeCard(
                       streak: streak,
@@ -527,8 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
+                                    ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
                                           l10n.homeAlreadyPlayedDaily,
@@ -609,10 +645,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.18),
                     ),
                   ),
                   child: Text(
@@ -1161,7 +1203,8 @@ class _WeeklyTopicCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     l10n.homeWeeklyTopicLoading,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                 ),
               ],

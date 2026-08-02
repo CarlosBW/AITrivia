@@ -13,8 +13,7 @@ class CreateAiTopicScreen extends StatefulWidget {
   const CreateAiTopicScreen({super.key});
 
   @override
-  State<CreateAiTopicScreen> createState() =>
-      _CreateAiTopicScreenState();
+  State<CreateAiTopicScreen> createState() => _CreateAiTopicScreenState();
 }
 
 enum _Stage { typing, showingMatches, showingAiSuggestions }
@@ -24,8 +23,7 @@ enum _Stage { typing, showingMatches, showingAiSuggestions }
 /// existing-but-not-yet-popular reuse, or a popular reuse.
 enum _TopicPriceTier { full, existing, popular }
 
-class _CreateAiTopicScreenState
-    extends State<CreateAiTopicScreen> {
+class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
   final _controller = TextEditingController();
 
   bool _loading = false;
@@ -35,7 +33,7 @@ class _CreateAiTopicScreenState
 
   _Stage _stage = _Stage.typing;
   List<SimilarAiTopic> _matches = [];
-  List<String> _aiSuggestions = [];
+  List<AiTopicSuggestion> _aiSuggestions = [];
   String _searchedTitle = '';
 
   @override
@@ -273,18 +271,27 @@ class _CreateAiTopicScreenState
             : _TopicPriceTier.full,
       ),
       const SizedBox(height: 24),
-      SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: _loading ? null : _onCreatePressed,
-          icon: _loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.auto_awesome),
-          label: Text(_loading ? _loadingLabel : l10n.aiTopicsCreateTopic),
+      // Explained here rather than on the Popular Topics showcase alone:
+      // that showcase stays hidden until topics actually get reused, so on
+      // a fresh install this button is the only place the search-first
+      // behaviour (and its discount) can be introduced.
+      SpotlightHint(
+        id: 'ai_topics_guided_creation',
+        title: l10n.spotlightAiTopicsGuidedTitle,
+        description: l10n.spotlightAiTopicsGuidedBody,
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _loading ? null : _onCreatePressed,
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_awesome),
+            label: Text(_loading ? _loadingLabel : l10n.aiTopicsCreateTopic),
+          ),
         ),
       ),
     ];
@@ -304,15 +311,29 @@ class _CreateAiTopicScreenState
         ),
       ),
       const SizedBox(height: 16),
-      for (final match in _matches) ...[
-        _SimilarTopicCard(
-          match: match,
-          onTap: _loading
-              ? null
-              : () => _doCreate(match.title, fromPoolId: match.poolId),
+      _EconomyBuilder(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        builder: (context, coins, hasFreePass) => Column(
+          children: [
+            _CoinsBalanceLine(coins: coins, hasFreePass: hasFreePass),
+            const SizedBox(height: 12),
+            for (final match in _matches) ...[
+              _TopicChoiceCard(
+                title: match.title,
+                badge: match.isPopular
+                    ? _ChoiceBadge.popular
+                    : _ChoiceBadge.existing,
+                cost: match.cost,
+                hasFreePass: hasFreePass,
+                onTap: _loading
+                    ? null
+                    : () => _doCreate(match.title, fromPoolId: match.poolId),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ],
         ),
-        const SizedBox(height: 10),
-      ],
+      ),
       const SizedBox(height: 8),
       SizedBox(
         width: double.infinity,
@@ -357,19 +378,33 @@ class _CreateAiTopicScreenState
         ),
       ),
       const SizedBox(height: 16),
-      for (final suggestion in _aiSuggestions) ...[
-        _SuggestedTitleCard(
-          title: suggestion,
-          onTap: _loading ? null : () => _doCreate(suggestion),
-        ),
-        const SizedBox(height: 10),
-      ],
-      const SizedBox(height: 10),
-      _PricingCard(
+      _EconomyBuilder(
         uid: FirebaseAuth.instance.currentUser!.uid,
-        tier: _TopicPriceTier.full,
+        builder: (context, coins, hasFreePass) => Column(
+          children: [
+            _CoinsBalanceLine(coins: coins, hasFreePass: hasFreePass),
+            const SizedBox(height: 12),
+            for (final suggestion in _aiSuggestions) ...[
+              _TopicChoiceCard(
+                title: suggestion.title,
+                // Claude can land on a title that already exists in the
+                // pool — the server discounts it, so badge and price it
+                // the same way a search match would be.
+                badge: !suggestion.existsInPool
+                    ? _ChoiceBadge.none
+                    : suggestion.isPopular
+                        ? _ChoiceBadge.popular
+                        : _ChoiceBadge.existing,
+                cost: suggestion.cost,
+                hasFreePass: hasFreePass,
+                onTap: _loading ? null : () => _doCreate(suggestion.title),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ],
+        ),
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 6),
       TextButton(
         onPressed: _loading ? null : _backToTyping,
         child: Text(l10n.createAiTopicBackButton),
@@ -390,78 +425,98 @@ class _CreateAiTopicScreenState
   }
 }
 
-class _SimilarTopicCard extends StatelessWidget {
-  final SimilarAiTopic match;
+/// What (if anything) makes a choice cheaper than a brand-new topic.
+enum _ChoiceBadge { none, existing, popular }
+
+/// Streams the caller's coin balance and free-pass state once for a whole
+/// step, so a list of cards doesn't open one Firestore subscription each.
+class _EconomyBuilder extends StatelessWidget {
+  final String uid;
+  final Widget Function(BuildContext context, int coins, bool hasFreePass)
+      builder;
+
+  const _EconomyBuilder({required this.uid, required this.builder});
+
+  @override
+  Widget build(BuildContext context) {
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: userRef.snapshots(),
+      builder: (context, snap) {
+        final data = snap.data?.data() ?? {};
+        final coins = ((data['coins'] ?? 0) as num).toInt();
+        final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
+        return builder(context, coins, freePasses > 0);
+      },
+    );
+  }
+}
+
+class _CoinsBalanceLine extends StatelessWidget {
+  final int coins;
+  final bool hasFreePass;
+
+  const _CoinsBalanceLine({required this.coins, required this.hasFreePass});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Text(
+      hasFreePass
+          ? l10n.createAiTopicFirstFree
+          : l10n.createAiTopicYouHaveCoins(coins),
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: hasFreePass ? Colors.green : null,
+      ),
+    );
+  }
+}
+
+/// A pickable topic title in the guided-creation flow — either an existing
+/// pool match or an AI-proposed title. [cost] is what the server will
+/// really charge, so it already reflects any reuse discount; a free pass
+/// overrides it entirely.
+class _TopicChoiceCard extends StatelessWidget {
+  final String title;
+  final _ChoiceBadge badge;
+  final int cost;
+  final bool hasFreePass;
   final VoidCallback? onTap;
 
-  const _SimilarTopicCard({required this.match, required this.onTap});
+  const _TopicChoiceCard({
+    required this.title,
+    required this.badge,
+    required this.cost,
+    required this.hasFreePass,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: scheme.outline.withValues(alpha: 0.2)),
+    final (IconData icon, Color iconColor, String tooltip) = switch (badge) {
+      _ChoiceBadge.popular => (
+          Icons.star,
+          AppColors.reward,
+          l10n.createAiTopicPopularBadgeTooltip,
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Tooltip(
-                    message: match.isPopular
-                        ? l10n.createAiTopicPopularBadgeTooltip
-                        : l10n.createAiTopicExistingBadgeTooltip,
-                    child: Icon(
-                      match.isPopular ? Icons.star : Icons.sell,
-                      color: match.isPopular
-                          ? AppColors.reward
-                          : Colors.blueAccent,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      match.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              l10n.createAiTopicPopularCostLabel(match.cost),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-          ],
+      _ChoiceBadge.existing => (
+          Icons.sell,
+          Colors.blueAccent,
+          l10n.createAiTopicExistingBadgeTooltip,
         ),
-      ),
-    );
-  }
-}
-
-class _SuggestedTitleCard extends StatelessWidget {
-  final String title;
-  final VoidCallback? onTap;
-
-  const _SuggestedTitleCard({required this.title, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+      _ChoiceBadge.none => (
+          Icons.auto_awesome,
+          scheme.onSurfaceVariant,
+          l10n.createAiTopicNewBadgeTooltip,
+        ),
+    };
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -476,12 +531,27 @@ class _SuggestedTitleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.auto_awesome, size: 18),
-            const SizedBox(width: 10),
+            Tooltip(
+              message: tooltip,
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              hasFreePass
+                  ? l10n.createAiTopicFreeLabel
+                  : l10n.createAiTopicPopularCostLabel(cost),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: hasFreePass || badge != _ChoiceBadge.none
+                    ? Colors.green
+                    : scheme.onSurfaceVariant,
               ),
             ),
           ],

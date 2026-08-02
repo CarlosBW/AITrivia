@@ -2316,6 +2316,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAiTopicExistingBadgeTooltip => 'Existing topic, discounted';
 
   @override
+  String get createAiTopicNewBadgeTooltip =>
+      'New topic, will be generated with AI';
+
+  @override
+  String get createAiTopicFreeLabel => 'Free';
+
+  @override
+  String get homeLivesUnavailable => 'Couldn\'t load your lives.';
+
+  @override
   String get createAiTopicSearchingButton => 'Searching similar topics...';
 
   @override
@@ -2619,6 +2629,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get spotlightFramesBody =>
       'Customize your avatar with frames you unlock by climbing PvP leagues.';
+
+  @override
+  String get spotlightAiTopicsGuidedTitle => 'We search before generating';
+
+  @override
+  String get spotlightAiTopicsGuidedBody =>
+      'When you create a topic we first look for a similar one: picking it costs less, because we reuse its questions. If there\'s none, the AI proposes well-formed options for you to choose from.';
 
   @override
   String get spotlightAiTopicsPopularTitle => 'Popular Topics';

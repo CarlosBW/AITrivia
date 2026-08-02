@@ -10,7 +10,8 @@ import 'dart:async';
 
 /// One existing pool entry found by [AiTopicService.findSimilarAiTopics] —
 /// picking one reuses its content directly via `createAiTopic`'s
-/// `fromPoolId` hint, at [cost] (always the pool-reuse discount).
+/// `fromPoolId` hint, at [cost] (the popular or plain reuse discount,
+/// decided server-side by [isPopular]).
 class SimilarAiTopic {
   final String poolId;
   final String title;
@@ -44,9 +45,37 @@ class AiTopicSearchResult {
   const AiTopicSearchResult({required this.blocked, required this.matches});
 }
 
+/// One AI-proposed title from [AiTopicService.suggestAiTopicTitles]. Claude
+/// can land on a title that already exists in the shared pool, in which
+/// case [existsInPool] is true and [cost] is the discounted price the
+/// server will really charge — so the picker never quotes full price for
+/// something that's about to be discounted.
+class AiTopicSuggestion {
+  final String title;
+  final bool existsInPool;
+  final bool isPopular;
+  final int cost;
+
+  const AiTopicSuggestion({
+    required this.title,
+    required this.existsInPool,
+    required this.isPopular,
+    required this.cost,
+  });
+
+  factory AiTopicSuggestion.fromMap(Map<Object?, Object?> map) {
+    return AiTopicSuggestion(
+      title: (map['title'] ?? '').toString(),
+      existsInPool: map['existsInPool'] == true,
+      isPopular: map['isPopular'] == true,
+      cost: ((map['cost'] ?? 0) as num).toInt(),
+    );
+  }
+}
+
 class AiTopicSuggestionResult {
   final bool blocked;
-  final List<String> suggestions;
+  final List<AiTopicSuggestion> suggestions;
 
   const AiTopicSuggestionResult({
     required this.blocked,
@@ -96,8 +125,8 @@ class AiTopicService {
     String? languageCode,
     int limit = 20,
   }) {
-    final lang = languageCode ??
-        LocaleController.instance.locale.value.languageCode;
+    final lang =
+        languageCode ?? LocaleController.instance.locale.value.languageCode;
 
     return _db
         .collection('ai_topic_pool')
@@ -183,13 +212,13 @@ class AiTopicService {
     try {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
-            'createAiTopic',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
-          )
+        'createAiTopic',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      )
           .call({
-            'title': title,
-            if (fromPoolId != null) 'fromPoolId': fromPoolId,
-          });
+        'title': title,
+        if (fromPoolId != null) 'fromPoolId': fromPoolId,
+      });
 
       return (result.data as Map)['topicId'].toString();
     } on FirebaseFunctionsException catch (e) {
@@ -206,9 +235,9 @@ class AiTopicService {
     try {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
-            'findSimilarAiTopics',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
+        'findSimilarAiTopics',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      )
           .call({'title': title});
 
       final data = result.data as Map;
@@ -235,14 +264,14 @@ class AiTopicService {
     try {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
-            'suggestAiTopicTitles',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
-          )
+        'suggestAiTopicTitles',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      )
           .call({'title': title});
 
       final data = result.data as Map;
       final suggestions = ((data['suggestions'] as List?) ?? [])
-          .map((s) => s.toString())
+          .map((s) => AiTopicSuggestion.fromMap(s as Map))
           .toList();
 
       return AiTopicSuggestionResult(
@@ -293,9 +322,9 @@ class AiTopicService {
     try {
       await FirebaseFunctions.instance
           .httpsCallable(
-            'ensureAiTopicLevelsGenerated',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
-          )
+        'ensureAiTopicLevelsGenerated',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      )
           .call({'topicId': topicId, 'completedLevel': completedLevel});
     } on FirebaseFunctionsException {
       // Best-effort buffering: a failure here just means the next level
@@ -312,9 +341,9 @@ class AiTopicService {
     try {
       await FirebaseFunctions.instance
           .httpsCallable(
-            'refundAiTopicCost',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
+        'refundAiTopicCost',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      )
           .call({'topicId': topicId});
     } catch (_) {
       // Best-effort refund — don't block deleting the topic if this fails.
@@ -327,9 +356,9 @@ class AiTopicService {
     try {
       await FirebaseFunctions.instance
           .httpsCallable(
-            'regenerateAiTopicQuestions',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
-          )
+        'regenerateAiTopicQuestions',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+      )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotRegenerateQuestions);
@@ -342,9 +371,9 @@ class AiTopicService {
     try {
       await FirebaseFunctions.instance
           .httpsCallable(
-            'expandAiTopic',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
+        'expandAiTopic',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+      )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotExpandTopic);

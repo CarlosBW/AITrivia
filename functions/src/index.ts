@@ -9,6 +9,11 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import Anthropic from "@anthropic-ai/sdk";
 import * as crypto from "crypto";
+import {
+  aiTopicPoolId,
+  titleSimilarity,
+  AI_TOPIC_SIMILARITY_THRESHOLD,
+} from "./ai_topic_similarity";
 
 setGlobalOptions({maxInstances: 10});
 
@@ -4843,27 +4848,6 @@ async function deleteAiTopicLevelsSubtree(
 }
 
 /**
- * Deterministic doc id for the shared content pool entry backing a given
- * title+language — collapsing accents/punctuation so trivial variations
- * (accents, case, extra punctuation) still land on the same pool entry,
- * maximizing reuse. Two independent pool entries can exist for the same
- * title in different languages, since content is generated in the
- * requester's own language (see requestAiQuestionsFromClaude).
- * @param {string} normalizedTitle Title run through `normalizeTopicTitle`.
- * @param {unknown} languageCode Recipient's stored languageCode.
- * @return {string} Deterministic `ai_topic_pool` doc id.
- */
-function aiTopicPoolId(normalizedTitle: string, languageCode: unknown): string {
-  const lang = languageCode === "en" ? "en" : "es";
-  const slug = normalizedTitle
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `${lang}__${slug || "topic"}`;
-}
-
-/**
  * Transactional get-or-create for the shared pool entry backing a given
  * title+language. Doesn't generate any content — callers decide whether to
  * generate against the returned ref based on `poolData.status`/
@@ -5012,75 +4996,10 @@ async function ensureTopicAdoptedIntoPool(
   return poolRef.id;
 }
 
-/**
- * Levenshtein edit distance between two strings.
- * @param {string} a First string.
- * @param {string} b Second string.
- * @return {number} Edit distance.
- */
-function levenshteinDistance(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  const dp: number[][] = Array.from(
-    {length: m + 1}, () => new Array(n + 1).fill(0)
-  );
-
-  for (let i = 0; i <= m; i++) dp[i][0] = i;
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1] ?
-        dp[i - 1][j - 1] :
-        1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-
-  return dp[m][n];
-}
-
-/**
- * Jaccard similarity (intersection over union) of the two strings' word
- * sets — catches partial/reordered-word matches Levenshtein distance
- * misses (e.g. "Movies Marvel" vs "Marvel Movies").
- * @param {string} a First string.
- * @param {string} b Second string.
- * @return {number} 0-1 similarity.
- */
-function jaccardWordOverlap(a: string, b: string): number {
-  const wordsA = new Set(a.split(" ").filter(Boolean));
-  const wordsB = new Set(b.split(" ").filter(Boolean));
-  if (wordsA.size === 0 && wordsB.size === 0) return 1;
-
-  let intersection = 0;
-  for (const w of wordsA) {
-    if (wordsB.has(w)) intersection++;
-  }
-
-  const union = wordsA.size + wordsB.size - intersection;
-  return union === 0 ? 0 : intersection / union;
-}
-
-/**
- * Combined 0-1 similarity between two normalized topic titles — the max of
- * character-level closeness (catches typos) and word-overlap (catches
- * partial/reordered matches), so either signal alone can surface a match.
- * An identical pair always scores 1.
- * @param {string} a First normalized title.
- * @param {string} b Second normalized title.
- * @return {number} 0-1 similarity.
- */
-function titleSimilarity(a: string, b: string): number {
-  if (a === b) return 1;
-  const maxLen = Math.max(a.length, b.length);
-  const levenshteinRatio = maxLen === 0 ?
-    1 : 1 - levenshteinDistance(a, b) / maxLen;
-  return Math.max(levenshteinRatio, jaccardWordOverlap(a, b));
-}
-
 // Tunable knobs for the "search existing topics before creating" flow —
-// retune freely once there's real usage data to look at.
-const AI_TOPIC_SIMILARITY_THRESHOLD = 0.45;
+// retune freely once there's real usage data to look at. The similarity
+// threshold itself lives next to the scoring function in
+// ./ai_topic_similarity so both can be unit-tested together.
 const AI_TOPIC_SIMILAR_MATCHES_LIMIT = 5;
 // A fixed usage-count floor for the "trending" star, rather than "is this
 // in the current top-20 Popular Topics ranking" — the latter would mean
@@ -5088,6 +5007,70 @@ const AI_TOPIC_SIMILAR_MATCHES_LIMIT = 5;
 // discovery signal: every returned match is priced the same regardless.
 const AI_TOPIC_POPULAR_USAGE_THRESHOLD = 3;
 const AI_TOPIC_SUGGESTION_COUNT = 5;
+
+/**
+ * Rejects the call if the player is already at their active-topic cap.
+ * The guided-creation endpoints check this up front so a capped player
+ * hears about it immediately, instead of `suggestAiTopicTitles` spending a
+ * real Claude call to disambiguate a topic `createAiTopic` would refuse to
+ * create anyway. `createAiTopic` keeps its own (transactional) check —
+ * this one is a fail-fast courtesy, not the authoritative guard.
+ * @param {string} uid Caller's uid.
+ * @return {Promise<void>} Resolves if the caller is under the cap.
+ */
+async function assertAiTopicCapAvailable(uid: string): Promise<void> {
+  const activeTopicsSnap = await db.collection("users").doc(uid)
+    .collection("ai_topics")
+    .where("status", "in", ["pending_generation", "ready", "failed"])
+    .limit(MAX_AI_TOPICS_PER_USER)
+    .get();
+
+  if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
+    throw new HttpsError(
+      "resource-exhausted",
+      `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+      "Delete one to create another."
+    );
+  }
+}
+
+/**
+ * Annotates candidate titles with whether the shared pool already has
+ * ready content for them, and what that makes them actually cost. Without
+ * this the AI-suggestions picker would quote full price for every option,
+ * even though `createAiTopic` silently discounts any title that already
+ * exists — so a player could be quoted 600 and charged 300.
+ * @param {string[]} titles Candidate titles.
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @return {Promise<Array>} Titles with pool/pricing metadata.
+ */
+async function describeSuggestedTitles(
+  titles: string[],
+  languageCode: unknown
+): Promise<{
+  title: string;
+  existsInPool: boolean;
+  isPopular: boolean;
+  cost: number;
+}[]> {
+  return Promise.all(titles.map(async (title) => {
+    const poolId = aiTopicPoolId(normalizeTopicTitle(title), languageCode);
+    const snap = await db.collection("ai_topic_pool").doc(poolId).get();
+    const data = snap.data();
+
+    const existsInPool = data?.status === "ready";
+    const isPopular = existsInPool &&
+      safeInt(data?.usageCount, 0) >= AI_TOPIC_POPULAR_USAGE_THRESHOLD;
+
+    let cost = CREATE_AI_TOPIC_COST;
+    if (existsInPool) {
+      cost = isPopular ?
+        CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST;
+    }
+
+    return {title, existsInPool, isPopular, cost};
+  }));
+}
 
 /**
  * Searches the shared pool for existing topics (in the caller's own
@@ -5101,6 +5084,8 @@ export const findSimilarAiTopics = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+
+  await assertAiTopicCapAvailable(uid);
 
   const cleanTitle = String(request.data?.title || "").trim();
   if (cleanTitle.length < 3) {
@@ -5172,6 +5157,8 @@ export const suggestAiTopicTitles = onCall({
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+
+  await assertAiTopicCapAvailable(uid);
 
   const cleanTitle = String(request.data?.title || "").trim();
   if (cleanTitle.length < 3) {
@@ -5266,7 +5253,10 @@ export const suggestAiTopicTitles = onCall({
         throw new Error("No valid suggestions from Claude.");
       }
 
-      return {blocked: false, suggestions};
+      return {
+        blocked: false,
+        suggestions: await describeSuggestedTitles(suggestions, languageCode),
+      };
     } catch (error) {
       lastError = error;
     }

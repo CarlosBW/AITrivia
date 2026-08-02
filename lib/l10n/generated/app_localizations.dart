@@ -4000,6 +4000,24 @@ abstract class AppLocalizations {
   /// **'Tema ya existente, con descuento'**
   String get createAiTopicExistingBadgeTooltip;
 
+  /// No description provided for @createAiTopicNewBadgeTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema nuevo, se generará con IA'**
+  String get createAiTopicNewBadgeTooltip;
+
+  /// No description provided for @createAiTopicFreeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Gratis'**
+  String get createAiTopicFreeLabel;
+
+  /// No description provided for @homeLivesUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron cargar tus vidas.'**
+  String get homeLivesUnavailable;
+
   /// No description provided for @createAiTopicSearchingButton.
   ///
   /// In es, this message translates to:
@@ -4527,6 +4545,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.'**
   String get spotlightFramesBody;
+
+  /// No description provided for @spotlightAiTopicsGuidedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscamos antes de generar'**
+  String get spotlightAiTopicsGuidedTitle;
+
+  /// No description provided for @spotlightAiTopicsGuidedBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.'**
+  String get spotlightAiTopicsGuidedBody;
 
   /// No description provided for @spotlightAiTopicsPopularTitle.
   ///

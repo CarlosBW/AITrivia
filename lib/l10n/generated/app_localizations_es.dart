@@ -2334,6 +2334,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tema ya existente, con descuento';
 
   @override
+  String get createAiTopicNewBadgeTooltip => 'Tema nuevo, se generará con IA';
+
+  @override
+  String get createAiTopicFreeLabel => 'Gratis';
+
+  @override
+  String get homeLivesUnavailable => 'No se pudieron cargar tus vidas.';
+
+  @override
   String get createAiTopicSearchingButton => 'Buscando temas similares...';
 
   @override
@@ -2636,6 +2645,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get spotlightFramesBody =>
       'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.';
+
+  @override
+  String get spotlightAiTopicsGuidedTitle => 'Buscamos antes de generar';
+
+  @override
+  String get spotlightAiTopicsGuidedBody =>
+      'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.';
 
   @override
   String get spotlightAiTopicsPopularTitle => 'Temas Populares';

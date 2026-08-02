@@ -62,7 +62,8 @@ service cloud.firestore {
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
         'unlockedAvatars', 'dynamicAvatars',
-        'categoriesExploredCount', 'weeklyTopicsCompletedCount'
+        'categoriesExploredCount', 'weeklyTopicsCompletedCount',
+        'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt'
       ];
     }
 
@@ -128,13 +129,79 @@ service cloud.firestore {
       return value == 2;
     }
 
+    // economyProtectedFields() only locks these down on `update` — `create`
+    // only ever fires once per uid (there's no client `delete` on this
+    // path, so a doc can't be removed and recreated to hit this branch
+    // again short of the Cloud-Function-only deleteMyAccount flow), but
+    // without this a modified client could still forge a favorable starting
+    // state on that one write: a maxed-out pvpRating/wins1v1 (instantly
+    // completing PvP achievements on the very next real win), a fully
+    // unlocked avatar/frame set for a brand-new account, etc. Fields with a
+    // real legitimate creation-time value (see user_bootstrap.dart's
+    // `newUserFields`) must equal that value if present; every other
+    // economy-protected field must simply be absent. Purely cosmetic
+    // derived text (league name/emoji/color) isn't worth hand-validating
+    // here — getting one of those numbers wrong risks breaking real
+    // sign-ups, and faking them grants no actual advantage.
+    function newUserEconomyFieldsValid() {
+      return (!('pvpRating' in request.resource.data) || request.resource.data.pvpRating == 1000)
+        && (!('pvpLeagueId' in request.resource.data) || request.resource.data.pvpLeagueId == 'silver')
+        && (!('bestLeagueId' in request.resource.data) || request.resource.data.bestLeagueId == 'silver')
+        && (!('unlockedAvatars' in request.resource.data) || request.resource.data.unlockedAvatars == [
+              'avatar_1', 'avatar_2', 'avatar_3', 'avatar_4',
+              'avatar_5', 'avatar_6', 'avatar_7', 'avatar_8'
+            ])
+        && (!('lifeUnits' in request.resource.data) || request.resource.data.lifeUnits == 10)
+        && (!('maxLifeUnits' in request.resource.data) || request.resource.data.maxLifeUnits == 10)
+        && (!('lifeRegenSeconds' in request.resource.data) || request.resource.data.lifeRegenSeconds == 150)
+        && (!('loginStreak' in request.resource.data) || request.resource.data.loginStreak == 1)
+        && (!('gamesPlayed' in request.resource.data) || request.resource.data.gamesPlayed == 0)
+        && (!('correctAnswers' in request.resource.data) || request.resource.data.correctAnswers == 0)
+        && (!('wrongAnswers' in request.resource.data) || request.resource.data.wrongAnswers == 0)
+        && (!('dailyStreak' in request.resource.data) || request.resource.data.dailyStreak == 0)
+        && (!('maxDailyStreak' in request.resource.data) || request.resource.data.maxDailyStreak == 0)
+        && (!('bestDailyScore' in request.resource.data) || request.resource.data.bestDailyScore == 0)
+        && (!('wins1v1' in request.resource.data) || request.resource.data.wins1v1 == 0)
+        && (!('losses1v1' in request.resource.data) || request.resource.data.losses1v1 == 0)
+        && (!('draws1v1' in request.resource.data) || request.resource.data.draws1v1 == 0)
+        && (!('matches1v1' in request.resource.data) || request.resource.data.matches1v1 == 0)
+        && (!('currentWinStreak1v1' in request.resource.data) || request.resource.data.currentWinStreak1v1 == 0)
+        && (!('bestWinStreak1v1' in request.resource.data) || request.resource.data.bestWinStreak1v1 == 0)
+        && (!('pvpAbandonCount' in request.resource.data) || request.resource.data.pvpAbandonCount == 0)
+        && !('level' in request.resource.data)
+        && !('pvpRatingDelta' in request.resource.data)
+        && !('currentPvpSeasonId' in request.resource.data)
+        && !('pvpSeasonBestRating' in request.resource.data)
+        && !('pvpSeasonBestLeagueId' in request.resource.data)
+        && !('pvpSeasonBestLeagueName' in request.resource.data)
+        && !('pvpSeasonFinalRating' in request.resource.data)
+        && !('pvpSeasonFinalLeagueId' in request.resource.data)
+        && !('pvpSeasonFinalLeagueName' in request.resource.data)
+        && !('lastRankedXpEarned' in request.resource.data)
+        && !('lastRankedCoinsEarned' in request.resource.data)
+        && !('lastClaimedPvpSeasonId' in request.resource.data)
+        && !('lastPvpSeasonRewardCoins' in request.resource.data)
+        && !('lastPvpSeasonRewardCount' in request.resource.data)
+        && !('lastPvpSeasonRewardClaimedAt' in request.resource.data)
+        && !('leagueScore' in request.resource.data)
+        && !('leagueId' in request.resource.data)
+        && !('leagueName' in request.resource.data)
+        && !('lastDailyPlayed' in request.resource.data)
+        && !('pvpCoinsToday' in request.resource.data)
+        && !('pvpCoinsDate' in request.resource.data)
+        && !('dynamicAvatars' in request.resource.data)
+        && !('categoriesExploredCount' in request.resource.data)
+        && !('weeklyTopicsCompletedCount' in request.resource.data);
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null;
 
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.coins == 0
-        && request.resource.data.xp == 0;
+        && request.resource.data.xp == 0
+        && newUserEconomyFieldsValid();
 
       allow update: if request.auth != null
         && request.auth.uid == userId

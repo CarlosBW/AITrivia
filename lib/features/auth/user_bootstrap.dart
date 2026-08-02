@@ -152,10 +152,6 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   final usernameLower =
       (data['usernameLower'] ?? username).toString().toLowerCase();
 
-  final oldLives = data['lives'];
-  final inferredUnits =
-      oldLives is num ? (oldLives.toDouble() * 2).round() : 10;
-
   final bestLeagueId =
       (data['bestLeagueId'] ?? data['pvpLeagueId'] ?? currentPvpLeague.id)
           .toString();
@@ -170,16 +166,18 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   final loginStreakIncreased = lastLoginDate != today;
 
   // `coins`/`xp`/`pvpRating`/`wins1v1`/... (and now `loginStreak`/
-  // `lastLoginDate`/`unlockedAvatars`/`dynamicAvatars` themselves) are
-  // server-owned and protected in firestore.rules, so this routine
-  // per-launch bootstrap must not touch them at all anymore — it only
-  // maintains genuinely client-owned profile/cosmetic fields. `avatarId`/
-  // `equippedFrame` stay here since those are the user's own equip choice
-  // (still validated against `unlockedAvatars`/`bestLeagueId` by the
-  // rules), and their fallback defaults here are always allowed values.
-  // The login-streak bump and its coin bonus are both handled by
-  // `claimLoginStreakBonus`, which also sets the celebration-popup fields
-  // home_screen.dart watches for.
+  // `lastLoginDate`/`unlockedAvatars`/`dynamicAvatars`/`lifeUnits` and its
+  // siblings themselves) are server-owned and protected in firestore.rules,
+  // so this routine per-launch bootstrap must not touch them at all
+  // anymore — it only maintains genuinely client-owned profile/cosmetic
+  // fields. `avatarId`/`equippedFrame` stay here since those are the
+  // user's own equip choice (still validated against
+  // `unlockedAvatars`/`bestLeagueId` by the rules), and their fallback
+  // defaults here are always allowed values. The login-streak bump and its
+  // coin bonus are both handled by `claimLoginStreakBonus`, which also
+  // sets the celebration-popup fields home_screen.dart watches for; the
+  // life fields default themselves (via `refreshUserLives` et al.) the
+  // first time any life-gated screen is opened.
   await ref.set(
     {
       'freeTopicPasses': data['freeTopicPasses'] ?? 1,
@@ -193,11 +191,6 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
       'equippedFrame': data['equippedFrame'] ?? bestLeague.id,
 
       'dailyGamesPlayed': data['dailyGamesPlayed'] ?? 0,
-
-      'lifeUnits': data['lifeUnits'] ?? inferredUnits,
-      'maxLifeUnits': data['maxLifeUnits'] ?? 10,
-      'lifeRegenSeconds': data['lifeRegenSeconds'] ?? 150,
-      'lastLifeTickAt': data['lastLifeTickAt'] ?? FieldValue.serverTimestamp(),
 
       'hasSeenOnboarding': hasSeenOnboarding,
 

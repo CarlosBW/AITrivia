@@ -4074,16 +4074,88 @@ export const claimAchievementReward = onCall(async (request) => {
 // ============================================================
 // LIFE SYSTEM
 //
-// Only the coin-for-lifeUnits purchase moves here — lifeUnits/regen
-// ticking (tryConsumeLevelEntry, tryConsumeWrongAnswer, refreshLives)
-// don't touch `coins`/`xp` and keep working straight from the client.
-// Cost is a server constant, never trusted from the client.
+// lifeUnits/maxLifeUnits/lifeRegenSeconds/lastLifeTickAt are protected
+// fields now (see economyProtectedFields() in firestore.rules) — a
+// modified client could otherwise set lifeUnits directly, bypassing the
+// entire life-gating system and the buyFullLife coin sink below. Every
+// mutation (regen tick, level-entry spend, wrong-answer spend, refund,
+// paid refill) is a Cloud Function now; life_service.dart's client
+// methods are thin wrappers around these.
 // ============================================================
 
 const BUY_FULL_LIFE_COST = 10;
 const DEFAULT_MAX_LIFE_UNITS = 10;
 const DEFAULT_LIFE_REGEN_SECONDS = 150;
 const UNITS_PER_LIFE = 2;
+const LEVEL_ENTRY_COST_UNITS = 2;
+const WRONG_ANSWER_COST_UNITS = 1;
+// A brand-new player learning the format can burn through their whole life
+// bar failing questions before the game has hooked them — mirrors
+// life_service.dart's `newPlayerGraceLevels`.
+const NEW_PLAYER_GRACE_LEVELS = 2;
+
+type LifeState = {
+  lifeUnits: number;
+  maxLifeUnits: number;
+  lifeRegenSeconds: number;
+  lastTickMs: number;
+  secondsToNextHalfLife: number | null;
+};
+
+/**
+ * Mirrors life_service.dart's `_stateFromData` exactly, including the
+ * granular lastTickMs advance (only consumedSeconds worth, not a full
+ * reset) so partial regen progress toward the next half-life isn't lost.
+ * @param {Record<string, unknown>} data User document data.
+ * @param {number} nowMs Current time in epoch milliseconds.
+ * @return {LifeState} Current life state, accounting for regen elapsed
+ * since the last tick.
+ */
+function computeLifeState(
+  data: Record<string, unknown>, nowMs: number
+): LifeState {
+  let lifeUnits = safeInt(data.lifeUnits, DEFAULT_MAX_LIFE_UNITS);
+  const maxLifeUnits = safeInt(data.maxLifeUnits, DEFAULT_MAX_LIFE_UNITS);
+  const lifeRegenSeconds = safeInt(
+    data.lifeRegenSeconds, DEFAULT_LIFE_REGEN_SECONDS
+  );
+
+  const lastTick = data.lastLifeTickAt as
+    FirebaseFirestore.Timestamp | undefined;
+  let lastTickMs = lastTick ? lastTick.toMillis() : nowMs;
+
+  if (lifeUnits < maxLifeUnits) {
+    const elapsedSeconds = Math.floor((nowMs - lastTickMs) / 1000);
+
+    if (elapsedSeconds >= lifeRegenSeconds) {
+      const recoveredUnits = Math.floor(elapsedSeconds / lifeRegenSeconds);
+      lifeUnits = Math.min(lifeUnits + recoveredUnits, maxLifeUnits);
+
+      const consumedSeconds = recoveredUnits * lifeRegenSeconds;
+      lastTickMs = lastTickMs + consumedSeconds * 1000;
+
+      if (lifeUnits >= maxLifeUnits) lastTickMs = nowMs;
+    }
+  } else {
+    lifeUnits = maxLifeUnits;
+    lastTickMs = nowMs;
+  }
+
+  let secondsToNextHalfLife: number | null = null;
+  if (lifeUnits < maxLifeUnits) {
+    const elapsedSeconds = Math.floor((nowMs - lastTickMs) / 1000);
+    const remainder = elapsedSeconds % lifeRegenSeconds;
+    secondsToNextHalfLife = lifeRegenSeconds - remainder;
+    if (secondsToNextHalfLife <= 0) {
+      secondsToNextHalfLife = lifeRegenSeconds;
+    }
+  }
+
+  return {
+    lifeUnits, maxLifeUnits, lifeRegenSeconds, lastTickMs,
+    secondsToNextHalfLife,
+  };
+}
 
 /**
  * Mirrors life_service.dart's `_stateFromData` (lifeUnits/maxLifeUnits
@@ -4095,30 +4167,173 @@ const UNITS_PER_LIFE = 2;
 function computeLifeUnits(
   data: Record<string, unknown>
 ): {lifeUnits: number; maxLifeUnits: number} {
-  const now = Date.now();
-
-  let lifeUnits = safeInt(data.lifeUnits, DEFAULT_MAX_LIFE_UNITS);
-  const maxLifeUnits = safeInt(data.maxLifeUnits, DEFAULT_MAX_LIFE_UNITS);
-  const lifeRegenSeconds = safeInt(
-    data.lifeRegenSeconds, DEFAULT_LIFE_REGEN_SECONDS
-  );
-
-  const lastTick = data.lastLifeTickAt as
-    FirebaseFirestore.Timestamp | undefined;
-  const lastTickMs = lastTick ? lastTick.toMillis() : now;
-
-  if (lifeUnits < maxLifeUnits) {
-    const elapsedSeconds = Math.floor((now - lastTickMs) / 1000);
-    if (elapsedSeconds >= lifeRegenSeconds) {
-      const recoveredUnits = Math.floor(elapsedSeconds / lifeRegenSeconds);
-      lifeUnits = Math.min(lifeUnits + recoveredUnits, maxLifeUnits);
-    }
-  } else {
-    lifeUnits = maxLifeUnits;
-  }
-
+  const {lifeUnits, maxLifeUnits} = computeLifeState(data, Date.now());
   return {lifeUnits, maxLifeUnits};
 }
+
+/**
+ * @param {LifeState} state Computed life state.
+ * @return {Record<string, unknown>} JSON-safe response shape for the
+ * client — `lastLifeTickAtMs` instead of a Firestore Timestamp, since
+ * callable results can't carry Timestamp objects.
+ */
+function lifeStateResponse(state: LifeState): Record<string, unknown> {
+  return {
+    lifeUnits: state.lifeUnits,
+    maxLifeUnits: state.maxLifeUnits,
+    lifeRegenSeconds: state.lifeRegenSeconds,
+    secondsToNextHalfLife: state.secondsToNextHalfLife,
+    lastLifeTickAtMs: state.lastTickMs,
+  };
+}
+
+export const refreshUserLives = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+    const nowMs = Date.now();
+
+    const beforeUnits = safeInt(data.lifeUnits, DEFAULT_MAX_LIFE_UNITS);
+    const beforeTickMissing =
+      !(data.lastLifeTickAt instanceof admin.firestore.Timestamp);
+
+    const state = computeLifeState(data, nowMs);
+    const recovered = state.lifeUnits > beforeUnits;
+
+    if (recovered || beforeTickMissing) {
+      tx.set(userRef, {
+        lifeUnits: state.lifeUnits,
+        maxLifeUnits: state.maxLifeUnits,
+        lifeRegenSeconds: state.lifeRegenSeconds,
+        lastLifeTickAt:
+          admin.firestore.Timestamp.fromMillis(state.lastTickMs),
+      }, {merge: true});
+    }
+
+    return lifeStateResponse(state);
+  });
+});
+
+export const consumeLevelEntryLife = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+    const state = computeLifeState(data, Date.now());
+
+    if (state.lifeUnits < LEVEL_ENTRY_COST_UNITS) {
+      return {ok: false, ...lifeStateResponse(state)};
+    }
+
+    const wasFull = state.lifeUnits >= state.maxLifeUnits;
+    const newUnits = state.lifeUnits - LEVEL_ENTRY_COST_UNITS;
+    const newTickMs = (wasFull && newUnits < state.maxLifeUnits) ?
+      Date.now() : state.lastTickMs;
+
+    tx.set(userRef, {
+      lifeUnits: newUnits,
+      maxLifeUnits: state.maxLifeUnits,
+      lifeRegenSeconds: state.lifeRegenSeconds,
+      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
+    }, {merge: true});
+
+    return {
+      ok: true,
+      ...lifeStateResponse(
+        {...state, lifeUnits: newUnits, lastTickMs: newTickMs}
+      ),
+    };
+  });
+});
+
+export const consumeWrongAnswerLife = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+    const nowMs = Date.now();
+
+    const gamesPlayed = safeInt(data.gamesPlayed, 0);
+    const state = computeLifeState(data, nowMs);
+
+    if (gamesPlayed < NEW_PLAYER_GRACE_LEVELS) {
+      return {lifeLost: false, ...lifeStateResponse(state)};
+    }
+
+    const wasFull = state.lifeUnits >= state.maxLifeUnits;
+    const newUnits = state.lifeUnits < WRONG_ANSWER_COST_UNITS ?
+      0 : state.lifeUnits - WRONG_ANSWER_COST_UNITS;
+    const newTickMs = (wasFull && newUnits < state.maxLifeUnits) ?
+      nowMs : state.lastTickMs;
+
+    tx.set(userRef, {
+      lifeUnits: newUnits,
+      maxLifeUnits: state.maxLifeUnits,
+      lifeRegenSeconds: state.lifeRegenSeconds,
+      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
+    }, {merge: true});
+
+    return {
+      lifeLost: true,
+      ...lifeStateResponse(
+        {...state, lifeUnits: newUnits, lastTickMs: newTickMs}
+      ),
+    };
+  });
+});
+
+/**
+ * Refunds a level-entry charge (see consumeLevelEntryLife) when session
+ * creation fails after the life was already spent, so the player isn't
+ * left with nothing to show for it — mirrors life_service.dart's
+ * `refundLevelEntry`.
+ */
+export const refundLevelEntryLife = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+    const state = computeLifeState(data, Date.now());
+
+    const newUnits = Math.min(
+      state.lifeUnits + LEVEL_ENTRY_COST_UNITS, state.maxLifeUnits
+    );
+
+    tx.set(userRef, {
+      lifeUnits: newUnits,
+      maxLifeUnits: state.maxLifeUnits,
+      lifeRegenSeconds: state.lifeRegenSeconds,
+      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(state.lastTickMs),
+    }, {merge: true});
+  });
+
+  return {ok: true};
+});
 
 export const buyFullLife = onCall(async (request) => {
   const uid = request.auth?.uid;

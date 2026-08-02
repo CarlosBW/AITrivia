@@ -32,46 +32,11 @@ class LifeService {
     return '$whole.5';
   }
 
-  Future<void> ensureUserLifeDoc(String uid) async {
-    final ref = _db.collection('users').doc(uid);
-    final snap = await ref.get();
-    final now = Timestamp.now();
-
-    if (!snap.exists) {
-      await ref.set({
-        'coins': 0,
-        'xp': 0,
-        'freeTopicPasses': 1,
-        'lifeUnits': defaultMaxLifeUnits,
-        'maxLifeUnits': defaultMaxLifeUnits,
-        'lifeRegenSeconds': defaultRegenSeconds,
-        'lastLifeTickAt': now,
-        'createdAt': now,
-      }, SetOptions(merge: true));
-      return;
-    }
-
-    final data = snap.data() ?? {};
-    final patch = <String, dynamic>{};
-
-    final oldLives = data['lives'];
-    final inferredUnits = oldLives is num
-        ? (oldLives.toDouble() * unitsPerLife).round()
-        : defaultMaxLifeUnits;
-
-    if (data['lifeUnits'] == null) patch['lifeUnits'] = inferredUnits;
-    if (data['maxLifeUnits'] == null) {
-      patch['maxLifeUnits'] = defaultMaxLifeUnits;
-    }
-    if (data['lifeRegenSeconds'] == null) {
-      patch['lifeRegenSeconds'] = defaultRegenSeconds;
-    }
-    if (data['lastLifeTickAt'] == null) patch['lastLifeTickAt'] = now;
-
-    if (patch.isNotEmpty) {
-      await ref.set(patch, SetOptions(merge: true));
-    }
-  }
+  // lifeUnits/maxLifeUnits/lifeRegenSeconds/lastLifeTickAt are protected
+  // fields in firestore.rules now, and every Cloud Function below already
+  // defaults them when missing — there's nothing left for the client to
+  // proactively create here.
+  Future<void> ensureUserLifeDoc(String uid) async {}
 
   Map<String, dynamic> _stateFromData(
     Map<String, dynamic> data, {
@@ -132,7 +97,9 @@ class LifeService {
     };
   }
 
-  /// Calculates the life countdown in memory. No Firestore read/write.
+  /// Calculates the life countdown in memory. No Firestore read/write —
+  /// purely a local ticker for the UI between server refreshes, fed by a
+  /// snapshot the server already vetted. Never authoritative for gating.
   Map<String, dynamic> calculateLocalLifeState(Map<String, dynamic> state) {
     return _stateFromData(state);
   }
@@ -144,35 +111,37 @@ class LifeService {
     return _stateFromData(snap.data() ?? {});
   }
 
-  /// Reads Firestore and writes only when at least one life unit has really regenerated.
+  Map<String, dynamic> _stateFromCallableResponse(Map response) {
+    final lastTickMs = ((response['lastLifeTickAtMs'] ?? 0) as num).toInt();
+
+    return {
+      'lifeUnits': ((response['lifeUnits'] ?? 0) as num).toInt(),
+      'maxLifeUnits': ((response['maxLifeUnits'] ?? defaultMaxLifeUnits) as num)
+          .toInt(),
+      'lifeRegenSeconds':
+          ((response['lifeRegenSeconds'] ?? defaultRegenSeconds) as num)
+              .toInt(),
+      'lastLifeTickAt': Timestamp.fromMillisecondsSinceEpoch(lastTickMs),
+      'secondsToNextHalfLife': response['secondsToNextHalfLife'] == null
+          ? null
+          : ((response['secondsToNextHalfLife']) as num).toInt(),
+    };
+  }
+
+  /// Reads current life state server-side and, if at least one unit has
+  /// really regenerated (or the doc predates lastLifeTickAt), persists the
+  /// tick — mirrors the transaction the client used to run directly.
+  /// `lifeUnits`/etc. are protected fields, so this now goes through the
+  /// `refreshUserLives` Cloud Function instead of writing Firestore itself.
   Future<Map<String, dynamic>> refreshLives(String uid) async {
-    final ref = _db.collection('users').doc(uid);
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'refreshUserLives',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
 
-    return _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-      final beforeUnits =
-          ((data['lifeUnits'] ?? defaultMaxLifeUnits) as num).toInt();
-      final beforeTick = data['lastLifeTickAt'] as Timestamp?;
-
-      final state = _stateFromData(data);
-      final afterUnits = state['lifeUnits'] as int;
-      final afterTick = state['lastLifeTickAt'] as Timestamp;
-
-      final didRecover = afterUnits > beforeUnits;
-      final missingTick = beforeTick == null;
-
-      if (didRecover || missingTick) {
-        tx.set(ref, {
-          'lifeUnits': afterUnits,
-          'lastLifeTickAt': afterTick,
-          'maxLifeUnits': state['maxLifeUnits'],
-          'lifeRegenSeconds': state['lifeRegenSeconds'],
-        }, SetOptions(merge: true));
-      }
-
-      return state;
-    });
+    return _stateFromCallableResponse(Map<String, dynamic>.from(result.data as Map));
   }
 
   Future<bool> hasEnoughLifeToEnterLevel(String uid) async {
@@ -182,89 +151,39 @@ class LifeService {
   }
 
   Future<bool> tryConsumeLevelEntry(String uid) async {
-    final ref = _db.collection('users').doc(uid);
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'consumeLevelEntryLife',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
 
-    return _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-      final state = _stateFromData(data);
-
-      int lifeUnits = state['lifeUnits'] as int;
-      final int maxLifeUnits = state['maxLifeUnits'] as int;
-      Timestamp lastTick = state['lastLifeTickAt'] as Timestamp;
-      final now = Timestamp.now();
-
-      if (lifeUnits < levelEntryCostUnits) return false;
-
-      final wasFull = lifeUnits >= maxLifeUnits;
-      lifeUnits -= levelEntryCostUnits;
-      if (wasFull && lifeUnits < maxLifeUnits) {
-        lastTick = now;
-      }
-
-      tx.set(ref, {
-        'lifeUnits': lifeUnits,
-        'lastLifeTickAt': lastTick,
-      }, SetOptions(merge: true));
-
-      return true;
-    });
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['ok'] == true;
   }
 
   Future<bool> tryConsumeWrongAnswer(String uid) async {
-    final ref = _db.collection('users').doc(uid);
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'consumeWrongAnswerLife',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
 
-    return _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-
-      final gamesPlayed = ((data['gamesPlayed'] ?? 0) as num).toInt();
-      if (gamesPlayed < newPlayerGraceLevels) return false;
-
-      final state = _stateFromData(data);
-
-      int lifeUnits = state['lifeUnits'] as int;
-      final int maxLifeUnits = state['maxLifeUnits'] as int;
-      Timestamp lastTick = state['lastLifeTickAt'] as Timestamp;
-      final now = Timestamp.now();
-
-      final wasFull = lifeUnits >= maxLifeUnits;
-      if (lifeUnits < wrongAnswerCostUnits) {
-        lifeUnits = 0;
-      } else {
-        lifeUnits -= wrongAnswerCostUnits;
-      }
-      if (wasFull && lifeUnits < maxLifeUnits) {
-        lastTick = now;
-      }
-
-      tx.set(ref, {
-        'lifeUnits': lifeUnits,
-        'lastLifeTickAt': lastTick,
-      }, SetOptions(merge: true));
-
-      return true;
-    });
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['lifeLost'] == true;
   }
 
   /// Refunds a level-entry charge (see [tryConsumeLevelEntry]) when session
   /// creation fails after the life was already spent, so the player isn't
   /// left with nothing to show for it.
   Future<void> refundLevelEntry(String uid) async {
-    final ref = _db.collection('users').doc(uid);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data() ?? {};
-      final state = _stateFromData(data);
-
-      final int lifeUnits = state['lifeUnits'] as int;
-      final int maxLifeUnits = state['maxLifeUnits'] as int;
-
-      tx.set(ref, {
-        'lifeUnits': (lifeUnits + levelEntryCostUnits).clamp(0, maxLifeUnits),
-      }, SetOptions(merge: true));
-    });
+    await FirebaseFunctions.instance
+        .httpsCallable(
+          'refundLevelEntryLife',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
   }
 
   /// `uid`/`cost` are kept for call-site compatibility but ignored — the

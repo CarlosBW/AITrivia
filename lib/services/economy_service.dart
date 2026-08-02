@@ -24,10 +24,21 @@ class EconomyService {
   static const int firstAiTopicFreePasses = 1;
   static const int createAiTopicCost = 600;
   // Charged instead of createAiTopicCost when the title (in the user's own
-  // language) already has a ready shared pool entry — no AI generation
-  // needed, so it's discounted. Mirrors functions/src/index.ts's
-  // CREATE_AI_TOPIC_FROM_POOL_COST — keep both in sync.
+  // language) already has a ready shared pool entry that's crossed the
+  // "popular" usage threshold (aiTopicPopularUsageThreshold) — no AI
+  // generation needed, so it's discounted the most. Mirrors
+  // functions/src/index.ts's CREATE_AI_TOPIC_FROM_POOL_COST — keep both in
+  // sync.
   static const int createAiTopicFromPoolCost = 300;
+  // Charged instead of createAiTopicCost when reusing an existing pool
+  // entry that hasn't crossed the popular threshold yet — still a real
+  // discount (no AI call), just smaller than a popular reuse, so per-topic
+  // revenue doesn't collapse once most requests match *something* already
+  // in the pool. Mirrors functions/src/index.ts's
+  // CREATE_AI_TOPIC_EXISTING_COST.
+  static const int createAiTopicExistingCost = 400;
+  // Mirrors functions/src/index.ts's AI_TOPIC_POPULAR_USAGE_THRESHOLD.
+  static const int aiTopicPopularUsageThreshold = 3;
   // Mirrors functions/src/index.ts's REGENERATE_AI_QUESTIONS_COST_PER_LEVEL
   // — regenerating scales with how many levels there actually are to redo,
   // instead of a flat cost letting a heavily-buffered/expanded topic

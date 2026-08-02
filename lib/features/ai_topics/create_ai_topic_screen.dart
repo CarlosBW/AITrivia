@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/spotlight_hint.dart';
 
 class CreateAiTopicScreen extends StatefulWidget {
@@ -16,13 +17,26 @@ class CreateAiTopicScreen extends StatefulWidget {
       _CreateAiTopicScreenState();
 }
 
+enum _Stage { typing, showingMatches, showingAiSuggestions }
+
+/// Which of the three prices `_PricingCard` should show — mirrors the
+/// server's own tiering in `createAiTopic`: brand-new generation, an
+/// existing-but-not-yet-popular reuse, or a popular reuse.
+enum _TopicPriceTier { full, existing, popular }
+
 class _CreateAiTopicScreenState
     extends State<CreateAiTopicScreen> {
   final _controller = TextEditingController();
 
   bool _loading = false;
+  String _loadingLabel = '';
   String? _selectedPoolId;
   String? _selectedPoolTitle;
+
+  _Stage _stage = _Stage.typing;
+  List<SimilarAiTopic> _matches = [];
+  List<String> _aiSuggestions = [];
+  String _searchedTitle = '';
 
   @override
   void initState() {
@@ -52,50 +66,140 @@ class _CreateAiTopicScreenState
     });
   }
 
-  Future<void> _createTopic() async {
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  /// Entry point for the main button. A title picked from the "Temas
+  /// Populares" showcase is already a confirmed exact pool match, so it
+  /// skips straight to creation; anything freely typed goes through the
+  /// search-then-suggest flow first.
+  Future<void> _onCreatePressed() async {
     final title = _controller.text.trim();
+    final l10n = AppLocalizations.of(context);
 
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).createAiTopicEnterTopic),
-        ),
-      );
+      _showError(l10n.createAiTopicEnterTopic);
       return;
     }
 
-    setState(() => _loading = true);
+    if (_selectedPoolId != null) {
+      await _doCreate(title, fromPoolId: _selectedPoolId);
+      return;
+    }
+
+    await _search(title, l10n);
+  }
+
+  Future<void> _search(String title, AppLocalizations l10n) async {
+    setState(() {
+      _loading = true;
+      _loadingLabel = l10n.createAiTopicSearchingButton;
+    });
+
+    try {
+      final result =
+          await AiTopicService.instance.findSimilarAiTopics(title: title);
+
+      if (!mounted) return;
+
+      if (result.blocked) {
+        setState(() => _loading = false);
+        _showError(l10n.createAiTopicBlockedMessage);
+        return;
+      }
+
+      if (result.matches.isEmpty) {
+        // Nothing close enough to reuse — go straight to AI suggestions
+        // for this same title, no dead-end "no matches found" screen.
+        await _requestAiSuggestions(title, l10n);
+        return;
+      }
+
+      setState(() {
+        _searchedTitle = title;
+        _matches = result.matches;
+        _stage = _Stage.showingMatches;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _requestAiSuggestions(
+    String title,
+    AppLocalizations l10n,
+  ) async {
+    setState(() {
+      _loading = true;
+      _loadingLabel = l10n.createAiTopicSuggestingButton;
+    });
+
+    try {
+      final result =
+          await AiTopicService.instance.suggestAiTopicTitles(title: title);
+
+      if (!mounted) return;
+
+      if (result.blocked || result.suggestions.isEmpty) {
+        setState(() => _loading = false);
+        _showError(l10n.createAiTopicBlockedMessage);
+        return;
+      }
+
+      setState(() {
+        _searchedTitle = title;
+        _aiSuggestions = result.suggestions;
+        _stage = _Stage.showingAiSuggestions;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Future<void> _doCreate(String title, {String? fromPoolId}) async {
+    final l10n = AppLocalizations.of(context);
+
+    setState(() {
+      _loading = true;
+      _loadingLabel = l10n.createAiTopicCreatingButton;
+    });
 
     try {
       await AiTopicService.instance.createAiTopic(
         title: title,
-        fromPoolId: _selectedPoolId,
+        fromPoolId: fromPoolId,
       );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).createAiTopicCreated),
-        ),
+        SnackBar(content: Text(l10n.createAiTopicCreated)),
       );
 
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      setState(() => _loading = false);
+      _showError(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  void _backToTyping() {
+    setState(() {
+      _stage = _Stage.typing;
+      _matches = [];
+      _aiSuggestions = [];
+    });
   }
 
   @override
@@ -117,74 +221,267 @@ class _CreateAiTopicScreenState
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          children: switch (_stage) {
+            _Stage.typing => _buildTypingStage(l10n),
+            _Stage.showingMatches => _buildMatchesStage(l10n),
+            _Stage.showingAiSuggestions => _buildAiSuggestionsStage(l10n),
+          },
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTypingStage(AppLocalizations l10n) {
+    return [
+      Text(
+        l10n.createAiTopicSubtitle,
+        style: GoogleFonts.baloo2(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      const SizedBox(height: 10),
+      Text(
+        l10n.createAiTopicExamplesLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 6),
+      Text(l10n.createAiTopicExamplesList),
+      const SizedBox(height: 24),
+      _PopularTopicsSection(
+        selectedPoolId: _selectedPoolId,
+        onSelect: _selectPopularTopic,
+      ),
+      TextField(
+        controller: _controller,
+        maxLength: 60,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(
+          labelText: l10n.createAiTopicFieldLabel,
+          hintText: l10n.createAiTopicFieldHint,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 20),
+      _PricingCard(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        // Only the "Temas Populares" showcase sets _selectedPoolId, and
+        // that showcase is itself filtered to popular entries only — so
+        // any selection here is always the popular tier.
+        tier: _selectedPoolId != null
+            ? _TopicPriceTier.popular
+            : _TopicPriceTier.full,
+      ),
+      const SizedBox(height: 24),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton.icon(
+          onPressed: _loading ? null : _onCreatePressed,
+          icon: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.auto_awesome),
+          label: Text(_loading ? _loadingLabel : l10n.aiTopicsCreateTopic),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildMatchesStage(AppLocalizations l10n) {
+    return [
+      Text(
+        l10n.createAiTopicMatchesFoundTitle,
+        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        l10n.createAiTopicMatchesFoundHint,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 16),
+      for (final match in _matches) ...[
+        _SimilarTopicCard(
+          match: match,
+          onTap: _loading
+              ? null
+              : () => _doCreate(match.title, fromPoolId: match.poolId),
+        ),
+        const SizedBox(height: 10),
+      ],
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _loading
+              ? null
+              : () => _requestAiSuggestions(_searchedTitle, l10n),
+          child: Text(l10n.createAiTopicNoneOfTheseButton),
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextButton(
+        onPressed: _loading ? null : _backToTyping,
+        child: Text(l10n.createAiTopicBackButton),
+      ),
+      if (_loading) ...[
+        const SizedBox(height: 12),
+        Center(
+          child: Column(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(_loadingLabel),
+            ],
+          ),
+        ),
+      ],
+    ];
+  }
+
+  List<Widget> _buildAiSuggestionsStage(AppLocalizations l10n) {
+    return [
+      Text(
+        l10n.createAiTopicAiSuggestionsTitle,
+        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        l10n.createAiTopicAiSuggestionsHint,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 16),
+      for (final suggestion in _aiSuggestions) ...[
+        _SuggestedTitleCard(
+          title: suggestion,
+          onTap: _loading ? null : () => _doCreate(suggestion),
+        ),
+        const SizedBox(height: 10),
+      ],
+      const SizedBox(height: 10),
+      _PricingCard(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        tier: _TopicPriceTier.full,
+      ),
+      const SizedBox(height: 16),
+      TextButton(
+        onPressed: _loading ? null : _backToTyping,
+        child: Text(l10n.createAiTopicBackButton),
+      ),
+      if (_loading) ...[
+        const SizedBox(height: 12),
+        Center(
+          child: Column(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(_loadingLabel),
+            ],
+          ),
+        ),
+      ],
+    ];
+  }
+}
+
+class _SimilarTopicCard extends StatelessWidget {
+  final SimilarAiTopic match;
+  final VoidCallback? onTap;
+
+  const _SimilarTopicCard({required this.match, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: scheme.outline.withValues(alpha: 0.2)),
+        ),
+        child: Row(
           children: [
-            Text(
-              l10n.createAiTopicSubtitle,
-              style: GoogleFonts.baloo2(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+            Expanded(
+              child: Row(
+                children: [
+                  Tooltip(
+                    message: match.isPopular
+                        ? l10n.createAiTopicPopularBadgeTooltip
+                        : l10n.createAiTopicExistingBadgeTooltip,
+                    child: Icon(
+                      match.isPopular ? Icons.star : Icons.sell,
+                      color: match.isPopular
+                          ? AppColors.reward
+                          : Colors.blueAccent,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      match.title,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 10),
-
             Text(
-              l10n.createAiTopicExamplesLabel,
+              l10n.createAiTopicPopularCostLabel(match.cost),
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 6),
+class _SuggestedTitleCard extends StatelessWidget {
+  final String title;
+  final VoidCallback? onTap;
 
-            Text(l10n.createAiTopicExamplesList),
+  const _SuggestedTitleCard({required this.title, required this.onTap});
 
-            const SizedBox(height: 24),
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
 
-            _PopularTopicsSection(
-              selectedPoolId: _selectedPoolId,
-              onSelect: _selectPopularTopic,
-            ),
-
-            TextField(
-              controller: _controller,
-              maxLength: 60,
-              textCapitalization:
-                  TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: l10n.createAiTopicFieldLabel,
-                hintText: l10n.createAiTopicFieldHint,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            _PricingCard(
-              uid: FirebaseAuth.instance.currentUser!.uid,
-              poolDiscount: _selectedPoolId != null,
-            ),
-
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _loading ? null : _createTopic,
-                icon: _loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(Icons.auto_awesome),
-                label: Text(
-                  _loading
-                      ? l10n.createAiTopicCreatingButton
-                      : l10n.aiTopicsCreateTopic,
-                ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: scheme.outline.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.auto_awesome, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -196,9 +493,9 @@ class _CreateAiTopicScreenState
 
 class _PricingCard extends StatelessWidget {
   final String uid;
-  final bool poolDiscount;
+  final _TopicPriceTier tier;
 
-  const _PricingCard({required this.uid, required this.poolDiscount});
+  const _PricingCard({required this.uid, required this.tier});
 
   @override
   Widget build(BuildContext context) {
@@ -212,9 +509,11 @@ class _PricingCard extends StatelessWidget {
         final coins = ((data['coins'] ?? 0) as num).toInt();
         final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
         final hasFreePass = freePasses > 0;
-        final cost = poolDiscount
-            ? EconomyService.createAiTopicFromPoolCost
-            : EconomyService.createAiTopicCost;
+        final cost = switch (tier) {
+          _TopicPriceTier.popular => EconomyService.createAiTopicFromPoolCost,
+          _TopicPriceTier.existing => EconomyService.createAiTopicExistingCost,
+          _TopicPriceTier.full => EconomyService.createAiTopicCost,
+        };
         final canAfford = hasFreePass || coins >= cost;
 
         final accentColor = canAfford ? Colors.green : Colors.redAccent;
@@ -246,10 +545,12 @@ class _PricingCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (!hasFreePass && poolDiscount) ...[
+              if (!hasFreePass && tier != _TopicPriceTier.full) ...[
                 const SizedBox(height: 4),
                 Text(
-                  l10n.createAiTopicPopularSelectedHint,
+                  tier == _TopicPriceTier.popular
+                      ? l10n.createAiTopicPopularSelectedHint
+                      : l10n.createAiTopicExistingSelectedHint,
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 12),
                 ),

@@ -8,6 +8,52 @@ import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
 import 'dart:async';
 
+/// One existing pool entry found by [AiTopicService.findSimilarAiTopics] —
+/// picking one reuses its content directly via `createAiTopic`'s
+/// `fromPoolId` hint, at [cost] (always the pool-reuse discount).
+class SimilarAiTopic {
+  final String poolId;
+  final String title;
+  final int usageCount;
+  final bool isPopular;
+  final int cost;
+
+  const SimilarAiTopic({
+    required this.poolId,
+    required this.title,
+    required this.usageCount,
+    required this.isPopular,
+    required this.cost,
+  });
+
+  factory SimilarAiTopic.fromMap(Map<Object?, Object?> map) {
+    return SimilarAiTopic(
+      poolId: (map['poolId'] ?? '').toString(),
+      title: (map['title'] ?? '').toString(),
+      usageCount: ((map['usageCount'] ?? 0) as num).toInt(),
+      isPopular: map['isPopular'] == true,
+      cost: ((map['cost'] ?? 0) as num).toInt(),
+    );
+  }
+}
+
+class AiTopicSearchResult {
+  final bool blocked;
+  final List<SimilarAiTopic> matches;
+
+  const AiTopicSearchResult({required this.blocked, required this.matches});
+}
+
+class AiTopicSuggestionResult {
+  final bool blocked;
+  final List<String> suggestions;
+
+  const AiTopicSuggestionResult({
+    required this.blocked,
+    required this.suggestions,
+  });
+}
+
 class AiTopicService {
   AiTopicService._();
 
@@ -38,11 +84,14 @@ class AiTopicService {
         .snapshots();
   }
 
-  /// Ready shared pool entries in the caller's own language, most-reused
+  /// Ready shared pool entries in the caller's own language that have
+  /// crossed [EconomyService.aiTopicPopularUsageThreshold], most-reused
   /// first — surfaced as the "Popular Topics" picker on the create screen.
   /// Picking one of these and creating from it skips AI generation
   /// entirely (see createAiTopic's server-side pool-reuse logic), so it's
-  /// discounted to [EconomyService.createAiTopicFromPoolCost].
+  /// discounted to [EconomyService.createAiTopicFromPoolCost] — the same
+  /// threshold gates both this showcase and `findSimilarAiTopics`'s
+  /// `isPopular` flag, so anything shown here is always priced the same.
   Stream<QuerySnapshot<Map<String, dynamic>>> watchPopularAiTopics({
     String? languageCode,
     int limit = 20,
@@ -54,6 +103,10 @@ class AiTopicService {
         .collection('ai_topic_pool')
         .where('status', isEqualTo: 'ready')
         .where('languageCode', isEqualTo: lang)
+        .where(
+          'usageCount',
+          isGreaterThanOrEqualTo: EconomyService.aiTopicPopularUsageThreshold,
+        )
         .orderBy('usageCount', descending: true)
         .limit(limit)
         .snapshots();
@@ -141,6 +194,63 @@ class AiTopicService {
       return (result.data as Map)['topicId'].toString();
     } on FirebaseFunctionsException catch (e) {
       throw Exception(e.message ?? _l10n.serviceCouldNotCreateTopic);
+    }
+  }
+
+  /// Searches the shared pool for existing topics similar to [title], so
+  /// the user can reuse one instead of creating a near-duplicate. Called
+  /// once when the user taps to create (not live per-keystroke).
+  Future<AiTopicSearchResult> findSimilarAiTopics({
+    required String title,
+  }) async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'findSimilarAiTopics',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'title': title});
+
+      final data = result.data as Map;
+      final matches = ((data['matches'] as List?) ?? [])
+          .map((m) => SimilarAiTopic.fromMap(m as Map))
+          .toList();
+
+      return AiTopicSearchResult(
+        blocked: data['blocked'] == true,
+        matches: matches,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceCouldNotSearchTopics);
+    }
+  }
+
+  /// Asks Claude for a bounded list of well-formed candidate titles for a
+  /// raw (possibly misspelled or too-vague) topic request — used once
+  /// [findSimilarAiTopics] found nothing close enough to reuse. Free of
+  /// charge; the user must pick one of the returned titles to proceed.
+  Future<AiTopicSuggestionResult> suggestAiTopicTitles({
+    required String title,
+  }) async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'suggestAiTopicTitles',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+          )
+          .call({'title': title});
+
+      final data = result.data as Map;
+      final suggestions = ((data['suggestions'] as List?) ?? [])
+          .map((s) => s.toString())
+          .toList();
+
+      return AiTopicSuggestionResult(
+        blocked: data['blocked'] == true,
+        suggestions: suggestions,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceCouldNotSuggestTopics);
     }
   }
 

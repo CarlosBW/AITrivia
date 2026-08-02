@@ -3982,6 +3982,78 @@ abstract class AppLocalizations {
   /// **'🔥 Tema popular seleccionado: costo con descuento'**
   String get createAiTopicPopularSelectedHint;
 
+  /// No description provided for @createAiTopicExistingSelectedHint.
+  ///
+  /// In es, this message translates to:
+  /// **'🏷️ Tema ya existente: costo con descuento'**
+  String get createAiTopicExistingSelectedHint;
+
+  /// No description provided for @createAiTopicPopularBadgeTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema popular'**
+  String get createAiTopicPopularBadgeTooltip;
+
+  /// No description provided for @createAiTopicExistingBadgeTooltip.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema ya existente, con descuento'**
+  String get createAiTopicExistingBadgeTooltip;
+
+  /// No description provided for @createAiTopicSearchingButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando temas similares...'**
+  String get createAiTopicSearchingButton;
+
+  /// No description provided for @createAiTopicSuggestingButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Pidiendo sugerencias a la IA...'**
+  String get createAiTopicSuggestingButton;
+
+  /// No description provided for @createAiTopicBlockedMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo generar ese tema. Intenta con otro título.'**
+  String get createAiTopicBlockedMessage;
+
+  /// No description provided for @createAiTopicMatchesFoundTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Encontramos temas similares'**
+  String get createAiTopicMatchesFoundTitle;
+
+  /// No description provided for @createAiTopicMatchesFoundHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige uno para jugarlo al instante, o crea el tuyo como tema nuevo.'**
+  String get createAiTopicMatchesFoundHint;
+
+  /// No description provided for @createAiTopicNoneOfTheseButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Ninguno de estos, crear tema nuevo'**
+  String get createAiTopicNoneOfTheseButton;
+
+  /// No description provided for @createAiTopicBackButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver'**
+  String get createAiTopicBackButton;
+
+  /// No description provided for @createAiTopicAiSuggestionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sugerencias de la IA'**
+  String get createAiTopicAiSuggestionsTitle;
+
+  /// No description provided for @createAiTopicAiSuggestionsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige una de estas opciones para crear tu tema — así evitamos errores de tipeo o temas demasiado vagos para generar buenas preguntas.'**
+  String get createAiTopicAiSuggestionsHint;
+
   /// No description provided for @coinShopTitle.
   ///
   /// In es, this message translates to:
@@ -4947,6 +5019,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo ampliar el tema.'**
   String get serviceCouldNotExpandTopic;
+
+  /// No description provided for @serviceCouldNotSearchTopics.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron buscar temas similares.'**
+  String get serviceCouldNotSearchTopics;
+
+  /// No description provided for @serviceCouldNotSuggestTopics.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudieron obtener sugerencias.'**
+  String get serviceCouldNotSuggestTopics;
 
   /// No description provided for @pvpWindowSameLeagueLabel.
   ///

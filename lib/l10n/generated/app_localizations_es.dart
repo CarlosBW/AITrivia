@@ -2323,6 +2323,48 @@ class AppLocalizationsEs extends AppLocalizations {
       '🔥 Tema popular seleccionado: costo con descuento';
 
   @override
+  String get createAiTopicExistingSelectedHint =>
+      '🏷️ Tema ya existente: costo con descuento';
+
+  @override
+  String get createAiTopicPopularBadgeTooltip => 'Tema popular';
+
+  @override
+  String get createAiTopicExistingBadgeTooltip =>
+      'Tema ya existente, con descuento';
+
+  @override
+  String get createAiTopicSearchingButton => 'Buscando temas similares...';
+
+  @override
+  String get createAiTopicSuggestingButton => 'Pidiendo sugerencias a la IA...';
+
+  @override
+  String get createAiTopicBlockedMessage =>
+      'No se pudo generar ese tema. Intenta con otro título.';
+
+  @override
+  String get createAiTopicMatchesFoundTitle => 'Encontramos temas similares';
+
+  @override
+  String get createAiTopicMatchesFoundHint =>
+      'Elige uno para jugarlo al instante, o crea el tuyo como tema nuevo.';
+
+  @override
+  String get createAiTopicNoneOfTheseButton =>
+      'Ninguno de estos, crear tema nuevo';
+
+  @override
+  String get createAiTopicBackButton => 'Volver';
+
+  @override
+  String get createAiTopicAiSuggestionsTitle => 'Sugerencias de la IA';
+
+  @override
+  String get createAiTopicAiSuggestionsHint =>
+      'Elige una de estas opciones para crear tu tema — así evitamos errores de tipeo o temas demasiado vagos para generar buenas preguntas.';
+
+  @override
   String get coinShopTitle => 'Comprar monedas';
 
   @override
@@ -2881,6 +2923,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get serviceCouldNotExpandTopic => 'No se pudo ampliar el tema.';
+
+  @override
+  String get serviceCouldNotSearchTopics =>
+      'No se pudieron buscar temas similares.';
+
+  @override
+  String get serviceCouldNotSuggestTopics =>
+      'No se pudieron obtener sugerencias.';
 
   @override
   String get pvpWindowSameLeagueLabel => 'Misma liga';

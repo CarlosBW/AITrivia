@@ -2306,6 +2306,48 @@ class AppLocalizationsEn extends AppLocalizations {
       '🔥 Popular topic selected: discounted cost';
 
   @override
+  String get createAiTopicExistingSelectedHint =>
+      '🏷️ Existing topic: discounted cost';
+
+  @override
+  String get createAiTopicPopularBadgeTooltip => 'Popular topic';
+
+  @override
+  String get createAiTopicExistingBadgeTooltip => 'Existing topic, discounted';
+
+  @override
+  String get createAiTopicSearchingButton => 'Searching similar topics...';
+
+  @override
+  String get createAiTopicSuggestingButton =>
+      'Asking the AI for suggestions...';
+
+  @override
+  String get createAiTopicBlockedMessage =>
+      'Couldn\'t generate that topic. Try another title.';
+
+  @override
+  String get createAiTopicMatchesFoundTitle => 'We found similar topics';
+
+  @override
+  String get createAiTopicMatchesFoundHint =>
+      'Pick one to play it instantly, or create yours as a new topic.';
+
+  @override
+  String get createAiTopicNoneOfTheseButton =>
+      'None of these, create a new topic';
+
+  @override
+  String get createAiTopicBackButton => 'Back';
+
+  @override
+  String get createAiTopicAiSuggestionsTitle => 'AI suggestions';
+
+  @override
+  String get createAiTopicAiSuggestionsHint =>
+      'Pick one of these to create your topic — this avoids typos or topics too vague to generate good questions from.';
+
+  @override
   String get coinShopTitle => 'Buy coins';
 
   @override
@@ -2858,6 +2900,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceCouldNotExpandTopic => 'Couldn\'t expand the topic.';
+
+  @override
+  String get serviceCouldNotSearchTopics =>
+      'Couldn\'t search for similar topics.';
+
+  @override
+  String get serviceCouldNotSuggestTopics => 'Couldn\'t get suggestions.';
 
   @override
   String get pvpWindowSameLeagueLabel => 'Same league';

@@ -4463,10 +4463,18 @@ export const verifyCoinPurchase = onCall(async (request) => {
 
 const CREATE_AI_TOPIC_COST = 600;
 // Charged instead of CREATE_AI_TOPIC_COST when the requested title+language
-// already has a ready shared pool entry — no Claude call needed, so it's
-// discounted to reflect the real (zero) generation cost. Keep in sync with
+// already has a ready shared pool entry that's crossed the "popular" usage
+// threshold (see AI_TOPIC_POPULAR_USAGE_THRESHOLD below) — no Claude call
+// needed either way, but the deeper discount is reserved for genuinely
+// popular reuses so per-topic revenue doesn't collapse once most requests
+// start matching *something* already in the pool. Keep in sync with
 // lib/services/economy_service.dart's `createAiTopicFromPoolCost`.
 const CREATE_AI_TOPIC_FROM_POOL_COST = 300;
+// Charged instead of CREATE_AI_TOPIC_COST when reusing an existing pool
+// entry that hasn't crossed the popular threshold yet — still a real
+// discount (no Claude call), just smaller than a popular reuse. Keep in
+// sync with lib/services/economy_service.dart's `createAiTopicExistingCost`.
+const CREATE_AI_TOPIC_EXISTING_COST = 400;
 // Regenerating scales with how much content there actually is to redo —
 // a flat cost let a topic buffered/expanded to 10+ levels regenerate all
 // of them for the same price a fresh 2-level topic would pay. 75/level
@@ -5004,6 +5012,272 @@ async function ensureTopicAdoptedIntoPool(
   return poolRef.id;
 }
 
+/**
+ * Levenshtein edit distance between two strings.
+ * @param {string} a First string.
+ * @param {string} b Second string.
+ * @return {number} Edit distance.
+ */
+function levenshteinDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from(
+    {length: m + 1}, () => new Array(n + 1).fill(0)
+  );
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ?
+        dp[i - 1][j - 1] :
+        1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+
+  return dp[m][n];
+}
+
+/**
+ * Jaccard similarity (intersection over union) of the two strings' word
+ * sets — catches partial/reordered-word matches Levenshtein distance
+ * misses (e.g. "Movies Marvel" vs "Marvel Movies").
+ * @param {string} a First string.
+ * @param {string} b Second string.
+ * @return {number} 0-1 similarity.
+ */
+function jaccardWordOverlap(a: string, b: string): number {
+  const wordsA = new Set(a.split(" ").filter(Boolean));
+  const wordsB = new Set(b.split(" ").filter(Boolean));
+  if (wordsA.size === 0 && wordsB.size === 0) return 1;
+
+  let intersection = 0;
+  for (const w of wordsA) {
+    if (wordsB.has(w)) intersection++;
+  }
+
+  const union = wordsA.size + wordsB.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+/**
+ * Combined 0-1 similarity between two normalized topic titles — the max of
+ * character-level closeness (catches typos) and word-overlap (catches
+ * partial/reordered matches), so either signal alone can surface a match.
+ * An identical pair always scores 1.
+ * @param {string} a First normalized title.
+ * @param {string} b Second normalized title.
+ * @return {number} 0-1 similarity.
+ */
+function titleSimilarity(a: string, b: string): number {
+  if (a === b) return 1;
+  const maxLen = Math.max(a.length, b.length);
+  const levenshteinRatio = maxLen === 0 ?
+    1 : 1 - levenshteinDistance(a, b) / maxLen;
+  return Math.max(levenshteinRatio, jaccardWordOverlap(a, b));
+}
+
+// Tunable knobs for the "search existing topics before creating" flow —
+// retune freely once there's real usage data to look at.
+const AI_TOPIC_SIMILARITY_THRESHOLD = 0.45;
+const AI_TOPIC_SIMILAR_MATCHES_LIMIT = 5;
+// A fixed usage-count floor for the "trending" star, rather than "is this
+// in the current top-20 Popular Topics ranking" — the latter would mean
+// ranking every candidate against the whole pool per search. Purely a
+// discovery signal: every returned match is priced the same regardless.
+const AI_TOPIC_POPULAR_USAGE_THRESHOLD = 3;
+const AI_TOPIC_SUGGESTION_COUNT = 5;
+
+/**
+ * Searches the shared pool for existing topics (in the caller's own
+ * language) similar to a title they're about to type/submit, so they can
+ * reuse one instead of creating a near-duplicate. Read-only, no charge —
+ * `createAiTopic` still does the real (transactional) reuse-or-generate
+ * decision once the user actually picks a title.
+ */
+export const findSimilarAiTopics = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const cleanTitle = String(request.data?.title || "").trim();
+  if (cleanTitle.length < 3) {
+    // Too short to search meaningfully — this is a search, not a hard
+    // submit, so return no matches rather than erroring.
+    return {blocked: false, matches: []};
+  }
+
+  const normalizedTitle = normalizeTopicTitle(cleanTitle);
+  const moderationKey = normalizeForModeration(cleanTitle);
+
+  if (
+    matchesBlockedKeyword(moderationKey) ||
+    await isTopicPreviouslyBlocked(moderationKey)
+  ) {
+    return {blocked: true, matches: []};
+  }
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  const languageCode = userSnap.data()?.languageCode === "en" ? "en" : "es";
+
+  // Equality-only filters, no orderBy — Firestore serves this via
+  // automatic indexing, unlike the Popular Topics query (which also
+  // orders by usageCount and needed a manual composite index).
+  const poolSnap = await db.collection("ai_topic_pool")
+    .where("status", "==", "ready")
+    .where("languageCode", "==", languageCode)
+    .limit(300)
+    .get();
+
+  const matches = poolSnap.docs
+    .map((doc) => {
+      const data = doc.data();
+      const score = titleSimilarity(
+        normalizedTitle, String(data.normalizedTitle || "")
+      );
+      return {doc, data, score};
+    })
+    .filter(({score}) => score >= AI_TOPIC_SIMILARITY_THRESHOLD)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, AI_TOPIC_SIMILAR_MATCHES_LIMIT)
+    .map(({doc, data}) => {
+      const usageCount = safeInt(data.usageCount, 0);
+      const isPopular = usageCount >= AI_TOPIC_POPULAR_USAGE_THRESHOLD;
+      return {
+        poolId: doc.id,
+        title: String(data.title || ""),
+        usageCount,
+        isPopular,
+        cost: isPopular ?
+          CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST,
+      };
+    });
+
+  return {blocked: false, matches};
+});
+
+/**
+ * Asks Claude for a bounded list of well-formed candidate topic titles for
+ * a player's raw (possibly misspelled or too-vague) input — used when
+ * `findSimilarAiTopics` found nothing close enough to reuse. The player
+ * must pick one of these to actually create a topic; this call itself
+ * never charges coins and never generates trivia content.
+ */
+export const suggestAiTopicTitles = onCall({
+  secrets: AI_SECRETS,
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const cleanTitle = String(request.data?.title || "").trim();
+  if (cleanTitle.length < 3) {
+    throw new HttpsError(
+      "invalid-argument", "Escribe un tema más específico."
+    );
+  }
+
+  const moderationKey = normalizeForModeration(cleanTitle);
+
+  if (
+    matchesBlockedKeyword(moderationKey) ||
+    await isTopicPreviouslyBlocked(moderationKey)
+  ) {
+    return {blocked: true, suggestions: []};
+  }
+
+  const userSnap = await db.collection("users").doc(uid).get();
+  const languageCode = userSnap.data()?.languageCode;
+  const outputLanguage = pickText(languageCode, "Spanish", "English");
+
+  const client = new Anthropic({apiKey: anthropicApiKey.value()});
+
+  const prompt = "A player typed the following trivia topic request, " +
+    "which may contain typos or be too vague to generate good trivia " +
+    `questions from directly: "${cleanTitle}". Suggest exactly ` +
+    `${AI_TOPIC_SUGGESTION_COUNT} distinct, well-formed, specific trivia ` +
+    `topic titles (2-6 words each) in ${outputLanguage} that this could ` +
+    "reasonably mean. If the input is already clear and well-formed, one " +
+    "suggestion should be the cleaned-up version of the same topic. Do " +
+    "not repeat the exact same title twice.";
+
+  const schema = {
+    type: "object",
+    properties: {
+      titles: {
+        type: "array",
+        items: {type: "string"},
+        minItems: AI_TOPIC_SUGGESTION_COUNT,
+        maxItems: AI_TOPIC_SUGGESTION_COUNT,
+      },
+    },
+    required: ["titles"],
+    additionalProperties: false,
+  };
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await client.messages.create({
+        model: AI_MODEL,
+        max_tokens: 512,
+        system: AI_TOPIC_SYSTEM_PROMPT,
+        messages: [{role: "user", content: prompt}],
+        output_config: {format: {type: "json_schema", schema}},
+      });
+
+      if (response.stop_reason === "refusal") {
+        await recordBlockedTopic(cleanTitle, moderationKey, "model_refusal");
+        return {blocked: true, suggestions: []};
+      }
+
+      const block = response.content[0];
+      if (!block || block.type !== "text") {
+        throw new Error("Unexpected response block type from Claude.");
+      }
+
+      const parsed = JSON.parse(block.text) as {titles?: string[]};
+      const rawTitles = parsed.titles || [];
+
+      const seen = new Set<string>();
+      const suggestions: string[] = [];
+
+      for (const raw of rawTitles) {
+        const title = String(raw || "").trim();
+        const normalized = normalizeTopicTitle(title);
+
+        if (
+          title.length < 3 || title.length > 60 ||
+          RESERVED_TOPIC_NAMES.has(normalized) ||
+          seen.has(normalized)
+        ) {
+          continue;
+        }
+
+        seen.add(normalized);
+        suggestions.push(title);
+      }
+
+      if (suggestions.length === 0) {
+        throw new Error("No valid suggestions from Claude.");
+      }
+
+      return {blocked: false, suggestions};
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  console.error("AI topic title suggestion failed", lastError);
+  throw new HttpsError(
+    "internal", "No se pudieron sugerir temas. Intenta de nuevo."
+  );
+});
+
 export const createAiTopic = onCall({
   secrets: AI_SECRETS,
 }, async (request) => {
@@ -5096,10 +5370,14 @@ export const createAiTopic = onCall({
     normalizedTitle, cleanTitle, userData.languageCode, uid
   );
   const reuseFromPool = poolData.status === "ready";
+  const reuseIsPopular =
+    safeInt(poolData.usageCount, 0) >= AI_TOPIC_POPULAR_USAGE_THRESHOLD;
+  const reuseCost = reuseIsPopular ?
+    CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST;
 
   const coins = safeInt(userData.coins, 0);
   const cost = usesFreePass ? 0 :
-    (reuseFromPool ? CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_COST);
+    (reuseFromPool ? reuseCost : CREATE_AI_TOPIC_COST);
 
   if (!usesFreePass && coins < cost) {
     throw new HttpsError(
@@ -5155,8 +5433,22 @@ export const createAiTopic = onCall({
       freshUserData.freeTopicPasses, FIRST_AI_TOPIC_FREE_PASSES
     );
     const freshUsesFreePass = freshFreePasses > 0;
+
+    const freshPoolSnap = await tx.get(poolRef);
+    const freshPoolData = freshPoolSnap.data() || {};
+    const freshPoolGeneratedLevels = Math.max(
+      safeInt(freshPoolData.generatedLevels, 0), AI_INITIAL_GENERATED_LEVELS
+    );
+    // Popularity (and so which discount tier applies) is read fresh here
+    // too, from the usage count as it stood *before* this creation's own
+    // reuse — someone doesn't get the deeper discount for being the reuse
+    // that happens to push a topic over the popular threshold themselves.
+    const freshReuseIsPopular = safeInt(freshPoolData.usageCount, 0) >=
+      AI_TOPIC_POPULAR_USAGE_THRESHOLD;
+    const freshReuseCost = freshReuseIsPopular ?
+      CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST;
     const freshCost = freshUsesFreePass ? 0 :
-      (reuseFromPool ? CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_COST);
+      (reuseFromPool ? freshReuseCost : CREATE_AI_TOPIC_COST);
 
     if (!freshUsesFreePass && freshCoins < freshCost) {
       throw new HttpsError(
@@ -5178,12 +5470,6 @@ export const createAiTopic = onCall({
         "Delete one to create another."
       );
     }
-
-    const freshPoolSnap = await tx.get(poolRef);
-    const freshPoolData = freshPoolSnap.data() || {};
-    const freshPoolGeneratedLevels = Math.max(
-      safeInt(freshPoolData.generatedLevels, 0), AI_INITIAL_GENERATED_LEVELS
-    );
 
     tx.set(topicRef, {
       topicId: topicRef.id,

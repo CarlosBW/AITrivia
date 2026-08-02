@@ -1299,7 +1299,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
-            _BigStarsRow(count: starCount),
+            Stack(
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.none,
+              children: [
+                _BigStarsRow(count: starCount),
+                if (starCount == 3) const _ThreeStarsCelebration(),
+              ],
+            ),
             const SizedBox(height: 14),
             Text(
               l10n.levelPlayScoreLine(_correct, total, pctText),

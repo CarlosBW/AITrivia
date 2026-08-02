@@ -185,217 +185,236 @@ class AiTopicsScreen extends StatelessWidget {
     final service = AiTopicService.instance;
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.aiTopicsTitle),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openCreate(context),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.aiTopicsCreateTopic),
-      ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: service.watchMyAiTopics(),
-        builder: (context, snap) {
-          if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  l10n.aiTopicsErrorLoading(snap.error.toString()),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: service.watchMyAiTopics(),
+      builder: (context, snap) {
+        final docs = snap.hasData
+            ? snap.data!.docs
+                .where((doc) => (doc.data()['status'] ?? '') != 'deleted')
+                .toList()
+            : const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+        // The confirmed-empty state already shows its own big "create"
+        // button, so the FAB would just be a second, redundant way to do
+        // the same thing there. Every other state (still loading, errored)
+        // has no such button, so the FAB must stay as the only way in —
+        // hide it only once we positively know the list is empty.
+        final showFab = !(snap.hasData && docs.isEmpty);
 
-          if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.aiTopicsTitle),
+          ),
+          floatingActionButton: showFab
+              ? FloatingActionButton.extended(
+                  onPressed: () => _openCreate(context),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.aiTopicsCreateTopic),
+                )
+              : null,
+          body: Builder(
+            builder: (context) {
+              if (snap.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l10n.aiTopicsErrorLoading(snap.error.toString()),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                );
+              }
 
-          final docs = snap.data!.docs
-              .where((doc) => (doc.data()['status'] ?? '') != 'deleted')
-              .toList();
+              if (!snap.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (docs.isEmpty) {
-            return _EmptyAiTopics(
-              onCreate: () => _openCreate(context),
-            );
-          }
+              if (docs.isEmpty) {
+                return _EmptyAiTopics(
+                  onCreate: () => _openCreate(context),
+                );
+              }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = doc.data();
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                itemCount: docs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data();
 
-              final title = (data['title'] ?? l10n.aiTopicsUntitled).toString();
-              final rawStatus =
-                  (data['status'] ?? 'pending_generation').toString();
+                  final title =
+                      (data['title'] ?? l10n.aiTopicsUntitled).toString();
+                  final rawStatus =
+                      (data['status'] ?? 'pending_generation').toString();
 
-              final isInvalidReadyTopic = rawStatus == 'ready' &&
-                  !AiTopicService.instance.isTopicStructurallyValid(data);
+                  final isInvalidReadyTopic = rawStatus == 'ready' &&
+                      !AiTopicService.instance.isTopicStructurallyValid(data);
 
-              final status = isInvalidReadyTopic ? 'invalid' : rawStatus;
-              final levelsCount = ((data['levelsCount'] ?? 0) as num).toInt();
-              final questionsCount =
-                  ((data['questionsCount'] ?? 0) as num).toInt();
-              final generatedLevels =
-                  ((data['generatedLevels'] ?? 0) as num).toInt();
-              final usedFreePass = data['usedFreePass'] == true;
-              final cost = ((data['generationCostCoins'] ?? 0) as num).toInt();
+                  final status = isInvalidReadyTopic ? 'invalid' : rawStatus;
+                  final levelsCount =
+                      ((data['levelsCount'] ?? 0) as num).toInt();
+                  final questionsCount =
+                      ((data['questionsCount'] ?? 0) as num).toInt();
+                  final generatedLevels =
+                      ((data['generatedLevels'] ?? 0) as num).toInt();
+                  final usedFreePass = data['usedFreePass'] == true;
+                  final cost =
+                      ((data['generationCostCoins'] ?? 0) as num).toInt();
 
-              final color = _statusColor(status);
+                  final color = _statusColor(status);
 
-              return Dismissible(
-                key: ValueKey(doc.id),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) async {
-                  return showDialog<bool>(
-                    context: context,
-                    builder: (dialogContext) {
-                      return AlertDialog(
-                        title: Text(l10n.aiTopicsDeleteTitle),
-                        content: Text(
-                          l10n.aiTopicsDeleteBody(title),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(dialogContext, false);
-                            },
-                            child: Text(l10n.aiTopicsCancel),
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              Navigator.pop(dialogContext, true);
-                            },
-                            child: Text(l10n.aiTopicsDelete),
-                          ),
-                        ],
+                  return Dismissible(
+                    key: ValueKey(doc.id),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (_) async {
+                      return showDialog<bool>(
+                        context: context,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            title: Text(l10n.aiTopicsDeleteTitle),
+                            content: Text(
+                              l10n.aiTopicsDeleteBody(title),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(dialogContext, false);
+                                },
+                                child: Text(l10n.aiTopicsCancel),
+                              ),
+                              FilledButton(
+                                onPressed: () {
+                                  Navigator.pop(dialogContext, true);
+                                },
+                                child: Text(l10n.aiTopicsDelete),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
-                  );
-                },
-                onDismissed: (_) async {
-                  await service.deleteAiTopic(topicId: doc.id);
-                },
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: const Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                  ),
-                ),
-                child: Card(
-                  elevation: 0,
-                  color: color.withValues(alpha: 0.10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: color.withValues(alpha: 0.35)),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(14),
-                    leading: CircleAvatar(
-                      backgroundColor: color.withValues(alpha: 0.16),
-                      child: Icon(Icons.auto_awesome, color: color),
+                    onDismissed: (_) async {
+                      await service.deleteAiTopic(topicId: doc.id);
+                    },
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
                     ),
-                    title: Text(
-                      title,
-                      style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(status == 'ready'
-                          ? l10n.aiTopicsLevelsQuestions(levelsCount, questionsCount)
-                          : l10n.aiTopicsUnavailableSubtitle),
-                    ),
-                    trailing: status == 'ready'
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _statusCostColumn(
+                    child: Card(
+                      elevation: 0,
+                      color: color.withValues(alpha: 0.10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: BorderSide(color: color.withValues(alpha: 0.35)),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(14),
+                        leading: CircleAvatar(
+                          backgroundColor: color.withValues(alpha: 0.16),
+                          child: Icon(Icons.auto_awesome, color: color),
+                        ),
+                        title: Text(
+                          title,
+                          style:
+                              GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(status == 'ready'
+                              ? l10n.aiTopicsLevelsQuestions(
+                                  levelsCount, questionsCount)
+                              : l10n.aiTopicsUnavailableSubtitle),
+                        ),
+                        trailing: status == 'ready'
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _statusCostColumn(
+                                    l10n: l10n,
+                                    color: color,
+                                    status: status,
+                                    usedFreePass: usedFreePass,
+                                    cost: cost,
+                                  ),
+                                  PopupMenuButton<String>(
+                                    onSelected: (action) => _onTopicMenuAction(
+                                      context: context,
+                                      action: action,
+                                      topicId: doc.id,
+                                      topicTitle: title,
+                                      generatedLevels: generatedLevels,
+                                    ),
+                                    itemBuilder: (context) => [
+                                      PopupMenuItem(
+                                        value: 'regenerate',
+                                        child: Text(
+                                          l10n.aiTopicsRegenerateMenuItem(
+                                            EconomyService
+                                                .regenerateAiQuestionsCostFor(
+                                              generatedLevels,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'expand',
+                                        child: Text(
+                                          l10n.aiTopicsExpandMenuItem(
+                                            EconomyService.expandAiTopicCost,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              )
+                            : _statusCostColumn(
                                 l10n: l10n,
                                 color: color,
                                 status: status,
                                 usedFreePass: usedFreePass,
                                 cost: cost,
                               ),
-                              PopupMenuButton<String>(
-                                onSelected: (action) => _onTopicMenuAction(
-                                  context: context,
-                                  action: action,
-                                  topicId: doc.id,
-                                  topicTitle: title,
-                                  generatedLevels: generatedLevels,
-                                ),
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'regenerate',
-                                    child: Text(
-                                      l10n.aiTopicsRegenerateMenuItem(
-                                        EconomyService
-                                            .regenerateAiQuestionsCostFor(
-                                          generatedLevels,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  PopupMenuItem(
-                                    value: 'expand',
-                                    child: Text(
-                                      l10n.aiTopicsExpandMenuItem(
-                                        EconomyService.expandAiTopicCost,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                        onTap: () async {
+                          if (status != 'ready') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.aiTopicsUnavailableSubtitle),
                               ),
-                            ],
-                          )
-                        : _statusCostColumn(
-                            l10n: l10n,
-                            color: color,
-                            status: status,
-                            usedFreePass: usedFreePass,
-                            cost: cost,
-                          ),
-                    onTap: () async {
-                      if (status != 'ready') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.aiTopicsUnavailableSubtitle),
-                          ),
-                        );
-                        return;
-                      }
+                            );
+                            return;
+                          }
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LevelSelectScreen(
-                            categoryId: doc.id,
-                            categoryName: title,
-                            isAiTopic: true,
-                            aiTopicId: doc.id,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LevelSelectScreen(
+                                categoryId: doc.id,
+                                categoryName: title,
+                                isAiTopic: true,
+                                aiTopicId: doc.id,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

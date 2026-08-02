@@ -137,6 +137,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create your own topic and play with your coins';
 
   @override
+  String homeStatsErrorLoading(String error) {
+    return 'Error loading your coins and XP:\n$error';
+  }
+
+  @override
   String get homeWeeklyTopicUnavailable => 'Weekly Topic unavailable';
 
   @override

@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'Crea tu propio tema y juega con tus monedas'**
   String get homeAiTopicSubtitle;
 
+  /// No description provided for @homeStatsErrorLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Error cargando tus monedas y XP:\n{error}'**
+  String homeStatsErrorLoading(String error);
+
   /// No description provided for @homeWeeklyTopicUnavailable.
   ///
   /// In es, this message translates to:

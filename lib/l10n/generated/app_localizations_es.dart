@@ -136,6 +136,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Crea tu propio tema y juega con tus monedas';
 
   @override
+  String homeStatsErrorLoading(String error) {
+    return 'Error cargando tus monedas y XP:\n$error';
+  }
+
+  @override
   String get homeWeeklyTopicUnavailable => 'Weekly Topic no disponible';
 
   @override

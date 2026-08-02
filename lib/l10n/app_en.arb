@@ -56,6 +56,12 @@
   "homeLivesFull": "Lives at max",
   "homeAiTopicTitle": "Free Topic (AI)",
   "homeAiTopicSubtitle": "Create your own topic and play with your coins",
+  "homeStatsErrorLoading": "Error loading your coins and XP:\n{error}",
+  "@homeStatsErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "homeWeeklyTopicUnavailable": "Weekly Topic unavailable",
   "homeWeeklyTopicNoneAvailable": "No Weekly Topic available",
   "homeWeeklyTopicCheckBack": "Check back soon for a featured challenge.",

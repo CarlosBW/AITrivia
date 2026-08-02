@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "ai_topic_pool",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "languageCode", "order": "ASCENDING"},
+        {"fieldPath": "usageCount", "order": "DESCENDING"}
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

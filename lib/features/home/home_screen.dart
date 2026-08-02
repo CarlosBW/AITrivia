@@ -374,6 +374,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: userRef.snapshots(),
                   builder: (context, snap) {
+                    if (snap.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(
+                          l10n.homeStatsErrorLoading(snap.error.toString()),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      );
+                    }
+
                     if (!snap.hasData) {
                       return const LinearProgressIndicator();
                     }

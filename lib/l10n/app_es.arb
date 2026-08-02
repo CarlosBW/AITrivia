@@ -79,6 +79,12 @@
   "homeLivesFull": "Vidas al máximo",
   "homeAiTopicTitle": "Tema libre (IA)",
   "homeAiTopicSubtitle": "Crea tu propio tema y juega con tus monedas",
+  "homeStatsErrorLoading": "Error cargando tus monedas y XP:\n{error}",
+  "@homeStatsErrorLoading": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "homeWeeklyTopicUnavailable": "Weekly Topic no disponible",
   "homeWeeklyTopicNoneAvailable": "No hay Weekly Topic disponible",
   "homeWeeklyTopicCheckBack": "Vuelve pronto para un nuevo reto destacado.",

@@ -63,6 +63,17 @@ class PurchaseService {
     List<PurchaseDetails> purchases,
   ) async {
     for (final purchase in purchases) {
+      // Whether it's safe to tell the store this purchase is fulfilled.
+      // For a consumable, completePurchase consumes the token: the store
+      // considers the item delivered and will never hand it back. So it
+      // must only run once the coins are actually credited — a failed or
+      // canceled purchase has nothing to deliver (safe to finish), but a
+      // *paid* purchase whose verification failed has to stay pending so
+      // the store re-delivers it on the next launch and crediting can be
+      // retried. Completing it there would take the player's money and
+      // give them nothing, with no way to recover it.
+      var safeToComplete = false;
+
       switch (purchase.status) {
         case PurchaseStatus.pending:
           break;
@@ -75,6 +86,7 @@ class PurchaseService {
               message: purchase.error?.message ?? 'Purchase failed.',
             ),
           );
+          safeToComplete = true;
           break;
 
         case PurchaseStatus.canceled:
@@ -85,21 +97,26 @@ class PurchaseService {
               message: 'Purchase canceled.',
             ),
           );
+          safeToComplete = true;
           break;
 
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          await _verifyAndCredit(purchase);
+          safeToComplete = await _verifyAndCredit(purchase);
           break;
       }
 
-      if (purchase.pendingCompletePurchase) {
+      if (safeToComplete && purchase.pendingCompletePurchase) {
         await _iap.completePurchase(purchase);
       }
     }
   }
 
-  Future<void> _verifyAndCredit(PurchaseDetails purchase) async {
+  /// Verifies the purchase server-side and credits the coins.
+  ///
+  /// Returns whether the coins were actually credited — the caller uses
+  /// this to decide if the purchase may be finished with the store.
+  Future<bool> _verifyAndCredit(PurchaseDetails purchase) async {
     try {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
@@ -123,6 +140,8 @@ class PurchaseService {
           grantedCoins: grantedCoins,
         ),
       );
+
+      return true;
     } catch (e) {
       _purchaseResultController.add(
         PurchaseResult(
@@ -131,6 +150,8 @@ class PurchaseService {
           message: e.toString().replaceFirst('Exception: ', ''),
         ),
       );
+
+      return false;
     }
   }
 }

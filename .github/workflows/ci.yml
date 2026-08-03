@@ -25,7 +25,7 @@ jobs:
       - run: flutter test
 
   functions:
-    name: Cloud Functions lint & build
+    name: Cloud Functions lint, build & test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,3 +44,5 @@ jobs:
       - run: npm run lint
 
       - run: npm run build
+
+      - run: npm test

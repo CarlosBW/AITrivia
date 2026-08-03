@@ -5,7 +5,8 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onCall, HttpsError, FunctionsErrorCode} from
+  "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import Anthropic from "@anthropic-ai/sdk";
 import * as crypto from "crypto";
@@ -39,6 +40,59 @@ const AI_SECRETS = [anthropicApiKey];
  */
 function pickText(languageCode: unknown, es: string, en: string): string {
   return languageCode === "en" ? en : es;
+}
+
+/**
+ * Builds an HttpsError whose message is in the caller's own language.
+ *
+ * A callable's error message is surfaced verbatim to the player (the
+ * client shows `e.message` — see ai_topic_service.dart), so a hardcoded
+ * string here bypasses the app's l10n entirely and shows every player the
+ * same language regardless of their setting. Use this for errors a player
+ * can actually trigger through normal play (not enough coins, topic
+ * already exists, cooldown still active...). Guard rails for impossible
+ * client states ("Missing matchId", "Match not found") stay in plain
+ * English — a player never sees them, and localizing them would cost a
+ * read on paths that should stay cheap.
+ * @param {unknown} languageCode The caller's stored `languageCode`.
+ * @param {FunctionsErrorCode} code Callable error code.
+ * @param {string} es Spanish message.
+ * @param {string} en English message.
+ * @return {HttpsError} Error carrying the language-matched message.
+ */
+function localizedError(
+  languageCode: unknown,
+  code: FunctionsErrorCode,
+  es: string,
+  en: string
+): HttpsError {
+  return new HttpsError(code, pickText(languageCode, es, en));
+}
+
+/**
+ * [localizedError] for call sites that don't already hold the caller's
+ * user doc. The extra read only ever happens on the throwing path, so the
+ * happy path stays exactly as cheap as before.
+ * @param {string} uid Caller's uid.
+ * @param {FunctionsErrorCode} code Callable error code.
+ * @param {string} es Spanish message.
+ * @param {string} en English message.
+ * @return {Promise<HttpsError>} Error carrying the language-matched message.
+ */
+async function localizedErrorFor(
+  uid: string,
+  code: FunctionsErrorCode,
+  es: string,
+  en: string
+): Promise<HttpsError> {
+  let languageCode: unknown;
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    languageCode = snap.data()?.languageCode;
+  } catch (_) {
+    // Never let the language lookup mask the error we're reporting.
+  }
+  return localizedError(languageCode, code, es, en);
 }
 
 // Mirrors the achievement*Title keys in lib/l10n/app_es.arb / app_en.arb —
@@ -1240,8 +1294,9 @@ export const claimOpponentDisconnected = onCall(async (request) => {
       isFresh && presenceStatus === "in_match" && inMatch;
 
     if (opponentLooksActive) {
-      throw new HttpsError(
-        "failed-precondition",
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Tu rival todavía parece activo. Inténtalo en un momento.",
         "Your opponent still looks active. Try again in a moment."
       );
     }
@@ -1317,8 +1372,10 @@ export const joinMatchByCode = onCall(async (request) => {
 
     const status = String(data.status || "waiting");
     if (status !== "waiting") {
-      throw new HttpsError(
-        "failed-precondition", "This room already started or ended."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Esta sala ya empezó o terminó.",
+        "This room already started or ended."
       );
     }
 
@@ -1326,15 +1383,21 @@ export const joinMatchByCode = onCall(async (request) => {
     const guestUid = data.guestUid || null;
 
     if (hostUid === uid) {
-      throw new HttpsError(
-        "failed-precondition", "You can't join your own room."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "No puedes unirte a tu propia sala.",
+        "You can't join your own room."
       );
     }
     if (guestUid === uid) {
       return;
     }
     if (guestUid) {
-      throw new HttpsError("failed-precondition", "This room is full.");
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Esta sala está llena.",
+        "This room is full."
+      );
     }
 
     tx.update(matchRef, {
@@ -3884,8 +3947,10 @@ export const ensureSoloLevelSession = onCall(async (request) => {
     );
 
     if (!passedLevels.has(levelNumber - 1)) {
-      throw new HttpsError(
-        "failed-precondition", "This level is locked."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Este nivel está bloqueado.",
+        "This level is locked."
       );
     }
   }
@@ -4049,16 +4114,29 @@ export const claimAchievementReward = onCall(async (request) => {
     const snap = await tx.get(achievementRef);
     const data = snap.data();
 
+    // localizedErrorFor's read isn't part of this transaction, which is
+    // fine: it only runs on the throwing path, where the transaction is
+    // about to be aborted anyway.
     if (!data) {
-      throw new HttpsError("failed-precondition", "Achievement not started.");
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Todavía no empezaste ese logro.",
+        "Achievement not started."
+      );
     }
     if (data.completed !== true) {
-      throw new HttpsError(
-        "failed-precondition", "Achievement not completed yet."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Ese logro todavía no está completo.",
+        "Achievement not completed yet."
       );
     }
     if (data.claimed === true) {
-      throw new HttpsError("failed-precondition", "Reward already claimed.");
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Ya reclamaste esa recompensa.",
+        "Reward already claimed."
+      );
     }
 
     tx.set(
@@ -4368,10 +4446,18 @@ export const buyFullLife = onCall(async (request) => {
     const {lifeUnits, maxLifeUnits} = computeLifeUnits(data);
 
     if (coins < BUY_FULL_LIFE_COST) {
-      throw new HttpsError("failed-precondition", "Not enough coins.");
+      throw localizedError(
+        data.languageCode, "failed-precondition",
+        "No tienes suficientes monedas.",
+        "Not enough coins."
+      );
     }
     if (lifeUnits >= maxLifeUnits) {
-      throw new HttpsError("failed-precondition", "Life is already full.");
+      throw localizedError(
+        data.languageCode, "failed-precondition",
+        "Ya tienes las vidas completas.",
+        "Life is already full."
+      );
     }
 
     const newLifeUnits = Math.min(lifeUnits + UNITS_PER_LIFE, maxLifeUnits);
@@ -4446,8 +4532,9 @@ export const verifyCoinPurchase = onCall(async (request) => {
   // Only after that check passes should this run a transaction crediting
   // `coins` to the user doc — exactly like every other reward path in
   // this file, never trust a client-supplied amount directly.
-  throw new HttpsError(
-    "failed-precondition",
+  throw await localizedErrorFor(
+    uid, "failed-precondition",
+    "Las compras de monedas todavía no están habilitadas.",
     "Coin purchases aren't enabled yet."
   );
 });
@@ -4614,12 +4701,14 @@ async function recordBlockedTopic(
 class TopicBlockedError extends Error {}
 
 /**
+ * @param {unknown} languageCode The caller's stored `languageCode`.
  * @return {HttpsError} The client-facing error for a blocked topic.
  */
-function topicBlockedHttpsError(): HttpsError {
-  return new HttpsError(
-    "failed-precondition",
-    "No se pudo generar ese tema. Intenta con otro título."
+function topicBlockedHttpsError(languageCode?: unknown): HttpsError {
+  return localizedError(
+    languageCode, "failed-precondition",
+    "No se pudo generar ese tema. Intenta con otro título.",
+    "That topic couldn't be generated. Try a different title."
   );
 }
 
@@ -5026,8 +5115,10 @@ async function assertAiTopicCapAvailable(uid: string): Promise<void> {
     .get();
 
   if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
-    throw new HttpsError(
-      "resource-exhausted",
+    throw await localizedErrorFor(
+      uid, "resource-exhausted",
+      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas IA. ` +
+      "Elimina uno para crear otro.",
       `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
       "Delete one to create another."
     );
@@ -5162,8 +5253,10 @@ export const suggestAiTopicTitles = onCall({
 
   const cleanTitle = String(request.data?.title || "").trim();
   if (cleanTitle.length < 3) {
-    throw new HttpsError(
-      "invalid-argument", "Escribe un tema más específico."
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "Escribe un tema más específico.",
+      "Write a more specific topic."
     );
   }
 
@@ -5279,21 +5372,27 @@ export const createAiTopic = onCall({
   const cleanTitle = String(request.data?.title || "").trim();
 
   if (cleanTitle.length < 3) {
-    throw new HttpsError(
-      "invalid-argument", "Escribe un tema más específico."
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "Escribe un tema más específico.",
+      "Write a more specific topic."
     );
   }
   if (cleanTitle.length > 60) {
-    throw new HttpsError(
-      "invalid-argument", "El tema no puede superar 60 caracteres."
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "El tema no puede superar 60 caracteres.",
+      "The topic can't be longer than 60 characters."
     );
   }
 
   const normalizedTitle = normalizeTopicTitle(cleanTitle);
 
   if (RESERVED_TOPIC_NAMES.has(normalizedTitle)) {
-    throw new HttpsError(
-      "failed-precondition", "Ese tema ya existe como categoría oficial."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Ese tema ya existe como categoría oficial.",
+      "That topic already exists as an official category."
     );
   }
 
@@ -5301,9 +5400,10 @@ export const createAiTopic = onCall({
 
   if (matchesBlockedKeyword(moderationKey)) {
     await recordBlockedTopic(cleanTitle, moderationKey, "keyword");
-    throw new HttpsError(
-      "invalid-argument",
-      "No se pudo generar ese tema. Intenta con otro título."
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "No se pudo generar ese tema. Intenta con otro título.",
+      "That topic couldn't be generated. Try a different title."
     );
   }
 
@@ -5323,8 +5423,10 @@ export const createAiTopic = onCall({
     .get();
 
   if (!existing.empty) {
-    throw new HttpsError(
-      "already-exists", "Ya tienes un tema con ese nombre."
+    throw await localizedErrorFor(
+      uid, "already-exists",
+      "Ya tienes un tema con ese nombre.",
+      "You already have a topic with that name."
     );
   }
 
@@ -5334,8 +5436,10 @@ export const createAiTopic = onCall({
     .get();
 
   if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
-    throw new HttpsError(
-      "resource-exhausted",
+    throw await localizedErrorFor(
+      uid, "resource-exhausted",
+      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas IA. ` +
+      "Elimina uno para crear otro.",
       `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
       "Delete one to create another."
     );
@@ -5370,8 +5474,10 @@ export const createAiTopic = onCall({
     (reuseFromPool ? reuseCost : CREATE_AI_TOPIC_COST);
 
   if (!usesFreePass && coins < cost) {
-    throw new HttpsError(
-      "failed-precondition", `Necesitas ${cost} monedas para crear un tema IA.`
+    throw localizedError(
+      userData.languageCode, "failed-precondition",
+      `Necesitas ${cost} monedas para crear un tema IA.`,
+      `You need ${cost} coins to create an AI topic.`
     );
   }
 
@@ -5397,7 +5503,7 @@ export const createAiTopic = onCall({
       }
     } catch (error) {
       if (error instanceof TopicBlockedError) {
-        throw topicBlockedHttpsError();
+        throw topicBlockedHttpsError(userData.languageCode);
       }
       throw error;
     }
@@ -5441,9 +5547,10 @@ export const createAiTopic = onCall({
       (reuseFromPool ? freshReuseCost : CREATE_AI_TOPIC_COST);
 
     if (!freshUsesFreePass && freshCoins < freshCost) {
-      throw new HttpsError(
-        "failed-precondition",
-        `Necesitas ${freshCost} monedas para crear un tema IA.`
+      throw localizedError(
+        freshUserData.languageCode, "failed-precondition",
+        `Necesitas ${freshCost} monedas para crear un tema IA.`,
+        `You need ${freshCost} coins to create an AI topic.`
       );
     }
 
@@ -5527,18 +5634,26 @@ export const regenerateAiTopicQuestions = onCall({
   const topicData = topicSnap.data();
 
   if (!topicData) {
-    throw new HttpsError("not-found", "Este tema ya no existe.");
+    throw await localizedErrorFor(
+      uid, "not-found",
+      "Este tema ya no existe.",
+      "That topic no longer exists."
+    );
   }
   if (topicData.status === "blocked") {
-    throw new HttpsError(
-      "failed-precondition",
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
       "Este tema fue bloqueado y no se puede regenerar. Elimínalo para " +
-      "recuperar tu costo."
+      "recuperar tu costo.",
+      "This topic was blocked and can't be regenerated. Delete it to get " +
+      "your coins back."
     );
   }
   if (topicData.status !== "ready") {
-    throw new HttpsError(
-      "failed-precondition", "El tema todavía se está preparando."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "El tema todavía se está preparando.",
+      "This topic is still being prepared."
     );
   }
 
@@ -5570,9 +5685,10 @@ export const regenerateAiTopicQuestions = onCall({
     const freshCoins = safeInt(freshSnap.data()?.coins, 0);
 
     if (freshCoins < cost) {
-      throw new HttpsError(
-        "failed-precondition",
-        `Necesitas ${cost} monedas para regenerar las preguntas.`
+      throw localizedError(
+        languageCode, "failed-precondition",
+        `Necesitas ${cost} monedas para regenerar las preguntas.`,
+        `You need ${cost} coins to regenerate the questions.`
       );
     }
 
@@ -5607,7 +5723,7 @@ export const regenerateAiTopicQuestions = onCall({
         },
         {merge: true}
       );
-      throw topicBlockedHttpsError();
+      throw topicBlockedHttpsError(languageCode);
     }
     throw error;
   }
@@ -5632,29 +5748,39 @@ export const expandAiTopic = onCall(async (request) => {
   const topicData = topicSnap.data();
 
   if (!topicData) {
-    throw new HttpsError("not-found", "Este tema ya no existe.");
+    throw await localizedErrorFor(
+      uid, "not-found",
+      "Este tema ya no existe.",
+      "That topic no longer exists."
+    );
   }
   if (topicData.status === "blocked") {
-    throw new HttpsError(
-      "failed-precondition",
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
       "Este tema fue bloqueado y no se puede ampliar. Elimínalo para " +
-      "recuperar tu costo."
+      "recuperar tu costo.",
+      "This topic was blocked and can't be expanded. Delete it to get " +
+      "your coins back."
     );
   }
   if (topicData.status !== "ready") {
-    throw new HttpsError(
-      "failed-precondition", "El tema todavía se está preparando."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "El tema todavía se está preparando.",
+      "This topic is still being prepared."
     );
   }
 
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
   const coins = safeInt(userSnap.data()?.coins, 0);
+  const languageCode = userSnap.data()?.languageCode;
 
   if (coins < EXPAND_AI_TOPIC_COST) {
-    throw new HttpsError(
-      "failed-precondition",
-      `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`
+    throw localizedError(
+      languageCode, "failed-precondition",
+      `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`,
+      `You need ${EXPAND_AI_TOPIC_COST} coins to expand this topic.`
     );
   }
 
@@ -5677,9 +5803,10 @@ export const expandAiTopic = onCall(async (request) => {
     const freshCoins = safeInt(freshSnap.data()?.coins, 0);
 
     if (freshCoins < EXPAND_AI_TOPIC_COST) {
-      throw new HttpsError(
-        "failed-precondition",
-        `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`
+      throw localizedError(
+        languageCode, "failed-precondition",
+        `Necesitas ${EXPAND_AI_TOPIC_COST} monedas para ampliar este tema.`,
+        `You need ${EXPAND_AI_TOPIC_COST} coins to expand this topic.`
       );
     }
 
@@ -5806,7 +5933,7 @@ export const ensureAiTopicLevelsGenerated = onCall({
     }
 
     if (error instanceof TopicBlockedError) {
-      throw topicBlockedHttpsError();
+      throw topicBlockedHttpsError(languageCode);
     }
     throw error;
   }
@@ -5939,7 +6066,6 @@ export const reportAiQuestion = onCall(async (request) => {
   const topicRef = userRef.collection("ai_topics").doc(topicId);
   const sessionRef = userRef.collection("sessions_ai")
     .doc(`${topicId}_${levelNumber}`);
-  const reportRef = db.collection("ai_question_reports").doc();
 
   const topicSnap = await topicRef.get();
   const topicData = topicSnap.data();
@@ -5959,17 +6085,57 @@ export const reportAiQuestion = onCall(async (request) => {
   const levelRef = db.collection("ai_topic_pool").doc(poolId)
     .collection("levels").doc(`level_${levelNumber}`);
 
+  // Deterministic id keyed on (reporter, pool level, question) so one
+  // player can only ever contribute a single report to a given question's
+  // count. The count lives on the *shared* pool level doc and crossing
+  // AI_QUESTION_REPORT_THRESHOLD hides the question for everyone who
+  // reuses that topic — with an auto-id per report, one user calling this
+  // callable three times could bury any question in the shared pool.
+  // Keyed by poolId rather than topicId because the count is pool-scoped:
+  // deleting and re-creating the same topic yields a new topicId but the
+  // same pool entry, and that shouldn't buy a second vote.
+  const reportRef = db.collection("ai_question_reports")
+    .doc(`${uid}__${poolId}__${levelNumber}__${questionId}`);
+
   return db.runTransaction(async (tx) => {
-    const levelSnap = await tx.get(levelRef);
+    const [levelSnap, existingReportSnap] = await Promise.all([
+      tx.get(levelRef),
+      tx.get(reportRef),
+    ]);
+
     const reportedCounts: Record<string, number> = {
       ...(levelSnap.data()?.reportedQuestionCounts || {}),
     };
+    const currentCount = safeInt(reportedCounts[questionId], 0);
 
-    const newCount = safeInt(reportedCounts[questionId], 0) + 1;
+    // Already reported by this user: refresh the report's own details
+    // (they may have picked a different reason on the second pass) but
+    // leave the shared count untouched.
+    if (existingReportSnap.exists) {
+      tx.set(
+        reportRef,
+        {
+          reason,
+          details,
+          questionText,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+
+      return {
+        reportCount: currentCount,
+        excluded: currentCount >= AI_QUESTION_REPORT_THRESHOLD,
+        alreadyReported: true,
+      };
+    }
+
+    const newCount = currentCount + 1;
     reportedCounts[questionId] = newCount;
 
     tx.set(reportRef, {
       uid,
+      poolId,
       topicId,
       levelNumber,
       questionId,
@@ -5990,7 +6156,7 @@ export const reportAiQuestion = onCall(async (request) => {
       tx.delete(sessionRef);
     }
 
-    return {reportCount: newCount, excluded};
+    return {reportCount: newCount, excluded, alreadyReported: false};
   });
 });
 
@@ -6488,16 +6654,22 @@ export const acceptFriendRequest = onCall(async (request) => {
     const requesterSnap = await tx.get(requesterRef);
     const requestSnap = await tx.get(requestRef);
 
+    const myLanguageCode = mySnap.data()?.languageCode;
+
     if (!requestSnap.exists) {
-      throw new HttpsError(
-        "failed-precondition", "The request no longer exists."
+      throw localizedError(
+        myLanguageCode, "failed-precondition",
+        "Esa solicitud ya no existe.",
+        "The request no longer exists."
       );
     }
 
     const requestStatus = String(requestSnap.data()?.status || "pending");
     if (requestStatus !== "pending") {
-      throw new HttpsError(
-        "failed-precondition", "The request was already processed."
+      throw localizedError(
+        myLanguageCode, "failed-precondition",
+        "Esa solicitud ya fue procesada.",
+        "The request was already processed."
       );
     }
 
@@ -6588,15 +6760,19 @@ export const rejectFriendRequest = onCall(async (request) => {
     const requestSnap = await tx.get(requestRef);
 
     if (!requestSnap.exists) {
-      throw new HttpsError(
-        "failed-precondition", "The request no longer exists."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Esa solicitud ya no existe.",
+        "The request no longer exists."
       );
     }
 
     const requestStatus = String(requestSnap.data()?.status || "pending");
     if (requestStatus !== "pending") {
-      throw new HttpsError(
-        "failed-precondition", "The request was already processed."
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Esa solicitud ya fue procesada.",
+        "The request was already processed."
       );
     }
 

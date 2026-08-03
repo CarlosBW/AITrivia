@@ -5,6 +5,7 @@ import {
   AI_QUESTIONS_PER_SESSION,
   AI_QUESTION_BANK_CAP,
   bankHeadroom,
+  capAvoidList,
   compareQuestionIds,
   nextQuestionId,
   nextQuestionIds,
@@ -198,5 +199,44 @@ describe("selectSessionQuestions", () => {
       ["q_10", "q_2", "q_1"], [], seed
     );
     assert.deepEqual(draw.questionIds, ["q_1", "q_2", "q_10"]);
+  });
+});
+
+describe("capAvoidList", () => {
+  test("keeps the target level's own questions ahead of the rest", () => {
+    const capped = capAvoidList(["own a", "own b"], ["other"], 10);
+    assert.deepEqual(capped, ["own a", "own b", "other"]);
+  });
+
+  // Regression: the prompt truncates this list, so a pool-wide list
+  // trimmed from the front kept level 1's oldest questions and dropped the
+  // ones the batch was about to sit next to — letting a level duplicate
+  // its own content, the duplicate players actually notice.
+  test("never drops own questions to make room for other levels", () => {
+    const others = Array.from({length: 100}, (_, i) => `other ${i}`);
+    const capped = capAvoidList(["own a", "own b"], others, 5);
+
+    assert.equal(capped.length, 5);
+    assert.ok(capped.includes("own a"));
+    assert.ok(capped.includes("own b"));
+  });
+
+  test("fills the remaining budget newest-first", () => {
+    const capped = capAvoidList([], ["oldest", "middle", "newest"], 2);
+    assert.deepEqual(capped, ["newest", "middle"]);
+  });
+
+  test("truncates when the priority list alone exceeds the budget", () => {
+    const capped = capAvoidList(["a", "b", "c"], ["x"], 2);
+    assert.deepEqual(capped, ["a", "b"]);
+  });
+
+  test("drops duplicates and blanks", () => {
+    const capped = capAvoidList(["a", "", "a"], ["b", "a", ""], 10);
+    assert.deepEqual(capped, ["a", "b"]);
+  });
+
+  test("returns nothing when there is no budget", () => {
+    assert.deepEqual(capAvoidList(["a"], ["b"], 0), []);
   });
 });

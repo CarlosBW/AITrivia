@@ -140,6 +140,48 @@ export function seededShuffleIndices(length: number, seed: number): number[] {
   return indices;
 }
 
+/**
+ * Orders and bounds the "don't repeat these" list for one generation call.
+ *
+ * The prompt truncates this list to a fixed budget, so *order decides what
+ * survives*. [priority] (the target level's own questions) therefore goes
+ * first: repeating a question inside a single level is the duplicate
+ * players actually notice, and it's the likeliest one since the request is
+ * for that same level. Plain truncation of a pool-wide list gets this
+ * backwards — it keeps level 1's oldest questions and drops the ones the
+ * batch is about to sit next to. The rest of the budget is filled
+ * newest-first, since recent content is what a fresh batch tends to echo.
+ * @param {string[]} priority Questions that must be avoided if anything is.
+ * @param {string[]} rest Other questions to avoid, oldest to newest.
+ * @param {number} max Ceiling on the returned list.
+ * @return {string[]} Deduplicated list, at most [max] entries.
+ */
+export function capAvoidList(
+  priority: string[],
+  rest: string[],
+  max: number
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  const add = (question: string): boolean => {
+    if (out.length >= max) return false;
+    if (!question || seen.has(question)) return true;
+    seen.add(question);
+    out.push(question);
+    return true;
+  };
+
+  for (const question of priority) {
+    if (!add(question)) return out;
+  }
+  for (let i = rest.length - 1; i >= 0; i--) {
+    if (!add(rest[i])) break;
+  }
+
+  return out;
+}
+
 export interface SessionDraw {
   /** Ids to serve, in the order they should be played. */
   questionIds: string[];

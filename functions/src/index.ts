@@ -22,6 +22,7 @@ import {
 import {
   AI_QUESTIONS_PER_SESSION,
   bankHeadroom,
+  capAvoidList,
   nextQuestionIds,
   selectSessionQuestions,
 } from "./ai_question_bank";
@@ -5028,19 +5029,26 @@ async function generateAiTopicLevel(
   title: string,
   languageCode: unknown,
   options: {count?: number; avoidQuestions?: string[]} = {}
-): Promise<number> {
+): Promise<string[]> {
   const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
   const existingSnap = await levelRef.collection("questions").get();
   const existingIds = existingSnap.docs.map((doc) => doc.id);
 
   const requested = options.count ?? AI_QUESTIONS_PER_LEVEL;
   const count = Math.min(requested, bankHeadroom(existingIds.length));
-  if (count <= 0) return 0;
+  if (count <= 0) return [];
 
-  const avoidQuestions = options.avoidQuestions ??
+  // Ordered so this level's own questions survive the prompt's truncation
+  // — a caller's cross-level list is pool-wide, and trimming that blindly
+  // would keep level 1's oldest questions while dropping the very ones
+  // this batch sits next to.
+  const avoidQuestions = capAvoidList(
     existingSnap.docs
       .map((doc) => String(doc.data().q || ""))
-      .filter((q) => q.length > 0);
+      .filter((q) => q.length > 0),
+    options.avoidQuestions ?? [],
+    AI_AVOID_LIST_MAX_QUESTIONS
+  );
 
   const questions = await requestAiQuestionsFromClaude(
     title, levelNumber, languageCode, {count, avoidQuestions}
@@ -5069,7 +5077,11 @@ async function generateAiTopicLevel(
   });
 
   await batch.commit();
-  return questions.length;
+
+  // The texts, not just the count: callers generating several levels in a
+  // row extend their own avoid-list with these instead of re-reading the
+  // whole pool between levels.
+  return questions.map((question) => question.q);
 }
 
 /**
@@ -5889,23 +5901,40 @@ export const regenerateAiTopicQuestions = onCall({
     );
   });
 
+  let paidLevelsDelivered = 0;
+
   try {
-    const avoidQuestions = await existingPoolQuestionTexts(poolRef);
+    let avoidQuestions = await existingPoolQuestionTexts(poolRef);
 
     for (const level of expandableLevels) {
-      await generateAiTopicLevel(
+      // Each level's new questions join the avoid-list, so level N doesn't
+      // re-issue what levels 1..N-1 just added — the buyer paid per level
+      // for distinct content, not the same batch repeated.
+      const added = await generateAiTopicLevel(
         poolRef, level, title, languageCode,
         {count: AI_QUESTIONS_PER_LEVEL, avoidQuestions}
       );
+
+      avoidQuestions = [...avoidQuestions, ...added];
+      paidLevelsDelivered++;
     }
   } catch (error) {
-    await userRef.set(
-      {
-        coins: admin.firestore.FieldValue.increment(cost),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      {merge: true}
-    );
+    // Refund only what wasn't delivered. Generated questions are already
+    // durable in the shared pool, so refunding the full price after a
+    // failure partway through would hand over those levels for free — to
+    // this player and to everyone else reusing the same pool entry.
+    const refund =
+      cost - paidLevelsDelivered * REGENERATE_AI_QUESTIONS_COST_PER_LEVEL;
+
+    if (refund > 0) {
+      await userRef.set(
+        {
+          coins: admin.firestore.FieldValue.increment(refund),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+    }
 
     if (error instanceof TopicBlockedError) {
       await topicRef.set(
@@ -6077,7 +6106,9 @@ async function topUpAiLevelBanks(params: {
   if (levels.length === 0) return;
 
   // Gathered once for the whole run: the avoid-list spans the topic, and
-  // re-reading it per level would multiply the cost of a top-up.
+  // re-reading it per level would multiply the cost of a top-up. Newly
+  // generated questions are appended in memory as we go, so later levels
+  // still avoid what earlier ones just added without another pool read.
   let avoidQuestions: string[] | null = null;
 
   for (const levelNumber of levels) {
@@ -6111,7 +6142,7 @@ async function topUpAiLevelBanks(params: {
       {count: toGenerate, avoidQuestions}
     );
 
-    if (added > 0) avoidQuestions = null; // stale once the bank grew
+    avoidQuestions = [...avoidQuestions, ...added];
   }
 }
 

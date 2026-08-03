@@ -147,8 +147,39 @@ class AiTopicsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     if (action == 'regenerate') {
-      final regenerateCost =
-          EconomyService.regenerateAiQuestionsCostFor(generatedLevels);
+      // Priced server-side: levels already at the question-bank cap aren't
+      // charged for, so computing this from generatedLevels here would
+      // quote more than the player gets charged — and would happily offer
+      // a purchase that can only fail once every level is full.
+      final AiTopicRegenerateQuote quote;
+      try {
+        quote = await AiTopicService.instance.getRegenerateQuote(
+          topicId: topicId,
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+        return;
+      }
+
+      if (!context.mounted) return;
+
+      if (!quote.available) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              quote.allFull
+                  ? l10n.aiTopicsRegenerateAllFull
+                  : l10n.aiTopicsUnavailableSubtitle,
+            ),
+          ),
+        );
+        return;
+      }
 
       await _confirmAndRun(
         context: context,
@@ -156,7 +187,7 @@ class AiTopicsScreen extends StatelessWidget {
         title: l10n.aiTopicsRegenerateDialogTitle,
         message: l10n.aiTopicsRegenerateDialogBody(
           topicTitle,
-          regenerateCost,
+          quote.cost,
           coins,
         ),
         action: () => AiTopicService.instance.regenerateTopicQuestions(
@@ -354,15 +385,16 @@ class AiTopicsScreen extends StatelessWidget {
                                       generatedLevels: generatedLevels,
                                     ),
                                     itemBuilder: (context) => [
+                                      // No price here: it depends on how
+                                      // many levels still have room in
+                                      // their question bank, which only
+                                      // the server knows. The exact cost
+                                      // is quoted in the confirmation
+                                      // dialog after tapping.
                                       PopupMenuItem(
                                         value: 'regenerate',
                                         child: Text(
-                                          l10n.aiTopicsRegenerateMenuItem(
-                                            EconomyService
-                                                .regenerateAiQuestionsCostFor(
-                                              generatedLevels,
-                                            ),
-                                          ),
+                                          l10n.aiTopicsRegenerateMenuItemPlain,
                                         ),
                                       ),
                                       PopupMenuItem(

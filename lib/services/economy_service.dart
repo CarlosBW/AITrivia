@@ -39,16 +39,12 @@ class EconomyService {
   static const int createAiTopicExistingCost = 400;
   // Mirrors functions/src/index.ts's AI_TOPIC_POPULAR_USAGE_THRESHOLD.
   static const int aiTopicPopularUsageThreshold = 3;
-  // Mirrors functions/src/index.ts's REGENERATE_AI_QUESTIONS_COST_PER_LEVEL
-  // — regenerating scales with how many levels there actually are to redo,
-  // instead of a flat cost letting a heavily-buffered/expanded topic
-  // regenerate everything for the same price a fresh 2-level topic pays.
-  static const int regenerateAiQuestionsCostPerLevel = 75;
+  // No client-side mirror of REGENERATE_AI_QUESTIONS_COST_PER_LEVEL on
+  // purpose: that price depends on how many levels still have room in
+  // their question bank, which only the server can see. The dialog quotes
+  // AiTopicService.getRegenerateQuote() instead — a mirrored constant here
+  // would just drift back into overquoting.
   static const int expandAiTopicCost = 300;
-
-  static int regenerateAiQuestionsCostFor(int generatedLevels) {
-    return regenerateAiQuestionsCostPerLevel * generatedLevels;
-  }
 
   // ============================================================
   // AI TOPICS CONFIG

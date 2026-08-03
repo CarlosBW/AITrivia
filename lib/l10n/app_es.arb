@@ -1343,6 +1343,8 @@
       "cost": {"type": "int"}
     }
   },
+  "aiTopicsRegenerateMenuItemPlain": "Añadir más preguntas",
+  "aiTopicsRegenerateAllFull": "Ya añadiste el máximo de preguntas a este tema.",
   "aiTopicsRegenerateDialogTitle": "Añadir más preguntas",
   "aiTopicsRegenerateDialogBody": "Esto genera preguntas nuevas para \"{title}\" y las suma a las que ya tiene, para que al rejugar cada nivel te toquen preguntas distintas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
   "@aiTopicsRegenerateDialogBody": {

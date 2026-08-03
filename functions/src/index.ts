@@ -5004,6 +5004,68 @@ async function existingPoolQuestionTexts(
 }
 
 /**
+ * How many questions are banked across the levels a player has unlocked.
+ *
+ * This is what the topics list means by "N preguntas". It has to be
+ * counted rather than derived as `levels * AI_QUESTIONS_PER_LEVEL`: banks
+ * accumulate past ten per level, so the arithmetic version silently
+ * understated a topic and — worse — never moved after a player *paid* to
+ * add questions, making the purchase look like it did nothing.
+ * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
+ * @param {number} upToLevel Highest level the player has unlocked.
+ * @return {Promise<number>} Total banked questions across those levels.
+ */
+async function countBankedQuestions(
+  poolRef: FirebaseFirestore.DocumentReference,
+  upToLevel: number
+): Promise<number> {
+  if (upToLevel <= 0) return 0;
+
+  const levelsSnap = await poolRef.collection("levels").get();
+
+  let total = 0;
+  for (const levelDoc of levelsSnap.docs) {
+    const levelNumber = safeInt(levelDoc.data().levelNumber, 0);
+    if (levelNumber >= 1 && levelNumber <= upToLevel) {
+      total += safeInt(levelDoc.data().questionsCount, 0);
+    }
+  }
+
+  return total;
+}
+
+/**
+ * Per-level bank sizes for the levels a player has unlocked, used to price
+ * an "add more questions" purchase before the player commits to it.
+ * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
+ * @param {number} upToLevel Highest level the player has unlocked.
+ * @return {Promise<number[]>} Level numbers that still have headroom.
+ */
+async function expandableLevelNumbers(
+  poolRef: FirebaseFirestore.DocumentReference,
+  upToLevel: number
+): Promise<number[]> {
+  if (upToLevel <= 0) return [];
+
+  const levelsSnap = await poolRef.collection("levels").get();
+  const sizeByLevel = new Map<number, number>();
+
+  for (const levelDoc of levelsSnap.docs) {
+    const levelNumber = safeInt(levelDoc.data().levelNumber, 0);
+    if (levelNumber >= 1 && levelNumber <= upToLevel) {
+      sizeByLevel.set(levelNumber, safeInt(levelDoc.data().questionsCount, 0));
+    }
+  }
+
+  const levels: number[] = [];
+  for (let level = 1; level <= upToLevel; level++) {
+    if (bankHeadroom(sizeByLevel.get(level) ?? 0) > 0) levels.push(level);
+  }
+
+  return levels;
+}
+
+/**
  * Appends a batch of freshly generated questions to one level's bank.
  *
  * Questions accumulate rather than overwrite: ids continue from the
@@ -5682,6 +5744,14 @@ export const createAiTopic = onCall({
     }
   }
 
+  // Counted before the transaction (a collection read doesn't belong
+  // inside one): reusing an existing pool entry can hand the player banks
+  // that already grew past ten per level, and the topics list should say
+  // so from the start rather than under-reporting until first play.
+  const initialBankedQuestions = await countBankedQuestions(
+    poolRef, AI_INITIAL_GENERATED_LEVELS
+  );
+
   const topicRef = topicsCol.doc();
 
   // Charge and create the topic doc atomically, re-reading fresh
@@ -5752,7 +5822,7 @@ export const createAiTopic = onCall({
       levelCount: AI_LEVELS_PER_TOPIC,
       levelsCount: AI_LEVELS_PER_TOPIC,
       generatedLevels: AI_INITIAL_GENERATED_LEVELS,
-      questionsCount: AI_INITIAL_GENERATED_LEVELS * AI_QUESTIONS_PER_LEVEL,
+      questionsCount: initialBankedQuestions,
       generationMode: "claude_haiku_4_5",
       generationCostCoins: freshCost,
       usedFreePass: freshUsesFreePass,
@@ -5850,18 +5920,12 @@ export const regenerateAiTopicQuestions = onCall({
   const title = String(topicData.title || "Custom Topic");
 
   // Only levels with room left are charged for — a topic whose banks are
-  // all at AI_QUESTION_BANK_CAP has nothing left to sell.
-  const levelSizes = await Promise.all(
-    Array.from({length: generatedLevels}, async (_, i) => {
-      const snap = await poolRef.collection("levels")
-        .doc(`level_${i + 1}`).collection("questions").get();
-      return {level: i + 1, size: snap.size};
-    })
+  // all at AI_QUESTION_BANK_CAP has nothing left to sell. Shares its
+  // arithmetic with getAiTopicRegenerateQuote so the price the player was
+  // shown is the price they get charged.
+  const expandableLevels = await expandableLevelNumbers(
+    poolRef, generatedLevels
   );
-
-  const expandableLevels = levelSizes
-    .filter(({size}) => bankHeadroom(size) > 0)
-    .map(({level}) => level);
 
   if (expandableLevels.length === 0) {
     throw localizedError(
@@ -5949,7 +6013,75 @@ export const regenerateAiTopicQuestions = onCall({
     throw error;
   }
 
-  return {success: true};
+  // Reflect the bigger banks on the player's own topic doc, so the topics
+  // list shows the purchase actually landed instead of the same numbers
+  // it showed before paying.
+  const bankedQuestions = await countBankedQuestions(poolRef, generatedLevels);
+
+  await topicRef.set({
+    questionsCount: bankedQuestions,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+
+  return {success: true, questionsCount: bankedQuestions};
+});
+
+/**
+ * Prices an "add more questions" purchase without committing to it.
+ *
+ * The client can't work this out on its own: levels already at
+ * AI_QUESTION_BANK_CAP aren't charged for, and bank sizes live on the
+ * shared pool rather than the player's topic doc. Quoting
+ * `costPerLevel * generatedLevels` client-side overcharged in the dialog
+ * and, once every level was full, let the player confirm a purchase that
+ * could only fail.
+ */
+export const getAiTopicRegenerateQuote = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const topicId = String(request.data?.topicId || "");
+  if (!topicId) {
+    throw new HttpsError("invalid-argument", "Missing topicId.");
+  }
+
+  const topicRef = db.collection("users").doc(uid)
+    .collection("ai_topics").doc(topicId);
+  const topicSnap = await topicRef.get();
+  const topicData = topicSnap.data();
+
+  if (!topicData || topicData.status !== "ready") {
+    return {cost: 0, levels: 0, allFull: false, available: false};
+  }
+
+  const poolId = topicData.poolId ? String(topicData.poolId) : null;
+  const generatedLevels = safeInt(topicData.generatedLevels, 0);
+
+  // A topic that hasn't been adopted into the pool yet still has its
+  // content per-user; it gets adopted on the next play. Quote the plain
+  // per-level price for it rather than forcing an adoption from a
+  // read-only endpoint.
+  if (!poolId) {
+    return {
+      cost: REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * generatedLevels,
+      levels: generatedLevels,
+      allFull: false,
+      available: generatedLevels > 0,
+    };
+  }
+
+  const expandableLevels = await expandableLevelNumbers(
+    db.collection("ai_topic_pool").doc(poolId), generatedLevels
+  );
+
+  return {
+    cost: REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * expandableLevels.length,
+    levels: expandableLevels.length,
+    allFull: expandableLevels.length === 0 && generatedLevels > 0,
+    available: expandableLevels.length > 0,
+  };
 });
 
 export const expandAiTopic = onCall(async (request) => {
@@ -6223,7 +6355,9 @@ export const ensureAiTopicLevelsGenerated = onCall({
     // is what actually reaches the player, via the reactive topics list.
     await topicRef.set({
       generatedLevels: lastSuccessfulUserLevel,
-      questionsCount: lastSuccessfulUserLevel * AI_QUESTIONS_PER_LEVEL,
+      questionsCount: await countBankedQuestions(
+        poolRef, lastSuccessfulUserLevel
+      ),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       ...(error instanceof TopicBlockedError ? {status: "blocked"} : {}),
     }, {merge: true});
@@ -6244,7 +6378,9 @@ export const ensureAiTopicLevelsGenerated = onCall({
 
   await topicRef.set({
     generatedLevels: desiredGeneratedLevel,
-    questionsCount: desiredGeneratedLevel * AI_QUESTIONS_PER_LEVEL,
+    questionsCount: await countBankedQuestions(
+      poolRef, desiredGeneratedLevel
+    ),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});
 

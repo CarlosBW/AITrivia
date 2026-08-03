@@ -1315,6 +1315,8 @@
       "cost": {"type": "int"}
     }
   },
+  "aiTopicsRegenerateMenuItemPlain": "Add more questions",
+  "aiTopicsRegenerateAllFull": "You have already added the maximum number of questions to this topic.",
   "aiTopicsRegenerateDialogTitle": "Add more questions",
   "aiTopicsRegenerateDialogBody": "This generates new questions for \"{title}\" and adds them to the ones it already has, so replaying each level gives you different questions.\n\nCost: {cost} coins\nYou have: {coins} coins",
   "@aiTopicsRegenerateDialogBody": {

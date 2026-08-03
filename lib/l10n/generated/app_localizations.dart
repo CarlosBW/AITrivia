@@ -3814,6 +3814,18 @@ abstract class AppLocalizations {
   /// **'Ampliar tema (+10 niveles) — {cost} monedas'**
   String aiTopicsExpandMenuItem(int cost);
 
+  /// No description provided for @aiTopicsRegenerateMenuItemPlain.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir más preguntas'**
+  String get aiTopicsRegenerateMenuItemPlain;
+
+  /// No description provided for @aiTopicsRegenerateAllFull.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya añadiste el máximo de preguntas a este tema.'**
+  String get aiTopicsRegenerateAllFull;
+
   /// No description provided for @aiTopicsRegenerateDialogTitle.
   ///
   /// In es, this message translates to:

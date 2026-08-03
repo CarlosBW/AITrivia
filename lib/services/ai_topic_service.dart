@@ -73,6 +73,38 @@ class AiTopicSuggestion {
   }
 }
 
+/// Server-side price for an "add more questions" purchase. Levels already
+/// at the question-bank cap aren't charged for, and their sizes live on
+/// the shared pool, so only the server can work this out — see
+/// [AiTopicService.getRegenerateQuote].
+class AiTopicRegenerateQuote {
+  final int cost;
+  final int levels;
+
+  /// Every unlocked level is already at the bank cap: there is nothing
+  /// left to sell, so the purchase must not be offered.
+  final bool allFull;
+
+  /// Whether the purchase can go ahead at all.
+  final bool available;
+
+  const AiTopicRegenerateQuote({
+    required this.cost,
+    required this.levels,
+    required this.allFull,
+    required this.available,
+  });
+
+  factory AiTopicRegenerateQuote.fromMap(Map<Object?, Object?> map) {
+    return AiTopicRegenerateQuote(
+      cost: ((map['cost'] ?? 0) as num).toInt(),
+      levels: ((map['levels'] ?? 0) as num).toInt(),
+      allFull: map['allFull'] == true,
+      available: map['available'] == true,
+    );
+  }
+}
+
 class AiTopicSuggestionResult {
   final bool blocked;
   final List<AiTopicSuggestion> suggestions;
@@ -347,6 +379,26 @@ class AiTopicService {
           .call({'topicId': topicId});
     } catch (_) {
       // Best-effort refund — don't block deleting the topic if this fails.
+    }
+  }
+
+  /// Asks the server what "add more questions" would actually cost for
+  /// this topic, so the confirmation dialog quotes the price the player
+  /// will really be charged.
+  Future<AiTopicRegenerateQuote> getRegenerateQuote({
+    required String topicId,
+  }) async {
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'getAiTopicRegenerateQuote',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'topicId': topicId});
+
+      return AiTopicRegenerateQuote.fromMap(result.data as Map);
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceCouldNotRegenerateQuestions);
     }
   }
 

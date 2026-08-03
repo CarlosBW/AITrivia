@@ -2203,6 +2203,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiTopicsRegenerateMenuItemPlain => 'Add more questions';
+
+  @override
+  String get aiTopicsRegenerateAllFull =>
+      'You have already added the maximum number of questions to this topic.';
+
+  @override
   String get aiTopicsRegenerateDialogTitle => 'Add more questions';
 
   @override

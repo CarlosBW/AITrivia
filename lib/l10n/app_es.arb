@@ -1,8 +1,6 @@
 {
   "@@locale": "es",
 
-  "langSwitchLabelEn": "EN",
-  "langSwitchLabelEs": "ES",
 
   "navChallengeAcceptedTitle": "Reto aceptado",
   "navChallengeAcceptedBodyFallback": "Tu invitación fue aceptada.",
@@ -12,7 +10,6 @@
   "navNewNotificationSubtitle": "Revisa la campana",
 
   "commonCancel": "Cancelar",
-  "commonSave": "Guardar",
   "commonRetry": "Reintentar",
   "commonLoading": "Cargando...",
   "commonSaving": "Guardando...",
@@ -455,8 +452,6 @@
       "level": {"type": "int"}
     }
   },
-  "levelPlayWeeklyCounted": "Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.",
-  "levelPlayWeeklyNotCounted": "No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.",
   "levelPlayPlayerLevel": "Nivel de jugador {level}",
   "@levelPlayPlayerLevel": {
     "placeholders": {
@@ -1103,33 +1098,11 @@
   },
   "weeklyTopicFeaturedBadge": "Tema Semanal Destacado",
   "weeklyTopicProgressTitle": "Progreso",
-  "weeklyTopicLevelsCompleted": "{count} / 10 niveles completados",
-  "@weeklyTopicLevelsCompleted": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "weeklyTopicRewardsTitle": "Recompensas",
-  "weeklyTopicFiveLevelReward": "5 niveles: +{coins} monedas",
-  "@weeklyTopicFiveLevelReward": {
-    "placeholders": {
-      "coins": {"type": "int"}
-    }
-  },
   "weeklyTopicCoinRewardClaimed": "Recompensa de monedas reclamada",
-  "weeklyTopicClaim5LevelReward": "Reclamar recompensa de 5 niveles",
-  "weeklyTopicTenLevelReward": "10 niveles: {emoji} {name}",
-  "@weeklyTopicTenLevelReward": {
-    "placeholders": {
-      "emoji": {"type": "String"},
-      "name": {"type": "String"}
-    }
-  },
   "weeklyTopicExclusiveClaimed": "Recompensa exclusiva reclamada.",
   "weeklyTopicExclusiveReady": "Recompensa exclusiva lista para reclamar.",
-  "weeklyTopicExclusiveLocked": "Completa los 10 niveles para desbloquear esta recompensa.",
   "weeklyTopicExclusiveClaimedButton": "Recompensa exclusiva reclamada",
-  "weeklyTopicClaim10LevelReward": "Reclamar recompensa de 10 niveles",
   "weeklyTopicCategoryMissing": "Falta la categoría del Weekly Topic.",
   "weeklyTopicPlayButton": "Jugar Weekly Topic",
   "weeklyTopicCorrectAnswersProgress": "{correct} / {total} respuestas correctas",
@@ -1327,12 +1300,6 @@
   "aiTopicsFree": "Gratis",
   "aiTopicsCoinsCost": "{cost} monedas",
   "@aiTopicsCoinsCost": {
-    "placeholders": {
-      "cost": {"type": "int"}
-    }
-  },
-  "aiTopicsRegenerateMenuItem": "Añadir más preguntas — {cost} monedas",
-  "@aiTopicsRegenerateMenuItem": {
     "placeholders": {
       "cost": {"type": "int"}
     }
@@ -1588,7 +1555,6 @@
       "error": {"type": "String"}
     }
   },
-  "levelPlayPerfect": "¡PERFECTO!",
   "serviceEnterUsername": "Escribe un nombre de usuario.",
   "serviceConnectionTimeout": "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.",
   "serviceInvalidUser": "Usuario inválido.",
@@ -1674,8 +1640,6 @@
       "name": {"type": "String"}
     }
   },
-  "serviceNoActiveDailyCategories": "No hay categorías activas para Daily Challenge.",
-  "serviceNoQuestionsInPools": "No hay preguntas disponibles en los pools fijos.",
   "achievementFirstPvpWinTitle": "Primera victoria en duelo",
   "achievementFirstPvpWinDescription": "Gana tu primera partida 1 vs 1.",
   "achievementPvpWins10Title": "Duelista",

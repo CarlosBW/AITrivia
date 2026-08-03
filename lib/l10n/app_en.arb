@@ -1,8 +1,6 @@
 {
   "@@locale": "en",
 
-  "langSwitchLabelEn": "EN",
-  "langSwitchLabelEs": "ES",
 
   "navChallengeAcceptedTitle": "Challenge accepted",
   "navChallengeAcceptedBodyFallback": "Your invite was accepted.",
@@ -12,7 +10,6 @@
   "navNewNotificationSubtitle": "Check the bell",
 
   "commonCancel": "Cancel",
-  "commonSave": "Save",
   "commonRetry": "Retry",
   "commonLoading": "Loading...",
   "commonSaving": "Saving...",
@@ -432,8 +429,6 @@
       "level": {"type": "int"}
     }
   },
-  "levelPlayWeeklyCounted": "Counts for the weekly event. This level advanced your weekly rewards progress.",
-  "levelPlayWeeklyNotCounted": "Doesn't count for the weekly event. You need at least 40% correct for this level to advance your weekly rewards.",
   "levelPlayPlayerLevel": "Player level {level}",
   "@levelPlayPlayerLevel": {
     "placeholders": {
@@ -1075,33 +1070,11 @@
   },
   "weeklyTopicFeaturedBadge": "Weekly Featured Topic",
   "weeklyTopicProgressTitle": "Progress",
-  "weeklyTopicLevelsCompleted": "{count} / 10 levels completed",
-  "@weeklyTopicLevelsCompleted": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "weeklyTopicRewardsTitle": "Rewards",
-  "weeklyTopicFiveLevelReward": "5 levels: +{coins} coins",
-  "@weeklyTopicFiveLevelReward": {
-    "placeholders": {
-      "coins": {"type": "int"}
-    }
-  },
   "weeklyTopicCoinRewardClaimed": "Coin reward claimed",
-  "weeklyTopicClaim5LevelReward": "Claim 5-level reward",
-  "weeklyTopicTenLevelReward": "10 levels: {emoji} {name}",
-  "@weeklyTopicTenLevelReward": {
-    "placeholders": {
-      "emoji": {"type": "String"},
-      "name": {"type": "String"}
-    }
-  },
   "weeklyTopicExclusiveClaimed": "Exclusive reward claimed.",
   "weeklyTopicExclusiveReady": "Exclusive reward ready to claim.",
-  "weeklyTopicExclusiveLocked": "Complete all 10 levels to unlock this reward.",
   "weeklyTopicExclusiveClaimedButton": "Exclusive reward claimed",
-  "weeklyTopicClaim10LevelReward": "Claim 10-level reward",
   "weeklyTopicCategoryMissing": "Weekly Topic category is missing.",
   "weeklyTopicPlayButton": "Play Weekly Topic",
   "weeklyTopicCorrectAnswersProgress": "{correct} / {total} correct answers",
@@ -1299,12 +1272,6 @@
   "aiTopicsFree": "Free",
   "aiTopicsCoinsCost": "{cost} coins",
   "@aiTopicsCoinsCost": {
-    "placeholders": {
-      "cost": {"type": "int"}
-    }
-  },
-  "aiTopicsRegenerateMenuItem": "Add more questions — {cost} coins",
-  "@aiTopicsRegenerateMenuItem": {
     "placeholders": {
       "cost": {"type": "int"}
     }
@@ -1555,7 +1522,6 @@
       "error": {"type": "String"}
     }
   },
-  "levelPlayPerfect": "PERFECT!",
   "serviceEnterUsername": "Enter a username.",
   "serviceConnectionTimeout": "Couldn't connect. Check your connection and try again.",
   "serviceInvalidUser": "Invalid user.",
@@ -1641,8 +1607,6 @@
       "name": {"type": "String"}
     }
   },
-  "serviceNoActiveDailyCategories": "No active categories for the Daily Challenge.",
-  "serviceNoQuestionsInPools": "No questions available in the fixed pools.",
   "achievementFirstPvpWinTitle": "First Duel Win",
   "achievementFirstPvpWinDescription": "Win your first 1 vs 1 match.",
   "achievementPvpWins10Title": "Duelist",

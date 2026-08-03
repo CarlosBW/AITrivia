@@ -98,18 +98,6 @@ abstract class AppLocalizations {
     Locale('es')
   ];
 
-  /// No description provided for @langSwitchLabelEn.
-  ///
-  /// In es, this message translates to:
-  /// **'EN'**
-  String get langSwitchLabelEn;
-
-  /// No description provided for @langSwitchLabelEs.
-  ///
-  /// In es, this message translates to:
-  /// **'ES'**
-  String get langSwitchLabelEs;
-
   /// No description provided for @navChallengeAcceptedTitle.
   ///
   /// In es, this message translates to:
@@ -151,12 +139,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Cancelar'**
   String get commonCancel;
-
-  /// No description provided for @commonSave.
-  ///
-  /// In es, this message translates to:
-  /// **'Guardar'**
-  String get commonSave;
 
   /// No description provided for @commonRetry.
   ///
@@ -1597,18 +1579,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Continuar (Nivel {level})'**
   String levelPlayContinueNextLevel(int level);
-
-  /// No description provided for @levelPlayWeeklyCounted.
-  ///
-  /// In es, this message translates to:
-  /// **'Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.'**
-  String get levelPlayWeeklyCounted;
-
-  /// No description provided for @levelPlayWeeklyNotCounted.
-  ///
-  /// In es, this message translates to:
-  /// **'No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.'**
-  String get levelPlayWeeklyNotCounted;
 
   /// No description provided for @levelPlayPlayerLevel.
   ///
@@ -3369,41 +3339,17 @@ abstract class AppLocalizations {
   /// **'Progreso'**
   String get weeklyTopicProgressTitle;
 
-  /// No description provided for @weeklyTopicLevelsCompleted.
-  ///
-  /// In es, this message translates to:
-  /// **'{count} / 10 niveles completados'**
-  String weeklyTopicLevelsCompleted(int count);
-
   /// No description provided for @weeklyTopicRewardsTitle.
   ///
   /// In es, this message translates to:
   /// **'Recompensas'**
   String get weeklyTopicRewardsTitle;
 
-  /// No description provided for @weeklyTopicFiveLevelReward.
-  ///
-  /// In es, this message translates to:
-  /// **'5 niveles: +{coins} monedas'**
-  String weeklyTopicFiveLevelReward(int coins);
-
   /// No description provided for @weeklyTopicCoinRewardClaimed.
   ///
   /// In es, this message translates to:
   /// **'Recompensa de monedas reclamada'**
   String get weeklyTopicCoinRewardClaimed;
-
-  /// No description provided for @weeklyTopicClaim5LevelReward.
-  ///
-  /// In es, this message translates to:
-  /// **'Reclamar recompensa de 5 niveles'**
-  String get weeklyTopicClaim5LevelReward;
-
-  /// No description provided for @weeklyTopicTenLevelReward.
-  ///
-  /// In es, this message translates to:
-  /// **'10 niveles: {emoji} {name}'**
-  String weeklyTopicTenLevelReward(String emoji, String name);
 
   /// No description provided for @weeklyTopicExclusiveClaimed.
   ///
@@ -3417,23 +3363,11 @@ abstract class AppLocalizations {
   /// **'Recompensa exclusiva lista para reclamar.'**
   String get weeklyTopicExclusiveReady;
 
-  /// No description provided for @weeklyTopicExclusiveLocked.
-  ///
-  /// In es, this message translates to:
-  /// **'Completa los 10 niveles para desbloquear esta recompensa.'**
-  String get weeklyTopicExclusiveLocked;
-
   /// No description provided for @weeklyTopicExclusiveClaimedButton.
   ///
   /// In es, this message translates to:
   /// **'Recompensa exclusiva reclamada'**
   String get weeklyTopicExclusiveClaimedButton;
-
-  /// No description provided for @weeklyTopicClaim10LevelReward.
-  ///
-  /// In es, this message translates to:
-  /// **'Reclamar recompensa de 10 niveles'**
-  String get weeklyTopicClaim10LevelReward;
 
   /// No description provided for @weeklyTopicCategoryMissing.
   ///
@@ -3801,12 +3735,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{cost} monedas'**
   String aiTopicsCoinsCost(int cost);
-
-  /// No description provided for @aiTopicsRegenerateMenuItem.
-  ///
-  /// In es, this message translates to:
-  /// **'Añadir más preguntas — {cost} monedas'**
-  String aiTopicsRegenerateMenuItem(int cost);
 
   /// No description provided for @aiTopicsExpandMenuItem.
   ///
@@ -4600,12 +4528,6 @@ abstract class AppLocalizations {
   /// **'Error cargando historial de partidas:\n{error}'**
   String profileErrorLoadingMatchHistory(String error);
 
-  /// No description provided for @levelPlayPerfect.
-  ///
-  /// In es, this message translates to:
-  /// **'¡PERFECTO!'**
-  String get levelPlayPerfect;
-
   /// No description provided for @serviceEnterUsername.
   ///
   /// In es, this message translates to:
@@ -4875,18 +4797,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{name} aceptó tu reto en tiempo real.'**
   String serviceRealtimeInviteAcceptedBody(String name);
-
-  /// No description provided for @serviceNoActiveDailyCategories.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay categorías activas para Daily Challenge.'**
-  String get serviceNoActiveDailyCategories;
-
-  /// No description provided for @serviceNoQuestionsInPools.
-  ///
-  /// In es, this message translates to:
-  /// **'No hay preguntas disponibles en los pools fijos.'**
-  String get serviceNoQuestionsInPools;
 
   /// No description provided for @achievementFirstPvpWinTitle.
   ///

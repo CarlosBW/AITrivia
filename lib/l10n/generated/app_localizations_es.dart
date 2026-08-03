@@ -9,12 +9,6 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
-  String get langSwitchLabelEn => 'EN';
-
-  @override
-  String get langSwitchLabelEs => 'ES';
-
-  @override
   String get navChallengeAcceptedTitle => 'Reto aceptado';
 
   @override
@@ -34,9 +28,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get commonCancel => 'Cancelar';
-
-  @override
-  String get commonSave => 'Guardar';
 
   @override
   String get commonRetry => 'Reintentar';
@@ -852,14 +843,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String levelPlayContinueNextLevel(int level) {
     return 'Continuar (Nivel $level)';
   }
-
-  @override
-  String get levelPlayWeeklyCounted =>
-      'Cuenta para el evento semanal. Este nivel avanzó tu progreso de recompensas semanales.';
-
-  @override
-  String get levelPlayWeeklyNotCounted =>
-      'No cuenta para el evento semanal. Necesitas al menos 40% de aciertos para que este nivel avance tus recompensas semanales.';
 
   @override
   String levelPlayPlayerLevel(int level) {
@@ -1926,28 +1909,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weeklyTopicProgressTitle => 'Progreso';
 
   @override
-  String weeklyTopicLevelsCompleted(int count) {
-    return '$count / 10 niveles completados';
-  }
-
-  @override
   String get weeklyTopicRewardsTitle => 'Recompensas';
 
   @override
-  String weeklyTopicFiveLevelReward(int coins) {
-    return '5 niveles: +$coins monedas';
-  }
-
-  @override
   String get weeklyTopicCoinRewardClaimed => 'Recompensa de monedas reclamada';
-
-  @override
-  String get weeklyTopicClaim5LevelReward => 'Reclamar recompensa de 5 niveles';
-
-  @override
-  String weeklyTopicTenLevelReward(String emoji, String name) {
-    return '10 niveles: $emoji $name';
-  }
 
   @override
   String get weeklyTopicExclusiveClaimed => 'Recompensa exclusiva reclamada.';
@@ -1957,16 +1922,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recompensa exclusiva lista para reclamar.';
 
   @override
-  String get weeklyTopicExclusiveLocked =>
-      'Completa los 10 niveles para desbloquear esta recompensa.';
-
-  @override
   String get weeklyTopicExclusiveClaimedButton =>
       'Recompensa exclusiva reclamada';
-
-  @override
-  String get weeklyTopicClaim10LevelReward =>
-      'Reclamar recompensa de 10 niveles';
 
   @override
   String get weeklyTopicCategoryMissing =>
@@ -2207,11 +2164,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String aiTopicsCoinsCost(int cost) {
     return '$cost monedas';
-  }
-
-  @override
-  String aiTopicsRegenerateMenuItem(int cost) {
-    return 'Añadir más preguntas — $cost monedas';
   }
 
   @override
@@ -2679,9 +2631,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get levelPlayPerfect => '¡PERFECTO!';
-
-  @override
   String get serviceEnterUsername => 'Escribe un nombre de usuario.';
 
   @override
@@ -2842,14 +2791,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String serviceRealtimeInviteAcceptedBody(String name) {
     return '$name aceptó tu reto en tiempo real.';
   }
-
-  @override
-  String get serviceNoActiveDailyCategories =>
-      'No hay categorías activas para Daily Challenge.';
-
-  @override
-  String get serviceNoQuestionsInPools =>
-      'No hay preguntas disponibles en los pools fijos.';
 
   @override
   String get achievementFirstPvpWinTitle => 'Primera victoria en duelo';

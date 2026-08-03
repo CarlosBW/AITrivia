@@ -9,12 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get langSwitchLabelEn => 'EN';
-
-  @override
-  String get langSwitchLabelEs => 'ES';
-
-  @override
   String get navChallengeAcceptedTitle => 'Challenge accepted';
 
   @override
@@ -34,9 +28,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commonCancel => 'Cancel';
-
-  @override
-  String get commonSave => 'Save';
 
   @override
   String get commonRetry => 'Retry';
@@ -848,14 +839,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String levelPlayContinueNextLevel(int level) {
     return 'Continue (Level $level)';
   }
-
-  @override
-  String get levelPlayWeeklyCounted =>
-      'Counts for the weekly event. This level advanced your weekly rewards progress.';
-
-  @override
-  String get levelPlayWeeklyNotCounted =>
-      'Doesn\'t count for the weekly event. You need at least 40% correct for this level to advance your weekly rewards.';
 
   @override
   String levelPlayPlayerLevel(int level) {
@@ -1915,28 +1898,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyTopicProgressTitle => 'Progress';
 
   @override
-  String weeklyTopicLevelsCompleted(int count) {
-    return '$count / 10 levels completed';
-  }
-
-  @override
   String get weeklyTopicRewardsTitle => 'Rewards';
 
   @override
-  String weeklyTopicFiveLevelReward(int coins) {
-    return '5 levels: +$coins coins';
-  }
-
-  @override
   String get weeklyTopicCoinRewardClaimed => 'Coin reward claimed';
-
-  @override
-  String get weeklyTopicClaim5LevelReward => 'Claim 5-level reward';
-
-  @override
-  String weeklyTopicTenLevelReward(String emoji, String name) {
-    return '10 levels: $emoji $name';
-  }
 
   @override
   String get weeklyTopicExclusiveClaimed => 'Exclusive reward claimed.';
@@ -1945,14 +1910,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyTopicExclusiveReady => 'Exclusive reward ready to claim.';
 
   @override
-  String get weeklyTopicExclusiveLocked =>
-      'Complete all 10 levels to unlock this reward.';
-
-  @override
   String get weeklyTopicExclusiveClaimedButton => 'Exclusive reward claimed';
-
-  @override
-  String get weeklyTopicClaim10LevelReward => 'Claim 10-level reward';
 
   @override
   String get weeklyTopicCategoryMissing => 'Weekly Topic category is missing.';
@@ -2190,11 +2148,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String aiTopicsCoinsCost(int cost) {
     return '$cost coins';
-  }
-
-  @override
-  String aiTopicsRegenerateMenuItem(int cost) {
-    return 'Add more questions — $cost coins';
   }
 
   @override
@@ -2663,9 +2616,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get levelPlayPerfect => 'PERFECT!';
-
-  @override
   String get serviceEnterUsername => 'Enter a username.';
 
   @override
@@ -2823,14 +2773,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String serviceRealtimeInviteAcceptedBody(String name) {
     return '$name accepted your realtime challenge.';
   }
-
-  @override
-  String get serviceNoActiveDailyCategories =>
-      'No active categories for the Daily Challenge.';
-
-  @override
-  String get serviceNoQuestionsInPools =>
-      'No questions available in the fixed pools.';
 
   @override
   String get achievementFirstPvpWinTitle => 'First Duel Win';

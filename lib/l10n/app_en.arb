@@ -1303,7 +1303,7 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateMenuItem": "Regenerate questions — {cost} coins",
+  "aiTopicsRegenerateMenuItem": "Add more questions — {cost} coins",
   "@aiTopicsRegenerateMenuItem": {
     "placeholders": {
       "cost": {"type": "int"}
@@ -1315,8 +1315,8 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateDialogTitle": "Regenerate questions",
-  "aiTopicsRegenerateDialogBody": "This replaces the questions for \"{title}\" with new ones.\n\nCost: {cost} coins\nYou have: {coins} coins",
+  "aiTopicsRegenerateDialogTitle": "Add more questions",
+  "aiTopicsRegenerateDialogBody": "This generates new questions for \"{title}\" and adds them to the ones it already has, so replaying each level gives you different questions.\n\nCost: {cost} coins\nYou have: {coins} coins",
   "@aiTopicsRegenerateDialogBody": {
     "placeholders": {
       "title": {"type": "String"},
@@ -1324,7 +1324,7 @@
       "coins": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateSuccess": "Questions regenerated",
+  "aiTopicsRegenerateSuccess": "Questions added",
   "aiTopicsExpandDialogTitle": "Expand topic",
   "aiTopicsExpandDialogBody": "Adds 10 more levels to \"{title}\".\n\nCost: {cost} coins\nYou have: {coins} coins",
   "@aiTopicsExpandDialogBody": {

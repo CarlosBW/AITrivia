@@ -1331,7 +1331,7 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateMenuItem": "Regenerar preguntas — {cost} monedas",
+  "aiTopicsRegenerateMenuItem": "Añadir más preguntas — {cost} monedas",
   "@aiTopicsRegenerateMenuItem": {
     "placeholders": {
       "cost": {"type": "int"}
@@ -1343,8 +1343,8 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateDialogTitle": "Regenerar preguntas",
-  "aiTopicsRegenerateDialogBody": "Esto reemplaza las preguntas de \"{title}\" por otras nuevas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
+  "aiTopicsRegenerateDialogTitle": "Añadir más preguntas",
+  "aiTopicsRegenerateDialogBody": "Esto genera preguntas nuevas para \"{title}\" y las suma a las que ya tiene, para que al rejugar cada nivel te toquen preguntas distintas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
   "@aiTopicsRegenerateDialogBody": {
     "placeholders": {
       "title": {"type": "String"},
@@ -1352,7 +1352,7 @@
       "coins": {"type": "int"}
     }
   },
-  "aiTopicsRegenerateSuccess": "Preguntas regeneradas",
+  "aiTopicsRegenerateSuccess": "Preguntas añadidas",
   "aiTopicsExpandDialogTitle": "Ampliar tema",
   "aiTopicsExpandDialogBody": "Agrega 10 niveles más a \"{title}\".\n\nCosto: {cost} monedas\nTienes: {coins} monedas",
   "@aiTopicsExpandDialogBody": {

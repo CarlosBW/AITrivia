@@ -3805,7 +3805,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsRegenerateMenuItem.
   ///
   /// In es, this message translates to:
-  /// **'Regenerar preguntas — {cost} monedas'**
+  /// **'Añadir más preguntas — {cost} monedas'**
   String aiTopicsRegenerateMenuItem(int cost);
 
   /// No description provided for @aiTopicsExpandMenuItem.
@@ -3817,19 +3817,19 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsRegenerateDialogTitle.
   ///
   /// In es, this message translates to:
-  /// **'Regenerar preguntas'**
+  /// **'Añadir más preguntas'**
   String get aiTopicsRegenerateDialogTitle;
 
   /// No description provided for @aiTopicsRegenerateDialogBody.
   ///
   /// In es, this message translates to:
-  /// **'Esto reemplaza las preguntas de \"{title}\" por otras nuevas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas'**
+  /// **'Esto genera preguntas nuevas para \"{title}\" y las suma a las que ya tiene, para que al rejugar cada nivel te toquen preguntas distintas.\n\nCosto: {cost} monedas\nTienes: {coins} monedas'**
   String aiTopicsRegenerateDialogBody(String title, int cost, int coins);
 
   /// No description provided for @aiTopicsRegenerateSuccess.
   ///
   /// In es, this message translates to:
-  /// **'Preguntas regeneradas'**
+  /// **'Preguntas añadidas'**
   String get aiTopicsRegenerateSuccess;
 
   /// No description provided for @aiTopicsExpandDialogTitle.

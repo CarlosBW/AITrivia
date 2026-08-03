@@ -15,6 +15,22 @@ import {
   titleSimilarity,
   AI_TOPIC_SIMILARITY_THRESHOLD,
 } from "./ai_topic_similarity";
+import {
+  isPlausibleDateId,
+  weekIdForDateId,
+} from "./daily_challenge_dates";
+import {
+  AI_QUESTIONS_PER_SESSION,
+  bankHeadroom,
+  nextQuestionIds,
+  selectSessionQuestions,
+} from "./ai_question_bank";
+
+// Bounds on the "don't repeat these" list sent to Claude when topping up
+// a level's bank: enough context to actually avoid duplicates, not so
+// much that the avoid-list dwarfs the generation request itself.
+const AI_AVOID_LIST_MAX_QUESTIONS = 60;
+const AI_AVOID_LIST_MAX_CHARS = 120;
 
 setGlobalOptions({maxInstances: 10});
 
@@ -309,6 +325,18 @@ function serverDateId(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}` +
     `-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Rejects a client-supplied `dateId` that isn't a real date close enough
+ * to the server's own to have come from a real device — see
+ * `isPlausibleDateId` for why the window exists and what it prevents.
+ * @param {string} dateId Client-supplied date id.
+ */
+function assertPlausibleDateId(dateId: string): void {
+  if (!isPlausibleDateId(dateId, serverDateId())) {
+    throw new HttpsError("invalid-argument", "Invalid dateId.");
+  }
 }
 
 /**
@@ -2748,8 +2776,11 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid answer counts.");
   }
 
-  const dateIdPattern = /^\d{4}-\d{2}-\d{2}$/;
-  if (!dateIdPattern.test(dateId) || !dateIdPattern.test(weekId)) {
+  // Both ids are client-supplied and decide which documents this write
+  // lands in, so neither may be taken on trust: the date has to be a real
+  // one near now, and the week has to be the one that date falls in.
+  assertPlausibleDateId(dateId);
+  if (weekId !== weekIdForDateId(dateId)) {
     throw new HttpsError("invalid-argument", "Invalid dateId/weekId.");
   }
 
@@ -2795,6 +2826,17 @@ export const submitDailyChallengeResult = onCall(async (request) => {
         newLevel: level,
         xpEarned: safeInt(data.xpEarned, 0),
       };
+    }
+
+    // No session document means this player never started today's
+    // challenge through ensureDailyChallengeSession — there are no stored
+    // `questions` to score against, so scoring would silently yield 0
+    // correct while still advancing the streak and writing a leaderboard
+    // row. A real play always has a session; refuse instead.
+    if (!dailySnap.exists) {
+      throw new HttpsError(
+        "failed-precondition", "No daily challenge session for that date."
+      );
     }
 
     const {correct, totalAnswered} = computeVerifiedQuizResult(
@@ -3135,9 +3177,11 @@ export const ensureDailyChallengeSession = onCall(async (request) => {
   }
 
   const dateId = String(request.data?.dateId || "");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateId)) {
-    throw new HttpsError("invalid-argument", "Invalid dateId.");
-  }
+  // Bounded to a real date near now: a session is what makes a
+  // submission scoreable, so letting one be opened for an arbitrary date
+  // would hand back the streak-farming path submitDailyChallengeResult
+  // now refuses.
+  assertPlausibleDateId(dateId);
 
   const userRef = db.collection("users").doc(uid);
   const dailyRef = userRef.collection("daily_challenges").doc(dateId);
@@ -3789,6 +3833,16 @@ export const submitSoloLevelResult = onCall(async (request) => {
 
     tx.set(progressRef, progressPatch, {merge: true});
 
+    // AI levels re-roll on replay: dropping the finished session makes the
+    // next `ensureSoloLevelSession` draw a fresh slate from the level's
+    // accumulated bank instead of handing back the same ten questions
+    // forever. Fixed categories keep their session — their slate is a
+    // deterministic seeded shuffle of a large static pool, so re-rolling
+    // would only churn reads for no new content.
+    if (isAiTopic) {
+      tx.delete(sessionRef);
+    }
+
     // gamesPlayed increments once per level attempt (pass or fail), same
     // semantics as submitDailyChallengeResult's increment — it gates
     // LifeService.tryConsumeWrongAnswer's new-player grace period, which
@@ -3987,10 +4041,35 @@ export const ensureSoloLevelSession = onCall(async (request) => {
       return count < AI_QUESTION_REPORT_THRESHOLD;
     });
     const docsToUse = usableDocs.length > 0 ? usableDocs : questionsSnap.docs;
+    const byId = new Map(docsToUse.map((doc) => [doc.id, doc]));
 
-    const chosen = docsToUse.map((doc) => ({
-      ...doc.data(),
-      questionId: doc.id,
+    // A level's bank accumulates past the ten questions it started with,
+    // so a replay serves questions this player hasn't been asked yet
+    // rather than the same slate forever. The seed varies with how much
+    // they've already seen, so successive replays don't draw identically.
+    const seenRef = userRef
+      .collection("ai_topic_seen").doc(`${aiTopicId}_${levelNumber}`);
+    const seenSnap = await seenRef.get();
+    const seenIds: string[] = (
+      (seenSnap.data()?.questionIds as unknown[]) || []
+    ).map((id) => String(id));
+
+    const seed = fnv1a32(
+      `${uid}|${poolId}|${levelNumber}|${seenIds.length}`
+    );
+    const draw = selectSessionQuestions(
+      [...byId.keys()], seenIds, seed, AI_QUESTIONS_PER_SESSION
+    );
+
+    if (draw.questionIds.length === 0) {
+      throw new HttpsError(
+        "not-found", "No questions found for this level."
+      );
+    }
+
+    const chosen = draw.questionIds.map((id) => ({
+      ...byId.get(id)?.data(),
+      questionId: id,
     }));
 
     await db.runTransaction(async (tx) => {
@@ -4005,6 +4084,19 @@ export const ensureSoloLevelSession = onCall(async (request) => {
         questions: chosen,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Only the genuinely new ones count as seen — questions served as
+      // filler for an exhausted bank are already in the set, and adding
+      // them again would just bloat it.
+      const newlySeen = draw.questionIds
+        .filter((id) => !draw.repeatedIds.includes(id));
+
+      if (newlySeen.length > 0) {
+        tx.set(seenRef, {
+          questionIds: admin.firestore.FieldValue.arrayUnion(...newlySeen),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
     });
 
     return {created: true};
@@ -4742,14 +4834,19 @@ function aiLevelDifficultyLabel(
  * @param {string} title Topic title (e.g. "Dinosaurios").
  * @param {number} levelNumber Level number (1-10) — scales difficulty.
  * @param {unknown} languageCode Recipient's stored languageCode.
- * @return {Promise<GeneratedAiQuestion[]>} Exactly AI_QUESTIONS_PER_LEVEL
- * validated questions.
+ * @param {object} options `count` to generate (defaults to a full level)
+ * and `avoidQuestions`, existing texts the model must not repeat.
+ * @return {Promise<GeneratedAiQuestion[]>} Exactly `count` validated
+ * questions.
  */
 async function requestAiQuestionsFromClaude(
   title: string,
   levelNumber: number,
-  languageCode: unknown
+  languageCode: unknown,
+  options: {count?: number; avoidQuestions?: string[]} = {}
 ): Promise<GeneratedAiQuestion[]> {
+  const count = options.count ?? AI_QUESTIONS_PER_LEVEL;
+  const avoidQuestions = options.avoidQuestions ?? [];
   const moderationKey = normalizeForModeration(title);
 
   // Covers regenerate/expand/buffer calls too (they all funnel through
@@ -4764,7 +4861,17 @@ async function requestAiQuestionsFromClaude(
   const outputLanguage = pickText(languageCode, "Spanish", "English");
   const difficulty = aiLevelDifficultyLabel(levelNumber, languageCode);
 
-  const prompt = `Generate exactly ${AI_QUESTIONS_PER_LEVEL} multiple-choice ` +
+  // Questions already banked for this topic, so a top-up doesn't hand
+  // back what the player has already been asked. Capped and truncated
+  // because the bank spans every level and grows to
+  // AI_QUESTION_BANK_CAP per level — sending all of it verbatim would
+  // dominate the prompt and cost more than the generation itself.
+  const avoidList = avoidQuestions
+    .slice(0, AI_AVOID_LIST_MAX_QUESTIONS)
+    .map((q) => `- ${q.slice(0, AI_AVOID_LIST_MAX_CHARS)}`)
+    .join("\n");
+
+  const prompt = `Generate exactly ${count} multiple-choice ` +
     `trivia questions about "${title}", at ${difficulty} difficulty ` +
     `(this is level ${levelNumber} of ${AI_LEVELS_PER_TOPIC}; difficulty ` +
     "should scale up with the level number). Write every question, " +
@@ -4772,7 +4879,12 @@ async function requestAiQuestionsFromClaude(
     "exactly 4 answer options with exactly one correct answer. Vary the " +
     "position of the correct answer across questions instead of always " +
     "using the same index. Do not repeat questions or trivially reword " +
-    "the same fact twice.";
+    "the same fact twice." +
+    (avoidList ?
+      "\n\nThese questions already exist for this topic. Do not repeat " +
+      "any of them, and do not ask the same fact in different words — " +
+      `cover different ground:\n${avoidList}` :
+      "");
 
   const schema = {
     type: "object",
@@ -4827,9 +4939,9 @@ async function requestAiQuestionsFromClaude(
       };
       const questions = parsed.questions || [];
 
-      if (questions.length !== AI_QUESTIONS_PER_LEVEL) {
+      if (questions.length !== count) {
         throw new Error(
-          `Expected ${AI_QUESTIONS_PER_LEVEL} questions, got ` +
+          `Expected ${count} questions, got ` +
           `${questions.length}.`
         );
       }
@@ -4863,43 +4975,91 @@ async function requestAiQuestionsFromClaude(
 }
 
 /**
- * Generates one level's worth of real AI trivia questions via Claude
- * Haiku 4.5 and writes them to Firestore. Writes the same schema the old
- * mock generator used, so no client-side rendering changes are needed.
+ * Every question text currently banked for a topic, across all its
+ * levels — the "don't write these again" context for a top-up.
+ *
+ * Walks the pool's own levels rather than using a collection-group query:
+ * `questions` is also the collection name under `fixed_pools`, so a group
+ * query would span unrelated content and need its own index. Callers
+ * should do this once per generation run, not once per level.
+ * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
+ * @return {Promise<string[]>} Existing question texts.
+ */
+async function existingPoolQuestionTexts(
+  poolRef: FirebaseFirestore.DocumentReference
+): Promise<string[]> {
+  const levelsSnap = await poolRef.collection("levels").get();
+
+  const perLevel = await Promise.all(
+    levelsSnap.docs.map(async (levelDoc) => {
+      const questionsSnap = await levelDoc.ref.collection("questions").get();
+      return questionsSnap.docs
+        .map((doc) => String(doc.data().q || ""))
+        .filter((q) => q.length > 0);
+    })
+  );
+
+  return perLevel.flat();
+}
+
+/**
+ * Appends a batch of freshly generated questions to one level's bank.
+ *
+ * Questions accumulate rather than overwrite: ids continue from the
+ * highest existing suffix (`q_11`, `q_12`, ...), so a top-up never
+ * destroys content another player is mid-way through — the reason the
+ * old fixed `q_1..q_10` scheme had to go. Growth stops at
+ * [AI_QUESTION_BANK_CAP].
  *
  * Always writes into the shared `ai_topic_pool` entry, never into a
- * per-user topic doc — every AI topic's actual question content lives in
- * the pool now (see the "Shared AI-topic content pool" plan), so every
- * caller passes the resolved pool ref here.
+ * per-user topic doc — every AI topic's question content lives in the
+ * pool (see the "Shared AI-topic content pool" plan), so every caller
+ * passes the resolved pool ref here.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
- * @param {number} levelNumber Level to (re)generate.
+ * @param {number} levelNumber Level to top up.
  * @param {string} title Topic title, used as the generation subject.
  * @param {unknown} languageCode Recipient's stored languageCode.
- * @return {Promise<void>} Resolves once the batch commits.
+ * @param {object} options `count` to add, and existing texts to avoid.
+ * @return {Promise<number>} How many questions were actually appended.
  */
 async function generateAiTopicLevel(
   poolRef: FirebaseFirestore.DocumentReference,
   levelNumber: number,
   title: string,
-  languageCode: unknown
-): Promise<void> {
+  languageCode: unknown,
+  options: {count?: number; avoidQuestions?: string[]} = {}
+): Promise<number> {
+  const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
+  const existingSnap = await levelRef.collection("questions").get();
+  const existingIds = existingSnap.docs.map((doc) => doc.id);
+
+  const requested = options.count ?? AI_QUESTIONS_PER_LEVEL;
+  const count = Math.min(requested, bankHeadroom(existingIds.length));
+  if (count <= 0) return 0;
+
+  const avoidQuestions = options.avoidQuestions ??
+    existingSnap.docs
+      .map((doc) => String(doc.data().q || ""))
+      .filter((q) => q.length > 0);
+
   const questions = await requestAiQuestionsFromClaude(
-    title, levelNumber, languageCode
+    title, levelNumber, languageCode, {count, avoidQuestions}
   );
 
-  const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
+  const ids = nextQuestionIds(existingIds, questions.length);
   const batch = db.batch();
 
   batch.set(levelRef, {
     levelNumber,
     title: `Level ${levelNumber}`,
-    questionsCount: AI_QUESTIONS_PER_LEVEL,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    questionsCount: existingIds.length + questions.length,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
+    ...(existingIds.length === 0 ?
+      {createdAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
+  }, {merge: true});
 
   questions.forEach((question, index) => {
-    batch.set(levelRef.collection("questions").doc(`q_${index + 1}`), {
+    batch.set(levelRef.collection("questions").doc(ids[index]), {
       q: question.q,
       options: question.options,
       answerIndex: question.answerIndex,
@@ -4909,6 +5069,7 @@ async function generateAiTopicLevel(
   });
 
   await batch.commit();
+  return questions.length;
 }
 
 /**
@@ -5661,11 +5822,13 @@ export const regenerateAiTopicQuestions = onCall({
   const userSnap = await userRef.get();
   const languageCode = userSnap.data()?.languageCode;
 
-  // NOTE: this topic's content may be shared with other users via the
-  // pool — see ensureTopicAdoptedIntoPool. Regenerating it regenerates the
-  // SAME shared levels those other users are playing too, not just this
-  // user's own copy (there is no longer a separate copy once adopted).
-  // Flagged as an explicit product-behavior callout in the pool plan.
+  // This topic's content is shared with every other player who reused it
+  // from the pool, so regeneration *adds* to each level's bank instead of
+  // rewriting it: nobody mid-topic has the ground moved under them, and
+  // the extra questions become replay material for everyone. It also
+  // makes the purchase actually do something for the buyer — overwriting
+  // left anyone who had already opened a level seeing their old slate,
+  // because sessions snapshot their questions.
   const poolId = await ensureTopicAdoptedIntoPool(
     uid, topicRef, topicData, languageCode
   );
@@ -5673,7 +5836,31 @@ export const regenerateAiTopicQuestions = onCall({
 
   const generatedLevels = safeInt(topicData.generatedLevels, 0);
   const title = String(topicData.title || "Custom Topic");
-  const cost = REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * generatedLevels;
+
+  // Only levels with room left are charged for — a topic whose banks are
+  // all at AI_QUESTION_BANK_CAP has nothing left to sell.
+  const levelSizes = await Promise.all(
+    Array.from({length: generatedLevels}, async (_, i) => {
+      const snap = await poolRef.collection("levels")
+        .doc(`level_${i + 1}`).collection("questions").get();
+      return {level: i + 1, size: snap.size};
+    })
+  );
+
+  const expandableLevels = levelSizes
+    .filter(({size}) => bankHeadroom(size) > 0)
+    .map(({level}) => level);
+
+  if (expandableLevels.length === 0) {
+    throw localizedError(
+      languageCode, "failed-precondition",
+      "Este tema ya tiene el máximo de preguntas por nivel.",
+      "This topic already has the maximum number of questions per level."
+    );
+  }
+
+  const cost =
+    REGENERATE_AI_QUESTIONS_COST_PER_LEVEL * expandableLevels.length;
 
   // Charge first (atomically) — generating first and charging after, as
   // this used to, left a window where a concurrent balance change could
@@ -5687,8 +5874,8 @@ export const regenerateAiTopicQuestions = onCall({
     if (freshCoins < cost) {
       throw localizedError(
         languageCode, "failed-precondition",
-        `Necesitas ${cost} monedas para regenerar las preguntas.`,
-        `You need ${cost} coins to regenerate the questions.`
+        `Necesitas ${cost} monedas para ampliar las preguntas.`,
+        `You need ${cost} coins to add more questions.`
       );
     }
 
@@ -5703,8 +5890,13 @@ export const regenerateAiTopicQuestions = onCall({
   });
 
   try {
-    for (let level = 1; level <= generatedLevels; level++) {
-      await generateAiTopicLevel(poolRef, level, title, languageCode);
+    const avoidQuestions = await existingPoolQuestionTexts(poolRef);
+
+    for (const level of expandableLevels) {
+      await generateAiTopicLevel(
+        poolRef, level, title, languageCode,
+        {count: AI_QUESTIONS_PER_LEVEL, avoidQuestions}
+      );
     }
   } catch (error) {
     await userRef.set(
@@ -5842,6 +6034,87 @@ export const expandAiTopic = onCall(async (request) => {
  * `completedLevel + AI_GENERATION_BUFFER_LEVELS`, clamped to
  * `targetLevels`) but calls Claude server-side via `generateAiTopicLevel`.
  */
+/**
+ * Which levels are worth pre-filling after a level is completed: the one
+ * just finished (the likeliest replay) plus everything newly unlocked.
+ * @param {number} completedLevel Level the player just finished.
+ * @param {number} desiredGeneratedLevel Deepest level now unlocked.
+ * @return {number[]} Level numbers to top up.
+ */
+function bankTopUpLevels(
+  completedLevel: number,
+  desiredGeneratedLevel: number
+): number[] {
+  const first = Math.max(1, completedLevel);
+  const levels: number[] = [];
+  for (let level = first; level <= desiredGeneratedLevel; level++) {
+    levels.push(level);
+  }
+  return levels;
+}
+
+/**
+ * Grows the question banks of [levels] so this player has a full unseen
+ * slate waiting for each.
+ *
+ * This is the "generate ahead of the player" half of the accumulating
+ * bank: `ensureSoloLevelSession` deliberately never calls Claude, so all
+ * generation happens here, off the level-start path. A level is topped up
+ * only when this player's unseen count has dropped below a slate and the
+ * bank is still under [AI_QUESTION_BANK_CAP].
+ * @param {object} params Topic, pool and level context.
+ * @return {Promise<void>} Resolves once every eligible level is topped up.
+ */
+async function topUpAiLevelBanks(params: {
+  uid: string;
+  topicId: string;
+  poolRef: FirebaseFirestore.DocumentReference;
+  title: string;
+  languageCode: unknown;
+  levels: number[];
+}): Promise<void> {
+  const {uid, topicId, poolRef, title, languageCode, levels} = params;
+  if (levels.length === 0) return;
+
+  // Gathered once for the whole run: the avoid-list spans the topic, and
+  // re-reading it per level would multiply the cost of a top-up.
+  let avoidQuestions: string[] | null = null;
+
+  for (const levelNumber of levels) {
+    const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
+    const [questionsSnap, seenSnap] = await Promise.all([
+      levelRef.collection("questions").get(),
+      db.collection("users").doc(uid)
+        .collection("ai_topic_seen").doc(`${topicId}_${levelNumber}`).get(),
+    ]);
+
+    if (questionsSnap.empty) continue;
+
+    const seenIds = new Set(
+      ((seenSnap.data()?.questionIds as unknown[]) || []).map(String)
+    );
+    const unseen = questionsSnap.docs
+      .filter((doc) => !seenIds.has(doc.id)).length;
+
+    const shortfall = AI_QUESTIONS_PER_SESSION - unseen;
+    const room = bankHeadroom(questionsSnap.size);
+    const toGenerate = Math.min(shortfall, room);
+
+    if (toGenerate <= 0) continue;
+
+    if (avoidQuestions === null) {
+      avoidQuestions = await existingPoolQuestionTexts(poolRef);
+    }
+
+    const added = await generateAiTopicLevel(
+      poolRef, levelNumber, title, languageCode,
+      {count: toGenerate, avoidQuestions}
+    );
+
+    if (added > 0) avoidQuestions = null; // stale once the bank grew
+  }
+}
+
 export const ensureAiTopicLevelsGenerated = onCall({
   secrets: AI_SECRETS,
 }, async (request) => {
@@ -5950,6 +6223,21 @@ export const ensureAiTopicLevelsGenerated = onCall({
       targetLevels: Math.max(poolTargetLevels, lastSuccessfulPoolLevel),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, {merge: true});
+  }
+
+  // Top up the banks the player is about to replay, so
+  // ensureSoloLevelSession always has an unseen slate ready and never has
+  // to make them wait on a Claude call at level start. Best-effort: a
+  // failure here just means the next replay may reuse a question, which
+  // is a far better outcome than blocking the buffering call the client
+  // already treats as fire-and-forget.
+  try {
+    await topUpAiLevelBanks({
+      uid, topicId, poolRef, title, languageCode,
+      levels: bankTopUpLevels(completedLevel, desiredGeneratedLevel),
+    });
+  } catch (error) {
+    console.error("AI question bank top-up failed", error);
   }
 
   return {generatedLevels: desiredGeneratedLevel};

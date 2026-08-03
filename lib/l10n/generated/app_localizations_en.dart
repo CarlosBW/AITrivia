@@ -2194,7 +2194,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aiTopicsRegenerateMenuItem(int cost) {
-    return 'Regenerate questions — $cost coins';
+    return 'Add more questions — $cost coins';
   }
 
   @override
@@ -2203,15 +2203,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get aiTopicsRegenerateDialogTitle => 'Regenerate questions';
+  String get aiTopicsRegenerateDialogTitle => 'Add more questions';
 
   @override
   String aiTopicsRegenerateDialogBody(String title, int cost, int coins) {
-    return 'This replaces the questions for \"$title\" with new ones.\n\nCost: $cost coins\nYou have: $coins coins';
+    return 'This generates new questions for \"$title\" and adds them to the ones it already has, so replaying each level gives you different questions.\n\nCost: $cost coins\nYou have: $coins coins';
   }
 
   @override
-  String get aiTopicsRegenerateSuccess => 'Questions regenerated';
+  String get aiTopicsRegenerateSuccess => 'Questions added';
 
   @override
   String get aiTopicsExpandDialogTitle => 'Expand topic';

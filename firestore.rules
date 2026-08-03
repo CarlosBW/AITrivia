@@ -294,6 +294,19 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Which AI-topic questions this player has already been served, so
+      // ensureSoloLevelSession can draw an unseen slate on a replay.
+      // Cloud-Function-only on purpose: when a level's bank runs dry the
+      // server tops it up with a real (paid) Claude call, so a client
+      // able to clear this could force generation on repeat and spend
+      // real API money. AI_QUESTION_BANK_CAP bounds that too, but this
+      // closes it outright.
+      match /ai_topic_seen/{topicId} {
+        allow read: if request.auth != null
+          && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       // Same reasoning as /sessions_fixed above, against
       // ai_topics/*/levels/*/questions instead of fixed_pools.
       match /sessions_ai/{sessionId} {

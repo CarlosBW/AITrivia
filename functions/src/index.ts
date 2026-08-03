@@ -4970,8 +4970,10 @@ async function requestAiQuestionsFromClaude(
   }
 
   console.error("AI topic question generation failed", lastError);
-  throw new HttpsError(
-    "internal", "No se pudo generar el tema con IA. Intenta de nuevo."
+  throw localizedError(
+    languageCode, "internal",
+    "No se pudo generar el tema con IA. Intenta de nuevo.",
+    "The topic couldn't be generated with AI. Please try again."
   );
 }
 
@@ -5591,8 +5593,10 @@ export const suggestAiTopicTitles = onCall({
   }
 
   console.error("AI topic title suggestion failed", lastError);
-  throw new HttpsError(
-    "internal", "No se pudieron sugerir temas. Intenta de nuevo."
+  throw localizedError(
+    languageCode, "internal",
+    "No se pudieron sugerir temas. Intenta de nuevo.",
+    "Suggestions couldn't be loaded. Please try again."
   );
 });
 

@@ -91,7 +91,7 @@ export function jaccardWordOverlap(a: string, b: string): number {
 // ("roma"/"rosa" scores 0.75, "cine"/"vino" scores 0.5), which would offer
 // the player an unrelated topic to reuse. Short titles can still match
 // through exact equality (after accent stripping) or word overlap.
-export const AI_TOPIC_MIN_FUZZY_LENGTH = 8;
+const AI_TOPIC_MIN_FUZZY_LENGTH = 8;
 
 // Score a candidate must reach to be offered as a reusable match. Retune
 // freely once there's real usage data to look at.

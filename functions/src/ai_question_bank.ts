@@ -101,8 +101,14 @@ export function bankHeadroom(currentSize: number): number {
 }
 
 /**
- * Deterministic 32-bit hash, used to seed a shuffle from a string.
- * Mirrors index.ts's `fnv1a32`.
+ * Deterministic 32-bit hash (FNV-1a), used to seed a shuffle from a
+ * string. Used only for reproducible question selection, never for any
+ * security property. Mirrors level_play_screen.dart's `_fnv1a32`.
+ *
+ * This is the single implementation for the whole backend — index.ts
+ * imports it for fixed-pool shuffling too. It used to keep its own
+ * byte-identical copy, which meant editing either one silently changed
+ * which questions players got from the other.
  * @param {string} input String to hash.
  * @return {number} 32-bit unsigned hash.
  */
@@ -117,8 +123,10 @@ export function fnv1a32(input: string): number {
 }
 
 /**
- * Shuffled `0..length-1`, deterministic for a given seed. Mirrors
- * index.ts's `seededShuffleIndices`.
+ * Shuffled `0..length-1`, deterministic for a given seed (mulberry32 PRNG
+ * + Fisher-Yates), so the same seed always picks the same subset in the
+ * same order. Shared with index.ts's fixed-pool selection — see
+ * [fnv1a32] on why there is only one copy.
  * @param {number} length How many indices to shuffle.
  * @param {number} seed Shuffle seed.
  * @return {number[]} Shuffled indices.

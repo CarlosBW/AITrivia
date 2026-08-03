@@ -7,6 +7,8 @@ import {
   bankHeadroom,
   capAvoidList,
   compareQuestionIds,
+  fnv1a32,
+  seededShuffleIndices,
   nextQuestionId,
   nextQuestionIds,
   questionIdIndex,
@@ -199,6 +201,53 @@ describe("selectSessionQuestions", () => {
       ["q_10", "q_2", "q_1"], [], seed
     );
     assert.deepEqual(draw.questionIds, ["q_1", "q_2", "q_10"]);
+  });
+});
+
+// These two decide which questions a player is served, for AI topics and
+// fixed pools alike. index.ts used to carry its own byte-identical copies;
+// these tests pin the behaviour now that there is only one.
+describe("fnv1a32", () => {
+  test("is deterministic for the same input", () => {
+    assert.equal(fnv1a32("user|topic|3"), fnv1a32("user|topic|3"));
+  });
+
+  test("separates inputs that differ only slightly", () => {
+    assert.notEqual(fnv1a32("user|topic|3"), fnv1a32("user|topic|4"));
+  });
+
+  test("returns an unsigned 32-bit integer", () => {
+    for (const input of ["", "a", "uid|pool|10|25"]) {
+      const hash = fnv1a32(input);
+      assert.ok(Number.isInteger(hash));
+      assert.ok(hash >= 0 && hash <= 0xFFFFFFFF);
+    }
+  });
+});
+
+describe("seededShuffleIndices", () => {
+  test("returns every index exactly once", () => {
+    const shuffled = seededShuffleIndices(10, fnv1a32("seed"));
+    assert.deepEqual([...shuffled].sort((a, b) => a - b), [
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ]);
+  });
+
+  test("is deterministic for the same seed", () => {
+    assert.deepEqual(
+      seededShuffleIndices(20, 12345), seededShuffleIndices(20, 12345)
+    );
+  });
+
+  test("gives a different order for a different seed", () => {
+    assert.notDeepEqual(
+      seededShuffleIndices(20, 12345), seededShuffleIndices(20, 54321)
+    );
+  });
+
+  test("handles empty and single-element inputs", () => {
+    assert.deepEqual(seededShuffleIndices(0, 1), []);
+    assert.deepEqual(seededShuffleIndices(1, 1), [0]);
   });
 });
 

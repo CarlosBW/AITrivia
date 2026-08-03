@@ -23,7 +23,9 @@ import {
   AI_QUESTIONS_PER_SESSION,
   bankHeadroom,
   capAvoidList,
+  fnv1a32,
   nextQuestionIds,
+  seededShuffleIndices,
   selectSessionQuestions,
 } from "./ai_question_bank";
 
@@ -3897,46 +3899,6 @@ function difficultyForLevel(levelNumber: number): number {
   if (levelNumber <= 3) return 1;
   if (levelNumber <= 7) return 2;
   return 3;
-}
-
-/**
- * Mirrors level_play_screen.dart's `_fnv1a32` — used only to seed a
- * deterministic pool shuffle, not for any security property.
- * @param {string} input The string to hash.
- * @return {number} A 32-bit unsigned hash.
- */
-function fnv1a32(input: string): number {
-  const fnvPrime = 16777619;
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, fnvPrime) >>> 0;
-  }
-  return hash >>> 0;
-}
-
-/**
- * Deterministic seeded shuffle (mulberry32 PRNG + Fisher-Yates) so the same
- * (uid, categoryId, levelNumber) always picks the same pool subset.
- * @param {number} length Number of pool questions to shuffle.
- * @param {number} seed Seed from {@link fnv1a32}.
- * @return {number[]} `length` pool indices in shuffled order.
- */
-function seededShuffleIndices(length: number, seed: number): number[] {
-  let a = seed;
-  const rand = () => {
-    a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-
-  const indices = Array.from({length}, (_, i) => i);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  return indices;
 }
 
 /**

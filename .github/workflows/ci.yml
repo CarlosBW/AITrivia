@@ -18,7 +18,23 @@ jobs:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      # Retried because this is the one step that depends on reaching
+      # pub.dev, and hosted runners hit transient socket errors there
+      # ("Got socket error trying to find package ... at https://pub.dev")
+      # that fail the whole run for reasons unrelated to the commit. pub's
+      # own internal retries give up after ~3 minutes; a fresh attempt
+      # after a short wait clears it.
+      - name: flutter pub get
+        run: |
+          for attempt in 1 2 3; do
+            flutter pub get && exit 0
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::flutter pub get failed (attempt $attempt/3), retrying in 15s"
+              sleep 15
+            fi
+          done
+          echo "::error::flutter pub get failed after 3 attempts"
+          exit 1
 
       - run: flutter analyze
 

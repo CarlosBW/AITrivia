@@ -1218,7 +1218,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     await FirebaseFunctions.instance
         .httpsCallable(
           'ensureSoloLevelSession',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          // 15s was fine while this only ever read existing questions, but
+          // it now generates the level when its bank was never buffered,
+          // which takes a real Claude call. The function is allowed longer
+          // than this on purpose: if the wait here runs out, the server
+          // still finishes and persists the questions, so the Retry button
+          // resolves instantly instead of starting over.
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
         )
         .call({
       'isAiTopic': widget.isAiTopic,

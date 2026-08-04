@@ -238,8 +238,6 @@ class AiTopicService {
 
     final generatedLevels = ((data['generatedLevels'] ?? 0) as num).toInt();
 
-    final questionsCount = ((data['questionsCount'] ?? 0) as num).toInt();
-
     if (targetLevels < EconomyService.aiLevelsPerTopic ||
         targetLevels % EconomyService.aiLevelsPerTopic != 0) {
       return false;
@@ -249,14 +247,15 @@ class AiTopicService {
       return false;
     }
 
-    if (generatedLevels > targetLevels) {
-      return false;
-    }
-
-    final expectedQuestions =
-        generatedLevels * EconomyService.aiQuestionsPerLevel;
-
-    return questionsCount >= expectedQuestions;
+    // `questionsCount` is deliberately not checked here any more. It used
+    // to stand in for "the content really exists", but question content
+    // now lives in the shared pool and `ensureSoloLevelSession` generates
+    // any level whose bank is empty, so an out-of-date count says nothing
+    // about whether the topic is playable. Worse, marking a topic invalid
+    // is a dead end — the list refuses to open it, so nothing can ever
+    // bring the count back in line, and a single stale write bricked the
+    // topic permanently.
+    return generatedLevels <= targetLevels;
   }
 
   String normalizeTopicTitle(String title) {
@@ -275,7 +274,10 @@ class AiTopicService {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
         'createAiTopic',
-        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+        // Creating a topic generates two levels of real questions, roughly
+        // 30s each. At 30s the caller gave up mid-generation and surfaced
+        // an error for a topic that then finished creating anyway.
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 150)),
       )
           .call({
         'title': title,
@@ -448,7 +450,11 @@ class AiTopicService {
       await FirebaseFunctions.instance
           .httpsCallable(
         'regenerateAiTopicQuestions',
-        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+        // Generates a batch per level, so the wait scales with how deep
+        // the topic is. The function is allowed longer still: if this runs
+        // out, the server keeps going and the questions the player paid
+        // for land anyway.
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 300)),
       )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {

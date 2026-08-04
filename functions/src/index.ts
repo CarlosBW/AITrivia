@@ -4015,6 +4015,10 @@ function difficultyForLevel(levelNumber: number): number {
 // has to be generated here — see the empty-bank branch below.
 export const ensureSoloLevelSession = onCall({
   secrets: AI_SECRETS,
+  // Deliberately longer than the client waits: on the rare path where this
+  // has to generate a level, finishing and persisting the questions after
+  // the caller has given up still turns their retry into an instant hit.
+  timeoutSeconds: 120,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -4144,23 +4148,37 @@ export const ensureSoloLevelSession = onCall({
         );
       }
 
-      const refreshedSnap = await levelRef.get();
+      const [refreshedSnap, poolSnap] = await Promise.all([
+        levelRef.get(),
+        poolRef.get(),
+      ]);
+
       allIds = ((refreshedSnap.data()?.questionIds as unknown[]) || [])
         .map((id) => String(id));
 
       // Keep both sides' depth honest now that the level really exists.
+      const newUserLevels = Math.max(
+        safeInt(topicData.generatedLevels, 0), levelNumber
+      );
+
+      // `questionsCount` has to move together with `generatedLevels`. The
+      // topics list reads a count that trails the level depth as a broken
+      // topic and refuses to open it, so raising one without the other
+      // locked the player out of a topic whose content was perfectly fine.
+      const bankedQuestions = await countBankedQuestions(
+        poolRef, newUserLevels
+      );
+
       await Promise.all([
         poolRef.set({
           generatedLevels: Math.max(
-            safeInt((await poolRef.get()).data()?.generatedLevels, 0),
-            levelNumber
+            safeInt(poolSnap.data()?.generatedLevels, 0), levelNumber
           ),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, {merge: true}),
         topicRef.set({
-          generatedLevels: Math.max(
-            safeInt(topicData.generatedLevels, 0), levelNumber
-          ),
+          generatedLevels: newUserLevels,
+          questionsCount: bankedQuestions,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, {merge: true}),
       ]);
@@ -5965,6 +5983,9 @@ export const suggestAiTopicTitles = onCall({
 
 export const createAiTopic = onCall({
   secrets: AI_SECRETS,
+  // Generates AI_INITIAL_GENERATED_LEVELS levels at roughly 30s each, so
+  // the 60s default sat exactly on the edge of the work it has to do.
+  timeoutSeconds: 300,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -6235,6 +6256,11 @@ export const createAiTopic = onCall({
 
 export const regenerateAiTopicQuestions = onCall({
   secrets: AI_SECRETS,
+  // The heaviest generation path: one batch per expandable level, up to
+  // the topic's full depth, at roughly 30s each. At the 60s default it
+  // died after the first couple of levels — the partial refund kept the
+  // player's coins honest, but the purchase they asked for never landed.
+  timeoutSeconds: 540,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -6666,6 +6692,12 @@ async function topUpAiLevelBanks(params: {
 
 export const ensureAiTopicLevelsGenerated = onCall({
   secrets: AI_SECRETS,
+  // A real generation measured ~30s per level and this buffers up to
+  // AI_GENERATION_BUFFER_LEVELS of them, so the platform's 60s default
+  // killed it right as it was finishing — which is why levels kept
+  // arriving empty and players hit the slow on-demand path instead.
+  // Nothing waits on this call, so a generous ceiling costs nothing.
+  timeoutSeconds: 300,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {

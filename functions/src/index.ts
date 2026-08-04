@@ -3257,6 +3257,82 @@ async function loadRandomDailyQuestions(
 }
 
 /**
+ * Picks a fixed-category solo level's questions, preferring the cached
+ * index over reading the whole difficulty pool.
+ *
+ * Opening a fixed level used to read every question in the pool just to
+ * keep ten of them — on the single most common action in the game. The
+ * index built for the Daily Challenge already records exactly where each
+ * fixed question lives, so the same cached document answers "which ids are
+ * in this category at this difficulty", and only the ten actually served
+ * get read.
+ *
+ * The seeded pick still runs over ids in the pool's own document order, so
+ * a given player and level draw the same questions as before.
+ * @param {string} uid Player, part of the deterministic seed.
+ * @param {string} categoryId Fixed category being played.
+ * @param {number} levelNumber Level being opened.
+ * @return {Promise<object>} Chosen questions, difficulty used, and seed.
+ */
+async function loadFixedLevelQuestions(
+  uid: string,
+  categoryId: string,
+  levelNumber: number
+): Promise<{
+  questions: Record<string, unknown>[];
+  difficulty: number;
+  seed: number;
+}> {
+  const preferred = difficultyForLevel(levelNumber);
+  const difficulties = Array.from(new Set([preferred, 1, 2, 3]));
+  const seed = fnv1a32(`${uid}|${categoryId}|${levelNumber}`);
+
+  const questionsRef = (difficulty: number) =>
+    db.collection("fixed_pools").doc(categoryId)
+      .collection(`difficulty_${difficulty}`).doc("pool")
+      .collection("questions");
+
+  // A category that isn't in the index — inactive, newly seeded, or past
+  // the index's entry cap — falls through to the old full read below
+  // rather than losing its levels.
+  const index = await loadDailyQuestionIndex().catch(() => []);
+
+  for (const difficulty of difficulties) {
+    const ids = index
+      .filter((entry) => entry.c === categoryId && entry.d === difficulty)
+      .map((entry) => entry.q);
+
+    if (ids.length === 0) continue;
+
+    const order = seededShuffleIndices(ids.length, seed);
+    const picked = order.slice(0, Math.min(10, ids.length))
+      .map((i) => ids[i]);
+
+    const docs = await db.getAll(
+      ...picked.map((id) => questionsRef(difficulty).doc(id))
+    );
+    const questions = docs
+      .filter((doc) => doc.exists)
+      .map((doc) => doc.data() as Record<string, unknown>);
+
+    if (questions.length > 0) return {questions, difficulty, seed};
+  }
+
+  for (const difficulty of difficulties) {
+    const snap = await questionsRef(difficulty).get();
+    if (snap.empty) continue;
+
+    const order = seededShuffleIndices(snap.docs.length, seed);
+    const questions = order.slice(0, Math.min(10, snap.docs.length))
+      .map((i) => snap.docs[i].data());
+
+    return {questions, difficulty, seed};
+  }
+
+  return {questions: [], difficulty: 0, seed};
+}
+
+/**
  * Server-authoritative replacement for daily_challenge_service.dart's
  * `createTodaySession` — a client used to read the real fixed-pool
  * question data and write its own copy straight into
@@ -4273,34 +4349,14 @@ export const ensureSoloLevelSession = onCall({
     return {created: true};
   }
 
-  const preferredDifficulty = difficultyForLevel(levelNumber);
-  const difficulties = Array.from(new Set([preferredDifficulty, 1, 2, 3]));
+  const {questions: chosen, difficulty: usedDifficulty, seed} =
+    await loadFixedLevelQuestions(uid, categoryId, levelNumber);
 
-  let poolDocs: admin.firestore.QueryDocumentSnapshot[] = [];
-  let usedDifficulty = 0;
-
-  for (const diff of difficulties) {
-    const snap = await db.collection("fixed_pools").doc(categoryId)
-      .collection(`difficulty_${diff}`).doc("pool")
-      .collection("questions").get();
-
-    if (!snap.empty) {
-      poolDocs = snap.docs;
-      usedDifficulty = diff;
-      break;
-    }
-  }
-
-  if (poolDocs.length === 0) {
+  if (chosen.length === 0) {
     throw new HttpsError(
       "not-found", `No questions available for ${categoryId}.`
     );
   }
-
-  const seed = fnv1a32(`${uid}|${categoryId}|${levelNumber}`);
-  const order = seededShuffleIndices(poolDocs.length, seed);
-  const take = Math.min(10, poolDocs.length);
-  const chosen = order.slice(0, take).map((i) => poolDocs[i].data());
 
   await db.runTransaction(async (tx) => {
     const sesSnap = await tx.get(sessionRef);
@@ -4310,7 +4366,7 @@ export const ensureSoloLevelSession = onCall({
       categoryId,
       levelNumber,
       difficulty: usedDifficulty,
-      total: take,
+      total: chosen.length,
       seed,
       questions: chosen,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -6774,22 +6830,33 @@ async function topUpAiLevelBanks(params: {
 
   for (const levelNumber of levels) {
     const levelRef = poolRef.collection("levels").doc(`level_${levelNumber}`);
-    const [questionsSnap, seenSnap] = await Promise.all([
-      levelRef.collection("questions").get(),
+    const [levelSnap, seenSnap] = await db.getAll(
+      levelRef,
       db.collection("users").doc(uid)
-        .collection("ai_topic_seen").doc(`${topicId}_${levelNumber}`).get(),
-    ]);
+        .collection("ai_topic_seen").doc(`${topicId}_${levelNumber}`)
+    );
 
-    if (questionsSnap.empty) continue;
+    // Deciding whether a level needs topping up only needs its ids, and the
+    // level doc already carries them — so measuring a bank costs one read
+    // instead of one per banked question, on a loop that runs for every
+    // level the player is about to replay. Levels written before
+    // `questionIds` existed fall back to listing the collection once.
+    let bankedIds = ((levelSnap.data()?.questionIds as unknown[]) || [])
+      .map(String);
+    if (bankedIds.length === 0) {
+      const questionsSnap = await levelRef.collection("questions").get();
+      bankedIds = questionsSnap.docs.map((doc) => doc.id);
+    }
+
+    if (bankedIds.length === 0) continue;
 
     const seenIds = new Set(
       ((seenSnap.data()?.questionIds as unknown[]) || []).map(String)
     );
-    const unseen = questionsSnap.docs
-      .filter((doc) => !seenIds.has(doc.id)).length;
+    const unseen = bankedIds.filter((id) => !seenIds.has(id)).length;
 
     const shortfall = AI_QUESTIONS_PER_SESSION - unseen;
-    const room = bankHeadroom(questionsSnap.size);
+    const room = bankHeadroom(bankedIds.length);
     const toGenerate = Math.min(shortfall, room);
 
     if (toGenerate <= 0) continue;

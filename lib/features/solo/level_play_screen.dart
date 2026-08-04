@@ -155,11 +155,17 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
-  Future<void> _syncLivesUiFromFirestore() async {
+  /// Repaints the life bar. Pass [knownState] when a call that just spent
+  /// life already returned the server's post-action state — re-fetching it
+  /// would be a second callable and a second Firestore transaction for an
+  /// answer already in hand.
+  Future<void> _syncLivesUiFromFirestore({
+    Map<String, dynamic>? knownState,
+  }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final state = await LifeService.instance.refreshLives(uid);
+    final state = knownState ?? await LifeService.instance.refreshLives(uid);
 
     if (!mounted) return;
 
@@ -173,11 +179,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
-  Future<void> _refreshLivesAndStopIfEmpty() async {
+  /// As [_syncLivesUiFromFirestore], but also ends the level when the bar
+  /// hits zero. [knownState] serves the same purpose here.
+  Future<void> _refreshLivesAndStopIfEmpty({
+    Map<String, dynamic>? knownState,
+  }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final state = await LifeService.instance.refreshLives(uid);
+    final state = knownState ?? await LifeService.instance.refreshLives(uid);
 
     if (!mounted) return;
 
@@ -338,9 +348,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           final uid = FirebaseAuth.instance.currentUser!.uid;
 
           Future.microtask(() async {
-            final lifeLost =
-                await LifeService.instance.tryConsumeWrongAnswer(uid);
-            await _refreshLivesAndStopIfEmpty();
+            final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
+            final lifeLost = life.applied;
+            await _refreshLivesAndStopIfEmpty(knownState: life.state);
 
             if (!mounted) return;
 
@@ -433,8 +443,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       SfxService.instance.playWrong();
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final lifeLost = await LifeService.instance.tryConsumeWrongAnswer(uid);
-      await _refreshLivesAndStopIfEmpty();
+      final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
+      final lifeLost = life.applied;
+      await _refreshLivesAndStopIfEmpty(knownState: life.state);
 
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -472,11 +483,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     try {
       await LifeService.instance.ensureUserLifeDoc(uid);
-      final ok = await LifeService.instance.tryConsumeLevelEntry(uid);
+      final entry = await LifeService.instance.tryConsumeLevelEntry(uid);
 
-      await _syncLivesUiFromFirestore();
+      await _syncLivesUiFromFirestore(knownState: entry.state);
 
-      if (!ok) {
+      if (!entry.applied) {
         _lifeGateError = l10n.levelPlayNeedFullLife;
       }
 

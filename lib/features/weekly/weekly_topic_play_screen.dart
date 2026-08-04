@@ -57,15 +57,17 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
   Future<void> _init() async {
     await LifeService.instance.ensureUserLifeDoc(_uid);
-    final consumed = await LifeService.instance.tryConsumeLevelEntry(_uid);
+    final entry = await LifeService.instance.tryConsumeLevelEntry(_uid);
 
-    if (!consumed) {
+    if (!entry.applied) {
       if (!mounted) return;
       Navigator.pop(context);
       return;
     }
 
-    final lifeState = await LifeService.instance.refreshLives(_uid);
+    // The consume call already reported the life state it left behind, so
+    // there's nothing left for a refreshLives round trip to find out.
+    final lifeState = entry.state;
 
     try {
       final questions = await WeeklyTopicService.instance.loadRandomRound(
@@ -136,16 +138,15 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     });
 
     if (!isCorrect) {
-      final lifeLost = await LifeService.instance.tryConsumeWrongAnswer(_uid);
-      final state = await LifeService.instance.refreshLives(_uid);
+      final life = await LifeService.instance.tryConsumeWrongAnswer(_uid);
 
       if (!mounted) return;
 
-      final newLifeUnits = (state['lifeUnits'] ?? 0) as int;
+      final newLifeUnits = (life.state['lifeUnits'] ?? 0) as int;
 
       setState(() {
         _lifeUnits = newLifeUnits;
-        if (lifeLost && newLifeUnits <= 0) _endedByNoLives = true;
+        if (life.applied && newLifeUnits <= 0) _endedByNoLives = true;
       });
     }
 

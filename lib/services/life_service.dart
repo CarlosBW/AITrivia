@@ -1,6 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+/// What a life-spending call did, plus the life state the server was left
+/// holding.
+///
+/// The two are bundled because `consumeLevelEntryLife` /
+/// `consumeWrongAnswerLife` already return the post-action state alongside
+/// their result. Callers used to throw that away and immediately call
+/// `refreshLives`, paying for a second callable and a second Firestore
+/// transaction to learn what the first one had just told them — on every
+/// wrong answer, which is the most frequent action in the game.
+class LifeActionResult {
+  const LifeActionResult({required this.applied, required this.state});
+
+  /// Whether the action actually took effect: for a level entry, that the
+  /// player had enough life to get in; for a wrong answer, that half a life
+  /// was really deducted (new players inside the grace window lose none).
+  final bool applied;
+
+  /// Life state as of immediately after the call, in the same shape
+  /// [LifeService.refreshLives] returns.
+  final Map<String, dynamic> state;
+}
+
 class LifeService {
   LifeService._();
   static final instance = LifeService._();
@@ -150,7 +172,7 @@ class LifeService {
     return lifeUnits >= levelEntryCostUnits;
   }
 
-  Future<bool> tryConsumeLevelEntry(String uid) async {
+  Future<LifeActionResult> tryConsumeLevelEntry(String uid) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
           'consumeLevelEntryLife',
@@ -159,10 +181,13 @@ class LifeService {
         .call();
 
     final data = Map<String, dynamic>.from(result.data as Map);
-    return data['ok'] == true;
+    return LifeActionResult(
+      applied: data['ok'] == true,
+      state: _stateFromCallableResponse(data),
+    );
   }
 
-  Future<bool> tryConsumeWrongAnswer(String uid) async {
+  Future<LifeActionResult> tryConsumeWrongAnswer(String uid) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
           'consumeWrongAnswerLife',
@@ -171,7 +196,10 @@ class LifeService {
         .call();
 
     final data = Map<String, dynamic>.from(result.data as Map);
-    return data['lifeLost'] == true;
+    return LifeActionResult(
+      applied: data['lifeLost'] == true,
+      state: _stateFromCallableResponse(data),
+    );
   }
 
   /// Refunds a level-entry charge (see [tryConsumeLevelEntry]) when session

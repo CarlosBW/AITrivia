@@ -23,6 +23,7 @@ import {
   AI_QUESTIONS_PER_SESSION,
   bankHeadroom,
   capAvoidList,
+  compareQuestionIds,
   fnv1a32,
   nextQuestionIds,
   seededShuffleIndices,
@@ -3096,9 +3097,33 @@ async function recentlyUsedDailyQuestionIds(
  * avoid repeating when enough fresh ones are available.
  * @return {Promise<Record<string, unknown>[]>} The chosen questions.
  */
-async function loadRandomDailyQuestions(
-  excludeQuestionIds: Set<string>
-): Promise<Record<string, unknown>[]> {
+interface DailyPoolEntry {
+  /** fixed_pools category id. */
+  c: string;
+  /** Difficulty tier (1-3). */
+  d: number;
+  /** Question document id. */
+  q: string;
+}
+
+// The fixed question bank is admin-seeded and barely changes, but every
+// player opening the Daily Challenge used to re-read all of it —
+// categories x 3 difficulties x pool size documents — just to pick
+// DAILY_QUESTION_LIMIT of them. Caching an index of *where* each question
+// lives turns that into one read plus only the questions actually served.
+// The TTL is what lets newly seeded questions appear without any manual
+// cache busting.
+const DAILY_POOL_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
+// Keeps the cache document well inside Firestore's 1 MiB limit at roughly
+// 60 bytes per entry.
+const DAILY_POOL_INDEX_MAX_ENTRIES = 10000;
+
+/**
+ * Scans every active category's pools and records where each question
+ * lives. Expensive, so it runs once per TTL rather than once per player.
+ * @return {Promise<DailyPoolEntry[]>} Index of every poolable question.
+ */
+async function buildDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
   const categoriesSnap = await db.collection("fixed_categories")
     .where("isActive", "==", true).get();
 
@@ -3115,7 +3140,7 @@ async function loadRandomDailyQuestions(
     );
   }
 
-  const all: Record<string, unknown>[] = [];
+  const entries: DailyPoolEntry[] = [];
 
   for (const categoryId of categoryIds) {
     for (const difficulty of [1, 2, 3]) {
@@ -3124,45 +3149,111 @@ async function loadRandomDailyQuestions(
         .collection("questions").get();
 
       for (const doc of snap.docs) {
-        all.push({
-          ...doc.data(),
-          sourceCategoryId: categoryId,
-          sourceDifficulty: difficulty,
-          sourceQuestionId: doc.id,
-        });
+        if (entries.length >= DAILY_POOL_INDEX_MAX_ENTRIES) return entries;
+        entries.push({c: categoryId, d: difficulty, q: doc.id});
       }
     }
   }
 
-  if (all.length === 0) {
+  return entries;
+}
+
+/**
+ * The cached question index, rebuilt when it's missing or past its TTL.
+ * @return {Promise<DailyPoolEntry[]>} Index of every poolable question.
+ */
+async function loadDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
+  const ref = db.collection("caches").doc("daily_question_index");
+  const snap = await ref.get();
+  const data = snap.data();
+
+  const builtAt = data?.builtAt as admin.firestore.Timestamp | undefined;
+  const cached = (data?.entries as DailyPoolEntry[] | undefined) || [];
+  const isFresh = builtAt !== undefined &&
+    Date.now() - builtAt.toMillis() < DAILY_POOL_INDEX_TTL_MS;
+
+  if (cached.length > 0 && isFresh) return cached;
+
+  const entries = await buildDailyQuestionIndex();
+
+  if (entries.length > 0) {
+    // Two players can race into a rebuild and both write. The write is
+    // idempotent, so the loser costs one duplicate scan, never a wrong
+    // result — not worth a transaction to prevent.
+    await ref.set({
+      entries,
+      count: entries.length,
+      builtAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  return entries;
+}
+
+/**
+ * Picks this player's daily question set from the cached index, then reads
+ * only the questions being served.
+ * @param {Set<string>} excludeQuestionIds Recently served question ids.
+ * @return {Promise<Record<string, unknown>[]>} The chosen questions.
+ */
+async function loadRandomDailyQuestions(
+  excludeQuestionIds: Set<string>
+): Promise<Record<string, unknown>[]> {
+  const index = await loadDailyQuestionIndex();
+
+  if (index.length === 0) {
     throw new HttpsError("failed-precondition", "No questions in pools.");
   }
 
-  for (let i = all.length - 1; i > 0; i--) {
+  const shuffled = [...index];
+  for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [all[i], all[j]] = [all[j], all[i]];
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  const limit = Math.min(DAILY_QUESTION_LIMIT, all.length);
-  if (excludeQuestionIds.size === 0) {
-    return all.slice(0, limit);
-  }
+  const limit = Math.min(DAILY_QUESTION_LIMIT, shuffled.length);
 
-  const fresh: Record<string, unknown>[] = [];
-  const recentlyUsed: Record<string, unknown>[] = [];
-  for (const q of all) {
-    if (excludeQuestionIds.has(String(q.sourceQuestionId))) {
-      recentlyUsed.push(q);
-    } else {
-      fresh.push(q);
-    }
+  const fresh: DailyPoolEntry[] = [];
+  const recentlyUsed: DailyPoolEntry[] = [];
+  for (const entry of shuffled) {
+    if (excludeQuestionIds.has(entry.q)) recentlyUsed.push(entry);
+    else fresh.push(entry);
   }
 
   const selected = fresh.slice(0, limit);
   if (selected.length < limit) {
     selected.push(...recentlyUsed.slice(0, limit - selected.length));
   }
-  return selected;
+
+  if (selected.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions in pools.");
+  }
+
+  const docs = await db.getAll(...selected.map((entry) =>
+    db.collection("fixed_pools").doc(entry.c)
+      .collection(`difficulty_${entry.d}`).doc("pool")
+      .collection("questions").doc(entry.q)
+  ));
+
+  const questions: Record<string, unknown>[] = [];
+  docs.forEach((doc, i) => {
+    // A question deleted since the index was built is simply skipped; the
+    // next rebuild drops it for good.
+    if (!doc.exists) return;
+    const entry = selected[i];
+    questions.push({
+      ...doc.data(),
+      sourceCategoryId: entry.c,
+      sourceDifficulty: entry.d,
+      sourceQuestionId: entry.q,
+    });
+  });
+
+  if (questions.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions in pools.");
+  }
+
+  return questions;
 }
 
 /**
@@ -3997,19 +4088,39 @@ export const ensureSoloLevelSession = onCall(async (request) => {
     const reportedCounts: Record<string, unknown> =
       levelSnap.data()?.reportedQuestionCounts || {};
 
-    const questionsSnap = await levelRef.collection("questions").get();
-    if (questionsSnap.empty) {
+    // The level doc carries its own question ids, so picking a slate costs
+    // nothing: only the questions actually served get read. Levels written
+    // before that field existed fall back to listing the collection, and
+    // are backfilled below so they pay for it once.
+    const storedIds = (levelSnap.data()?.questionIds as unknown[] | undefined)
+      ?.map((id) => String(id));
+
+    let allIds: string[];
+    if (storedIds && storedIds.length > 0) {
+      allIds = storedIds;
+    } else {
+      const questionsSnap = await levelRef.collection("questions").get();
+      allIds = questionsSnap.docs.map((doc) => doc.id);
+
+      if (allIds.length > 0) {
+        await levelRef.set(
+          {questionIds: [...allIds].sort(compareQuestionIds)},
+          {merge: true}
+        );
+      }
+    }
+
+    if (allIds.length === 0) {
       throw new HttpsError(
         "not-found", "No questions found for this level."
       );
     }
 
-    const usableDocs = questionsSnap.docs.filter((doc) => {
-      const count = safeInt(reportedCounts[doc.id], 0);
+    const usableIds = allIds.filter((id) => {
+      const count = safeInt(reportedCounts[id], 0);
       return count < AI_QUESTION_REPORT_THRESHOLD;
     });
-    const docsToUse = usableDocs.length > 0 ? usableDocs : questionsSnap.docs;
-    const byId = new Map(docsToUse.map((doc) => [doc.id, doc]));
+    const idsToUse = usableIds.length > 0 ? usableIds : allIds;
 
     // A level's bank accumulates past the ten questions it started with,
     // so a replay serves questions this player hasn't been asked yet
@@ -4026,7 +4137,7 @@ export const ensureSoloLevelSession = onCall(async (request) => {
       `${uid}|${poolId}|${levelNumber}|${seenIds.length}`
     );
     const draw = selectSessionQuestions(
-      [...byId.keys()], seenIds, seed, AI_QUESTIONS_PER_SESSION
+      idsToUse, seenIds, seed, AI_QUESTIONS_PER_SESSION
     );
 
     if (draw.questionIds.length === 0) {
@@ -4035,10 +4146,24 @@ export const ensureSoloLevelSession = onCall(async (request) => {
       );
     }
 
-    const chosen = draw.questionIds.map((id) => ({
-      ...byId.get(id)?.data(),
-      questionId: id,
-    }));
+    const questionDocs = await db.getAll(...draw.questionIds.map((id) =>
+      levelRef.collection("questions").doc(id)
+    ));
+
+    const chosen: Record<string, unknown>[] = [];
+    draw.questionIds.forEach((id, i) => {
+      // A stale id (question deleted since the level was indexed) is
+      // skipped rather than served as an empty question.
+      const doc = questionDocs[i];
+      if (!doc.exists) return;
+      chosen.push({...doc.data(), questionId: id});
+    });
+
+    if (chosen.length === 0) {
+      throw new HttpsError(
+        "not-found", "No questions found for this level."
+      );
+    }
 
     await db.runTransaction(async (tx) => {
       const sesSnap = await tx.get(sessionRef);
@@ -4953,23 +5078,42 @@ async function requestAiQuestionsFromClaude(
  * query would span unrelated content and need its own index. Callers
  * should do this once per generation run, not once per level.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
- * @return {Promise<string[]>} Existing question texts.
+ * @param {number} maxQuestions Stop reading once this many texts are held.
+ * @return {Promise<string[]>} Existing question texts, oldest first.
  */
 async function existingPoolQuestionTexts(
-  poolRef: FirebaseFirestore.DocumentReference
+  poolRef: FirebaseFirestore.DocumentReference,
+  maxQuestions: number
 ): Promise<string[]> {
   const levelsSnap = await poolRef.collection("levels").get();
 
-  const perLevel = await Promise.all(
-    levelsSnap.docs.map(async (levelDoc) => {
-      const questionsSnap = await levelDoc.ref.collection("questions").get();
-      return questionsSnap.docs
-        .map((doc) => String(doc.data().q || ""))
-        .filter((q) => q.length > 0);
-    })
+  // Walked newest level first and stopped as soon as the budget is met.
+  // The prompt only ever keeps `maxQuestions` of these (see capAvoidList
+  // and AI_AVOID_LIST_MAX_QUESTIONS), so reading the whole pool — which
+  // can hold hundreds of questions at AI_QUESTION_BANK_CAP — spent reads
+  // on text that was discarded before it was ever sent.
+  const levelDocs = [...levelsSnap.docs].sort((a, b) =>
+    safeInt(b.data().levelNumber, 0) - safeInt(a.data().levelNumber, 0)
   );
 
-  return perLevel.flat();
+  const perLevel: string[][] = [];
+  let collected = 0;
+
+  for (const levelDoc of levelDocs) {
+    if (collected >= maxQuestions) break;
+
+    const questionsSnap = await levelDoc.ref.collection("questions").get();
+    const texts = questionsSnap.docs
+      .map((doc) => String(doc.data().q || ""))
+      .filter((q) => q.length > 0);
+
+    perLevel.push(texts);
+    collected += texts.length;
+  }
+
+  // Back to oldest-first: capAvoidList fills its remaining budget from the
+  // end of this list, so newest content has to sit last to be preferred.
+  return perLevel.reverse().flat();
 }
 
 /**
@@ -4984,40 +5128,14 @@ async function existingPoolQuestionTexts(
  * @param {number} upToLevel Highest level the player has unlocked.
  * @return {Promise<number>} Total banked questions across those levels.
  */
-async function countBankedQuestions(
+async function readLevelBankSizes(
   poolRef: FirebaseFirestore.DocumentReference,
   upToLevel: number
-): Promise<number> {
-  if (upToLevel <= 0) return 0;
-
-  const levelsSnap = await poolRef.collection("levels").get();
-
-  let total = 0;
-  for (const levelDoc of levelsSnap.docs) {
-    const levelNumber = safeInt(levelDoc.data().levelNumber, 0);
-    if (levelNumber >= 1 && levelNumber <= upToLevel) {
-      total += safeInt(levelDoc.data().questionsCount, 0);
-    }
-  }
-
-  return total;
-}
-
-/**
- * Per-level bank sizes for the levels a player has unlocked, used to price
- * an "add more questions" purchase before the player commits to it.
- * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
- * @param {number} upToLevel Highest level the player has unlocked.
- * @return {Promise<number[]>} Level numbers that still have headroom.
- */
-async function expandableLevelNumbers(
-  poolRef: FirebaseFirestore.DocumentReference,
-  upToLevel: number
-): Promise<number[]> {
-  if (upToLevel <= 0) return [];
-
-  const levelsSnap = await poolRef.collection("levels").get();
+): Promise<Map<number, number>> {
   const sizeByLevel = new Map<number, number>();
+  if (upToLevel <= 0) return sizeByLevel;
+
+  const levelsSnap = await poolRef.collection("levels").get();
 
   for (const levelDoc of levelsSnap.docs) {
     const levelNumber = safeInt(levelDoc.data().levelNumber, 0);
@@ -5026,6 +5144,46 @@ async function expandableLevelNumbers(
     }
   }
 
+  return sizeByLevel;
+}
+
+/**
+ * Sums the bank sizes a [readLevelBankSizes] map holds.
+ * @param {Map<number, number>} sizeByLevel Bank size per level.
+ * @return {number} Total banked questions.
+ */
+function totalBankedQuestions(sizeByLevel: Map<number, number>): number {
+  let total = 0;
+  for (const size of sizeByLevel.values()) total += size;
+  return total;
+}
+
+/**
+ * Total questions banked across the levels a player has unlocked. Callers
+ * that already hold a [readLevelBankSizes] map should sum it with
+ * [totalBankedQuestions] instead of paying for this second read.
+ * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
+ * @param {number} upToLevel Highest level the player has unlocked.
+ * @return {Promise<number>} Total banked questions across those levels.
+ */
+async function countBankedQuestions(
+  poolRef: FirebaseFirestore.DocumentReference,
+  upToLevel: number
+): Promise<number> {
+  return totalBankedQuestions(await readLevelBankSizes(poolRef, upToLevel));
+}
+
+/**
+ * Which of a player's unlocked levels still have room in their bank —
+ * the levels an "add more questions" purchase is priced on.
+ * @param {Map<number, number>} sizeByLevel Bank size per level.
+ * @param {number} upToLevel Highest level the player has unlocked.
+ * @return {number[]} Level numbers that still have headroom.
+ */
+function expandableLevelsFrom(
+  sizeByLevel: Map<number, number>,
+  upToLevel: number
+): number[] {
   const levels: number[] = [];
   for (let level = 1; level <= upToLevel; level++) {
     if (bankHeadroom(sizeByLevel.get(level) ?? 0) > 0) levels.push(level);
@@ -5100,6 +5258,9 @@ async function generateAiTopicLevel(
     levelNumber,
     title: `Level ${levelNumber}`,
     questionsCount: existingIds.length + questions.length,
+    // Kept on the level doc so starting a session can pick its slate
+    // without listing the whole bank first — see ensureSoloLevelSession.
+    questionIds: [...existingIds, ...ids].sort(compareQuestionIds),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...(existingIds.length === 0 ?
       {createdAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
@@ -5386,6 +5547,69 @@ const AI_TOPIC_SIMILAR_MATCHES_LIMIT = 5;
 const AI_TOPIC_POPULAR_USAGE_THRESHOLD = 3;
 const AI_TOPIC_SUGGESTION_COUNT = 5;
 
+interface PoolTitleEntry {
+  /** ai_topic_pool document id. */
+  p: string;
+  /** Display title. */
+  t: string;
+  /** Normalized title, what similarity is scored against. */
+  n: string;
+  /** Language code the entry belongs to. */
+  l: string;
+}
+
+// Short by design: the index only drives *discovery*, and a topic missing
+// from it is still reused at the discounted price if the player types its
+// exact title, because createAiTopic resolves the pool entry by its
+// deterministic id rather than through this search.
+const AI_TOPIC_TITLE_INDEX_TTL_MS = 60 * 60 * 1000;
+const AI_TOPIC_TITLE_INDEX_MAX_ENTRIES = 5000;
+
+/**
+ * Titles of every ready pool entry, cached so a similarity search doesn't
+ * re-read the whole pool on every attempt to create a topic.
+ *
+ * Only the fields that don't move are cached. `usageCount` is deliberately
+ * excluded: it changes on every reuse and decides the price shown, so
+ * callers re-read the few entries they actually surface.
+ * @return {Promise<PoolTitleEntry[]>} Cached pool titles.
+ */
+async function loadPoolTitleIndex(): Promise<PoolTitleEntry[]> {
+  const ref = db.collection("caches").doc("ai_topic_title_index");
+  const snap = await ref.get();
+  const data = snap.data();
+
+  const builtAt = data?.builtAt as admin.firestore.Timestamp | undefined;
+  const cached = (data?.entries as PoolTitleEntry[] | undefined) || [];
+  const isFresh = builtAt !== undefined &&
+    Date.now() - builtAt.toMillis() < AI_TOPIC_TITLE_INDEX_TTL_MS;
+
+  if (isFresh) return cached;
+
+  const poolSnap = await db.collection("ai_topic_pool")
+    .where("status", "==", "ready")
+    .limit(AI_TOPIC_TITLE_INDEX_MAX_ENTRIES)
+    .get();
+
+  const entries: PoolTitleEntry[] = poolSnap.docs.map((doc) => {
+    const poolData = doc.data();
+    return {
+      p: doc.id,
+      t: String(poolData.title || ""),
+      n: String(poolData.normalizedTitle || ""),
+      l: poolData.languageCode === "en" ? "en" : "es",
+    };
+  });
+
+  await ref.set({
+    entries,
+    count: entries.length,
+    builtAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return entries;
+}
+
 /**
  * Rejects the call if the player is already at their active-topic cap.
  * The guided-creation endpoints check this up front so a capped player
@@ -5490,35 +5714,59 @@ export const findSimilarAiTopics = onCall(async (request) => {
   // Equality-only filters, no orderBy — Firestore serves this via
   // automatic indexing, unlike the Popular Topics query (which also
   // orders by usageCount and needed a manual composite index).
-  const poolSnap = await db.collection("ai_topic_pool")
-    .where("status", "==", "ready")
-    .where("languageCode", "==", languageCode)
-    .limit(300)
-    .get();
+  // Scored against the cached title index rather than a fresh sweep of the
+  // pool: every player tapping "create" used to read hundreds of pool
+  // documents to surface at most five of them.
+  const index = await loadPoolTitleIndex();
 
-  const matches = poolSnap.docs
-    .map((doc) => {
-      const data = doc.data();
-      const score = titleSimilarity(
-        normalizedTitle, String(data.normalizedTitle || "")
-      );
-      return {doc, data, score};
-    })
+  const ranked = index
+    .filter((entry) => entry.l === languageCode)
+    .map((entry) => ({
+      entry,
+      score: titleSimilarity(normalizedTitle, entry.n),
+    }))
     .filter(({score}) => score >= AI_TOPIC_SIMILARITY_THRESHOLD)
     .sort((a, b) => b.score - a.score)
-    .slice(0, AI_TOPIC_SIMILAR_MATCHES_LIMIT)
-    .map(({doc, data}) => {
-      const usageCount = safeInt(data.usageCount, 0);
-      const isPopular = usageCount >= AI_TOPIC_POPULAR_USAGE_THRESHOLD;
-      return {
-        poolId: doc.id,
-        title: String(data.title || ""),
-        usageCount,
-        isPopular,
-        cost: isPopular ?
-          CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST,
-      };
+    .slice(0, AI_TOPIC_SIMILAR_MATCHES_LIMIT);
+
+  if (ranked.length === 0) {
+    return {blocked: false, matches: []};
+  }
+
+  // `usageCount` decides the price shown, and the index is deliberately
+  // allowed to go stale — so the handful of entries that made the cut are
+  // re-read live. Quoting a cached count would put the dialog back out of
+  // step with what createAiTopic actually charges.
+  const poolDocs = await db.getAll(...ranked.map(({entry}) =>
+    db.collection("ai_topic_pool").doc(entry.p)
+  ));
+
+  const matches: {
+    poolId: string;
+    title: string;
+    usageCount: number;
+    isPopular: boolean;
+    cost: number;
+  }[] = [];
+
+  poolDocs.forEach((doc, i) => {
+    const data = doc.data();
+    // Dropped rather than surfaced from the cache: a pool entry deleted or
+    // pulled out of "ready" since the index was built is not reusable.
+    if (!doc.exists || data?.status !== "ready") return;
+
+    const usageCount = safeInt(data.usageCount, 0);
+    const isPopular = usageCount >= AI_TOPIC_POPULAR_USAGE_THRESHOLD;
+
+    matches.push({
+      poolId: doc.id,
+      title: String(data.title || ranked[i].entry.t),
+      usageCount,
+      isPopular,
+      cost: isPopular ?
+        CREATE_AI_TOPIC_FROM_POOL_COST : CREATE_AI_TOPIC_EXISTING_COST,
     });
+  });
 
   return {blocked: false, matches};
 });
@@ -5985,9 +6233,8 @@ export const regenerateAiTopicQuestions = onCall({
   // all at AI_QUESTION_BANK_CAP has nothing left to sell. Shares its
   // arithmetic with getAiTopicRegenerateQuote so the price the player was
   // shown is the price they get charged.
-  const expandableLevels = await expandableLevelNumbers(
-    poolRef, generatedLevels
-  );
+  const bankSizes = await readLevelBankSizes(poolRef, generatedLevels);
+  const expandableLevels = expandableLevelsFrom(bankSizes, generatedLevels);
 
   if (expandableLevels.length === 0) {
     throw localizedError(
@@ -6028,9 +6275,12 @@ export const regenerateAiTopicQuestions = onCall({
   });
 
   let paidLevelsDelivered = 0;
+  let questionsAdded = 0;
 
   try {
-    let avoidQuestions = await existingPoolQuestionTexts(poolRef);
+    let avoidQuestions = await existingPoolQuestionTexts(
+      poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+    );
 
     for (const level of expandableLevels) {
       // Each level's new questions join the avoid-list, so level N doesn't
@@ -6042,6 +6292,7 @@ export const regenerateAiTopicQuestions = onCall({
       );
 
       avoidQuestions = [...avoidQuestions, ...added];
+      questionsAdded += added.length;
       paidLevelsDelivered++;
     }
   } catch (error) {
@@ -6077,8 +6328,11 @@ export const regenerateAiTopicQuestions = onCall({
 
   // Reflect the bigger banks on the player's own topic doc, so the topics
   // list shows the purchase actually landed instead of the same numbers
-  // it showed before paying.
-  const bankedQuestions = await countBankedQuestions(poolRef, generatedLevels);
+  // it showed before paying. Derived from the sizes already read above
+  // plus what was just generated — re-reading the whole levels collection
+  // here would only restate what we already know.
+  const bankedQuestions =
+    totalBankedQuestions(bankSizes) + questionsAdded;
 
   await topicRef.set({
     questionsCount: bankedQuestions,
@@ -6134,8 +6388,11 @@ export const getAiTopicRegenerateQuote = onCall(async (request) => {
     };
   }
 
-  const expandableLevels = await expandableLevelNumbers(
-    db.collection("ai_topic_pool").doc(poolId), generatedLevels
+  const expandableLevels = expandableLevelsFrom(
+    await readLevelBankSizes(
+      db.collection("ai_topic_pool").doc(poolId), generatedLevels
+    ),
+    generatedLevels
   );
 
   return {
@@ -6328,7 +6585,9 @@ async function topUpAiLevelBanks(params: {
     if (toGenerate <= 0) continue;
 
     if (avoidQuestions === null) {
-      avoidQuestions = await existingPoolQuestionTexts(poolRef);
+      avoidQuestions = await existingPoolQuestionTexts(
+        poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+      );
     }
 
     const added = await generateAiTopicLevel(

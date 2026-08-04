@@ -390,7 +390,11 @@ class AiTopicService {
       await FirebaseFunctions.instance
           .httpsCallable(
         'ensureAiTopicLevelsGenerated',
-        options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+        // Matches the function's own 60s ceiling. At 30s the client gave up
+        // partway through a multi-level batch and swallowed the timeout,
+        // which is how players ended up reaching a level whose questions
+        // had never been generated.
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
       )
           .call({'topicId': topicId, 'completedLevel': completedLevel});
     } on FirebaseFunctionsException {

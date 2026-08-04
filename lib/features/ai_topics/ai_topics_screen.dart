@@ -236,10 +236,39 @@ class AiTopicsScreen extends StatelessWidget {
             title: Text(l10n.aiTopicsTitle),
           ),
           floatingActionButton: showFab
-              ? FloatingActionButton.extended(
-                  onPressed: () => _openCreate(context),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.aiTopicsCreateTopic),
+              // The default surface-tinted FAB washed out against this
+              // screen's pale background — it read as disabled next to the
+              // topic cards. Same purple gradient the app uses for its
+              // other primary actions, so "create" is unmistakably the
+              // thing to press here.
+              ? Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF6C4FF2).withValues(alpha: 0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: FloatingActionButton.extended(
+                    onPressed: () => _openCreate(context),
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    highlightElevation: 0,
+                    icon: const Icon(Icons.auto_awesome),
+                    label: Text(
+                      l10n.aiTopicsCreateTopic,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 )
               : null,
           body: Builder(

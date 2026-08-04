@@ -746,6 +746,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get levelPlaySessionCreateError =>
+      'This level could not be prepared. Please try again.';
+
+  @override
   String get levelPlaySessionCreateErrorTitle => 'Error creating session';
 
   @override

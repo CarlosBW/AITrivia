@@ -388,6 +388,7 @@
       "error": {"type": "String"}
     }
   },
+  "levelPlaySessionCreateError": "No se pudo preparar el nivel. Intenta de nuevo.",
   "levelPlaySessionCreateErrorTitle": "Error creando sesión",
   "levelPlayGeneratingQuestions": "Generando preguntas del nivel...",
   "levelPlaySessionNotFound": "Sesión no encontrada.",

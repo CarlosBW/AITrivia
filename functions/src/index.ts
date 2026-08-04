@@ -4011,7 +4011,11 @@ function difficultyForLevel(levelNumber: number): number {
  * `sessions_ai`/`sessions_fixed`, so this is the only thing that can
  * populate them.
  */
-export const ensureSoloLevelSession = onCall(async (request) => {
+// Holds the AI secret because an AI level whose bank never got buffered
+// has to be generated here — see the empty-bank branch below.
+export const ensureSoloLevelSession = onCall({
+  secrets: AI_SECRETS,
+}, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
@@ -4111,9 +4115,55 @@ export const ensureSoloLevelSession = onCall(async (request) => {
     }
 
     if (allIds.length === 0) {
-      throw new HttpsError(
-        "not-found", "No questions found for this level."
+      // Self-heal instead of dead-ending. Levels are normally generated
+      // ahead of the player by ensureAiTopicLevelsGenerated, but that call
+      // is best-effort and the client swallows its failures — so a level
+      // the player has legitimately unlocked can still have an empty bank,
+      // and refusing here left them stuck on it forever with no way
+      // forward. Generating just this one level keeps the wait to a single
+      // batch rather than the usual look-ahead.
+      const poolRef = db.collection("ai_topic_pool").doc(poolId);
+      const languageCode = ownerSnap.data()?.languageCode;
+
+      const added = await generateAiTopicLevel(
+        uid, poolRef, levelNumber,
+        String(topicData.title || "Custom Topic"),
+        languageCode,
+        {
+          avoidQuestions: await existingPoolQuestionTexts(
+            poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+          ),
+        }
       );
+
+      if (added.length === 0) {
+        throw await localizedErrorFor(
+          uid, "not-found",
+          "No se pudieron preparar las preguntas de este nivel.",
+          "This level's questions couldn't be prepared."
+        );
+      }
+
+      const refreshedSnap = await levelRef.get();
+      allIds = ((refreshedSnap.data()?.questionIds as unknown[]) || [])
+        .map((id) => String(id));
+
+      // Keep both sides' depth honest now that the level really exists.
+      await Promise.all([
+        poolRef.set({
+          generatedLevels: Math.max(
+            safeInt((await poolRef.get()).data()?.generatedLevels, 0),
+            levelNumber
+          ),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true}),
+        topicRef.set({
+          generatedLevels: Math.max(
+            safeInt(topicData.generatedLevels, 0), levelNumber
+          ),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true}),
+      ]);
     }
 
     const usableIds = allIds.filter((id) => {

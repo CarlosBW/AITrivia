@@ -1424,6 +1424,12 @@ abstract class AppLocalizations {
   /// **'Error verificando vidas: {error}'**
   String levelPlayLifeCheckError(String error);
 
+  /// No description provided for @levelPlaySessionCreateError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo preparar el nivel. Intenta de nuevo.'**
+  String get levelPlaySessionCreateError;
+
   /// No description provided for @levelPlaySessionCreateErrorTitle.
   ///
   /// In es, this message translates to:

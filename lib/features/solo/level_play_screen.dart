@@ -586,7 +586,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           // nothing. _lifeChecked is reset by the Retry
                           // button below, not here, so this doesn't loop.
                           await LifeService.instance.refundLevelEntry(uid);
-                          _sessionError = e.toString();
+                          // Just the message: `e.toString()` on a
+                          // FirebaseFunctionsException drags the whole
+                          // async stack trace onto the screen, which the
+                          // player can neither read nor act on.
+                          _sessionError = e is FirebaseFunctionsException
+                              ? (e.message ?? l10n.levelPlaySessionCreateError)
+                              : l10n.levelPlaySessionCreateError;
                         } finally {
                           if (mounted) {
                             setState(() => _creatingSession = false);

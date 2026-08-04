@@ -75,6 +75,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   bool _endedByNoLives = false;
 
+  /// Set once the player reaches the end of the level, so the results
+  /// screen stops depending on the session document.
+  ///
+  /// `submitSoloLevelResult` deletes that document, and the widgets below
+  /// read it to decide what to render — so after finishing, any rebuild
+  /// saw "no session", flashed the "generating questions" placeholder and
+  /// called `ensureSoloLevelSession` all over again. That second session
+  /// also marked another slate of questions as already seen, quietly
+  /// burning content the player never played.
+  bool _levelFinished = false;
+  int _finishedTotal = 0;
+
   int _lifeUnits = 10;
   int _maxLifeUnits = 10;
   int _lifeRegenSeconds = LifeService.defaultRegenSeconds;
@@ -530,6 +542,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       .toInt()
                   : ((catData?['levelCount'] ?? 0) as num).toInt();
 
+              // Before anything that touches the session: it's deleted on
+              // submit, and the results are already fully in local state.
+              if (_levelFinished) {
+                return _buildEnd(context, _finishedTotal);
+              }
+
               if (!_lifeChecked && !_lifeLoading) {
                 Future.microtask(() => _checkAndConsumeLife(uid));
               }
@@ -658,6 +676,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       if (_index >= questions.length) {
                         _timer?.cancel();
+
+                        // Latched here rather than via setState: the build
+                        // above already returns the results screen, and
+                        // every later rebuild short-circuits to it before
+                        // the session is consulted at all.
+                        _levelFinished = true;
+                        _finishedTotal = questions.length;
 
                         if (!_saved && !_saving) {
                           Future.microtask(

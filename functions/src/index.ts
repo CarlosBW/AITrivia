@@ -5506,12 +5506,19 @@ async function ensureTopicAdoptedIntoPool(
       const poolGeneratedLevels = safeInt(poolData.generatedLevels, 0);
 
       if (ownGeneratedLevels > poolGeneratedLevels) {
+        let avoidQuestions = await existingPoolQuestionTexts(
+          poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+        );
+
         for (
           let level = poolGeneratedLevels + 1;
           level <= ownGeneratedLevels;
           level++
         ) {
-          await generateAiTopicLevel(uid, poolRef, level, title, languageCode);
+          const added = await generateAiTopicLevel(
+            uid, poolRef, level, title, languageCode, {avoidQuestions}
+          );
+          avoidQuestions = [...avoidQuestions, ...added];
         }
 
         await poolRef.set({
@@ -6037,14 +6044,22 @@ export const createAiTopic = onCall({
     const startLevel = safeInt(poolData.generatedLevels, 0) + 1;
 
     try {
+      // Carried across levels: without it each level only avoided its own
+      // (empty) bank, so level 2 happily re-issued level 1's questions.
+      let avoidQuestions = await existingPoolQuestionTexts(
+        poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+      );
+
       for (
         let level = startLevel;
         level <= AI_INITIAL_GENERATED_LEVELS;
         level++
       ) {
-        await generateAiTopicLevel(
-          uid, poolRef, level, cleanTitle, userData.languageCode
+        const added = await generateAiTopicLevel(
+          uid, poolRef, level, cleanTitle, userData.languageCode,
+          {avoidQuestions}
         );
+        avoidQuestions = [...avoidQuestions, ...added];
       }
     } catch (error) {
       if (error instanceof TopicBlockedError) {
@@ -6655,6 +6670,11 @@ export const ensureAiTopicLevelsGenerated = onCall({
   let lastSuccessfulUserLevel = generatedLevels;
   let lastSuccessfulPoolLevel = poolGeneratedLevels;
 
+  // Buffering generates the levels a player is about to reach, so without
+  // a pool-wide avoid list each new level only dodged its own empty bank
+  // and freely repeated questions from the levels already played.
+  let avoidQuestions: string[] | null = null;
+
   try {
     for (
       let level = generatedLevels + 1;
@@ -6662,7 +6682,17 @@ export const ensureAiTopicLevelsGenerated = onCall({
       level++
     ) {
       if (level > lastSuccessfulPoolLevel) {
-        await generateAiTopicLevel(uid, poolRef, level, title, languageCode);
+        if (avoidQuestions === null) {
+          avoidQuestions = await existingPoolQuestionTexts(
+            poolRef, AI_AVOID_LIST_MAX_QUESTIONS
+          );
+        }
+
+        const added = await generateAiTopicLevel(
+          uid, poolRef, level, title, languageCode, {avoidQuestions}
+        );
+
+        avoidQuestions = [...avoidQuestions, ...added];
         lastSuccessfulPoolLevel = level;
       }
       lastSuccessfulUserLevel = level;

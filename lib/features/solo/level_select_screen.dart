@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -41,11 +43,49 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
   int _loadVersion = 0;
 
+  /// Live view of this category's progress.
+  ///
+  /// Reloading once on return from gameplay isn't enough: the level screen
+  /// submits its result without waiting for it, so a player who backs out
+  /// immediately gets here before the write lands and sees the level they
+  /// just finished still marked unplayed. Watching the document means the
+  /// map corrects itself whenever the result actually arrives, whether
+  /// that's before or after they come back.
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _progressSub;
+
+  /// The progress document backing this screen — `progress_ai` for AI
+  /// topics, `progress_fixed` for the built-in categories.
+  DocumentReference<Map<String, dynamic>> _progressRef() {
+    final db = FirebaseFirestore.instance;
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    return widget.isAiTopic
+        ? db
+            .collection('users')
+            .doc(uid)
+            .collection('progress_ai')
+            .doc(widget.aiTopicId)
+        : db
+            .collection('users')
+            .doc(uid)
+            .collection('progress_fixed')
+            .doc(widget.categoryId);
+  }
+
+  void _watchProgress() {
+    _progressSub?.cancel();
+    _progressSub = _progressRef().snapshots().listen((snap) {
+      if (!mounted) return;
+      setState(() => _progressData = snap.data() ?? {});
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadScreenData();
+    _watchProgress();
   }
 
   @override
@@ -54,6 +94,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
     if (oldWidget.categoryId != widget.categoryId) {
       _loadScreenData();
+      _watchProgress();
     }
   }
 
@@ -66,6 +107,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
   @override
   void dispose() {
+    _progressSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -86,7 +128,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
     try {
       late final DocumentReference<Map<String, dynamic>> categoryRef;
-      late final DocumentReference<Map<String, dynamic>> progressRef;
 
       if (widget.isAiTopic) {
         categoryRef = db
@@ -94,21 +135,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             .doc(uid)
             .collection('ai_topics')
             .doc(widget.aiTopicId);
-
-        progressRef = db
-            .collection('users')
-            .doc(uid)
-            .collection('progress_ai')
-            .doc(widget.aiTopicId);
       } else {
         categoryRef = db.collection('fixed_categories').doc(widget.categoryId);
-
-        progressRef = db
-            .collection('users')
-            .doc(uid)
-            .collection('progress_fixed')
-            .doc(widget.categoryId);
       }
+
+      final progressRef = _progressRef();
 
       final snaps = await Future.wait<DocumentSnapshot<Map<String, dynamic>>>([
         categoryRef.get(),

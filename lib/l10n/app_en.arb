@@ -1367,6 +1367,9 @@
   "createAiTopicBackButton": "Back",
   "createAiTopicAiSuggestionsTitle": "AI suggestions",
   "createAiTopicAiSuggestionsHint": "Pick one of these to create your topic — this avoids typos or topics too vague to generate good questions from.",
+  "createAiTopicSuggestionsUnavailableTitle": "We couldn't suggest topics",
+  "createAiTopicSuggestionsUnavailableHint": "You can create your topic exactly as you wrote it, or try suggestions again.",
+  "createAiTopicRetrySuggestionsButton": "Retry suggestions",
 
   "coinShopTitle": "Buy coins",
   "coinShopPurchaseSuccess": "+{coins} coins",

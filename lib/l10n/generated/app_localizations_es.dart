@@ -2333,6 +2333,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige una de estas opciones para crear tu tema — así evitamos errores de tipeo o temas demasiado vagos para generar buenas preguntas.';
 
   @override
+  String get createAiTopicSuggestionsUnavailableTitle =>
+      'No pudimos sugerir temas';
+
+  @override
+  String get createAiTopicSuggestionsUnavailableHint =>
+      'Puedes crear tu tema tal como lo escribiste, o intentar las sugerencias otra vez.';
+
+  @override
+  String get createAiTopicRetrySuggestionsButton => 'Reintentar sugerencias';
+
+  @override
   String get coinShopTitle => 'Comprar monedas';
 
   @override

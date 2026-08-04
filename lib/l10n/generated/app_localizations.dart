@@ -4012,6 +4012,24 @@ abstract class AppLocalizations {
   /// **'Elige una de estas opciones para crear tu tema — así evitamos errores de tipeo o temas demasiado vagos para generar buenas preguntas.'**
   String get createAiTopicAiSuggestionsHint;
 
+  /// No description provided for @createAiTopicSuggestionsUnavailableTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos sugerir temas'**
+  String get createAiTopicSuggestionsUnavailableTitle;
+
+  /// No description provided for @createAiTopicSuggestionsUnavailableHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes crear tu tema tal como lo escribiste, o intentar las sugerencias otra vez.'**
+  String get createAiTopicSuggestionsUnavailableHint;
+
+  /// No description provided for @createAiTopicRetrySuggestionsButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar sugerencias'**
+  String get createAiTopicRetrySuggestionsButton;
+
   /// No description provided for @coinShopTitle.
   ///
   /// In es, this message translates to:

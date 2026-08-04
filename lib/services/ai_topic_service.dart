@@ -115,6 +115,36 @@ class AiTopicSuggestionResult {
   });
 }
 
+/// Thrown when [AiTopicService.suggestAiTopicTitles] couldn't produce
+/// suggestions for a reason that says nothing about the request itself —
+/// the model being unreachable, a timeout, a rate limit. Distinguished
+/// from a plain [Exception] because those are genuine rejections (the
+/// topic cap, a title that's too short) that the player has to act on,
+/// whereas this one is safe to recover from by offering their own title.
+class AiTopicSuggestionUnavailable implements Exception {
+  final String message;
+
+  const AiTopicSuggestionUnavailable(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Whether a `suggestAiTopicTitles` failure code describes the call
+/// breaking rather than the request being refused.
+///
+/// `internal` is what the server raises once Claude has failed every
+/// retry; the other two are the call never completing at all. Everything
+/// else is a decision about this specific request — most importantly
+/// `resource-exhausted`, the AI-topic cap, which `createAiTopic` enforces
+/// just as strictly, so "recovering" from it would only walk the player
+/// into the same refusal one step later.
+bool isRecoverableSuggestionFailure(String code) {
+  return code == 'internal' ||
+      code == 'unavailable' ||
+      code == 'deadline-exceeded';
+}
+
 class AiTopicService {
   AiTopicService._();
 
@@ -311,7 +341,12 @@ class AiTopicService {
         suggestions: suggestions,
       );
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotSuggestTopics);
+      final message = e.message ?? _l10n.serviceCouldNotSuggestTopics;
+
+      if (isRecoverableSuggestionFailure(e.code)) {
+        throw AiTopicSuggestionUnavailable(message);
+      }
+      throw Exception(message);
     }
   }
 

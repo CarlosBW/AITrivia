@@ -2318,6 +2318,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick one of these to create your topic — this avoids typos or topics too vague to generate good questions from.';
 
   @override
+  String get createAiTopicSuggestionsUnavailableTitle =>
+      'We couldn\'t suggest topics';
+
+  @override
+  String get createAiTopicSuggestionsUnavailableHint =>
+      'You can create your topic exactly as you wrote it, or try suggestions again.';
+
+  @override
+  String get createAiTopicRetrySuggestionsButton => 'Retry suggestions';
+
+  @override
   String get coinShopTitle => 'Buy coins';
 
   @override

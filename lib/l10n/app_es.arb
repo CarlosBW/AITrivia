@@ -1395,6 +1395,9 @@
   "createAiTopicBackButton": "Volver",
   "createAiTopicAiSuggestionsTitle": "Sugerencias de la IA",
   "createAiTopicAiSuggestionsHint": "Elige una de estas opciones para crear tu tema — así evitamos errores de tipeo o temas demasiado vagos para generar buenas preguntas.",
+  "createAiTopicSuggestionsUnavailableTitle": "No pudimos sugerir temas",
+  "createAiTopicSuggestionsUnavailableHint": "Puedes crear tu tema tal como lo escribiste, o intentar las sugerencias otra vez.",
+  "createAiTopicRetrySuggestionsButton": "Reintentar sugerencias",
 
   "coinShopTitle": "Comprar monedas",
   "coinShopPurchaseSuccess": "+{coins} monedas",

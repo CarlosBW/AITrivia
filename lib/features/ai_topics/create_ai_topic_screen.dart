@@ -16,7 +16,12 @@ class CreateAiTopicScreen extends StatefulWidget {
   State<CreateAiTopicScreen> createState() => _CreateAiTopicScreenState();
 }
 
-enum _Stage { typing, showingMatches, showingAiSuggestions }
+enum _Stage {
+  typing,
+  showingMatches,
+  showingAiSuggestions,
+  suggestionsUnavailable,
+}
 
 /// Which of the three prices `_PricingCard` should show — mirrors the
 /// server's own tiering in `createAiTopic`: brand-new generation, an
@@ -145,9 +150,16 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
 
       if (!mounted) return;
 
-      if (result.blocked || result.suggestions.isEmpty) {
+      if (result.blocked) {
         setState(() => _loading = false);
         _showError(l10n.createAiTopicBlockedMessage);
+        return;
+      }
+
+      if (result.suggestions.isEmpty) {
+        // Not blocked (the server says so explicitly), just nothing usable
+        // came back — same recovery as an outright failure.
+        _fallBackToOwnTitle(title);
         return;
       }
 
@@ -157,11 +169,30 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
         _stage = _Stage.showingAiSuggestions;
         _loading = false;
       });
+    } on AiTopicSuggestionUnavailable {
+      if (!mounted) return;
+      // Suggestions are a convenience, not a gate. This used to dead-end
+      // the whole flow at the exact moment the player wanted to spend, for
+      // a failure that has nothing to do with what they typed. Continuing
+      // with their raw title is safe: createAiTopic independently
+      // re-checks length, reserved names, blocked keywords and the topic
+      // cap, and it generates before it charges, so if the model is still
+      // down they simply get an error instead of losing coins.
+      _fallBackToOwnTitle(title);
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
       _showError(e.toString().replaceFirst('Exception: ', ''));
     }
+  }
+
+  void _fallBackToOwnTitle(String title) {
+    setState(() {
+      _searchedTitle = title;
+      _aiSuggestions = [];
+      _stage = _Stage.suggestionsUnavailable;
+      _loading = false;
+    });
   }
 
   Future<void> _doCreate(String title, {String? fromPoolId}) async {
@@ -223,6 +254,8 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
             _Stage.typing => _buildTypingStage(l10n),
             _Stage.showingMatches => _buildMatchesStage(l10n),
             _Stage.showingAiSuggestions => _buildAiSuggestionsStage(l10n),
+            _Stage.suggestionsUnavailable =>
+              _buildSuggestionsUnavailableStage(l10n),
           },
         ),
       ),
@@ -402,6 +435,74 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
               const SizedBox(height: 10),
             ],
           ],
+        ),
+      ),
+      const SizedBox(height: 6),
+      TextButton(
+        onPressed: _loading ? null : _backToTyping,
+        child: Text(l10n.createAiTopicBackButton),
+      ),
+      if (_loading) ...[
+        const SizedBox(height: 12),
+        Center(
+          child: Column(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 8),
+              Text(_loadingLabel),
+            ],
+          ),
+        ),
+      ],
+    ];
+  }
+
+  /// Shown when suggestions couldn't be produced. Offers the title the
+  /// player already typed as a normal choice, so a hiccup in an optional
+  /// helper never costs them the topic they came to create.
+  List<Widget> _buildSuggestionsUnavailableStage(AppLocalizations l10n) {
+    return [
+      Text(
+        l10n.createAiTopicSuggestionsUnavailableTitle,
+        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        l10n.createAiTopicSuggestionsUnavailableHint,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: 16),
+      _EconomyBuilder(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        builder: (context, coins, hasFreePass) => Column(
+          children: [
+            _CoinsBalanceLine(coins: coins, hasFreePass: hasFreePass),
+            const SizedBox(height: 12),
+            _TopicChoiceCard(
+              title: _searchedTitle,
+              badge: _ChoiceBadge.none,
+              // Quoted at full price: without suggestions there's no
+              // server-side pool lookup to tell us otherwise. If the title
+              // does turn out to exist, createAiTopic discounts it on its
+              // own — erring high means the surprise is always pleasant.
+              cost: EconomyService.createAiTopicCost,
+              hasFreePass: hasFreePass,
+              onTap: _loading ? null : () => _doCreate(_searchedTitle),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _loading
+              ? null
+              : () => _requestAiSuggestions(_searchedTitle, l10n),
+          icon: const Icon(Icons.refresh),
+          label: Text(l10n.createAiTopicRetrySuggestionsButton),
         ),
       ),
       const SizedBox(height: 6),

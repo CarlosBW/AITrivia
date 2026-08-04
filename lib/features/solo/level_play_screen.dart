@@ -49,6 +49,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _creatingSession = false;
   String? _sessionError;
 
+  bool _bufferKicked = false;
+
   int _earnedXp = 0;
   int _earnedCoins = 0;
   bool _rewardGrantedForLevel = false;
@@ -569,6 +571,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                   final sesExists = sesGetSnap.data!.exists;
 
+                  if (sesExists) {
+                    Future.microtask(_kickAiBuffer);
+                  }
+
                   if (!sesExists) {
                     if (!_creatingSession) {
                       _creatingSession = true;
@@ -577,6 +583,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           await _ensureSession(
                             sessionRef: sessionRef,
                           );
+                          _kickAiBuffer();
                         } catch (e) {
                           // The life for this level entry was already
                           // charged in _checkAndConsumeLife before session
@@ -1209,6 +1216,32 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   // self-chosen "correct" answers. firestore.rules now denies client
   // `create` on those collections, so this call is the only way to
   // populate them.
+  /// Starts generating the levels ahead of this one, as soon as this level
+  /// opens.
+  ///
+  /// Buffering used to be kicked off only from `_saveProgress`, when a level
+  /// was submitted — but players tap "continue" a few seconds later and a
+  /// real generation takes ~30s, so the next level was never ready in time
+  /// and every level start fell into `ensureSoloLevelSession`'s on-demand
+  /// path with the player watching a spinner. Firing it here instead gives
+  /// generation the whole time the player spends answering.
+  ///
+  /// Still fire-and-forget, and still safe to overlap with the submit-time
+  /// call: the server takes a per-level lock, so whichever arrives second
+  /// waits for the first's questions rather than generating duplicates.
+  void _kickAiBuffer() {
+    final topicId = widget.aiTopicId;
+    if (_bufferKicked || !widget.isAiTopic || topicId == null) return;
+    _bufferKicked = true;
+
+    unawaited(
+      AiTopicService.instance.ensureAiTopicBuffer(
+        topicId: topicId,
+        completedLevel: widget.levelNumber,
+      ),
+    );
+  }
+
   Future<void> _ensureSession({
     required DocumentReference<Map<String, dynamic>> sessionRef,
   }) async {

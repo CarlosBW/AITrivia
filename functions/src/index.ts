@@ -3661,6 +3661,16 @@ const AI_INITIAL_GENERATED_LEVELS = 2;
 const AI_GENERATION_BUFFER_LEVELS = 2;
 const AI_MODEL = "claude-haiku-4-5";
 
+// Buffering now starts when a level *opens* rather than when it's
+// submitted, so two callers can legitimately want the same level at once
+// (the buffer running during play, and ensureSoloLevelSession self-healing
+// a level that was never banked). Without a lock both would call Claude and
+// append to the same bank — duplicate questions, double spend. The loser of
+// the race waits for the winner's questions instead of generating its own.
+const AI_LEVEL_LOCK_MS = 150_000;
+const AI_LEVEL_LOCK_WAIT_MS = 90_000;
+const AI_LEVEL_LOCK_POLL_MS = 2_000;
+
 // Steers Claude's own judgment for the broad cases (hate speech, graphic
 // historical violence, etc.) that BLOCKED_TOPIC_KEYWORDS below deliberately
 // doesn't try to catch — keeping topics appropriate for a general-audience,
@@ -5261,6 +5271,69 @@ function expandableLevelsFrom(
 }
 
 /**
+ * Claims the exclusive right to generate into [levelRef]'s bank.
+ *
+ * The lock is a self-expiring timestamp rather than a flag so a crashed or
+ * timed-out generation can't wedge a level permanently — worst case the
+ * next caller waits out [AI_LEVEL_LOCK_MS] and retries.
+ * @param {FirebaseFirestore.DocumentReference} levelRef Level doc to lock.
+ * @return {Promise<boolean>} True when this caller may generate.
+ */
+async function acquireLevelLock(
+  levelRef: FirebaseFirestore.DocumentReference
+): Promise<boolean> {
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(levelRef);
+    const heldUntil = snap.data()?.generatingUntil as
+      admin.firestore.Timestamp | undefined;
+
+    if (heldUntil && heldUntil.toMillis() > Date.now()) return false;
+
+    tx.set(levelRef, {
+      generatingUntil: admin.firestore.Timestamp.fromMillis(
+        Date.now() + AI_LEVEL_LOCK_MS
+      ),
+    }, {merge: true});
+    return true;
+  });
+}
+
+/**
+ * Waits out whoever holds [levelRef]'s lock and reports what they added.
+ *
+ * Returning the new question texts (rather than an empty list) is what lets
+ * the loser of the race behave exactly like the winner: callers extend
+ * their avoid-list with them, and ensureSoloLevelSession sees a non-empty
+ * result and serves the level instead of reporting it unpreparable.
+ * @param {FirebaseFirestore.DocumentReference} levelRef Level doc to watch.
+ * @param {Set<string>} knownIds Question ids already present before waiting.
+ * @return {Promise<string[]>} Texts added by the lock holder, if any.
+ */
+async function awaitLevelGeneration(
+  levelRef: FirebaseFirestore.DocumentReference,
+  knownIds: Set<string>
+): Promise<string[]> {
+  const deadline = Date.now() + AI_LEVEL_LOCK_WAIT_MS;
+
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, AI_LEVEL_LOCK_POLL_MS));
+
+    const snap = await levelRef.get();
+    const heldUntil = snap.data()?.generatingUntil as
+      admin.firestore.Timestamp | undefined;
+    if (heldUntil && heldUntil.toMillis() > Date.now()) continue;
+
+    const questionsSnap = await levelRef.collection("questions").get();
+    return questionsSnap.docs
+      .filter((doc) => !knownIds.has(doc.id))
+      .map((doc) => String(doc.data().q || ""))
+      .filter((q) => q.length > 0);
+  }
+
+  return [];
+}
+
+/**
  * Appends a batch of freshly generated questions to one level's bank.
  *
  * Questions accumulate rather than overwrite: ids continue from the
@@ -5273,13 +5346,17 @@ function expandableLevelsFrom(
  * per-user topic doc — every AI topic's question content lives in the
  * pool (see the "Shared AI-topic content pool" plan), so every caller
  * passes the resolved pool ref here.
+ *
+ * Serialized per level: a second caller that arrives while a generation is
+ * in flight waits for it and reports its questions rather than appending a
+ * duplicate batch of its own.
  * @param {string} uid Account whose daily generation budget this draws on.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
  * @param {number} levelNumber Level to top up.
  * @param {string} title Topic title, used as the generation subject.
  * @param {unknown} languageCode Recipient's stored languageCode.
  * @param {object} options `count` to add, and existing texts to avoid.
- * @return {Promise<number>} How many questions were actually appended.
+ * @return {Promise<string[]>} Texts of the questions added to the bank.
  */
 async function generateAiTopicLevel(
   uid: string,
@@ -5297,6 +5374,48 @@ async function generateAiTopicLevel(
   const count = Math.min(requested, bankHeadroom(existingIds.length));
   if (count <= 0) return [];
 
+  if (!await acquireLevelLock(levelRef)) {
+    return awaitLevelGeneration(levelRef, new Set(existingIds));
+  }
+
+  try {
+    return await generateIntoLockedLevel(
+      uid, levelRef, existingIds, existingSnap, count,
+      levelNumber, title, languageCode, options.avoidQuestions ?? []
+    );
+  } finally {
+    await levelRef.set(
+      {generatingUntil: admin.firestore.FieldValue.delete()},
+      {merge: true}
+    );
+  }
+}
+
+/**
+ * The generating half of `generateAiTopicLevel`, split out so the lock it
+ * runs under is released on every exit path.
+ * @param {string} uid Account to meter the Claude spend against.
+ * @param {FirebaseFirestore.DocumentReference} levelRef Locked level doc.
+ * @param {string[]} existingIds Question ids already banked.
+ * @param {FirebaseFirestore.QuerySnapshot} existingSnap Those questions.
+ * @param {number} count How many questions to ask Claude for.
+ * @param {number} levelNumber Level being generated.
+ * @param {string} title Topic title.
+ * @param {unknown} languageCode Recipient's language.
+ * @param {string[]} callerAvoid Cross-level questions to avoid repeating.
+ * @return {Promise<string[]>} Texts of the questions just generated.
+ */
+async function generateIntoLockedLevel(
+  uid: string,
+  levelRef: FirebaseFirestore.DocumentReference,
+  existingIds: string[],
+  existingSnap: FirebaseFirestore.QuerySnapshot,
+  count: number,
+  levelNumber: number,
+  title: string,
+  languageCode: unknown,
+  callerAvoid: string[]
+): Promise<string[]> {
   // Every billable generation path in the codebase funnels through here,
   // which is the point: metering at the single choke point means a route
   // added later can't quietly bypass the cap. Charged after the headroom
@@ -5311,7 +5430,7 @@ async function generateAiTopicLevel(
     existingSnap.docs
       .map((doc) => String(doc.data().q || ""))
       .filter((q) => q.length > 0),
-    options.avoidQuestions ?? [],
+    callerAvoid,
     AI_AVOID_LIST_MAX_QUESTIONS
   );
 

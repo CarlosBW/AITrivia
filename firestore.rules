@@ -28,6 +28,20 @@ service cloud.firestore {
       }
     }
 
+    // Cloud-Function-only (consumeAiBudget, Admin SDK — bypasses these
+    // rules). Daily Claude spend counters, project-wide and per account.
+    // Fully closed, reads included: these are the ceilings that bound real
+    // Anthropic billing, so a client must be able neither to reset a
+    // counter nor to read how much of today's budget is left and pace
+    // itself just under it.
+    match /ai_usage/{dateId} {
+      allow read, write: if false;
+
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
     match /usernames/{usernameLower} {
       allow read: if request.auth != null;
 

@@ -18,9 +18,15 @@ El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta 
 - [ ] Una vez registrado y verificado que la app real está mandando tokens válidos, **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
 - [ ] Web no está cubierto todavía (necesita una site key de reCAPTCHA) — si vas a lanzar la versión web, avísame y lo agrego.
 
-## 3. Alertas de presupuesto (gasto real de dinero ahora) — guía entregada
+## 3. Control de gasto en IA (dinero real desde el 2026-08-04)
 
-- [x] Guía paso a paso entregada (Google Cloud Console → Billing → Budgets & alerts, y Anthropic Console → Billing/Limits), incluyendo estimado de costo por tema de IA generado (~$0.03–0.05 USD por tema completo con Haiku 4.5). Ejecución pendiente de tu lado — es tu decisión de negocio qué monto poner.
+Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estructuralmente cero. Ya no. Como el login es anónimo e ilimitado y cada cuenta nueva trae un pase gratis, existe un camino de "cualquiera con el app" a gasto real.
+
+- [x] **Tope diario en el servidor** (`functions/src/ai_budget.ts`): 5000 niveles/día a nivel proyecto (≈500 temas completos, ≈$25 USD/día en el peor caso) y 50/día por cuenta. Sugerencias de títulos tienen su propio medidor (2000/día global, 30/día por cuenta). Contadores en `ai_usage/{fecha}`, con fecha del servidor y transacción, así que ni el reloj del cliente ni dos llamadas simultáneas los saltan. Para cambiar los topes: `AI_METER_CAPS` en ese archivo, y redesplegar.
+- [ ] **Alerta de presupuesto en Google Cloud** (pendiente, tuya): Console → Billing → Budgets & alerts → Create budget, alcance el proyecto `trivia-ia-app`, con alertas al 50/90/100%. El tope del servidor acota el peor caso pero no te *avisa*; esto sí.
+- [ ] **Límite de gasto en Anthropic Console** (pendiente, tuya): Settings → Limits, define un tope mensual. Es la única defensa que no depende de que nuestro código se comporte.
+- Referencia de costo: ~$0.03–0.05 USD por tema completo de 10 niveles con Haiku 4.5.
+- Nota: el enforcement de App Check (punto 2) es la solución de fondo a este riesgo — los topes son un paliativo mientras siga bloqueado por las cuentas de las tiendas.
 
 ## 4. Cuentas de las tiendas (fuera de alcance por ahora, como acordamos)
 

@@ -28,6 +28,11 @@ import {
   seededShuffleIndices,
   selectSessionQuestions,
 } from "./ai_question_bank";
+import {
+  AI_METER_CAPS,
+  AiMeter,
+  checkAiBudget,
+} from "./ai_budget";
 
 // Bounds on the "don't repeat these" list sent to Claude when topping up
 // a level's bank: enough context to actually avoid duplicates, not so
@@ -5042,6 +5047,7 @@ async function expandableLevelNumbers(
  * per-user topic doc — every AI topic's question content lives in the
  * pool (see the "Shared AI-topic content pool" plan), so every caller
  * passes the resolved pool ref here.
+ * @param {string} uid Account whose daily generation budget this draws on.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
  * @param {number} levelNumber Level to top up.
  * @param {string} title Topic title, used as the generation subject.
@@ -5050,6 +5056,7 @@ async function expandableLevelNumbers(
  * @return {Promise<number>} How many questions were actually appended.
  */
 async function generateAiTopicLevel(
+  uid: string,
   poolRef: FirebaseFirestore.DocumentReference,
   levelNumber: number,
   title: string,
@@ -5063,6 +5070,12 @@ async function generateAiTopicLevel(
   const requested = options.count ?? AI_QUESTIONS_PER_LEVEL;
   const count = Math.min(requested, bankHeadroom(existingIds.length));
   if (count <= 0) return [];
+
+  // Every billable generation path in the codebase funnels through here,
+  // which is the point: metering at the single choke point means a route
+  // added later can't quietly bypass the cap. Charged after the headroom
+  // check above, so a level that turns out to be full costs nothing.
+  await consumeAiBudget(uid, "levels", 1);
 
   // Ordered so this level's own questions survive the prompt's truncation
   // — a caller's cross-level list is pool-wide, and trimming that blindly
@@ -5108,6 +5121,83 @@ async function generateAiTopicLevel(
   // row extend their own avoid-list with these instead of re-reading the
   // whole pool between levels.
   return questions.map((question) => question.q);
+}
+
+/**
+ * Reserves [units] of a daily Claude spend meter, or throws if today's
+ * budget is already gone.
+ *
+ * Counters live in `ai_usage/{dateId}` (project-wide) and
+ * `ai_usage/{dateId}/users/{uid}`, bucketed by the *server's* date so a
+ * device with a rolled-back clock can't reopen yesterday's allowance, and
+ * read-then-incremented inside one transaction so two concurrent requests
+ * can't both slip past a nearly-exhausted cap. Old buckets need no
+ * cleanup — a new day simply reads a document that doesn't exist yet.
+ *
+ * The global counter is a single hot document, which at these ceilings
+ * averages well under one write per second; bursts rely on normal
+ * transaction retries.
+ * @param {string} uid Account to charge.
+ * @param {AiMeter} meter Which spend meter to charge.
+ * @param {number} units How much to reserve.
+ * @return {Promise<void>} Resolves once the units are reserved.
+ */
+async function consumeAiBudget(
+  uid: string,
+  meter: AiMeter,
+  units: number
+): Promise<void> {
+  if (units <= 0) return;
+
+  const dateId = serverDateId();
+  const globalRef = db.collection("ai_usage").doc(dateId);
+  const perUserRef = globalRef.collection("users").doc(uid);
+  const caps = AI_METER_CAPS[meter];
+
+  const verdict = await db.runTransaction(async (tx) => {
+    const [globalSnap, userSnap] = await Promise.all([
+      tx.get(globalRef),
+      tx.get(perUserRef),
+    ]);
+
+    const result = checkAiBudget({
+      globalUsed: safeInt(globalSnap.data()?.[meter], 0),
+      userUsed: safeInt(userSnap.data()?.[meter], 0),
+      units,
+      caps,
+    });
+
+    if (!result.allowed) return result;
+
+    const bump = {
+      [meter]: admin.firestore.FieldValue.increment(units),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    tx.set(globalRef, bump, {merge: true});
+    tx.set(perUserRef, bump, {merge: true});
+
+    return result;
+  });
+
+  if (verdict.allowed) return;
+
+  // Deliberately distinct messages: "the service is out" is not the
+  // player's doing and shouldn't read like an accusation, whereas their
+  // own limit is something they can reason about.
+  if (verdict.limit === "global") {
+    console.warn(`AI daily ${meter} budget exhausted project-wide`);
+    throw await localizedErrorFor(
+      uid, "resource-exhausted",
+      "El servicio de IA alcanzó su límite diario. Intenta mañana.",
+      "The AI service reached its daily limit. Please try again tomorrow."
+    );
+  }
+
+  throw await localizedErrorFor(
+    uid, "resource-exhausted",
+    "Alcanzaste tu límite diario de generación con IA. Intenta mañana.",
+    "You've reached your daily AI generation limit. Try again tomorrow."
+  );
 }
 
 /**
@@ -5260,7 +5350,7 @@ async function ensureTopicAdoptedIntoPool(
           level <= ownGeneratedLevels;
           level++
         ) {
-          await generateAiTopicLevel(poolRef, level, title, languageCode);
+          await generateAiTopicLevel(uid, poolRef, level, title, languageCode);
         }
 
         await poolRef.set({
@@ -5471,6 +5561,12 @@ export const suggestAiTopicTitles = onCall({
   const userSnap = await db.collection("users").doc(uid).get();
   const languageCode = userSnap.data()?.languageCode;
   const outputLanguage = pickText(languageCode, "Spanish", "English");
+
+  // Cheaper per call than generating a level, but still a paid Claude
+  // request that costs no coins and is reachable by any anonymous account
+  // — so it gets its own meter rather than riding free on the level cap
+  // (or starving it, which charging it there would do).
+  await consumeAiBudget(uid, "suggestions", 1);
 
   const client = new Anthropic({apiKey: anthropicApiKey.value()});
 
@@ -5699,7 +5795,7 @@ export const createAiTopic = onCall({
         level++
       ) {
         await generateAiTopicLevel(
-          poolRef, level, cleanTitle, userData.languageCode
+          uid, poolRef, level, cleanTitle, userData.languageCode
         );
       }
     } catch (error) {
@@ -5941,7 +6037,7 @@ export const regenerateAiTopicQuestions = onCall({
       // re-issue what levels 1..N-1 just added — the buyer paid per level
       // for distinct content, not the same batch repeated.
       const added = await generateAiTopicLevel(
-        poolRef, level, title, languageCode,
+        uid, poolRef, level, title, languageCode,
         {count: AI_QUESTIONS_PER_LEVEL, avoidQuestions}
       );
 
@@ -6236,7 +6332,7 @@ async function topUpAiLevelBanks(params: {
     }
 
     const added = await generateAiTopicLevel(
-      poolRef, levelNumber, title, languageCode,
+      uid, poolRef, levelNumber, title, languageCode,
       {count: toGenerate, avoidQuestions}
     );
 
@@ -6307,7 +6403,7 @@ export const ensureAiTopicLevelsGenerated = onCall({
       level++
     ) {
       if (level > lastSuccessfulPoolLevel) {
-        await generateAiTopicLevel(poolRef, level, title, languageCode);
+        await generateAiTopicLevel(uid, poolRef, level, title, languageCode);
         lastSuccessfulPoolLevel = level;
       }
       lastSuccessfulUserLevel = level;

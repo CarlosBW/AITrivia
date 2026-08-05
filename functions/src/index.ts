@@ -3364,7 +3364,20 @@ async function loadFixedLevelQuestions(
       .filter((doc) => doc.exists)
       .map((doc) => doc.data() as Record<string, unknown>);
 
-    if (questions.length > 0) return {questions, difficulty, seed};
+    if (questions.length === picked.length) {
+      return {questions, difficulty, seed};
+    }
+
+    // Fewer questions back than ids asked for means the index outlived the
+    // pool — a question was deleted after it was built, and the index has a
+    // day to notice. Serving the short slate anyway would start the level
+    // with three questions instead of ten (`total` follows the count), with
+    // nothing to distinguish it from a level that is meant to be short. The
+    // index is proven stale for this category, so stop trusting it here
+    // rather than trying the next difficulty from the same stale data: the
+    // full read below re-runs from the preferred difficulty against what the
+    // pool actually holds.
+    break;
   }
 
   for (const difficulty of difficulties) {

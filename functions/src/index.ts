@@ -4650,6 +4650,31 @@ function lifeStateResponse(state: LifeState): Record<string, unknown> {
   };
 }
 
+/**
+ * Recomputes life state after a spend, rather than patching the pre-spend
+ * one.
+ *
+ * `secondsToNextHalfLife` is derived from lifeUnits and lastTickMs, so
+ * carrying it over from before the deduction reports the old countdown —
+ * and when the player was full it reports `null`, which the UI reads as
+ * "no regen pending" even though they now owe one. Harmless while callers
+ * followed every spend with a refresh; wrong the moment they stopped.
+ * @param {LifeState} before State as computed before the deduction.
+ * @param {number} lifeUnits Units left after the deduction.
+ * @param {number} lastTickMs Regen tick after the deduction.
+ * @return {LifeState} Consistent state for the post-spend units.
+ */
+function stateAfterSpend(
+  before: LifeState, lifeUnits: number, lastTickMs: number
+): LifeState {
+  return computeLifeState({
+    lifeUnits,
+    maxLifeUnits: before.maxLifeUnits,
+    lifeRegenSeconds: before.lifeRegenSeconds,
+    lastLifeTickAt: admin.firestore.Timestamp.fromMillis(lastTickMs),
+  }, Date.now());
+}
+
 export const refreshUserLives = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -4713,12 +4738,8 @@ export const consumeLevelEntryLife = onCall(async (request) => {
       lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
     }, {merge: true});
 
-    return {
-      ok: true,
-      ...lifeStateResponse(
-        {...state, lifeUnits: newUnits, lastTickMs: newTickMs}
-      ),
-    };
+    return {ok: true, ...lifeStateResponse(stateAfterSpend(state, newUnits,
+      newTickMs))};
   });
 });
 
@@ -4755,12 +4776,8 @@ export const consumeWrongAnswerLife = onCall(async (request) => {
       lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
     }, {merge: true});
 
-    return {
-      lifeLost: true,
-      ...lifeStateResponse(
-        {...state, lifeUnits: newUnits, lastTickMs: newTickMs}
-      ),
-    };
+    return {lifeLost: true, ...lifeStateResponse(stateAfterSpend(state,
+      newUnits, newTickMs))};
   });
 });
 

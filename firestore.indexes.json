@@ -8,6 +8,91 @@
         {"fieldPath": "languageCode", "order": "ASCENDING"},
         {"fieldPath": "usageCount", "order": "DESCENDING"}
       ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "challengedStatus", "order": "ASCENDING"},
+        {"fieldPath": "challengedUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "challengedStatus", "order": "ASCENDING"},
+        {"fieldPath": "challengerStatus", "order": "ASCENDING"},
+        {"fieldPath": "challengerUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "challengedUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "challengerUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "participants", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "updatedAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "fixed_categories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "isActive", "order": "ASCENDING"},
+        {"fieldPath": "order", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "friend_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "read", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "realtime_invites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "toUid", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "sent_friend_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
     }
   ],
   "fieldOverrides": []

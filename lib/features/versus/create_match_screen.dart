@@ -31,7 +31,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   // a real category id — matches live_menu_screen.dart's pattern.
   String? _categoryId;
   int _difficulty = 1;
-  int _timePerQuestionSec = 10;
+  int _timePerQuestionSec = 15;
   int _totalQuestions = 10;
 
   // Mirrors live_menu_screen.dart's _loadCategories — reads the same
@@ -221,7 +221,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       DropdownMenuItem(value: 12, child: Text('12s')),
                       DropdownMenuItem(value: 15, child: Text('15s')),
                     ],
-                    onChanged: _loading ? null : (v) => setState(() => _timePerQuestionSec = v ?? 10),
+                    onChanged: _loading ? null : (v) => setState(() => _timePerQuestionSec = v ?? 15),
                     decoration: InputDecoration(
                       labelText: l10n.createMatchTimePerQuestion,
                       border: const OutlineInputBorder(),

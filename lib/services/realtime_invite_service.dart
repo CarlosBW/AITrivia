@@ -95,7 +95,7 @@ class RealtimeInviteService {
     String categoryId = 'random',
     int difficulty = 1,
     int totalQuestions = 10,
-    int timePerQuestionSec = 10,
+    int timePerQuestionSec = 15,
     int winReward = EconomyService.defaultPvpWinReward,
   }) async {
     if (toUid.trim().isEmpty) {
@@ -210,7 +210,7 @@ class RealtimeInviteService {
     final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
     final totalQuestions = ((invite['totalQuestions'] ?? 10) as num).toInt();
     final timePerQuestionSec =
-        ((invite['timePerQuestionSec'] ?? 10) as num).toInt();
+        ((invite['timePerQuestionSec'] ?? 15) as num).toInt();
     final winReward = ((invite['winReward'] ?? 2) as num).toInt();
 
     final resolvedCategoryId = await _resolveCategoryId(categoryId);

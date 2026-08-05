@@ -236,7 +236,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           final totalQuestions =
               ((data['totalQuestions'] ?? 10) as num).toInt();
           final timePerQuestionSec =
-              ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+              ((data['timePerQuestionSec'] ?? 15) as num).toInt();
 
           final hostUid = (data['hostUid'] ?? '').toString();
           final guestUid = (data['guestUid'] ?? '').toString();

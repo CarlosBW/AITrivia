@@ -45,7 +45,7 @@ class _FriendChallengeSetupScreenState
   String _categoryId = 'random';
   int _difficulty = 1;
   int _totalQuestions = 10;
-  int _timePerQuestionSec = 10;
+  int _timePerQuestionSec = 15;
 
   late final Future<List<_CategoryOption>> _categoriesFuture =
       _loadCategories();

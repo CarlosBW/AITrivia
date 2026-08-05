@@ -26,7 +26,7 @@ class LiveMatchmakingScreen extends StatefulWidget {
     super.key,
     required this.categoryId,
     this.difficulty = 1,
-    this.timePerQuestionSec = 10,
+    this.timePerQuestionSec = 15,
     this.totalQuestions = 10,
     this.winReward = EconomyService.defaultPvpWinReward,
     this.displayName = 'Player',

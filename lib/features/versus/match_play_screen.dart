@@ -64,7 +64,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   bool _rematchPromptShowing = false;
 
-  static const int _defaultTimePerQ = 10;
+  static const int _defaultTimePerQ = 15;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 

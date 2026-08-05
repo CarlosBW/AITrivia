@@ -1677,7 +1677,7 @@ export const tryFindLiveOpponent = onCall(async (request) => {
   const difficulty = safeInt(meData?.difficulty, 1);
   const ranked = meData?.ranked === true;
   const totalQuestions = safeInt(meData?.totalQuestions, 10);
-  const timePerQuestionSec = safeInt(meData?.timePerQuestionSec, 10);
+  const timePerQuestionSec = safeInt(meData?.timePerQuestionSec, 15);
   const winReward = clampWinReward(safeInt(meData?.winReward, 2));
 
   const candidatesSnap = await db.collection("live_search")

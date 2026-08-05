@@ -99,7 +99,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _isNavigating = false;
   bool _buyingLife = false;
 
-  static const int _defaultTimePerQ = 10;
+  static const int _defaultTimePerQ = 15;
   static const int _buyLifeCost = EconomyService.buyFullLifeCost;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);

@@ -297,7 +297,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
             return Center(child: Text(l10n.asyncMatchPlayNotFound));
           }
 
-          final timePerQ = ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+          final timePerQ = ((data['timePerQuestionSec'] ?? 15) as num).toInt();
 
           final questions = data['questions'] as List<dynamic>? ?? [];
 

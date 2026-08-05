@@ -52,7 +52,7 @@ class MatchService {
     required String categoryId,
     int difficulty = 1,
     int totalQuestions = 10,
-    int timePerQuestionSec = 10,
+    int timePerQuestionSec = 15,
     int winReward = EconomyService.defaultPvpWinReward,
     String displayName = 'Player',
     bool ranked = false,
@@ -289,7 +289,7 @@ class MatchService {
   Future<String> createFixedMatch({
     required String categoryId,
     int totalQuestions = 10,
-    int timePerQuestionSec = 10,
+    int timePerQuestionSec = 15,
     int winReward = EconomyService.defaultPvpWinReward,
     int difficulty = 1,
     String displayName = 'Host',
@@ -614,7 +614,7 @@ class MatchService {
       final totalQuestions = ((data['totalQuestions'] ?? 10) as num).toInt();
 
       final timePerQuestionSec =
-          ((data['timePerQuestionSec'] ?? 10) as num).toInt();
+          ((data['timePerQuestionSec'] ?? 15) as num).toInt();
 
       final winReward = ((data['winReward'] ?? 0) as num).toInt();
 
@@ -716,7 +716,7 @@ class MatchService {
     required String categoryId,
     int difficulty = 1,
     int totalQuestions = 10,
-    int timePerQuestionSec = 10,
+    int timePerQuestionSec = 15,
     int winReward = EconomyService.defaultPvpWinReward,
     String challengerDisplayName = 'Player',
     String challengedDisplayName = 'Player',

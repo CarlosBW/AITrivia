@@ -15,7 +15,7 @@ class AsyncMenuScreen extends StatefulWidget {
   const AsyncMenuScreen({
     super.key,
     this.difficulty = 1,
-    this.timePerQuestionSec = 10,
+    this.timePerQuestionSec = 15,
     this.totalQuestions = 10,
     this.winReward = EconomyService.defaultPvpWinReward,
   });

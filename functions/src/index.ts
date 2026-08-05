@@ -3118,12 +3118,30 @@ const DAILY_POOL_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
 // 60 bytes per entry.
 const DAILY_POOL_INDEX_MAX_ENTRIES = 10000;
 
+interface DailyQuestionIndex {
+  /** Where every indexed question lives. */
+  entries: DailyPoolEntry[];
+  /**
+   * Categories whose every difficulty was indexed before the entry cap
+   * cut the scan short.
+   *
+   * Needed because a category the cap truncated *looks* identical to one
+   * that simply has no questions at a given difficulty — both come back
+   * as an empty filter. Callers that pick per difficulty must not confuse
+   * the two: treating "truncated" as "empty" silently serves whatever
+   * difficulty did make it into the index. Only categories listed here
+   * are safe to answer from the index alone.
+   */
+  completeCategories: string[];
+}
+
 /**
  * Scans every active category's pools and records where each question
  * lives. Expensive, so it runs once per TTL rather than once per player.
- * @return {Promise<DailyPoolEntry[]>} Index of every poolable question.
+ * @return {Promise<DailyQuestionIndex>} Index, and which categories it
+ * covers completely.
  */
-async function buildDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
+async function buildDailyQuestionIndex(): Promise<DailyQuestionIndex> {
   const categoriesSnap = await db.collection("fixed_categories")
     .where("isActive", "==", true).get();
 
@@ -3141,53 +3159,76 @@ async function buildDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
   }
 
   const entries: DailyPoolEntry[] = [];
+  const completeCategories: string[] = [];
 
   for (const categoryId of categoryIds) {
+    let truncated = false;
+
     for (const difficulty of [1, 2, 3]) {
       const snap = await db.collection("fixed_pools").doc(categoryId)
         .collection(`difficulty_${difficulty}`).doc("pool")
         .collection("questions").get();
 
       for (const doc of snap.docs) {
-        if (entries.length >= DAILY_POOL_INDEX_MAX_ENTRIES) return entries;
+        if (entries.length >= DAILY_POOL_INDEX_MAX_ENTRIES) {
+          truncated = true;
+          break;
+        }
         entries.push({c: categoryId, d: difficulty, q: doc.id});
       }
+
+      if (truncated) break;
     }
+
+    // The cap ends the whole scan, as before — every category after this
+    // one is simply absent, which callers already handle. What changes is
+    // that the category we stopped *inside* isn't claimed as complete.
+    if (truncated) return {entries, completeCategories};
+
+    completeCategories.push(categoryId);
   }
 
-  return entries;
+  return {entries, completeCategories};
 }
 
 /**
  * The cached question index, rebuilt when it's missing or past its TTL.
- * @return {Promise<DailyPoolEntry[]>} Index of every poolable question.
+ * @return {Promise<DailyQuestionIndex>} Index, and which categories it
+ * covers completely.
  */
-async function loadDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
+async function loadDailyQuestionIndex(): Promise<DailyQuestionIndex> {
   const ref = db.collection("caches").doc("daily_question_index");
   const snap = await ref.get();
   const data = snap.data();
 
   const builtAt = data?.builtAt as admin.firestore.Timestamp | undefined;
   const cached = (data?.entries as DailyPoolEntry[] | undefined) || [];
+  const cachedComplete = data?.completeCategories as string[] | undefined;
   const isFresh = builtAt !== undefined &&
     Date.now() - builtAt.toMillis() < DAILY_POOL_INDEX_TTL_MS;
 
-  if (cached.length > 0 && isFresh) return cached;
+  // A document written before `completeCategories` existed can't say which
+  // categories it covers, and assuming "all" is the unsafe direction — so
+  // it's rebuilt rather than trusted. Costs one extra scan, once.
+  if (cached.length > 0 && isFresh && cachedComplete !== undefined) {
+    return {entries: cached, completeCategories: cachedComplete};
+  }
 
-  const entries = await buildDailyQuestionIndex();
+  const index = await buildDailyQuestionIndex();
 
-  if (entries.length > 0) {
+  if (index.entries.length > 0) {
     // Two players can race into a rebuild and both write. The write is
     // idempotent, so the loser costs one duplicate scan, never a wrong
     // result — not worth a transaction to prevent.
     await ref.set({
-      entries,
-      count: entries.length,
+      entries: index.entries,
+      completeCategories: index.completeCategories,
+      count: index.entries.length,
       builtAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
 
-  return entries;
+  return index;
 }
 
 /**
@@ -3199,13 +3240,15 @@ async function loadDailyQuestionIndex(): Promise<DailyPoolEntry[]> {
 async function loadRandomDailyQuestions(
   excludeQuestionIds: Set<string>
 ): Promise<Record<string, unknown>[]> {
-  const index = await loadDailyQuestionIndex();
+  // Draws across every category at once, so a truncated index just means
+  // a smaller pool to draw from — never the wrong difficulty.
+  const {entries} = await loadDailyQuestionIndex();
 
-  if (index.length === 0) {
+  if (entries.length === 0) {
     throw new HttpsError("failed-precondition", "No questions in pools.");
   }
 
-  const shuffled = [...index];
+  const shuffled = [...entries];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -3292,13 +3335,19 @@ async function loadFixedLevelQuestions(
       .collection(`difficulty_${difficulty}`).doc("pool")
       .collection("questions");
 
-  // A category that isn't in the index — inactive, newly seeded, or past
-  // the index's entry cap — falls through to the old full read below
-  // rather than losing its levels.
-  const index = await loadDailyQuestionIndex().catch(() => []);
+  // Only a category the index covers *completely* can be answered from it.
+  // A category the entry cap cut short reports empty for the difficulties
+  // that didn't fit, which is indistinguishable from having none — and the
+  // loop below would then quietly serve whichever difficulty did fit,
+  // handing a level-30 player level-1 questions. Anything not known
+  // complete (inactive, newly seeded, or truncated) falls through to the
+  // full read instead.
+  const index = await loadDailyQuestionIndex()
+    .catch(() => ({entries: [], completeCategories: []} as DailyQuestionIndex));
+  const indexCovers = index.completeCategories.includes(categoryId);
 
-  for (const difficulty of difficulties) {
-    const ids = index
+  for (const difficulty of indexCovers ? difficulties : []) {
+    const ids = index.entries
       .filter((entry) => entry.c === categoryId && entry.d === difficulty)
       .map((entry) => entry.q);
 
@@ -6077,14 +6126,18 @@ export const suggestAiTopicTitles = onCall({
     "suggestion should be the cleaned-up version of the same topic. Do " +
     "not repeat the exact same title twice.";
 
+  // No minItems/maxItems on `titles`: structured outputs reject any
+  // minItems other than 0 or 1, and the whole request 400s rather than
+  // degrading — which is exactly how this call failed in production, with
+  // both retries hitting the same deterministic rejection. The count is
+  // asked for in the prompt and enforced below, where a short or long list
+  // is something we can actually recover from.
   const schema = {
     type: "object",
     properties: {
       titles: {
         type: "array",
         items: {type: "string"},
-        minItems: AI_TOPIC_SUGGESTION_COUNT,
-        maxItems: AI_TOPIC_SUGGESTION_COUNT,
       },
     },
     required: ["titles"],
@@ -6120,6 +6173,12 @@ export const suggestAiTopicTitles = onCall({
       const suggestions: string[] = [];
 
       for (const raw of rawTitles) {
+        // Now that the schema no longer bounds the array, the ceiling is
+        // enforced here — a model that returns more than asked would
+        // otherwise fill the picker with options the player must read
+        // through.
+        if (suggestions.length >= AI_TOPIC_SUGGESTION_COUNT) break;
+
         const title = String(raw || "").trim();
         const normalized = normalizeTopicTitle(title);
 
@@ -6804,10 +6863,13 @@ function bankTopUpLevels(
  * slate waiting for each.
  *
  * This is the "generate ahead of the player" half of the accumulating
- * bank: `ensureSoloLevelSession` deliberately never calls Claude, so all
- * generation happens here, off the level-start path. A level is topped up
- * only when this player's unseen count has dropped below a slate and the
- * bank is still under [AI_QUESTION_BANK_CAP].
+ * bank, and the path generation is *supposed* to take: it runs while the
+ * player is answering, so the next level is already banked when they get
+ * there. `ensureSoloLevelSession` can also generate, but only to self-heal
+ * a level whose bank is empty — that path costs the player a wait, so
+ * reaching it means this one didn't run in time. A level is topped up only
+ * when this player's unseen count has dropped below a slate and the bank
+ * is still under [AI_QUESTION_BANK_CAP].
  * @param {object} params Topic, pool and level context.
  * @return {Promise<void>} Resolves once every eligible level is topped up.
  */

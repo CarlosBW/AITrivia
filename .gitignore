@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/release
 /tools/serviceAccountKey.json
 tools/serviceAccountKey.json
+
+# Dependencias reinstalables desde tools/package.json — no van al repo.
+tools/node_modules/

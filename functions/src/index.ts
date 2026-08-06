@@ -34,6 +34,10 @@ import {
   AiMeter,
   checkAiBudget,
 } from "./ai_budget";
+import {
+  difficultyForLevel,
+  sliceForLevel,
+} from "./fixed_level_slicing";
 
 // Bounds on the "don't repeat these" list sent to Claude when topping up
 // a level's bank: enough context to actually avoid duplicates, not so
@@ -3299,48 +3303,6 @@ async function loadRandomDailyQuestions(
   return questions;
 }
 
-/** Questions served per fixed-category solo level. */
-const FIXED_LEVEL_QUESTION_COUNT = 10;
-
-/**
- * Where a level sits inside its difficulty band. Levels 1-3, 4-7 and 8-10
- * all draw from the same pool, so this is what tells them apart.
- * @param {number} levelNumber The solo level number (1-based).
- * @return {number} 0-based position of the level within its band.
- */
-function levelIndexInBand(levelNumber: number): number {
-  if (levelNumber <= 3) return levelNumber - 1;
-  if (levelNumber <= 7) return levelNumber - 4;
-  return levelNumber - 8;
-}
-
-/**
- * Takes this level's slate out of a pool already shuffled for its band.
- *
- * Every level in a band shuffles the pool identically and then reads its
- * own consecutive window of it, so the bands' pool sizes (30/40/30 for
- * bands of 3/4/3 levels) hand each level ten questions none of its
- * siblings get. A pool smaller than the band needs wraps around instead of
- * running short — overlapping again, but only as much as it has to, and
- * never repeating a question inside one level since the window is at most
- * as long as the pool.
- * @param {number[]} order Shuffled pool positions.
- * @param {number} levelNumber Level being opened.
- * @return {number[]} Pool positions for this level, in order.
- */
-function sliceForLevel(order: number[], levelNumber: number): number[] {
-  const total = order.length;
-  const count = Math.min(FIXED_LEVEL_QUESTION_COUNT, total);
-  const start =
-    (levelIndexInBand(levelNumber) * FIXED_LEVEL_QUESTION_COUNT) % total;
-
-  const picked: number[] = [];
-  for (let i = 0; i < count; i++) {
-    picked.push(order[(start + i) % total]);
-  }
-  return picked;
-}
-
 /**
  * Picks a fixed-category solo level's questions, preferring the cached
  * index over reading the whole difficulty pool.
@@ -4213,18 +4175,6 @@ export const submitSoloLevelResult = onCall(async (request) => {
   });
 });
 
-/**
- * Which fixed-pool tier a solo level draws from — the client no longer has
- * a copy of this, question selection moved server-side. Bands must stay in
- * step with `levelIndexInBand`, which slices each band's pool per level.
- * @param {number} levelNumber The solo level number (1-based).
- * @return {number} The fixed-pool difficulty tier (1-3) for that level.
- */
-function difficultyForLevel(levelNumber: number): number {
-  if (levelNumber <= 3) return 1;
-  if (levelNumber <= 7) return 2;
-  return 3;
-}
 
 /**
  * Server-authoritative replacement for level_play_screen.dart's

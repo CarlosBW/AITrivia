@@ -23,6 +23,16 @@
       "queryScope": "COLLECTION",
       "fields": [
         {"fieldPath": "challengedStatus", "order": "ASCENDING"},
+        {"fieldPath": "challengedUid", "order": "ASCENDING"},
+        {"fieldPath": "challengerStatus", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "challengedStatus", "order": "ASCENDING"},
         {"fieldPath": "challengerStatus", "order": "ASCENDING"},
         {"fieldPath": "challengerUid", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
@@ -40,6 +50,15 @@
       "collectionGroup": "async_matches",
       "queryScope": "COLLECTION",
       "fields": [
+        {"fieldPath": "challengedUid", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "endedAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
         {"fieldPath": "challengerUid", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
       ]
@@ -48,9 +67,17 @@
       "collectionGroup": "async_matches",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "participants", "arrayConfig": "CONTAINS"},
+        {"fieldPath": "challengerUid", "order": "ASCENDING"},
         {"fieldPath": "status", "order": "ASCENDING"},
-        {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        {"fieldPath": "endedAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "async_matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "rewarded", "order": "ASCENDING"},
+        {"fieldPath": "lastUpdatedAt", "order": "ASCENDING"}
       ]
     },
     {
@@ -75,6 +102,23 @@
       "fields": [
         {"fieldPath": "read", "order": "ASCENDING"},
         {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "realtime_invites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "fromUid", "order": "ASCENDING"},
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "realtime_invites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "status", "order": "ASCENDING"},
+        {"fieldPath": "createdAt", "order": "ASCENDING"}
       ]
     },
     {

@@ -178,6 +178,13 @@ async function run() {
     console.log(`OK ${p.cat}/difficulty_${p.d}: +${p.assigned.length}`);
   }
 
+  // Solo y el Reto Diario no leen los pools directamente: van contra el
+  // indice cacheado en caches/daily_question_index, que se reconstruye solo
+  // cada 24h (DAILY_POOL_INDEX_TTL_MS). Sin borrarlo, las preguntas recien
+  // subidas no se sirven hasta que expire.
+  await db.collection("caches").doc("daily_question_index").delete();
+  console.log("Cache daily_question_index invalidado.");
+
   console.log("\nListo.");
   process.exit(0);
 }

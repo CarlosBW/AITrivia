@@ -3299,6 +3299,48 @@ async function loadRandomDailyQuestions(
   return questions;
 }
 
+/** Questions served per fixed-category solo level. */
+const FIXED_LEVEL_QUESTION_COUNT = 10;
+
+/**
+ * Where a level sits inside its difficulty band. Levels 1-3, 4-7 and 8-10
+ * all draw from the same pool, so this is what tells them apart.
+ * @param {number} levelNumber The solo level number (1-based).
+ * @return {number} 0-based position of the level within its band.
+ */
+function levelIndexInBand(levelNumber: number): number {
+  if (levelNumber <= 3) return levelNumber - 1;
+  if (levelNumber <= 7) return levelNumber - 4;
+  return levelNumber - 8;
+}
+
+/**
+ * Takes this level's slate out of a pool already shuffled for its band.
+ *
+ * Every level in a band shuffles the pool identically and then reads its
+ * own consecutive window of it, so the bands' pool sizes (30/40/30 for
+ * bands of 3/4/3 levels) hand each level ten questions none of its
+ * siblings get. A pool smaller than the band needs wraps around instead of
+ * running short — overlapping again, but only as much as it has to, and
+ * never repeating a question inside one level since the window is at most
+ * as long as the pool.
+ * @param {number[]} order Shuffled pool positions.
+ * @param {number} levelNumber Level being opened.
+ * @return {number[]} Pool positions for this level, in order.
+ */
+function sliceForLevel(order: number[], levelNumber: number): number[] {
+  const total = order.length;
+  const count = Math.min(FIXED_LEVEL_QUESTION_COUNT, total);
+  const start =
+    (levelIndexInBand(levelNumber) * FIXED_LEVEL_QUESTION_COUNT) % total;
+
+  const picked: number[] = [];
+  for (let i = 0; i < count; i++) {
+    picked.push(order[(start + i) % total]);
+  }
+  return picked;
+}
+
 /**
  * Picks a fixed-category solo level's questions, preferring the cached
  * index over reading the whole difficulty pool.
@@ -3310,8 +3352,8 @@ async function loadRandomDailyQuestions(
  * in this category at this difficulty", and only the ten actually served
  * get read.
  *
- * The seeded pick still runs over ids in the pool's own document order, so
- * a given player and level draw the same questions as before.
+ * Both paths run the same seeded pick over ids in the pool's own document
+ * order, so which path answered is invisible to the player.
  * @param {string} uid Player, part of the deterministic seed.
  * @param {string} categoryId Fixed category being played.
  * @param {number} levelNumber Level being opened.
@@ -3328,7 +3370,13 @@ async function loadFixedLevelQuestions(
 }> {
   const preferred = difficultyForLevel(levelNumber);
   const difficulties = Array.from(new Set([preferred, 1, 2, 3]));
-  const seed = fnv1a32(`${uid}|${categoryId}|${levelNumber}`);
+
+  // Seeded per difficulty, not per level: the levels sharing a band have to
+  // agree on the shuffle for sliceForLevel to keep their slates disjoint.
+  // Seeding per level made each one an independent draw from the whole
+  // pool, so two levels in a band overlapped by about three questions.
+  const seedFor = (difficulty: number) =>
+    fnv1a32(`${uid}|${categoryId}|d${difficulty}`);
 
   const questionsRef = (difficulty: number) =>
     db.collection("fixed_pools").doc(categoryId)
@@ -3353,9 +3401,9 @@ async function loadFixedLevelQuestions(
 
     if (ids.length === 0) continue;
 
+    const seed = seedFor(difficulty);
     const order = seededShuffleIndices(ids.length, seed);
-    const picked = order.slice(0, Math.min(10, ids.length))
-      .map((i) => ids[i]);
+    const picked = sliceForLevel(order, levelNumber).map((i) => ids[i]);
 
     const docs = await db.getAll(
       ...picked.map((id) => questionsRef(difficulty).doc(id))
@@ -3384,14 +3432,15 @@ async function loadFixedLevelQuestions(
     const snap = await questionsRef(difficulty).get();
     if (snap.empty) continue;
 
+    const seed = seedFor(difficulty);
     const order = seededShuffleIndices(snap.docs.length, seed);
-    const questions = order.slice(0, Math.min(10, snap.docs.length))
+    const questions = sliceForLevel(order, levelNumber)
       .map((i) => snap.docs[i].data());
 
     return {questions, difficulty, seed};
   }
 
-  return {questions: [], difficulty: 0, seed};
+  return {questions: [], difficulty: 0, seed: seedFor(preferred)};
 }
 
 /**
@@ -4135,7 +4184,9 @@ export const submitSoloLevelResult = onCall(async (request) => {
 });
 
 /**
- * Mirrors level_play_screen.dart's `_difficultyForLevel`.
+ * Which fixed-pool tier a solo level draws from — the client no longer has
+ * a copy of this, question selection moved server-side. Bands must stay in
+ * step with `levelIndexInBand`, which slices each band's pool per level.
  * @param {number} levelNumber The solo level number (1-based).
  * @return {number} The fixed-pool difficulty tier (1-3) for that level.
  */

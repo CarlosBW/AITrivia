@@ -42,6 +42,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   final _service = MatchService();
   final _presenceService = PresenceService.instance;
 
+  // Held rather than rebuilt in `build()`: the search poll ticks every five
+  // seconds and rebuilds this screen each time.
+  late final _queueStream = _service.watchMyLiveQueue();
+
   static const Duration _pollInterval = Duration(seconds: 5);
   static const Duration _searchTimeout = Duration(seconds: 90);
 
@@ -300,7 +304,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final queueStream = _service.watchMyLiveQueue();
 
     return Scaffold(
       appBar: AppBar(
@@ -311,7 +314,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: queueStream,
+        stream: _queueStream,
         builder: (context, snap) {
           final data = snap.data?.data();
           final status = (data?['status'] ?? '').toString();
@@ -345,6 +348,22 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                 Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
                 Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
                 Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),
+                // Matchmaking pairs on category/difficulty/ranked only, and
+                // the match takes whichever side claimed it first — so the
+                // two lines above are a preference, not a promise. Ranked
+                // says nothing because both sides are on the same defaults
+                // there and the player picked none of it.
+                if (!widget.ranked) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.liveMatchmakingSettingsMayVary,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (widget.ranked) ...[
                   _rankedSearchWindowCard(data),

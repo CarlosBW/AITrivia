@@ -27,12 +27,11 @@ class AsyncMenuScreen extends StatefulWidget {
 class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
   String? _selectedCategoryId;
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _fixedCategoriesStream() {
-    return FirebaseFirestore.instance
-        .collection('fixed_categories')
-        .where('isActive', isEqualTo: true)
-        .snapshots();
-  }
+  // Held so picking a category doesn't re-subscribe the category list.
+  late final _fixedCategories = FirebaseFirestore.instance
+      .collection('fixed_categories')
+      .where('isActive', isEqualTo: true)
+      .snapshots();
 
   void _goFindPlayersFixed() {
     if (_selectedCategoryId == null) {
@@ -80,7 +79,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
             const SizedBox(height: 8),
 
             StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _fixedCategoriesStream(),
+              stream: _fixedCategories,
               builder: (context, snap) {
                 if (!snap.hasData) {
                   return const Center(

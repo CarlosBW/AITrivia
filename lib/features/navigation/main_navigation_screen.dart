@@ -41,6 +41,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final Set<int> _visitedTabs = {0};
 
+  // Held rather than built in `build()`: this is the navigation shell, so it
+  // rebuilds on every tab switch and twice more per notification overlay,
+  // and each rebuild used to re-subscribe this query from scratch.
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _unreadNotifications =
+      NotificationService.instance.watchMyUnreadNotifications(limit: 99);
+
   static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'profile'];
 
   void _selectTab(int index) {
@@ -231,9 +237,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: NotificationService.instance.watchMyUnreadNotifications(
-          limit: 99,
-        ),
+        stream: _unreadNotifications,
         builder: (context, snap) {
           final unreadSnapshot = snap.data;
           final unreadCount = unreadSnapshot?.docs.length ?? 0;

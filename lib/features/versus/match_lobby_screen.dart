@@ -29,6 +29,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   final _presenceService = PresenceService.instance;
   final _service = MatchService();
 
+  // Held rather than rebuilt in `build()`: the opponent-presence poll ticks
+  // every ten seconds, and each tick used to re-subscribe this.
+  late final _matchDoc = FirebaseFirestore.instance
+      .collection('matches')
+      .doc(widget.matchId)
+      .snapshots();
+
   bool _navigatingToMatch = false;
 
   // Updated on every StreamBuilder snapshot so the periodic presence timer
@@ -180,15 +187,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final service = MatchService();
     final l10n = AppLocalizations.of(context);
-    final ref =
-        FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.matchLobbyTitle),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: ref.snapshots(),
+        stream: _matchDoc,
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());

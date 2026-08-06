@@ -623,6 +623,7 @@
       "seconds": {"type": "int"}
     }
   },
+  "liveMatchmakingSettingsMayVary": "Las preguntas y el tiempo son tu preferencia — la partida puede usar la de tu rival.",
   "liveMatchmakingNoOpponentFound": "No se encontró rival por ahora. Intenta nuevamente.",
   "liveMatchmakingTryAsyncInstead": "Jugar asíncrono en su lugar",
   "liveMatchmakingSearchButton": "Buscar",

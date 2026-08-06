@@ -139,5 +139,24 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "sent_friend_requests",
+      "fieldPath": "targetUid",
+      "indexes": [
+        {"queryScope": "COLLECTION", "order": "ASCENDING"},
+        {"queryScope": "COLLECTION", "order": "DESCENDING"},
+        {"queryScope": "COLLECTION_GROUP", "order": "ASCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "friend_requests",
+      "fieldPath": "requesterUid",
+      "indexes": [
+        {"queryScope": "COLLECTION", "order": "ASCENDING"},
+        {"queryScope": "COLLECTION", "order": "DESCENDING"},
+        {"queryScope": "COLLECTION_GROUP", "order": "ASCENDING"}
+      ]
+    }
+  ]
 }

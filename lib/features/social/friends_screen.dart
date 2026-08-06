@@ -30,6 +30,30 @@ class _FriendsScreenState extends State<FriendsScreen> {
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _searchResults = [];
   Map<String, _RelationStatus> _searchStatus = {};
 
+  // One stream per consumer, held for the life of the screen. Built inside
+  // `build()` these were re-subscribed on every rebuild — and this screen
+  // rebuilds on every search keystroke, tab switch and action.
+  late final _friendsStream = _service.watchFriends();
+  late final _outgoingCountStream = _service.watchOutgoingRequests();
+  late final _outgoingListStream = _service.watchOutgoingRequests();
+  late final _incomingCountStream = _service.watchIncomingRequests();
+  late final _incomingListStream = _service.watchIncomingRequests();
+
+  // Presence is per friend, so it can't be a single field — but the stream
+  // for a given uid still has to survive rebuilds. Bounded by the friends
+  // list (100) plus whoever the current search turned up.
+  final Map<String, Stream<DocumentSnapshot<Map<String, dynamic>>>>
+      _presenceStreams = {};
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _presenceStreamFor(
+    String userId,
+  ) {
+    return _presenceStreams.putIfAbsent(
+      userId,
+      () => _presenceService.watchUserPresence(userId: userId),
+    );
+  }
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -260,11 +284,11 @@ class _FriendsScreenState extends State<FriendsScreen> {
               Tab(text: l10n.friendsFriendsTab),
               _CountTab(
                 label: l10n.friendsSentTab,
-                stream: _service.watchOutgoingRequests(),
+                stream: _outgoingCountStream,
               ),
               _CountTab(
                 label: l10n.friendsReceivedTab,
-                stream: _service.watchIncomingRequests(),
+                stream: _incomingCountStream,
               ),
             ],
           ),
@@ -348,6 +372,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 player: data,
                 username: username,
                 status: status,
+                presenceStream: _presenceStreamFor(doc.id),
                 actionLoading: _actionLoading,
                 onAdd: () => _sendFriendRequest(doc.id),
                 onAccept: () => _runAction(
@@ -376,7 +401,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Widget _buildFriendsTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _service.watchFriends(),
+      stream: _friendsStream,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -414,7 +439,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     .toString();
 
             return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: _presenceService.watchUserPresence(userId: friendUid),
+              stream: _presenceStreamFor(friendUid),
               builder: (context, presenceSnap) {
                 final presenceData = presenceSnap.data?.data();
                 final presence =
@@ -467,7 +492,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Widget _buildOutgoingTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _service.watchOutgoingRequests(),
+      stream: _outgoingListStream,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -529,7 +554,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
   Widget _buildIncomingTab(AppLocalizations l10n) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _service.watchIncomingRequests(),
+      stream: _incomingListStream,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -654,6 +679,7 @@ class _SearchResultTile extends StatelessWidget {
   final Map<String, dynamic> player;
   final String username;
   final _RelationStatus status;
+  final Stream<DocumentSnapshot<Map<String, dynamic>>> presenceStream;
   final bool actionLoading;
   final VoidCallback onAdd;
   final VoidCallback onAccept;
@@ -665,6 +691,7 @@ class _SearchResultTile extends StatelessWidget {
     required this.player,
     required this.username,
     required this.status,
+    required this.presenceStream,
     required this.actionLoading,
     required this.onAdd,
     required this.onAccept,
@@ -679,9 +706,7 @@ class _SearchResultTile extends StatelessWidget {
     switch (status) {
       case _RelationStatus.friend:
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: PresenceService.instance.watchUserPresence(
-            userId: uid,
-          ),
+          stream: presenceStream,
           builder: (context, presenceSnap) {
             final presenceData = presenceSnap.data?.data();
             final presence =

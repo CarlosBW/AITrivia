@@ -3700,6 +3700,13 @@ export const sendPushOnNotificationCreated = onDocumentCreated(
 );
 
 /**
+ * Users scanned per page by `notifyStreakAtRisk`, and the ceiling on one
+ * batch's writes — a Firestore batch takes 500 operations, and this leaves
+ * room to spare.
+ */
+const STREAK_NOTIFY_PAGE_SIZE = 400;
+
+/**
  * Once a day, reminds users with an active Daily Challenge streak who
  * haven't played yet today, so they don't lose it silently.
  */
@@ -3711,19 +3718,36 @@ export const notifyStreakAtRisk = onSchedule(
       now.getMonth() + 1
     ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const snap = await db
-      .collection("users")
-      .where("dailyStreak", ">", 0)
-      .get();
+    // Paged rather than one unbounded read: every player with a live streak
+    // matches this query, so a single `.get()` grows with the whole active
+    // player base and lands in one invocation's memory. Writes go out in
+    // batches for the same reason — one `add()` per user through an
+    // unbounded Promise.all opened as many concurrent writes as there were
+    // users.
+    let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
-    await Promise.all(
-      snap.docs.map(async (doc) => {
+    for (;;) {
+      let page = db
+        .collection("users")
+        .where("dailyStreak", ">", 0)
+        .orderBy("dailyStreak")
+        .limit(STREAK_NOTIFY_PAGE_SIZE);
+
+      if (cursor) page = page.startAfter(cursor);
+
+      const snap = await page.get();
+      if (snap.empty) break;
+
+      const batch = db.batch();
+      let queued = 0;
+
+      for (const doc of snap.docs) {
         const data = doc.data();
-        if (data.lastDailyPlayed === dateId) return;
+        if (data.lastDailyPlayed === dateId) continue;
 
         const streak = safeInt(data.dailyStreak, 0);
 
-        await doc.ref.collection("notifications").add({
+        batch.set(doc.ref.collection("notifications").doc(), {
           type: "streak_at_risk",
           title: pickText(
             data.languageCode,
@@ -3741,8 +3765,14 @@ export const notifyStreakAtRisk = onSchedule(
           read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-      })
-    );
+        queued++;
+      }
+
+      if (queued > 0) await batch.commit();
+
+      if (snap.size < STREAK_NOTIFY_PAGE_SIZE) break;
+      cursor = snap.docs[snap.docs.length - 1];
+    }
   }
 );
 
@@ -8102,22 +8132,33 @@ export const deleteMyAccount = onCall(async (request) => {
   // mirror pointing at a ghost).
   await db.collection("live_search").doc(uid).delete();
 
-  const [incomingMirrors, outgoingMirrors] = await Promise.all([
-    db.collectionGroup("sent_friend_requests")
-      .where("targetUid", "==", uid).get(),
-    db.collectionGroup("friend_requests")
-      .where("requesterUid", "==", uid).get(),
-  ]);
+  // Best-effort: by this point the account's own data is already gone, so
+  // failing here would leave the caller with a live Auth record pointing at
+  // nothing — deleted in every way except the one that lets them sign in
+  // again. Both queries need collection-group indexes (see fieldOverrides
+  // in firestore.indexes.json); if one is still building, or anything else
+  // goes wrong, the leftovers are dangling references no worse than those
+  // deleteMyAccount already tolerates, and the Auth record still has to go.
+  try {
+    const [incomingMirrors, outgoingMirrors] = await Promise.all([
+      db.collectionGroup("sent_friend_requests")
+        .where("targetUid", "==", uid).get(),
+      db.collectionGroup("friend_requests")
+        .where("requesterUid", "==", uid).get(),
+    ]);
 
-  const staleMirrorRefs = [
-    ...incomingMirrors.docs.map((d) => d.ref),
-    ...outgoingMirrors.docs.map((d) => d.ref),
-  ];
+    const staleMirrorRefs = [
+      ...incomingMirrors.docs.map((d) => d.ref),
+      ...outgoingMirrors.docs.map((d) => d.ref),
+    ];
 
-  if (staleMirrorRefs.length > 0) {
-    const batch = db.batch();
-    for (const ref of staleMirrorRefs) batch.delete(ref);
-    await batch.commit();
+    if (staleMirrorRefs.length > 0) {
+      const batch = db.batch();
+      for (const ref of staleMirrorRefs) batch.delete(ref);
+      await batch.commit();
+    }
+  } catch (e) {
+    console.warn(`Friend-request mirror cleanup failed for ${uid}: ${e}`);
   }
 
   await admin.auth().deleteUser(uid);

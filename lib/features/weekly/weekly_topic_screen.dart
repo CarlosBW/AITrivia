@@ -22,6 +22,27 @@ class WeeklyTopicScreen extends StatefulWidget {
 class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
   final _uid = FirebaseAuth.instance.currentUser!.uid;
 
+  // Held so a rebuild doesn't tear down and re-subscribe them.
+  late final _topicStream = WeeklyTopicService.instance.watchCurrentTopic();
+
+  // Participation depends on the week the topic stream reports, so it can't
+  // be a plain field — it's rebuilt only when that week actually changes.
+  String? _participationWeekId;
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _participationStream;
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _participationFor(
+    String weekId,
+  ) {
+    if (_participationStream == null || _participationWeekId != weekId) {
+      _participationWeekId = weekId;
+      _participationStream = WeeklyTopicService.instance.watchMyParticipation(
+        uid: _uid,
+        weekId: weekId,
+      );
+    }
+    return _participationStream!;
+  }
+
   bool _claimingCoins = false;
   bool _claimingCompletion = false;
   bool _isNavigating = false;
@@ -200,7 +221,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
         title: Text(l10n.weeklyTopicScreenTitle),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: WeeklyTopicService.instance.watchCurrentTopic(),
+        stream: _topicStream,
         builder: (context, topicSnap) {
           if (topicSnap.hasError) {
             return Center(child: Text(topicSnap.error.toString()));
@@ -228,10 +249,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
               AvatarService.instance.avatarById(rewardAvatarId);
 
           return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: WeeklyTopicService.instance.watchMyParticipation(
-              uid: _uid,
-              weekId: weekId,
-            ),
+            stream: _participationFor(weekId),
             builder: (context, participationSnap) {
               final participation = participationSnap.data?.data();
 

@@ -15,6 +15,10 @@ class RealtimeInvitesScreen extends StatefulWidget {
 class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
   final _service = RealtimeInviteService.instance;
 
+  // Held so accepting/declining an invite doesn't re-subscribe both queries.
+  late final _incomingInvites = _service.watchMyIncomingInvites();
+  late final _outgoingInvites = _service.watchMyOutgoingInvites();
+
   bool _loadingAction = false;
 
   Future<void> _declineInvite(String inviteId) async {
@@ -155,7 +159,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: _service.watchMyIncomingInvites(),
+            stream: _incomingInvites,
             builder: (context, snap) {
               if (snap.hasError) {
                 return Center(
@@ -282,7 +286,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _service.watchMyOutgoingInvites(),
+      stream: _outgoingInvites,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(

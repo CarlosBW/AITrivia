@@ -99,6 +99,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _isNavigating = false;
   bool _buyingLife = false;
 
+  // Held rather than rebuilt in `build()`: the per-question countdown calls
+  // setState once a second, and each of those used to re-subscribe the
+  // session document. The ref is the same for the whole screen (it's keyed
+  // by the level being played), so the first one wins.
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _session;
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _sessionStream(
+    DocumentReference<Map<String, dynamic>> ref,
+  ) {
+    return _session ??= ref.snapshots();
+  }
+
   static const int _defaultTimePerQ = 15;
   static const int _buyLifeCost = EconomyService.buyFullLifeCost;
   static const Duration _revealDelay = Duration(seconds: 1);
@@ -672,7 +684,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   }
 
                   return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                    stream: sessionRef.snapshots(),
+                    stream: _sessionStream(sessionRef),
                     builder: (context, snap) {
                       if (!snap.hasData) {
                         return const Center(child: CircularProgressIndicator());

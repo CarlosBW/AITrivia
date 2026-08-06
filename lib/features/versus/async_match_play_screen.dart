@@ -30,6 +30,13 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   final _service = MatchService();
   final _presenceService = PresenceService.instance;
 
+  // Held rather than rebuilt in `build()`: the per-question countdown calls
+  // setState once a second, and each of those used to re-subscribe this.
+  late final _matchDoc = FirebaseFirestore.instance
+      .collection('async_matches')
+      .doc(widget.asyncMatchId)
+      .snapshots();
+
   int _index = 0;
   int _correct = 0;
   final Map<int, int> _answers = {};
@@ -262,9 +269,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final l10n = AppLocalizations.of(context);
 
-    final ref = FirebaseFirestore.instance
-        .collection('async_matches')
-        .doc(widget.asyncMatchId);
 
     return Scaffold(
       appBar: AppBar(
@@ -285,7 +289,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: ref.snapshots(),
+        stream: _matchDoc,
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());

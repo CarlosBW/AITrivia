@@ -68,6 +68,13 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
+  // Held rather than rebuilt in `build()`: the per-question countdown calls
+  // setState once a second, and the disconnect watchdog once every ten, so
+  // this was re-subscribing the live match document constantly.
+  late final _matchDoc =
+      FirebaseFirestore.instance.collection('matches').doc(widget.matchId)
+          .snapshots();
+
   @override
   void initState() {
     super.initState();
@@ -416,9 +423,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final l10n = AppLocalizations.of(context);
 
-    final ref =
-        FirebaseFirestore.instance.collection('matches').doc(widget.matchId);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.matchPlayTitle),
@@ -438,7 +442,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: ref.snapshots(),
+        stream: _matchDoc,
         builder: (context, snap) {
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());

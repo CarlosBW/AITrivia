@@ -11,32 +11,37 @@ import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
-class PvPScreen extends StatelessWidget {
+class PvPScreen extends StatefulWidget {
   const PvPScreen({super.key});
 
-  Stream<bool> _hasPendingTurnsStream(String uid) {
-    return FirebaseFirestore.instance
-        .collection('async_matches')
-        .where('challengedUid', isEqualTo: uid)
-        .where('challengedStatus', isEqualTo: 'pending')
-        .limit(1)
-        .snapshots()
-        .map((snap) => snap.docs.isNotEmpty);
-  }
+  @override
+  State<PvPScreen> createState() => _PvPScreenState();
+}
 
-  Stream<bool> _hasPendingRealtimeInvites(String uid) {
-    return FirebaseFirestore.instance
-        .collection('realtime_invites')
-        .where('toUid', isEqualTo: uid)
-        .where('status', isEqualTo: 'pending')
-        .limit(1)
-        .snapshots()
-        .map((snap) => snap.docs.isNotEmpty);
-  }
+// Stateful only to hold the two badge streams. Built inside `build()` they
+// were torn down and re-subscribed on every rebuild of this screen, and a
+// re-subscription re-reads the query.
+class _PvPScreenState extends State<PvPScreen> {
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+  late final Stream<bool> _pendingTurns = FirebaseFirestore.instance
+      .collection('async_matches')
+      .where('challengedUid', isEqualTo: uid)
+      .where('challengedStatus', isEqualTo: 'pending')
+      .limit(1)
+      .snapshots()
+      .map((snap) => snap.docs.isNotEmpty);
+
+  late final Stream<bool> _pendingRealtimeInvites = FirebaseFirestore.instance
+      .collection('realtime_invites')
+      .where('toUid', isEqualTo: uid)
+      .where('status', isEqualTo: 'pending')
+      .limit(1)
+      .snapshots()
+      .map((snap) => snap.docs.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -57,7 +62,7 @@ class PvPScreen extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           StreamBuilder<bool>(
-            stream: _hasPendingTurnsStream(uid),
+            stream: _pendingTurns,
             builder: (context, snap) {
               final hasPendingTurn = snap.data == true;
 
@@ -84,7 +89,7 @@ class PvPScreen extends StatelessWidget {
             },
           ),
           StreamBuilder<bool>(
-            stream: _hasPendingRealtimeInvites(uid),
+            stream: _pendingRealtimeInvites,
             builder: (context, snap) {
               final hasPending = snap.data == true;
 

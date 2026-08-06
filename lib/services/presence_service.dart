@@ -24,6 +24,14 @@ class PresenceService {
   Timer? _heartbeatTimer;
   bool _ready = false;
 
+  // Last presence this client wrote. The heartbeat used to re-read the user
+  // doc on every beat just to learn what it had written itself fifteen
+  // seconds earlier — one billed read per beat per active player, for data
+  // this object already had. Nobody else writes this user's presence, so
+  // remembering it is as accurate as the round-trip was.
+  String _lastStatus = 'online';
+  bool _lastInMatch = false;
+
   static const Duration heartbeatInterval = Duration(seconds: 15);
   static const Duration onlineMaxAge = Duration(seconds: 45);
 
@@ -96,6 +104,9 @@ class PresenceService {
   }) async {
     if (!_ready) return;
 
+    _lastStatus = status;
+    _lastInMatch = inMatch;
+
     final ref = _userRef(uid);
 
     await ref.set({
@@ -116,15 +127,9 @@ class PresenceService {
       heartbeatInterval,
       (_) async {
         try {
-          final snap = await _userRef(uid).get();
-          final presence = snap.data()?['presence'] as Map<String, dynamic>?;
-
-          final status = (presence?['status'] ?? 'online').toString();
-          final inMatch = presence?['inMatch'] == true;
-
           await _setPresence(
-            status: status,
-            inMatch: inMatch,
+            status: _lastStatus,
+            inMatch: _lastInMatch,
           );
         } catch (_) {}
       },
@@ -152,13 +157,9 @@ class PresenceService {
 
   Future<void> refreshHeartbeatNow() async {
     try {
-      final presence = await getMyPresence();
-      final status = (presence?['status'] ?? 'online').toString();
-      final inMatch = presence?['inMatch'] == true;
-
       await _setPresence(
-        status: status,
-        inMatch: inMatch,
+        status: _lastStatus,
+        inMatch: _lastInMatch,
       );
     } catch (_) {}
   }

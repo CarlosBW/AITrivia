@@ -22,6 +22,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   late final String uid;
 
+  // Held so claiming a reward (which rebuilds this screen) doesn't
+  // re-subscribe the query.
+  late final _achievements = _service.watchUserAchievements(uid: uid);
+
   @override
   void initState() {
     super.initState();
@@ -81,7 +85,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         title: Text(l10n.achievementsTitle),
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _service.watchUserAchievements(uid: uid),
+        stream: _achievements,
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(

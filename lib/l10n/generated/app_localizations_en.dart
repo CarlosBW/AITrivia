@@ -1123,6 +1123,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get liveMatchmakingSettingsMayVary =>
+      'Questions and time are your preference — the match may use your opponent\'s instead.';
+
+  @override
   String get liveMatchmakingNoOpponentFound =>
       'No opponent found right now. Try again.';
 

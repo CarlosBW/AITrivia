@@ -25,6 +25,10 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _service = NotificationService.instance;
+
+  // Held so marking notifications read (which rebuilds this screen) doesn't
+  // re-subscribe the query.
+  late final _notifications = _service.watchMyNotifications();
   final _matchService = MatchService();
   final _realtimeInviteService = RealtimeInviteService.instance;
   final Set<String> _decliningIds = {};
@@ -332,7 +336,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _service.watchMyNotifications(),
+        stream: _notifications,
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(

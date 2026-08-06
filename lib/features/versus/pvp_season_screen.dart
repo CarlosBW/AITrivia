@@ -24,6 +24,12 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
 
   late final TabController _tabController;
 
+  // Held so a tab switch doesn't re-subscribe the rating stream.
+  late final _userDoc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(FirebaseAuth.instance.currentUser!.uid)
+      .snapshots();
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +60,6 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final season = _seasonService.currentSeason();
     final l10n = AppLocalizations.of(context);
 
@@ -71,7 +76,7 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: userRef.snapshots(),
+        stream: _userDoc,
         builder: (context, userSnap) {
           final userData = userSnap.data?.data() ?? {};
           final rating =
@@ -583,7 +588,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
   }
 }
 
-class _LeaderboardList extends StatelessWidget {
+class _LeaderboardList extends StatefulWidget {
   final Query<Map<String, dynamic>> query;
   final String currentUid;
   final String Function(String avatarId) avatarBuilder;
@@ -595,11 +600,19 @@ class _LeaderboardList extends StatelessWidget {
   });
 
   @override
+  State<_LeaderboardList> createState() => _LeaderboardListState();
+}
+
+// Stateful only to keep the leaderboard subscription across rebuilds.
+class _LeaderboardListState extends State<_LeaderboardList> {
+  late final _results = widget.query.snapshots();
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: query.snapshots(),
+      stream: _results,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(
@@ -635,7 +648,7 @@ class _LeaderboardList extends StatelessWidget {
           itemBuilder: (context, i) {
             final doc = docs[i];
             final data = doc.data();
-            final isMe = doc.id == currentUid;
+            final isMe = doc.id == widget.currentUid;
             final rating =
                 ((data['pvpRating'] ?? PvpLeagueService.defaultRating) as num)
                     .toInt();
@@ -673,7 +686,7 @@ class _LeaderboardList extends StatelessWidget {
                   ),
                   CircleAvatar(
                     backgroundColor: Colors.white70,
-                    child: Text(avatarBuilder(avatarId)),
+                    child: Text(widget.avatarBuilder(avatarId)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

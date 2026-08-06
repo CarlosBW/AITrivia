@@ -600,6 +600,7 @@
       "seconds": {"type": "int"}
     }
   },
+  "liveMatchmakingSettingsMayVary": "Questions and time are your preference — the match may use your opponent's instead.",
   "liveMatchmakingNoOpponentFound": "No opponent found right now. Try again.",
   "liveMatchmakingTryAsyncInstead": "Play async instead",
   "liveMatchmakingSearchButton": "Search",

@@ -2054,6 +2054,12 @@ abstract class AppLocalizations {
   /// **'Tiempo/Pregunta: {seconds}s'**
   String liveMatchmakingTimePerQuestionLine(int seconds);
 
+  /// No description provided for @liveMatchmakingSettingsMayVary.
+  ///
+  /// In es, this message translates to:
+  /// **'Las preguntas y el tiempo son tu preferencia — la partida puede usar la de tu rival.'**
+  String get liveMatchmakingSettingsMayVary;
+
   /// No description provided for @liveMatchmakingNoOpponentFound.
   ///
   /// In es, this message translates to:

@@ -1287,10 +1287,25 @@ class _AvatarCategoryBadge extends StatelessWidget {
   }
 }
 
-class _RecentMatchHistory extends StatelessWidget {
+class _RecentMatchHistory extends StatefulWidget {
   final String uid;
 
   const _RecentMatchHistory({required this.uid});
+
+  @override
+  State<_RecentMatchHistory> createState() => _RecentMatchHistoryState();
+}
+
+// Stateful only to keep the history subscription across Profile's rebuilds
+// (avatar/frame changes, tab switches).
+class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
+  late final _history = FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.uid)
+      .collection('match_history')
+      .orderBy('createdAt', descending: true)
+      .limit(10)
+      .snapshots();
 
   String _resultText(AppLocalizations l10n, String result) {
     switch (result) {
@@ -1342,15 +1357,8 @@ class _RecentMatchHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final query = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('match_history')
-        .orderBy('createdAt', descending: true)
-        .limit(10);
-
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: query.snapshots(),
+      stream: _history,
       builder: (context, snap) {
         if (snap.hasError) {
           return Text(

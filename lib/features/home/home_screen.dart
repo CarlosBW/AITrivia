@@ -33,6 +33,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // One stream per StreamBuilder, held for the life of the screen. Home
+  // rebuilds constantly (life timer, streak/login/achievement popups), and
+  // building these inside `build()` re-subscribed all four every time.
+  // The two user-doc streams are separate on purpose: a Firestore stream
+  // feeds one listener, so each consumer gets its own.
+  late final _userDocForStats = FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .snapshots();
+  late final _userDocForProfile = FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid)
+      .snapshots();
+  late final _achievements =
+      AchievementService.instance.watchUserAchievements(uid: uid);
+
   Map<String, dynamic>? _lifeState;
   bool _loadingLives = true;
   Timer? _lifeTimer;
@@ -360,7 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -389,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 18),
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: userRef.snapshots(),
+                  stream: _userDocForStats,
                   builder: (context, snap) {
                     if (snap.hasError) {
                       return Padding(
@@ -527,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 18),
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: userRef.snapshots(),
+                  stream: _userDocForProfile,
                   builder: (context, snap) {
                     final streak =
                         ((snap.data?.data()?['dailyStreak'] ?? 0) as num)
@@ -787,9 +802,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: AchievementService.instance.watchUserAchievements(
-              uid: uid,
-            ),
+            stream: _achievements,
             builder: (context, snap) {
               final data = snap.data;
               if (data != null) {
@@ -1161,7 +1174,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
   }
 }
 
-class _WeeklyTopicCard extends StatelessWidget {
+class _WeeklyTopicCard extends StatefulWidget {
   final bool isBusy;
   final void Function(Map<String, dynamic> topicData) onOpen;
 
@@ -1171,11 +1184,19 @@ class _WeeklyTopicCard extends StatelessWidget {
   });
 
   @override
+  State<_WeeklyTopicCard> createState() => _WeeklyTopicCardState();
+}
+
+// Stateful only to keep its topic stream across Home's rebuilds.
+class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
+  late final _weeklyTopic = WeeklyTopicService.instance.watchCurrentTopic();
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: WeeklyTopicService.instance.watchCurrentTopic(),
+      stream: _weeklyTopic,
       builder: (context, snap) {
         if (snap.hasError) {
           return _WeeklyTopicUnavailableCard(
@@ -1310,7 +1331,8 @@ class _WeeklyTopicCard extends StatelessWidget {
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFFB35C1E),
                   ),
-                  onPressed: isBusy ? null : () => onOpen(data),
+                  onPressed:
+                      widget.isBusy ? null : () => widget.onOpen(data),
                   icon: const Icon(Icons.play_arrow, size: 18),
                   label: Text(l10n.homeOpenWeeklyTopic),
                 ),

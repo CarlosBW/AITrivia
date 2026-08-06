@@ -531,7 +531,7 @@ enum _ChoiceBadge { none, existing, popular }
 
 /// Streams the caller's coin balance and free-pass state once for a whole
 /// step, so a list of cards doesn't open one Firestore subscription each.
-class _EconomyBuilder extends StatelessWidget {
+class _EconomyBuilder extends StatefulWidget {
   final String uid;
   final Widget Function(BuildContext context, int coins, bool hasFreePass)
       builder;
@@ -539,16 +539,26 @@ class _EconomyBuilder extends StatelessWidget {
   const _EconomyBuilder({required this.uid, required this.builder});
 
   @override
-  Widget build(BuildContext context) {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+  State<_EconomyBuilder> createState() => _EconomyBuilderState();
+}
 
+// Stateful only to keep the balance stream across rebuilds — this screen
+// rebuilds on every step change and every loading-state flip.
+class _EconomyBuilderState extends State<_EconomyBuilder> {
+  late final _userDoc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.uid)
+      .snapshots();
+
+  @override
+  Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: userRef.snapshots(),
+      stream: _userDoc,
       builder: (context, snap) {
         final data = snap.data?.data() ?? {};
         final coins = ((data['coins'] ?? 0) as num).toInt();
         final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
-        return builder(context, coins, freePasses > 0);
+        return widget.builder(context, coins, freePasses > 0);
       },
     );
   }
@@ -662,25 +672,34 @@ class _TopicChoiceCard extends StatelessWidget {
   }
 }
 
-class _PricingCard extends StatelessWidget {
+class _PricingCard extends StatefulWidget {
   final String uid;
   final _TopicPriceTier tier;
 
   const _PricingCard({required this.uid, required this.tier});
 
   @override
-  Widget build(BuildContext context) {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+  State<_PricingCard> createState() => _PricingCardState();
+}
 
+// Stateful for the same reason as _EconomyBuilder above.
+class _PricingCardState extends State<_PricingCard> {
+  late final _userDoc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(widget.uid)
+      .snapshots();
+
+  @override
+  Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: userRef.snapshots(),
+      stream: _userDoc,
       builder: (context, snap) {
         final l10n = AppLocalizations.of(context);
         final data = snap.data?.data() ?? {};
         final coins = ((data['coins'] ?? 0) as num).toInt();
         final freePasses = ((data['freeTopicPasses'] ?? 0) as num).toInt();
         final hasFreePass = freePasses > 0;
-        final cost = switch (tier) {
+        final cost = switch (widget.tier) {
           _TopicPriceTier.popular => EconomyService.createAiTopicFromPoolCost,
           _TopicPriceTier.existing => EconomyService.createAiTopicExistingCost,
           _TopicPriceTier.full => EconomyService.createAiTopicCost,
@@ -716,10 +735,10 @@ class _PricingCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (!hasFreePass && tier != _TopicPriceTier.full) ...[
+              if (!hasFreePass && widget.tier != _TopicPriceTier.full) ...[
                 const SizedBox(height: 4),
                 Text(
-                  tier == _TopicPriceTier.popular
+                  widget.tier == _TopicPriceTier.popular
                       ? l10n.createAiTopicPopularSelectedHint
                       : l10n.createAiTopicExistingSelectedHint,
                   textAlign: TextAlign.center,
@@ -755,7 +774,7 @@ class _PricingCard extends StatelessWidget {
 /// Renders nothing while the pool is empty/cold-start (no "no popular
 /// topics yet" placeholder), so it never gets in the way of just typing a
 /// new title.
-class _PopularTopicsSection extends StatelessWidget {
+class _PopularTopicsSection extends StatefulWidget {
   final String? selectedPoolId;
   final void Function(String poolId, String title) onSelect;
 
@@ -765,11 +784,20 @@ class _PopularTopicsSection extends StatelessWidget {
   });
 
   @override
+  State<_PopularTopicsSection> createState() => _PopularTopicsSectionState();
+}
+
+// Stateful only to hold the pool query across rebuilds — selecting a topic
+// rebuilds the parent, which used to re-subscribe this.
+class _PopularTopicsSectionState extends State<_PopularTopicsSection> {
+  late final _popularTopics = AiTopicService.instance.watchPopularAiTopics();
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: AiTopicService.instance.watchPopularAiTopics(),
+      stream: _popularTopics,
       builder: (context, snap) {
         final docs = snap.data?.docs ?? [];
         if (docs.isEmpty) return const SizedBox.shrink();
@@ -814,8 +842,8 @@ class _PopularTopicsSection extends StatelessWidget {
                       return _PopularTopicCard(
                         title: title,
                         usageCount: usageCount,
-                        selected: docs[index].id == selectedPoolId,
-                        onTap: () => onSelect(docs[index].id, title),
+                        selected: docs[index].id == widget.selectedPoolId,
+                        onTap: () => widget.onSelect(docs[index].id, title),
                       );
                     },
                   ),

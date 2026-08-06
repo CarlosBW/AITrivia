@@ -8,8 +8,18 @@ import 'create_ai_topic_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-class AiTopicsScreen extends StatelessWidget {
+class AiTopicsScreen extends StatefulWidget {
   const AiTopicsScreen({super.key});
+
+  @override
+  State<AiTopicsScreen> createState() => _AiTopicsScreenState();
+}
+
+// Stateful only to hold the topics stream: creating it inside `build()` tore
+// it down and re-subscribed on every rebuild, and creating/expanding a topic
+// rebuilds this screen.
+class _AiTopicsScreenState extends State<AiTopicsScreen> {
+  late final _myTopics = AiTopicService.instance.watchMyAiTopics();
 
   Color _statusColor(String status) {
     switch (status) {
@@ -217,7 +227,7 @@ class AiTopicsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: service.watchMyAiTopics(),
+      stream: _myTopics,
       builder: (context, snap) {
         final docs = snap.hasData
             ? snap.data!.docs

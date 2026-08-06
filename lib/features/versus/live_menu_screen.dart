@@ -29,6 +29,13 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
   late final Future<List<_CategoryOption>> _categoriesFuture =
       _loadCategories();
 
+  // Held so changing the selected category doesn't re-subscribe the rating
+  // card's stream.
+  late final _userDoc = FirebaseFirestore.instance
+      .collection('users')
+      .doc(FirebaseAuth.instance.currentUser!.uid)
+      .snapshots();
+
   String _selectedCategoryId = 'random';
 
   // Reads the same `fixed_categories` collection Solo uses, so this
@@ -138,14 +145,12 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            stream: userRef.snapshots(),
+            stream: _userDoc,
             builder: (context, snap) {
               final data = snap.data?.data() ?? {};
               final rating =

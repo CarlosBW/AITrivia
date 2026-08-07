@@ -845,23 +845,47 @@ class _UserTile extends StatelessWidget {
 // showed online/offline presence, with no way to see how a friend is
 // actually doing. Reuses the same daily_leaderboards/{dateId}/players doc
 // daily_leaderboard_screen.dart already reads, so no new backend data.
-class _DailyScoreBadge extends StatelessWidget {
+// Stateful only to hold the score lookup: built inside `build()` it was a
+// fresh Future — and so a fresh billed read — on every rebuild, and this
+// badge sits inside a row that repaints whenever the friend's presence
+// doc ticks (every heartbeat). One read per friend per heartbeat, for a
+// score that changes at most a few times a day.
+class _DailyScoreBadge extends StatefulWidget {
   final String friendUid;
 
   const _DailyScoreBadge({required this.friendUid});
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+  State<_DailyScoreBadge> createState() => _DailyScoreBadgeState();
+}
+
+class _DailyScoreBadgeState extends State<_DailyScoreBadge> {
+  late final Future<DocumentSnapshot<Map<String, dynamic>>> _score;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Resolved once, when the row first appears. A day rolling over while
+    // the screen stays open leaves the badge on the previous day's score
+    // until the list is rebuilt — the same staleness the per-rebuild
+    // version had between repaints, and cheaper.
     final dateId = DailyChallengeService.instance.todayDateId();
 
+    _score = FirebaseFirestore.instance
+        .collection('daily_leaderboards')
+        .doc(dateId)
+        .collection('players')
+        .doc(widget.friendUid)
+        .get();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance
-          .collection('daily_leaderboards')
-          .doc(dateId)
-          .collection('players')
-          .doc(friendUid)
-          .get(),
+      future: _score,
       builder: (context, snap) {
         final data = snap.data?.data();
         final score = data == null ? null : ((data['score'] ?? 0) as num).toInt();

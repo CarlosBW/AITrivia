@@ -111,6 +111,42 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     return _session ??= ref.snapshots();
   }
 
+  // Memoized for the same reason as the stream above: a `FutureBuilder`
+  // whose `future:` is built inside `build()` gets a brand-new Future on
+  // every rebuild, drops back to `hasData == false`, and repaints a
+  // spinner over whatever was on screen — while re-reading the document.
+  // This screen rebuilds constantly (life ticker every second, every
+  // answer), so that was a billed read per rebuild and a spinner flashing
+  // over the results screen.
+  Future<DocumentSnapshot<Map<String, dynamic>>>? _category;
+  Future<DocumentSnapshot<Map<String, dynamic>>>? _sessionExists;
+
+  /// The category/topic doc. Fixed for this screen's lifetime.
+  Future<DocumentSnapshot<Map<String, dynamic>>> _categoryDoc(
+    DocumentReference<Map<String, dynamic>> ref,
+  ) {
+    return _category ??= ref.get();
+  }
+
+  /// Whether the session doc exists yet.
+  ///
+  /// Unlike the category doc this one really does change: the session is
+  /// created server-side by `_ensureSession` while this screen is open, so
+  /// the answer has to be re-read once that lands. Callers invalidate it
+  /// through [_recheckSession] rather than by rebuilding, which is what
+  /// makes the difference between "re-read because something happened" and
+  /// "re-read because the widget repainted".
+  Future<DocumentSnapshot<Map<String, dynamic>>> _sessionDoc(
+    DocumentReference<Map<String, dynamic>> ref,
+  ) {
+    return _sessionExists ??= ref.get();
+  }
+
+  /// Forgets the cached session lookup so the next build re-reads it.
+  void _recheckSession() {
+    _sessionExists = null;
+  }
+
   static const int _defaultTimePerQ = 15;
   static const int _buyLifeCost = EconomyService.buyFullLifeCost;
   static const Duration _revealDelay = Duration(seconds: 1);
@@ -553,7 +589,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       body: Stack(
         children: [
           FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: categoryRef.get(),
+            future: _categoryDoc(categoryRef),
             builder: (context, catSnap) {
               if (!catSnap.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -586,7 +622,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               }
 
               return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                future: sessionRef.get(),
+                future: _sessionDoc(sessionRef),
                 builder: (context, sesGetSnap) {
                   if (!sesGetSnap.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -625,7 +661,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                               : l10n.levelPlaySessionCreateError;
                         } finally {
                           if (mounted) {
-                            setState(() => _creatingSession = false);
+                            setState(() {
+                              // The session now exists (or the attempt
+                              // failed and the error view takes over), so
+                              // the cached "does it exist?" answer is
+                              // stale. Dropping it here is what used to
+                              // happen implicitly on every rebuild.
+                              _recheckSession();
+                              _creatingSession = false;
+                            });
                           }
                         }
                       });
@@ -657,6 +701,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                   setState(() {
                                     _sessionError = null;
                                     _creatingSession = false;
+                                    // A retry has to look the session up
+                                    // again; the cached miss is what sent
+                                    // us down this branch.
+                                    _recheckSession();
                                     // Refunded above — re-run the life
                                     // gate so retrying charges again
                                     // instead of skipping the life check.

@@ -226,6 +226,10 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // Deliberately readable by any signed-in player: the friends list,
+      // leaderboards and profile views all read other players' docs. That
+      // makes every field on it effectively public, so anything private
+      // belongs in the subcollection below instead — see /private.
       allow read: if request.auth != null;
 
       allow create: if request.auth != null
@@ -240,6 +244,16 @@ service cloud.firestore {
             .hasAny(economyProtectedFields())
         && avatarIdFieldValid()
         && equippedFrameFieldValid();
+
+      // Per-user data nobody else may read, in contrast to the user doc
+      // above. Today that means the FCM push token: it lived on the user
+      // doc, so every signed-in player could harvest every other player's
+      // token. Owner-only both ways; sendPushOnNotificationCreated reads it
+      // with the Admin SDK, which bypasses these rules.
+      match /private/{docId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == userId;
+      }
 
       // Cloud-Function-only (createAiTopic / ensureAiTopicLevelsGenerated
       // / regenerateAiTopicQuestions / expandAiTopic, Admin SDK — bypasses
@@ -450,22 +464,44 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // `create` used to be open to any signed-in user, because notifying
+      // another player (friend request, match invite, your turn...) was a
+      // direct client write into *their* inbox. Since creating a document
+      // here fires sendPushOnNotificationCreated, that made "push arbitrary
+      // text to any user" a client capability — and uids are enumerable,
+      // since /users is readable by anyone signed in. Cross-user
+      // notifications now go through the sendUserNotification Cloud
+      // Function (Admin SDK — bypasses these rules), which checks the
+      // sender earned the right to notify and composes the wording itself.
+      // Self-notifications stay client-writable: the worst they can do is
+      // spam their own inbox.
+      //
+      // The old second `allow update` clause (type unchanged + read false,
+      // with no owner check) is gone too. `allow` clauses are OR'd, so it
+      // never narrowed the owner rule above it — it *widened* the path to
+      // let anyone rewrite the title/body of anyone's notification. It
+      // existed for createOrBumpUniqueUnreadNotification, which had no
+      // callers left and was removed with it.
       match /notifications/{notificationId} {
         allow read, update, delete: if request.auth != null
           && request.auth.uid == userId;
 
-        allow create: if request.auth != null;
-
-        allow update: if request.auth != null
-          && request.resource.data.type == resource.data.type
-          && request.resource.data.read == false;
+        allow create: if request.auth != null
+          && request.auth.uid == userId;
       }
     }
 
+    // Cloud-Function-only (submitDailyChallengeResult, Admin SDK — bypasses
+    // these rules), same migration as /weekly_leagues below. The client used
+    // to publish its own row here and the rule never validated `score`, so a
+    // modified client could post any number it liked to the public board.
+    // Nothing server-side reads this collection, so a forged row never
+    // reached a payout — but the daily ranking is a headline social feature
+    // and it was trivially fakeable. The client only reads it now
+    // (daily_leaderboard_screen, profile_screen, friends_screen).
     match /daily_leaderboards/{dateId}/players/{playerId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null
-        && request.auth.uid == playerId;
+      allow write: if false;
     }
 
     // weeklyScore/leagueId/leagueName/level/streak feed weekly-league
@@ -533,7 +569,18 @@ service cloud.firestore {
         && request.resource.data.questions == resource.data.questions
         && request.resource.data.winnerUid == resource.data.winnerUid
         && request.resource.data.finishReason == resource.data.finishReason
-        && request.resource.data.rewarded == resource.data.rewarded;
+        && request.resource.data.rewarded == resource.data.rewarded
+        // A player may only touch their own entry in `players`. Locking
+        // `questions` above stops someone swapping in questions they know,
+        // but finalizePvpMatch scores each side from `players.{uid}.answers`
+        // — so without this, either player could rewrite the *opponent's*
+        // answers to wrong ones and hand themselves a verified win, rating
+        // and rewards included. Every legitimate client write here is
+        // `players.$uid.{ready,answers,score,finished,finishedAt}` (see
+        // match_service.dart), so restricting the diff to the caller's own
+        // key costs nothing and closes it.
+        && request.resource.data.players.diff(resource.data.players)
+            .affectedKeys().hasOnly([request.auth.uid]);
     }
 
     // The "current" weekly topic (and its rewardCoins/rewardAvatarId) is
@@ -573,7 +620,14 @@ service cloud.firestore {
           request.auth.uid == resource.data.challengedUid
         )
         && request.resource.data.winReward == resource.data.winReward
-        && request.resource.data.questions == resource.data.questions;
+        && request.resource.data.questions == resource.data.questions
+        // Same hole as /matches, different shape: answers live in the
+        // top-level `challenger`/`challenged` maps here, and
+        // finalizeAsyncPvpMatch scores each side from its own map. Whichever
+        // side you are, the other one has to come back untouched.
+        && (request.auth.uid == resource.data.challengerUid
+              ? request.resource.data.challenged == resource.data.challenged
+              : request.resource.data.challenger == resource.data.challenger);
     }
 
     match /realtime_invites/{inviteId} {

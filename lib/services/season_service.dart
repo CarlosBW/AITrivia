@@ -325,8 +325,7 @@ class SeasonService {
 
       final l10n = l10nFor(data['languageCode'] as String?);
 
-      await _notificationService.createNotification(
-        targetUid: uid,
+      await _notificationService.createSelfNotification(
         type: 'season_reward',
         title: l10n.serviceSeasonRewardNotificationTitle,
         body: l10n.serviceSeasonRewardNotificationBody,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../l10n/generated/app_localizations.dart';
@@ -26,9 +27,24 @@ class NotificationService {
     return l10nFor(snap.data()?['languageCode'] as String?);
   }
 
+  /// Stores this device's FCM token in a subcollection only its owner can
+  /// read.
+  ///
+  /// It used to live on the user doc, which any signed-in player may read
+  /// — that read is what the friends list, leaderboards and profile views
+  /// need, so the whole document was effectively public and the push token
+  /// rode along with it. The old field is cleared on the same write so a
+  /// device that upgrades stops leaving a copy behind.
   Future<void> saveFcmToken(String userId, String token) async {
-    await _db.collection('users').doc(userId).set(
-      {'fcmToken': token},
+    final userRef = _db.collection('users').doc(userId);
+
+    await userRef.collection('private').doc('push').set(
+      {'fcmToken': token, 'updatedAt': FieldValue.serverTimestamp()},
+      SetOptions(merge: true),
+    );
+
+    await userRef.set(
+      {'fcmToken': FieldValue.delete()},
       SetOptions(merge: true),
     );
   }
@@ -139,16 +155,21 @@ class NotificationService {
     });
   }
 
-  Future<void> createNotification({
-    required String targetUid,
+  /// Writes a notification into **this player's own** inbox.
+  ///
+  /// Only self-notifications are written directly: creating a notification
+  /// doc fires `sendPushOnNotificationCreated`, so a client able to write
+  /// into someone else's inbox could push arbitrary text to them. For
+  /// anything aimed at another player use [notifyUser], which goes through
+  /// a Cloud Function that checks the sender earned the right to notify and
+  /// composes the wording server-side. firestore.rules enforces this split.
+  Future<void> createSelfNotification({
     required String type,
     required String title,
     required String body,
     Map<String, dynamic>? data,
   }) async {
-    if (targetUid.trim().isEmpty) return;
-
-    await _notificationsCol(targetUid).add({
+    await _notificationsCol(uid).add({
       'type': type,
       'title': title,
       'body': body,
@@ -158,49 +179,37 @@ class NotificationService {
     });
   }
 
-  Future<void> createOrBumpUniqueUnreadNotification({
+  /// Asks the server to notify another player.
+  ///
+  /// The caller picks *which* notification is sent, never its wording: the
+  /// function derives title/body from [type], the recipient's language and
+  /// the sender's stored display name, and refuses types the caller can't
+  /// back with a real friend request, match or invite.
+  ///
+  /// Best-effort like the direct write it replaces — a failure here must
+  /// not undo the friend request or match turn that triggered it.
+  Future<void> notifyUser({
     required String targetUid,
     required String type,
-    required String title,
-    required String body,
-    required Map<String, dynamic> data,
-    required List<String> uniqueDataKeys,
+    Map<String, dynamic>? data,
   }) async {
     if (targetUid.trim().isEmpty) return;
 
-    Query<Map<String, dynamic>> query = _notificationsCol(targetUid)
-        .where('read', isEqualTo: false)
-        .where('type', isEqualTo: type);
-
-    for (final key in uniqueDataKeys) {
-      if (!data.containsKey(key)) continue;
-      query = query.where('data.$key', isEqualTo: data[key]);
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'sendUserNotification',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({
+        'targetUid': targetUid,
+        'type': type,
+        'data': data ?? {},
+      });
+    } on FirebaseFunctionsException {
+      // Swallowed on purpose: the notification is a courtesy on top of an
+      // action that already succeeded.
     }
-
-    final snap = await query.limit(1).get();
-
-    if (snap.docs.isNotEmpty) {
-      await snap.docs.first.reference.set({
-        'title': title,
-        'body': body,
-        'data': data,
-        'read': false,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        'bumpedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      return;
-    }
-
-    await _notificationsCol(targetUid).add({
-      'type': type,
-      'title': title,
-      'body': body,
-      'data': data,
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
   }
 
   Future<void> markAsRead({

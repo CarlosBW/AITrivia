@@ -294,14 +294,9 @@ class RealtimeInviteService {
       });
     });
 
-    final fromRecipientL10n =
-        await _notificationService.l10nForRecipient(fromUid);
-
-    await _notificationService.createNotification(
+    await _notificationService.notifyUser(
       targetUid: fromUid,
       type: 'realtime_invite_accepted',
-      title: fromRecipientL10n.serviceRealtimeInviteAcceptedTitle,
-      body: fromRecipientL10n.serviceRealtimeInviteAcceptedBody(toName),
       data: {
         'inviteId': inviteId,
         'matchId': matchRef.id,

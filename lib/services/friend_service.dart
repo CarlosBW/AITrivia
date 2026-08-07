@@ -116,8 +116,6 @@ class FriendService {
     // pending request instead of surfacing the one already waiting.
     final reverseRequestRef = _requestsCol(uid).doc(targetUid);
 
-    String notificationDisplayName = 'Player${uid.substring(0, 4)}';
-
     await _db.runTransaction((tx) async {
       final mySnap = await tx.get(myRef);
       final targetSnap = await tx.get(targetRef);
@@ -151,8 +149,6 @@ class FriendService {
               myData['username'] ??
               'Player${uid.substring(0, 4)}')
           .toString();
-
-      notificationDisplayName = displayName;
 
       final username = (myData['username'] ?? displayName).toString();
       final avatarId = (myData['avatarId'] ?? 'avatar_1').toString();
@@ -210,22 +206,13 @@ class FriendService {
       );
     });
 
-    try {
-      final recipientL10n =
-          await _notificationService.l10nForRecipient(targetUid);
-
-      await _notificationService.createNotification(
-        targetUid: targetUid,
-        type: 'friend_request',
-        title: recipientL10n.serviceFriendRequestNotifTitle,
-        body: recipientL10n.serviceFriendRequestNotifBody(
-          notificationDisplayName,
-        ),
-        data: {
-          'requesterUid': uid,
-        },
-      );
-    } catch (_) {}
+    // Wording and the recipient's language are resolved server-side now —
+    // the request doc written just above is what proves this notification
+    // was earned.
+    await _notificationService.notifyUser(
+      targetUid: targetUid,
+      type: 'friend_request',
+    );
   }
 
   // The actual friendship write (both mirror docs) is now Cloud-Function

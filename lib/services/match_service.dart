@@ -532,10 +532,6 @@ class MatchService {
 
     final opponentUid = uid == hostUid ? guestUid : hostUid;
 
-    final players = Map<String, dynamic>.from(data['players'] ?? {});
-    final myPlayer = Map<String, dynamic>.from(players[uid] ?? {});
-    final myName = (myPlayer['displayName'] ?? 'Player').toString();
-
     final rematchRequests =
         Map<String, dynamic>.from(data['rematchRequests'] ?? {});
 
@@ -553,20 +549,11 @@ class MatchService {
     }, SetOptions(merge: true));
 
     if (!opponentAlreadyAccepted && opponentUid.isNotEmpty) {
-      try {
-        final recipientL10n =
-            await _notificationService.l10nForRecipient(opponentUid);
-
-        await _notificationService.createNotification(
-          targetUid: opponentUid,
-          type: 'rematch_request',
-          title: recipientL10n.serviceRematchRequestedTitle,
-          body: recipientL10n.serviceRematchRequestedBody(myName),
-          data: {
-            'matchId': matchId,
-          },
-        );
-      } catch (_) {}
+      await _notificationService.notifyUser(
+        targetUid: opponentUid,
+        type: 'rematch_request',
+        data: {'matchId': matchId},
+      );
     }
 
     await createRematchIfReady(matchId);
@@ -777,28 +764,15 @@ class MatchService {
     // NOTIFICATIONS
     // =========================================================
 
-    try {
-      final recipientL10n =
-          await _notificationService.l10nForRecipient(challengedUid);
-
-      await _notificationService.createNotification(
-        targetUid: challengedUid,
-        type: 'match_invite',
-        title: recipientL10n.serviceNewAsyncChallengeTitle,
-        body: recipientL10n.serviceNewAsyncChallengeBody(
-          challengerDisplayName,
-        ),
-        data: {
-          'matchId': matchRef.id,
-          'challengerUid': uid,
-          'challengerName': challengerDisplayName,
-          'categoryId': categoryId,
-          'difficulty': difficulty,
-          'totalQuestions': totalQuestions,
-          'timePerQuestionSec': timePerQuestionSec,
-        },
-      );
-    } catch (_) {}
+    // Only `matchId` travels now: the rest of what used to ride along here
+    // (names, category, difficulty) is either derivable from the match doc
+    // the recipient can already read, or was only ever used to build text
+    // that the server composes itself.
+    await _notificationService.notifyUser(
+      targetUid: challengedUid,
+      type: 'match_invite',
+      data: {'matchId': matchRef.id},
+    );
 
     return matchRef.id;
   }
@@ -903,11 +877,6 @@ class MatchService {
         final challengerUid = (data['challengerUid'] ?? '').toString();
         final challengedUid = (data['challengedUid'] ?? '').toString();
 
-        final challengerName =
-            (data['challengerDisplayName'] ?? 'Player').toString();
-        final challengedName =
-            (data['challengedDisplayName'] ?? 'Player').toString();
-
         final challengerStatus =
             (data['challengerStatus'] ?? 'pending').toString();
         final challengedStatus =
@@ -915,21 +884,12 @@ class MatchService {
 
         final opponentUid =
             uid == challengerUid ? challengedUid : challengerUid;
-        final myName = uid == challengerUid ? challengerName : challengedName;
 
         if (challengerStatus != 'finished' || challengedStatus != 'finished') {
-          final recipientL10n =
-              await _notificationService.l10nForRecipient(opponentUid);
-
-          await _notificationService.createNotification(
+          await _notificationService.notifyUser(
             targetUid: opponentUid,
             type: 'match_turn',
-            title: recipientL10n.serviceYourTurnTitle,
-            body: recipientL10n.serviceYourTurnBody(myName),
-            data: {
-              'matchId': matchId,
-              'opponentUid': uid,
-            },
+            data: {'matchId': matchId},
           );
         }
       }

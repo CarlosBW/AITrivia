@@ -3630,6 +3630,187 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
 });
 
 /**
+ * Builds a cross-user notification's text server-side.
+ *
+ * The client used to compose title/body itself and write them straight into
+ * the recipient's inbox. Since creating that document fires
+ * `sendPushOnNotificationCreated`, that made "write arbitrary text into any
+ * user's push notification" a client capability. Composing here means the
+ * caller chooses *which* of a fixed set of messages is sent, never its
+ * wording, and the sender's name comes from their own user doc rather than
+ * from the request.
+ * @param {string} type One of the supported cross-user notification types.
+ * @param {unknown} languageCode Recipient's stored languageCode.
+ * @param {string} senderName Sender's display name, read server-side.
+ * @return {{title: string, body: string}} Localized notification text.
+ */
+function crossUserNotificationText(
+  type: string, languageCode: unknown, senderName: string
+): {title: string; body: string} {
+  switch (type) {
+  case "friend_request":
+    return {
+      title: pickText(languageCode,
+        "Nueva solicitud de amistad", "New friend request"),
+      body: pickText(languageCode,
+        `${senderName} quiere agregarte como amigo.`,
+        `${senderName} wants to add you as a friend.`),
+    };
+  case "rematch_request":
+    return {
+      title: pickText(languageCode,
+        "Revancha solicitada", "Rematch requested"),
+      body: pickText(languageCode,
+        `${senderName} quiere la revancha.`,
+        `${senderName} wants a rematch.`),
+    };
+  case "match_invite":
+    return {
+      title: pickText(languageCode,
+        "Nuevo reto asíncrono", "New async challenge"),
+      body: pickText(languageCode,
+        `${senderName} te retó a una partida 1 vs 1.`,
+        `${senderName} challenged you to a 1 vs 1 match.`),
+    };
+  case "match_turn":
+    return {
+      title: pickText(languageCode, "Tu turno", "Your turn"),
+      body: pickText(languageCode,
+        `${senderName} terminó su partida asíncrona. Ahora es tu turno.`,
+        `${senderName} finished their async match. Now it is your turn.`),
+    };
+  default:
+    return {
+      title: pickText(languageCode,
+        "Invitación en tiempo real aceptada", "Realtime invite accepted"),
+      body: pickText(languageCode,
+        `${senderName} aceptó tu reto en tiempo real.`,
+        `${senderName} accepted your realtime challenge.`),
+    };
+  }
+}
+
+/**
+ * Whether [uid] has actually earned the right to notify [targetUid].
+ *
+ * Each type is backed by a document that only a real interaction creates:
+ * a pending friend request the caller sent, or a match/invite both are
+ * party to. Without this the only requirement was being signed in, and
+ * anonymous sign-in is open to anyone who installs the app.
+ * @param {string} uid Caller.
+ * @param {string} targetUid Intended recipient.
+ * @param {string} type Notification type being requested.
+ * @param {Record<string, unknown>} data Ids the type needs (matchId etc).
+ * @return {Promise<boolean>} True when the pairing is backed by real state.
+ */
+async function mayNotify(
+  uid: string,
+  targetUid: string,
+  type: string,
+  data: Record<string, unknown>
+): Promise<boolean> {
+  if (type === "friend_request") {
+    const snap = await db.collection("users").doc(targetUid)
+      .collection("friend_requests").doc(uid).get();
+    return snap.exists;
+  }
+
+  if (type === "rematch_request") {
+    const snap = await db.collection("matches")
+      .doc(String(data.matchId || "")).get();
+    const m = snap.data();
+    if (!m) return false;
+    const uids = [m.hostUid, m.guestUid];
+    return uids.includes(uid) && uids.includes(targetUid);
+  }
+
+  if (type === "match_invite" || type === "match_turn") {
+    const snap = await db.collection("async_matches")
+      .doc(String(data.matchId || "")).get();
+    const m = snap.data();
+    if (!m) return false;
+    const uids = [m.challengerUid, m.challengedUid];
+    return uids.includes(uid) && uids.includes(targetUid);
+  }
+
+  if (type === "realtime_invite_accepted") {
+    const snap = await db.collection("realtime_invites")
+      .doc(String(data.inviteId || "")).get();
+    const i = snap.data();
+    // Only the invited player tells the inviter it was accepted.
+    return !!i && i.toUid === uid && i.fromUid === targetUid;
+  }
+
+  return false;
+}
+
+/**
+ * Delivers one of a fixed set of notifications to another player.
+ *
+ * Replaces the client writing straight into `users/{other}/notifications`,
+ * which firestore.rules had to leave open to any signed-in user for these
+ * flows to work — and which therefore let anyone push arbitrary text to
+ * anyone whose uid they could read.
+ */
+export const sendUserNotification = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const targetUid = String(request.data?.targetUid || "");
+  const type = String(request.data?.type || "");
+  const data = (request.data?.data ?? {}) as Record<string, unknown>;
+
+  const supported = [
+    "friend_request", "rematch_request", "match_invite",
+    "match_turn", "realtime_invite_accepted",
+  ];
+
+  if (!targetUid || targetUid === uid || !supported.includes(type)) {
+    throw new HttpsError("invalid-argument", "Invalid notification request.");
+  }
+
+  if (!await mayNotify(uid, targetUid, type, data)) {
+    throw new HttpsError(
+      "permission-denied", "Not allowed to notify this user."
+    );
+  }
+
+  const [senderSnap, targetSnap] = await db.getAll(
+    db.collection("users").doc(uid),
+    db.collection("users").doc(targetUid)
+  );
+
+  const senderData = senderSnap.data() || {};
+  const senderName = String(
+    senderData.displayName || senderData.username || "?"
+  );
+
+  const {title, body} = crossUserNotificationText(
+    type, targetSnap.data()?.languageCode, senderName
+  );
+
+  await db.collection("users").doc(targetUid)
+    .collection("notifications").add({
+      type,
+      title,
+      body,
+      // Only the ids the app routes on — anything else the caller sent is
+      // dropped rather than echoed into the recipient's document.
+      data: {
+        ...(data.matchId ? {matchId: String(data.matchId)} : {}),
+        ...(data.inviteId ? {inviteId: String(data.inviteId)} : {}),
+        ...(data.fromUid ? {fromUid: String(data.fromUid)} : {}),
+      },
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+  return {sent: true};
+});
+
+/**
  * Relays every newly created in-app notification (friend requests,
  * achievements, season rewards, match invites/results, streak reminders...)
  * as a push notification, if the target user has a saved FCM token.
@@ -3641,8 +3822,19 @@ export const sendPushOnNotificationCreated = onDocumentCreated(
     if (!data) return;
 
     const uid = event.params.uid;
-    const userSnap = await db.collection("users").doc(uid).get();
-    const token = userSnap.data()?.fcmToken;
+
+    // The token lives in a private subcollection rather than on the user
+    // doc, which any signed-in user may read (that read is what the
+    // friends list, leaderboards and profile views rely on). The user doc
+    // is still checked as a fallback so devices that haven't opened the
+    // app since the move keep receiving pushes; that branch can go once
+    // the old field has aged out.
+    const [pushSnap, userSnap] = await db.getAll(
+      db.collection("users").doc(uid).collection("private").doc("push"),
+      db.collection("users").doc(uid)
+    );
+
+    const token = pushSnap.data()?.fcmToken ?? userSnap.data()?.fcmToken;
 
     if (!token || typeof token !== "string") return;
 

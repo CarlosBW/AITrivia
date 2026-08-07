@@ -9,8 +9,37 @@ import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-class DailyLeaderboardScreen extends StatelessWidget {
+// Stateful only to hold the leaderboard query: built inside `build()` it
+// was a fresh Future on every rebuild, and this one is a 50-document read,
+// not a single doc. Any ancestor repaint — or simply pushing a profile on
+// top and coming back — re-ran the whole query and bounced the table back
+// to a spinner.
+class DailyLeaderboardScreen extends StatefulWidget {
   const DailyLeaderboardScreen({super.key});
+
+  @override
+  State<DailyLeaderboardScreen> createState() => _DailyLeaderboardScreenState();
+}
+
+class _DailyLeaderboardScreenState extends State<DailyLeaderboardScreen> {
+  late final Future<QuerySnapshot<Map<String, dynamic>>> _leaderboard;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Resolved once, on open. The board is a snapshot of the day either
+    // way — reopening the screen is what refreshes it.
+    final dateId = DailyChallengeService.instance.todayDateId();
+
+    _leaderboard = FirebaseFirestore.instance
+        .collection('daily_leaderboards')
+        .doc(dateId)
+        .collection('players')
+        .orderBy('score', descending: true)
+        .limit(50)
+        .get();
+  }
 
   LeagueInfo _leagueFromData(Map<String, dynamic> data) {
     final leagueId = (data['leagueId'] ?? 'bronze').toString();
@@ -24,22 +53,14 @@ class DailyLeaderboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final dateId = DailyChallengeService.instance.todayDateId();
     final l10n = AppLocalizations.of(context);
-
-    final leaderboardQuery = FirebaseFirestore.instance
-        .collection('daily_leaderboards')
-        .doc(dateId)
-        .collection('players')
-        .orderBy('score', descending: true)
-        .limit(50);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.dailyLeaderboardTitle),
       ),
       body: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        future: leaderboardQuery.get(),
+        future: _leaderboard,
         builder: (context, snap) {
           if (snap.hasError) {
             return Center(

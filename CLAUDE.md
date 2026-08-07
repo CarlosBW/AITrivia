@@ -60,9 +60,13 @@ Firebase deploy/predeploy automatically runs `lint` then `build` for functions (
 - **Never build a Firestore stream inside `build()`.** Hold it in a `late final` field on the `State` (or memoize it when it depends on a value, as in `weekly_topic_screen`'s participation stream and `friends_screen`'s per-friend presence map). A stream created in `build()` is a new object on every rebuild, so `StreamBuilder` cancels and re-subscribes, and each re-subscription can re-read the whole query. Make a widget `StatefulWidget` just to hold a stream if that's the only reason.
 - Firestore collections are referenced ad hoc by string name inside services (e.g. `live_search`, users collection) rather than through a central schema/constants file — check the relevant service for the exact collection/field names before adding new reads/writes.
 
-### Cloud Functions (`functions/src/index.ts`)
+### Cloud Functions (`functions/src/`)
 
-Single-file TypeScript Cloud Functions (v2 API), Firestore-triggered. Currently implements `finalizePvpMatch` (`onDocumentUpdated`), which owns server-side ELO rating calculation (`K_FACTOR = 32`, `DEFAULT_RATING = 1000`) and league assignment (`PVP_LEAGUES` bronze→master by rating band) when a match document is updated. The league thresholds and ELO logic here must stay consistent with `lib/services/pvp_league_service.dart` / `pvp_season_service.dart` on the client — changes to rating/league rules need to be mirrored on both sides.
+TypeScript Cloud Functions (v2 API). `index.ts` is the bulk of it — ~8k lines exporting ~40 functions, mostly `onCall` (the server-authoritative endpoints the client goes through: session creation, life spending, AI topic generation, match lifecycle, account deletion), plus a few `onSchedule` jobs and Firestore triggers.
+
+**Pure logic gets extracted to its own module next to `index.ts`, with a matching `*.test.ts`** — `ai_budget`, `ai_question_bank`, `ai_topic_similarity`, `daily_challenge_dates`, `fixed_level_slicing`. The point of the split is testability: those modules import nothing from firebase-admin, so `npm test` (`node --test` over the compiled `lib/`) can exercise them without Firestore or a clock. When adding logic that is decidable from its arguments alone, put it in one of these (or a new one) rather than inline in `index.ts` — anything inside `index.ts` is effectively untested.
+
+`finalizePvpMatch` (`onDocumentUpdated`) owns server-side ELO rating calculation (`K_FACTOR = 32`, `DEFAULT_RATING = 1000`) and league assignment (`PVP_LEAGUES` bronze→master by rating band) when a match document is updated. The league thresholds and ELO logic here must stay consistent with `lib/services/pvp_league_service.dart` / `pvp_season_service.dart` on the client — changes to rating/league rules need to be mirrored on both sides.
 
 ### Firebase project wiring
 

@@ -1,7 +1,8 @@
 /**
  * Rellena los pools de las categorias fijas hasta 30/40/30 (100 por categoria).
  *
- * El objetivo por dificultad sale de difficultyForLevel() en functions/src/index.ts:
+ * El objetivo por dificultad sale de FIXED_LEVEL_BANDS en
+ * functions/src/fixed_level_slicing.ts:
  *   niveles 1-3  -> difficulty_1  (3 niveles x 10 preguntas = 30)
  *   niveles 4-7  -> difficulty_2  (4 niveles x 10 preguntas = 40)
  *   niveles 8-10 -> difficulty_3  (3 niveles x 10 preguntas = 30)

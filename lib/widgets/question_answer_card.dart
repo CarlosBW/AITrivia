@@ -124,10 +124,14 @@ class QuestionAnswerCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
+                // A BoxDecoration border adds to the box's size rather than
+                // being drawn over it, so thickening it on selection made
+                // the card grow and pushed everything below it down — an
+                // animated shove, since AnimatedContainer tweens the change.
+                // Padding absorbs the extra width so the outer size is
+                // constant (14 + 1 == 13 + 2 == 12 + 3) and only the border
+                // itself appears to change.
+                padding: EdgeInsets.all(15 - borderWidth),
                 decoration: BoxDecoration(
                   color: fillColor ?? colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),

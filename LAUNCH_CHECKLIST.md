@@ -5,13 +5,14 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 **Estado actual (2026-08-07):** todo lo que no depende de las cuentas de las tiendas está cerrado. Lo que falta se reduce a tres cosas:
 
 1. Los puntos **2 (parte final)** y **4**, bloqueados hasta que gestiones Play Console y App Store Connect.
-2. La **revisión legal** del punto 5 y la **revisión factual del banco de preguntas** (punto 8) — ambas de contenido, no de código.
+2. La **revisión legal** del punto 5 y la **revisión factual del banco de preguntas** (punto 7) — ambas de contenido, no de código.
 3. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
 ## 1. Deploy pendiente
 
 - [x] `firebase deploy --only hosting` — hecho, `public/privacy.html` y `public/terms.html` están en vivo con el nombre legal correcto (Massive Dynamics Peru S.A.C.).
 - [x] `npm run deploy` en `functions/` — hecho, `deleteMyAccount` y el manejo de `refusal` ya están en producción.
+- [x] `firebase deploy --only firestore:indexes` (2026-08-07) — los 16 índices ya estaban en vivo, pero los dos `fieldOverrides` de collection-group (`sent_friend_requests.targetUid`, `friend_requests.requesterUid`) nunca se habían desplegado: `--only firestore:rules` no toca índices, y son deploys separados. Sin ellos, la limpieza de espejos de solicitudes de amistad en `deleteMyAccount` fallaba en silencio. Verificado que ambos terminaron de construirse ejecutando las queries reales contra producción.
 
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 
@@ -39,6 +40,7 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 ## 4. Cuentas de las tiendas (fuera de alcance por ahora, como acordamos)
 
 - [ ] Play Console: crear la app, definir `applicationId` real (hoy es `com.example.trivia_ia_flutter`), generar keystore de release.
+  - El lado de código ya está listo: `android/app/build.gradle.kts` lee `android/key.properties` (claves `keyAlias`, `keyPassword`, `storeFile`, `storePassword`) y firma release con esa clave. Solo falta crear el keystore y ese archivo — **no lo commitees**, ya está en `.gitignore`. Mientras `key.properties` no exista, el build release cae a la debug key y Gradle lo avisa con un `WARNING`; ese AAB no es publicable en Play.
 - [ ] App Store Connect: crear la app, definir bundle ID real (hoy es `com.example.triviaIaFlutter`).
 - [ ] Una vez tengas los IDs reales, hay que regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure`.
 - [ ] **Junto con esto:** registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID que se define aquí.
@@ -63,6 +65,8 @@ El 2026-08-07 se completaron los pools de las 9 categorías fijas hasta 100 preg
 ## 8. Cosas ya resueltas en este repo (para tu referencia)
 
 - Metadata cosmética (nombre "TriviaIA" en label/manifest, no el `applicationId` final).
+- Firma release por `key.properties` en vez de la debug key (ver punto 4 para lo que falta de tu lado).
+- El token FCM ya no se imprime en builds release (`main.dart`): iba a logcat, donde cualquier app con permiso de lectura de logs podía leerlo.
 - Política de privacidad y términos de servicio (`public/privacy.html`, `public/terms.html`) + links desde Perfil.
 - Eliminar cuenta desde la app (Perfil → Zona peligrosa) + Cloud Function `deleteMyAccount`.
 - Firebase App Check inicializado en el cliente (falta el registro en consola, ver punto 2).

@@ -48,3 +48,10 @@ tools/serviceAccountKey.json
 
 # Dependencias reinstalables desde tools/package.json — no van al repo.
 tools/node_modules/
+
+# Claves de firma. android/.gitignore ya cubre android/**; esto lo extiende a
+# todo el repo por si el keystore acaba en otra carpeta.
+key.properties
+*.jks
+*.keystore
+*.p12

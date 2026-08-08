@@ -182,7 +182,11 @@ Future<void> _setupNotifications() async {
 
     try {
       final token = await messaging.getToken();
-      debugPrint('🔥 FCM TOKEN: $token');
+      // Solo en debug: en release el token acabaría en logcat, legible por
+      // cualquier app con permiso de lectura de logs.
+      if (kDebugMode) {
+        debugPrint('🔥 FCM TOKEN: $token');
+      }
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
 

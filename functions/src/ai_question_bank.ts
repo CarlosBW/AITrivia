@@ -190,6 +190,62 @@ export function capAvoidList(
   return out;
 }
 
+/**
+ * Orders pool-wide questions so the prompt's truncation keeps a sample of
+ * *every* level instead of only the most recent ones.
+ *
+ * [capAvoidList] fills its remaining budget from the end of the list it is
+ * given, so whatever sits last survives. Handing it whole levels
+ * back-to-back therefore spent the entire budget on the newest few: with
+ * banks that grow to fifty a level, four levels could eat a sixty-question
+ * allowance outright and the older ones were never sent at all. That is
+ * how a level 10 generation ended up repeating level 6 — the model was
+ * never told level 6 existed.
+ *
+ * Round-robin fixes it at the same cost: one question from each level,
+ * then a second from each, and so on. The result is reversed because the
+ * consumer reads backwards, so the first thing it takes is the first
+ * round — one question per level, coverage before depth.
+ * @param {Array<string[]>} perLevelNewestFirst Texts by level, newest first.
+ * @return {string[]} Flat list ordered for [capAvoidList]'s `rest`.
+ */
+export function interleaveByLevel(
+  perLevelNewestFirst: string[][]
+): string[] {
+  const deepest = perLevelNewestFirst
+    .reduce((max, texts) => Math.max(max, texts.length), 0);
+
+  const roundRobin: string[] = [];
+  for (let index = 0; index < deepest; index++) {
+    for (const texts of perLevelNewestFirst) {
+      if (index < texts.length) roundRobin.push(texts[index]);
+    }
+  }
+
+  return roundRobin.reverse();
+}
+
+/**
+ * Comparison key for "is this the same question already in the bank".
+ *
+ * Case, accents and punctuation are stripped because the duplicates that
+ * reach players are rarely byte-identical — the model rewords its own
+ * question rather than reprinting it. Deliberately *not* fuzzy: this
+ * decides whether to discard generated content, so it only ever fires on
+ * a question that is the same one.
+ * @param {string} question Question text.
+ * @return {string} Normalized key, empty if the text is blank.
+ */
+export function questionDedupeKey(question: string): string {
+  return String(question || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export interface SessionDraw {
   /** Ids to serve, in the order they should be played. */
   questionIds: string[];

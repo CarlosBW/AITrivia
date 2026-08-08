@@ -25,7 +25,9 @@ import {
   capAvoidList,
   compareQuestionIds,
   fnv1a32,
+  interleaveByLevel,
   nextQuestionIds,
+  questionDedupeKey,
   seededShuffleIndices,
   selectSessionQuestions,
 } from "./ai_question_bank";
@@ -4783,8 +4785,12 @@ export const claimAchievementReward = onCall(async (request) => {
 // ============================================================
 
 const BUY_FULL_LIFE_COST = 10;
-const DEFAULT_MAX_LIFE_UNITS = 10;
-const DEFAULT_LIFE_REGEN_SECONDS = 150;
+// 20 units = 10 lives at UNITS_PER_LIFE. Must stay in step with
+// life_service.dart's `defaultMaxLifeUnits`.
+const DEFAULT_MAX_LIFE_UNITS = 20;
+// Seconds per *unit* (half a life), so a full life takes 90s. Must stay in
+// step with life_service.dart's `defaultRegenSeconds`.
+const DEFAULT_LIFE_REGEN_SECONDS = 45;
 const UNITS_PER_LIFE = 2;
 const LEVEL_ENTRY_COST_UNITS = 2;
 const WRONG_ANSWER_COST_UNITS = 1;
@@ -5514,8 +5520,9 @@ async function requestAiQuestionsFromClaude(
  * query would span unrelated content and need its own index. Callers
  * should do this once per generation run, not once per level.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
- * @param {number} maxQuestions Stop reading once this many texts are held.
- * @return {Promise<string[]>} Existing question texts, oldest first.
+ * @param {number} maxQuestions Ceiling on how many texts are collected.
+ * @return {Promise<string[]>} Existing question texts, ordered for
+ * [capAvoidList]'s `rest`.
  */
 async function existingPoolQuestionTexts(
   poolRef: FirebaseFirestore.DocumentReference,
@@ -5523,33 +5530,31 @@ async function existingPoolQuestionTexts(
 ): Promise<string[]> {
   const levelsSnap = await poolRef.collection("levels").get();
 
-  // Walked newest level first and stopped as soon as the budget is met.
-  // The prompt only ever keeps `maxQuestions` of these (see capAvoidList
-  // and AI_AVOID_LIST_MAX_QUESTIONS), so reading the whole pool — which
-  // can hold hundreds of questions at AI_QUESTION_BANK_CAP — spent reads
-  // on text that was discarded before it was ever sent.
   const levelDocs = [...levelsSnap.docs].sort((a, b) =>
     safeInt(b.data().levelNumber, 0) - safeInt(a.data().levelNumber, 0)
   );
 
-  const perLevel: string[][] = [];
-  let collected = 0;
+  if (levelDocs.length === 0) return [];
 
-  for (const levelDoc of levelDocs) {
-    if (collected >= maxQuestions) break;
+  // A slice of every level rather than everything from the newest few.
+  // This used to read whole levels until the budget ran out, which meant
+  // banks grown to AI_QUESTION_BANK_CAP let three or four recent levels
+  // consume the entire allowance — the older ones were never sent, so the
+  // model happily rewrote them. Same read cost, spread evenly.
+  const perLevelBudget = Math.max(
+    1, Math.ceil(maxQuestions / levelDocs.length)
+  );
 
-    const questionsSnap = await levelDoc.ref.collection("questions").get();
-    const texts = questionsSnap.docs
+  const perLevel = await Promise.all(levelDocs.map(async (levelDoc) => {
+    const questionsSnap = await levelDoc.ref
+      .collection("questions").limit(perLevelBudget).get();
+
+    return questionsSnap.docs
       .map((doc) => String(doc.data().q || ""))
       .filter((q) => q.length > 0);
+  }));
 
-    perLevel.push(texts);
-    collected += texts.length;
-  }
-
-  // Back to oldest-first: capAvoidList fills its remaining budget from the
-  // end of this list, so newest content has to sit last to be preferred.
-  return perLevel.reverse().flat();
+  return interleaveByLevel(perLevel);
 }
 
 /**
@@ -5792,9 +5797,42 @@ async function generateIntoLockedLevel(
     AI_AVOID_LIST_MAX_QUESTIONS
   );
 
-  const questions = await requestAiQuestionsFromClaude(
+  const generated = await requestAiQuestionsFromClaude(
     title, levelNumber, languageCode, {count, avoidQuestions}
   );
+
+  // The avoid-list is an instruction, not a guarantee: the model still
+  // returns the occasional question it was just told not to write. Dropping
+  // it here is the difference between a duplicate that never reaches a
+  // player and one banked forever. No replacement call — that would be a
+  // second Claude round-trip outside the metering above, and the level
+  // refills through the normal top-up path on the next play.
+  // Checked against everything already in hand, not just `avoidQuestions`:
+  // that list is capped for the prompt, so a question the cap trimmed would
+  // otherwise slip straight back into the bank.
+  const seenKeys = new Set(
+    [
+      ...avoidQuestions,
+      ...callerAvoid,
+      ...existingSnap.docs.map((doc) => String(doc.data().q || "")),
+    ].map(questionDedupeKey)
+  );
+  const questions = generated.filter((question) => {
+    const key = questionDedupeKey(question.q);
+    if (!key || seenKeys.has(key)) return false;
+    seenKeys.add(key);
+    return true;
+  });
+
+  const dropped = generated.length - questions.length;
+  if (dropped > 0) {
+    console.warn(
+      `AI level ${levelNumber} of "${title}": dropped ${dropped} of ` +
+      `${generated.length} generated questions as duplicates`
+    );
+  }
+
+  if (questions.length === 0) return [];
 
   const ids = nextQuestionIds(existingIds, questions.length);
   const batch = db.batch();

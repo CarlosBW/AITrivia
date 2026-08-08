@@ -6,6 +6,8 @@ import {
   AI_QUESTION_BANK_CAP,
   bankHeadroom,
   capAvoidList,
+  interleaveByLevel,
+  questionDedupeKey,
   compareQuestionIds,
   fnv1a32,
   seededShuffleIndices,
@@ -287,5 +289,66 @@ describe("capAvoidList", () => {
 
   test("returns nothing when there is no budget", () => {
     assert.deepEqual(capAvoidList(["a"], ["b"], 0), []);
+  });
+});
+
+describe("interleaveByLevel", () => {
+  test("orders one question per level before a second from any", () => {
+    const ordered = interleaveByLevel([["n1", "n2"], ["m1", "m2"]]);
+
+    // capAvoidList reads backwards, so the tail is what it takes first.
+    assert.deepEqual(ordered.reverse(), ["n1", "m1", "n2", "m2"]);
+  });
+
+  test("keeps levels with shorter banks in the rotation", () => {
+    const ordered = interleaveByLevel([["a1", "a2", "a3"], ["b1"]]);
+
+    assert.deepEqual(ordered.reverse(), ["a1", "b1", "a2", "a3"]);
+  });
+
+  // Regression: whole levels were concatenated newest-first, so with banks
+  // grown to twenty a sixty-question budget was exhausted by levels 7-10
+  // and level 6 was never sent — which is how level 10 came back
+  // repeating a level 6 question.
+  test("every level survives a budget smaller than one level's bank", () => {
+    const perLevel = Array.from({length: 10}, (_, level) =>
+      Array.from({length: 20}, (_, i) => `L${10 - level} q${i}`));
+
+    const budget = 10;
+    const kept = capAvoidList([], interleaveByLevel(perLevel), budget);
+
+    assert.equal(kept.length, budget);
+    for (let level = 1; level <= 10; level++) {
+      assert.ok(
+        kept.some((q) => q.startsWith(`L${level} `)),
+        `level ${level} missing from the avoid list`
+      );
+    }
+  });
+
+  test("handles no levels and empty levels", () => {
+    assert.deepEqual(interleaveByLevel([]), []);
+    assert.deepEqual(interleaveByLevel([[], []]), []);
+  });
+});
+
+describe("questionDedupeKey", () => {
+  test("matches the same question written differently", () => {
+    assert.equal(
+      questionDedupeKey("¿Cuál es el nombre completo de Harry Potter?"),
+      questionDedupeKey("cual es el NOMBRE completo de  harry potter")
+    );
+  });
+
+  test("does not match questions about different things", () => {
+    assert.notEqual(
+      questionDedupeKey("¿Cuál es el nombre de la lechuza de Harry?"),
+      questionDedupeKey("¿Cuál es el nombre de la varita de Harry?")
+    );
+  });
+
+  test("is empty for blank text", () => {
+    assert.equal(questionDedupeKey(""), "");
+    assert.equal(questionDedupeKey("   "), "");
   });
 });

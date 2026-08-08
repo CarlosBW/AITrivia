@@ -89,8 +89,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _levelFinished = false;
   int _finishedTotal = 0;
 
-  int _lifeUnits = 10;
-  int _maxLifeUnits = 10;
+  int _lifeUnits = LifeService.defaultMaxLifeUnits;
+  int _maxLifeUnits = LifeService.defaultMaxLifeUnits;
   int _lifeRegenSeconds = LifeService.defaultRegenSeconds;
   int? _secondsToNextHalfLife;
   Timestamp? _lastLifeTickAt;

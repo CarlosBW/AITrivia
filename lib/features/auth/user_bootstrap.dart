@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../../services/avatar_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/life_service.dart';
 import '../../services/locale_controller.dart';
 
 String _todayDateId([DateTime? now]) {
@@ -86,9 +87,9 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
       'loginStreak': 1,
       'lastLoginDate': _todayDateId(),
 
-      'lifeUnits': 10,
-      'maxLifeUnits': 10,
-      'lifeRegenSeconds': 150,
+      'lifeUnits': LifeService.defaultMaxLifeUnits,
+      'maxLifeUnits': LifeService.defaultMaxLifeUnits,
+      'lifeRegenSeconds': LifeService.defaultRegenSeconds,
       'lastLifeTickAt': FieldValue.serverTimestamp(),
 
       'hasSeenOnboarding': false,

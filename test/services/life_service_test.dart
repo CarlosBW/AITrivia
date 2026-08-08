@@ -90,7 +90,7 @@ void main() {
   group('LifeService constants', () {
     test('match the documented game balance', () {
       expect(LifeService.defaultMaxLifeUnits, 20);
-      expect(LifeService.defaultRegenSeconds, 45);
+      expect(LifeService.defaultRegenSeconds, 90);
       expect(LifeService.unitsPerLife, 2);
       expect(LifeService.levelEntryCostUnits, 2);
       expect(LifeService.wrongAnswerCostUnits, 1);

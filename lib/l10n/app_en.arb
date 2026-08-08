@@ -1500,7 +1500,7 @@
   "onboardingWelcomeTitle": "Welcome to TriviaIA!",
   "onboardingWelcomeBody": "Answer trivia questions, compete against other players, and level up every day.",
   "onboardingLivesTitle": "Your lives",
-  "onboardingLivesBody": "You have 10 lives. Each one refills on its own every 90 seconds, or you can buy it instantly with coins if you don't want to wait.",
+  "onboardingLivesBody": "You have 10 lives. Each one refills on its own every 3 minutes, or you can buy it instantly with coins if you don't want to wait.",
   "onboardingCoinsTitle": "Coins and daily streak",
   "onboardingCoinsBody": "Earn coins and XP by playing. Come back every day to the Daily Challenge to keep your streak and earn extra rewards.",
   "onboardingSkip": "Skip",

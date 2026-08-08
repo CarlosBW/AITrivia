@@ -29,9 +29,9 @@ class LifeService {
 
   static const int defaultMaxLifeUnits = 20; // 10 vidas
   // Segundos por *unidad*, es decir por media vida: una vida completa
-  // tarda el doble (90s). La regeneración se cuenta en unidades porque
-  // fallar una pregunta cuesta media vida.
-  static const int defaultRegenSeconds = 45;
+  // tarda el doble (180s = 3 min). La regeneración se cuenta en unidades
+  // porque fallar una pregunta cuesta media vida.
+  static const int defaultRegenSeconds = 90;
   static const int unitsPerLife = 2;
 
   static const int levelEntryCostUnits = 2; // 1 vida

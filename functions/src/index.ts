@@ -4788,9 +4788,9 @@ const BUY_FULL_LIFE_COST = 10;
 // 20 units = 10 lives at UNITS_PER_LIFE. Must stay in step with
 // life_service.dart's `defaultMaxLifeUnits`.
 const DEFAULT_MAX_LIFE_UNITS = 20;
-// Seconds per *unit* (half a life), so a full life takes 90s. Must stay in
+// Seconds per *unit* (half a life), so a full life takes 180s. Must stay in
 // step with life_service.dart's `defaultRegenSeconds`.
-const DEFAULT_LIFE_REGEN_SECONDS = 45;
+const DEFAULT_LIFE_REGEN_SECONDS = 90;
 const UNITS_PER_LIFE = 2;
 const LEVEL_ENTRY_COST_UNITS = 2;
 const WRONG_ANSWER_COST_UNITS = 1;

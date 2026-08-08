@@ -15,6 +15,8 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const {spawnSync} = require("child_process");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require("path");
 
 const extra = process.argv.slice(2);
 const args = extra.length > 0 ?
@@ -37,4 +39,21 @@ const result = spawnSync(command, {
   },
 });
 
-process.exit(result.status === null ? 1 : result.status);
+if (result.status !== 0) {
+  process.exit(result.status === null ? 1 : result.status);
+}
+
+// El binding `allUsers -> roles/run.invoker` se pierde precisamente al
+// desplegar, así que la verificación va aquí y no en CI: CI mediría el
+// estado de producción contra el código de un PR, que es otra cosa. Aquí el
+// mismo comando que puede romperlo lo detecta a los segundos.
+console.log("\nVerificando que las callables sigan siendo invocables...\n");
+
+const checker = path.join(__dirname, "..", "tools", "check_callables.js");
+const check = spawnSync(`node "${checker}"`, {
+  stdio: "inherit",
+  shell: true,
+  env: process.env,
+});
+
+process.exit(check.status === null ? 1 : check.status);

@@ -25,6 +25,16 @@ const repoRoot = path.join(__dirname, "..");
 const REGION = process.env.FUNCTIONS_REGION || "us-central1";
 const CONCURRENCY = 6;
 
+// Justo después de un rollout el binding puede tardar unos segundos en
+// propagarse. Sin reintento, correr esto al final de un deploy daría rojos
+// falsos — y un chequeo que miente en su primer uso es un chequeo que se
+// acaba ignorando. Solo se reintenta el caso "Cloud Run bloqueó"; un fallo
+// de red o una respuesta rara se reportan de una.
+const RETRIES = 2;
+const RETRY_DELAY_MS = 5000;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 function projectId() {
   const rc = JSON.parse(
     fs.readFileSync(path.join(repoRoot, ".firebaserc"), "utf8")
@@ -49,7 +59,7 @@ function callableNames() {
   return names;
 }
 
-async function probe(project, name) {
+async function probeOnce(project, name) {
   const url =
     `https://${REGION}-${project}.cloudfunctions.net/${name}`;
 
@@ -85,11 +95,23 @@ async function probe(project, name) {
     return {
       name,
       ok: false,
+      blocked: true,
       detail: "403 de Cloud Run — falta allUsers -> roles/run.invoker",
     };
   }
 
   return {name, ok: false, detail: `${res.status} respuesta no-JSON`};
+}
+
+async function probe(project, name) {
+  let result = await probeOnce(project, name);
+
+  for (let attempt = 0; attempt < RETRIES && result.blocked; attempt++) {
+    await sleep(RETRY_DELAY_MS);
+    result = await probeOnce(project, name);
+  }
+
+  return result;
 }
 
 async function main() {

@@ -55,6 +55,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
   bool _answerSubmitting = false;
   bool _submittedFinal = false;
+  bool _resumeChecked = false;
+  bool _restoring = true;
   bool _presenceInitialized = false;
   bool _leavingScreen = false;
   bool _resultLogged = false;
@@ -129,6 +131,13 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
           SfxService.instance.playTimeout();
 
+          // Banked as -1 (no answer) rather than left unrecorded: an
+          // unrecorded question is one the player can come back and answer
+          // after looking it up, which would make running the clock out the
+          // cheapest way to buy time.
+          _answers[questionIndex] = -1;
+          unawaited(_persistAnswer(questionIndex, -1));
+
           if (!_autoNextScheduled) {
             _autoNextScheduled = true;
             Future.delayed(_revealDelay, () {
@@ -175,6 +184,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
     final correct = tappedIndex == answerIndex;
     _answers[_index] = tappedIndex;
+    await _persistAnswer(_index, tappedIndex);
 
     if (correct) {
       SfxService.instance.playCorrect();
@@ -190,6 +200,66 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         _goNextQuestion();
       });
     }
+  }
+
+  /// Banks one answer server-side. Best-effort: if it fails the run still
+  /// works, because [MatchService.submitAsyncResult] fills in whatever is
+  /// missing when the round closes — the player just keeps the old
+  /// behaviour of being able to restart that question by leaving.
+  Future<void> _persistAnswer(int questionIndex, int selectedAnswerIndex) async {
+    try {
+      await _service.submitAsyncAnswer(
+        matchId: widget.asyncMatchId,
+        questionIndex: questionIndex,
+        selectedAnswerIndex: selectedAnswerIndex,
+      );
+    } catch (_) {
+      // Sin ruido en la UI: la respuesta ya está en `_answers` y el cierre
+      // de la ronda la persiste igual.
+    }
+  }
+
+  /// Puts the player back where they left off after backing out mid-match.
+  ///
+  /// Without this the screen always started at question 1, which — since
+  /// nothing was written until the last question — is what let a player
+  /// leave, look the answers up, and come back to a clean run.
+  Future<void> _restoreProgress(List<dynamic> questions) async {
+    if (_resumeChecked) return;
+    _resumeChecked = true;
+
+    Map<int, int> stored = {};
+    try {
+      stored = await _service.loadAsyncAnswers(matchId: widget.asyncMatchId);
+    } catch (_) {
+      // Se arranca desde cero: es el comportamiento previo, no una regresión.
+    }
+
+    if (!mounted) return;
+
+    var correct = 0;
+    var nextIndex = 0;
+
+    stored.forEach((index, selected) {
+      if (index < 0 || index >= questions.length) return;
+
+      final question = Map<String, dynamic>.from(questions[index] as Map);
+      final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
+
+      if (selected == answerIndex) correct++;
+      if (index + 1 > nextIndex) nextIndex = index + 1;
+    });
+
+    setState(() {
+      _answers
+        ..clear()
+        ..addAll(stored);
+      _correct = correct;
+      _index = nextIndex;
+      _timerForIndex = -1;
+      _resetPerQuestion();
+      _restoring = false;
+    });
   }
 
   Future<void> _submitFinalScoreIfNeeded() async {
@@ -376,6 +446,18 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               timePerQuestionSec: timePerQ,
               winReward: ((data['winReward'] ?? 2) as num).toInt(),
             );
+          }
+
+          // Gated before any question renders: answering while the restore
+          // is still in flight would let a locally-counted answer be
+          // overwritten by the resume.
+          if (_restoring) {
+            if (!_resumeChecked) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _restoreProgress(questions);
+              });
+            }
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (_index >= questions.length) {

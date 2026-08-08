@@ -42,6 +42,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _locked = false;
   int? _selected;
 
+  bool _resumeApplied = false;
+  bool _resuming = true;
   bool _saved = false;
   bool _saving = false;
   String? _saveError;
@@ -412,6 +414,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       : l10n.levelPlayTimeUpNoLifeLoss;
             });
 
+            // Same rule as a wrong tap: banked as -1 so letting the clock
+            // run out doesn't keep the question open, unless the level just
+            // ended for lack of lives and a paid retry is still on offer.
+            if (!_endedByNoLives) {
+              unawaited(_recordAnswer(questionIndex, -1));
+            }
+
             if (_endedByNoLives) return;
 
             if (!_autoNextScheduled) {
@@ -426,6 +435,72 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           _secondsLeft = next;
         }
       });
+    });
+  }
+
+  /// Banks one answer server-side (`recordSoloLevelAnswer`) the moment it
+  /// is given, so backing out of the level can't rewind it.
+  ///
+  /// Best-effort: the answer is already in `_answers` and `_saveProgress`
+  /// sends those too, so a failure here costs the protection for that one
+  /// question rather than the run. -1 means the question timed out.
+  Future<void> _recordAnswer(int questionIndex, int selectedIndex) async {
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'recordSoloLevelAnswer',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({
+        'isAiTopic': widget.isAiTopic,
+        'categoryId': widget.categoryId,
+        'aiTopicId': widget.aiTopicId,
+        'levelNumber': widget.levelNumber,
+        'questionIndex': questionIndex,
+        'selectedIndex': selectedIndex,
+      });
+    } on FirebaseFunctionsException {
+      // Sin ruido en la UI: la respuesta ya cuenta localmente.
+    }
+  }
+
+  /// Puts the player back on the question after the deepest one already
+  /// banked, instead of restarting the level from the first question.
+  void _applyBankedAnswers(
+    Map<String, dynamic> banked,
+    List<dynamic> questions,
+  ) {
+    var correct = 0;
+    var nextIndex = 0;
+    final restored = <Map<String, dynamic>>[];
+
+    banked.forEach((key, value) {
+      final index = int.tryParse(key);
+      if (index == null || index < 0 || index >= questions.length) return;
+      if (value is! num) return;
+
+      final selected = value.toInt();
+      final question = questions[index] as Map<String, dynamic>;
+      final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
+
+      if (selected == answerIndex) correct++;
+      if (index + 1 > nextIndex) nextIndex = index + 1;
+
+      restored.add({'questionIndex': index, 'selectedIndex': selected});
+    });
+
+    if (!mounted) return;
+
+    setState(() {
+      _answers
+        ..clear()
+        ..addAll(restored);
+      _correct = correct;
+      _index = nextIndex;
+      _timerForIndex = -1;
+      _timer = null;
+      _resetPerQuestion();
+      _resuming = false;
     });
   }
 
@@ -506,6 +581,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   : l10n.levelPlayWrongNoLifeLoss;
         });
       }
+    }
+
+    // Deliberately not banked when the level just ended for lack of lives:
+    // buying a life mid-level returns the player to this very question as a
+    // paid retry (see _buyLifeMidLevel), and a banked answer is final — it
+    // would make that purchase unable to change the score.
+    if (!_endedByNoLives) {
+      unawaited(_recordAnswer(_index, originalSelectedIndex));
     }
 
     if (_endedByNoLives) return;
@@ -750,6 +833,24 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       if (questions.isEmpty) {
                         return Center(
                           child: Text(l10n.levelPlaySessionNoQuestions),
+                        );
+                      }
+
+                      // Resolved before any question renders: answering
+                      // while the resume is pending would have the restored
+                      // state overwrite the answer a moment later.
+                      if (_resuming) {
+                        if (!_resumeApplied) {
+                          _resumeApplied = true;
+                          final banked = Map<String, dynamic>.from(
+                            data['answers'] as Map? ?? {},
+                          );
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _applyBankedAnswers(banked, questions);
+                          });
+                        }
+                        return const Center(
+                          child: CircularProgressIndicator(),
                         );
                       }
 

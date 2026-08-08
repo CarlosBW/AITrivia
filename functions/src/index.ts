@@ -32,6 +32,10 @@ import {
   selectSessionQuestions,
 } from "./ai_question_bank";
 import {
+  TIMED_OUT_ANSWER,
+  mergeRecordedAnswers,
+} from "./quiz_answers";
+import {
   AI_METER_CAPS,
   AiMeter,
   checkAiBudget,
@@ -4161,11 +4165,23 @@ export const submitSoloLevelResult = onCall(async (request) => {
       await tx.get(categoriesExploredAchievementRef);
     const sessionSnap = await tx.get(sessionRef);
 
-    const sessionQuestions = sessionSnap.data()?.questions;
+    const sessionData = sessionSnap.data();
+    const sessionQuestions = sessionData?.questions;
     const total = Array.isArray(sessionQuestions) ?
       sessionQuestions.length : 0;
+
+    // Answers banked by `recordSoloLevelAnswer` as the player went beat
+    // whatever the client reports now — that is what stops a player from
+    // backing out, looking the answers up and re-entering to the same
+    // questions. The submission still fills in anything that never got
+    // banked, so a run with a dropped call is scored on what was played.
+    const scoredAnswers = mergeRecordedAnswers(
+      sessionData?.answers as Record<string, unknown> | undefined,
+      answers
+    );
+
     const {correct} = computeVerifiedQuizResult(
-      sessionQuestions, answers, total
+      sessionQuestions, scoredAnswers, total
     );
 
     const percent = total === 0 ? 0 : correct / total;
@@ -4661,6 +4677,85 @@ export const ensureSoloLevelSession = onCall({
   });
 
   return {created: true};
+});
+
+/**
+ * Banks one Solo/AI-topic answer the moment it is given.
+ *
+ * Solo levels were scored purely from the list the client sent when the
+ * level ended, and nothing was written before that — so backing out
+ * mid-level threw the run away, and re-entering served the same questions
+ * with a clean slate. The only cost was a life, which is not much of a
+ * deterrent against stepping out to look an answer up. Banking each answer
+ * here makes the first one final: `submitSoloLevelResult` scores from
+ * these (see `mergeRecordedAnswers`), so a replay can re-see a question
+ * but not change what it scored.
+ *
+ * First write per question index wins; later ones are accepted and
+ * ignored, so a client retrying a dropped call is not an error. Sessions
+ * are client-read-only (`firestore.rules` denies update on
+ * sessions_fixed/sessions_ai), which is why this has to be a callable.
+ */
+export const recordSoloLevelAnswer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const isAiTopic = request.data?.isAiTopic === true;
+  const categoryId = String(request.data?.categoryId || "");
+  const aiTopicId = request.data?.aiTopicId ?
+    String(request.data.aiTopicId) : null;
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+  const questionIndex = safeInt(request.data?.questionIndex, -1);
+  // TIMED_OUT_ANSWER (-1) is a legitimate value: it closes the question as
+  // wrong so running the clock out isn't a way to keep it open.
+  const selectedIndex = safeInt(
+    request.data?.selectedIndex, TIMED_OUT_ANSWER
+  );
+
+  if (levelNumber < 1 || questionIndex < 0) {
+    throw new HttpsError("invalid-argument", "Invalid answer.");
+  }
+  if (isAiTopic && !aiTopicId) {
+    throw new HttpsError("invalid-argument", "Missing aiTopicId.");
+  }
+  if (!isAiTopic && !categoryId) {
+    throw new HttpsError("invalid-argument", "Missing categoryId.");
+  }
+
+  const sessionId = isAiTopic ?
+    `${aiTopicId}_${levelNumber}` : `${categoryId}_${levelNumber}`;
+  const sessionRef = db.collection("users").doc(uid)
+    .collection(isAiTopic ? "sessions_ai" : "sessions_fixed").doc(sessionId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(sessionRef);
+    if (!snap.exists) {
+      throw new HttpsError("failed-precondition", "No open session.");
+    }
+
+    const data = snap.data() || {};
+    const banked = (data.answers && typeof data.answers === "object") ?
+      data.answers as Record<string, unknown> : {};
+
+    const key = String(questionIndex);
+    if (Object.prototype.hasOwnProperty.call(banked, key)) {
+      return {answers: banked};
+    }
+
+    // Bounded by the session's own question count so a client can't grow
+    // the doc with indices that don't exist.
+    const questionCount = Array.isArray(data.questions) ?
+      data.questions.length : 0;
+    if (questionIndex >= questionCount) {
+      throw new HttpsError("invalid-argument", "Question out of range.");
+    }
+
+    tx.set(sessionRef, {answers: {[key]: selectedIndex}}, {merge: true});
+
+    return {answers: {...banked, [key]: selectedIndex}};
+  });
 });
 
 // ============================================================

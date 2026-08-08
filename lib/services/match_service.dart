@@ -822,6 +822,80 @@ class MatchService {
   // question, keyed by questionIndex) against the match's own stored
   // `questions` — a modified client reporting an inflated score can no
   // longer affect the real result.
+  /// Persists a single async answer the moment it is given, so leaving the
+  /// screen can't rewind it.
+  ///
+  /// Async matches used to keep every answer in the play screen's memory
+  /// and write them all on the last question, which meant backing out
+  /// mid-match discarded the run entirely: the player could re-enter to the
+  /// same questions, look the answers up in between, and there was no life
+  /// cost, no clock and no opponent watching to make that expensive. This
+  /// mirrors [submitAnswer]'s contract for live matches — first write for a
+  /// question index wins, later ones are ignored — so a re-entry replays
+  /// the questions but cannot change what was already answered.
+  ///
+  /// [selectedAnswerIndex] is -1 when the question timed out. The server
+  /// scores from these answers (`computeVerifiedPvpScore`), and -1 never
+  /// matches a valid `answerIndex`, so a timeout counts as wrong exactly
+  /// like it did when it was only tracked locally.
+  Future<void> submitAsyncAnswer({
+    required String matchId,
+    required int questionIndex,
+    required int selectedAnswerIndex,
+  }) async {
+    final ref = _db.collection('async_matches').doc(matchId);
+
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (data == null) throw Exception(_l10n.serviceAsyncMatchNotFound);
+
+      final challengerUid = (data['challengerUid'] ?? '').toString();
+      final challengedUid = (data['challengedUid'] ?? '').toString();
+
+      if (uid != challengerUid && uid != challengedUid) {
+        throw Exception(_l10n.serviceNotYourMatch);
+      }
+
+      final role = uid == challengerUid ? 'challenger' : 'challenged';
+      final statusKey =
+          role == 'challenger' ? 'challengerStatus' : 'challengedStatus';
+
+      // Nothing may be added once the round is closed.
+      if ((data[statusKey] ?? 'pending').toString() == 'finished') return;
+
+      final mine = Map<String, dynamic>.from(data[role] ?? {});
+      final answers = Map<String, dynamic>.from(mine['answers'] ?? {});
+
+      final key = questionIndex.toString();
+      if (answers.containsKey(key)) return;
+
+      tx.update(ref, {'$role.answers.$key': selectedAnswerIndex});
+    });
+  }
+
+  /// Answers already persisted for this player, keyed by question index —
+  /// what [submitAsyncAnswer] has banked so far. Used to resume a match the
+  /// player backed out of instead of restarting it.
+  Future<Map<int, int>> loadAsyncAnswers({required String matchId}) async {
+    final snap = await _db.collection('async_matches').doc(matchId).get();
+    final data = snap.data();
+    if (data == null) return {};
+
+    final challengerUid = (data['challengerUid'] ?? '').toString();
+    final role = uid == challengerUid ? 'challenger' : 'challenged';
+
+    final mine = Map<String, dynamic>.from(data[role] ?? {});
+    final answers = Map<String, dynamic>.from(mine['answers'] ?? {});
+
+    final parsed = <int, int>{};
+    answers.forEach((key, value) {
+      final index = int.tryParse(key);
+      if (index != null && value is num) parsed[index] = value.toInt();
+    });
+    return parsed;
+  }
+
   Future<void> submitAsyncResult({
     required String matchId,
     required int score,
@@ -842,27 +916,30 @@ class MatchService {
         throw Exception(_l10n.serviceNotYourMatch);
       }
 
-      if (uid == challengerUid) {
-        final st = (data['challengerStatus'] ?? 'pending').toString();
-        if (st == 'finished') return;
+      final role = uid == challengerUid ? 'challenger' : 'challenged';
+      final statusKey =
+          role == 'challenger' ? 'challengerStatus' : 'challengedStatus';
 
-        tx.update(ref, {
-          'challengerStatus': 'finished',
-          'challenger.score': score,
-          'challenger.answers': answersMap,
-          'challenger.finishedAt': FieldValue.serverTimestamp(),
-        });
-      } else {
-        final st = (data['challengedStatus'] ?? 'pending').toString();
-        if (st == 'finished') return;
+      if ((data[statusKey] ?? 'pending').toString() == 'finished') return;
 
-        tx.update(ref, {
-          'challengedStatus': 'finished',
-          'challenged.score': score,
-          'challenged.answers': answersMap,
-          'challenged.finishedAt': FieldValue.serverTimestamp(),
-        });
-      }
+      final mine = Map<String, dynamic>.from(data[role] ?? {});
+      final banked = Map<String, dynamic>.from(mine['answers'] ?? {});
+
+      // Fills gaps instead of replacing the map: [submitAsyncAnswer] has
+      // already banked each answer as it was given, and overwriting here
+      // would let a re-entered match replace answers that were meant to be
+      // final — the very thing banking them per question prevents.
+      final patch = <String, Object?>{
+        statusKey: 'finished',
+        '$role.score': score,
+        '$role.finishedAt': FieldValue.serverTimestamp(),
+      };
+
+      answersMap.forEach((key, value) {
+        if (!banked.containsKey(key)) patch['$role.answers.$key'] = value;
+      });
+
+      tx.update(ref, patch);
     });
 
     // =========================================================

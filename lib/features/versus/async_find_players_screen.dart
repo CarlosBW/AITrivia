@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class AsyncFindPlayersScreen extends StatefulWidget {
   final String categoryId;
@@ -147,7 +148,10 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.asyncFindPlayersTitle)),
+      appBar: AppBar(
+        title: Text(l10n.asyncFindPlayersTitle),
+        actions: const [ProfileAvatarButton()],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

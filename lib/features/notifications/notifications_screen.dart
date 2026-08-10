@@ -15,6 +15,7 @@ import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -333,6 +334,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 : const Icon(Icons.done_all),
             label: Text(l10n.notificationsReadAll),
           ),
+          const ProfileAvatarButton(),
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(

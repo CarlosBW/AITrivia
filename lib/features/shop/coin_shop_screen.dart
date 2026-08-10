@@ -8,6 +8,7 @@ import '../../services/economy_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 /// Coin pack storefront. Until the packs are configured in the Google Play
 /// Console / App Store Connect, `queryCoinPackProducts` returns nothing, so
@@ -95,7 +96,10 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context).coinShopTitle)),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).coinShopTitle),
+        actions: const [ProfileAvatarButton()],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _storeAvailable

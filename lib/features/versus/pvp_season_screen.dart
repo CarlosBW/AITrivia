@@ -9,6 +9,7 @@ import '../../widgets/tier_badge.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
   const PvpSeasonScreen({super.key});
@@ -65,6 +66,7 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(l10n.pvpSeasonTitle),
         bottom: TabBar(
           controller: _tabController,

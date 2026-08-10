@@ -15,6 +15,7 @@ import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
 import '../../widgets/notification_bell_button.dart';
+import '../../widgets/profile_avatar_button.dart';
 import '../../widgets/language_switch.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
@@ -297,6 +298,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                             ? () {}
                             : _openNotifications,
                       ),
+                      const SizedBox(width: 8),
+                      // Aquí y no en el AppBar de cada tab: esta fila se
+                      // dibuja por encima del contenido, así que un avatar
+                      // en el AppBar quedaba tapado por la campana.
+                      const ProfileAvatarButton(rightPadding: 0),
                     ],
                   ),
                 ),

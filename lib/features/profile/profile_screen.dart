@@ -1529,6 +1529,8 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: Text(AppLocalizations.of(context).profileTitle),
+      // Sin navegación: ya estamos en el perfil, tocarlo apilaría una
+      // segunda copia encima.
     );
   }
 

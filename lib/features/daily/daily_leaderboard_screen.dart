@@ -8,6 +8,7 @@ import '../../services/league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 // Stateful only to hold the leaderboard query: built inside `build()` it
 // was a fresh Future on every rebuild, and this one is a 50-document read,
@@ -57,6 +58,7 @@ class _DailyLeaderboardScreenState extends State<DailyLeaderboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(l10n.dailyLeaderboardTitle),
       ),
       body: FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(

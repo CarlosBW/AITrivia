@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class JoinMatchScreen extends StatefulWidget {
   const JoinMatchScreen({super.key});
@@ -59,7 +60,10 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.joinMatchTitle)),
+      appBar: AppBar(
+        title: Text(l10n.joinMatchTitle),
+        actions: const [ProfileAvatarButton()],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

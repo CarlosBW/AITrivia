@@ -12,6 +12,7 @@ import 'match_lobby_screen.dart';
 import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/l10n_for.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
   final String categoryId;
@@ -307,6 +308,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(
           widget.ranked
               ? l10n.liveMatchmakingRankedTitle

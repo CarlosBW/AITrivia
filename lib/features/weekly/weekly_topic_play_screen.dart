@@ -7,6 +7,7 @@ import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 /// A single round (fixed-size, freshly drawn from the category's pools —
 /// see WeeklyTopicService.loadRandomRound) of Weekly Topic questions. This
@@ -238,7 +239,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
     if (_errorMessage != null) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.categoryName)),
+        appBar: AppBar(
+          title: Text(widget.categoryName),
+          actions: const [ProfileAvatarButton(openProfileOnTap: false)],
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -256,6 +260,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       appBar: AppBar(
         title: Text(widget.categoryName),
         automaticallyImplyLeading: !_submitting,
+        actions: const [ProfileAvatarButton(openProfileOnTap: false)],
       ),
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 180),

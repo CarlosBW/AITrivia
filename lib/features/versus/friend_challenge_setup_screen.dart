@@ -8,6 +8,7 @@ import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class _CategoryOption {
   final String id;
@@ -168,6 +169,7 @@ class _FriendChallengeSetupScreenState
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(l10n.friendChallengeTitle),
       ),
       body: Stack(

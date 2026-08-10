@@ -10,6 +10,7 @@ import 'level_play_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class LevelSelectScreen extends StatefulWidget {
   final String categoryId;
@@ -330,6 +331,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(widget.categoryName),
       ),
       body: Stack(

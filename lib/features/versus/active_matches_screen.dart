@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class ActiveMatchesScreen extends StatefulWidget {
   const ActiveMatchesScreen({super.key});
@@ -166,6 +167,7 @@ class _ActiveMatchesScreenState extends State<ActiveMatchesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: const [ProfileAvatarButton()],
         title: Text(l10n.activeMatchesTitle),
       ),
       body: RefreshIndicator(

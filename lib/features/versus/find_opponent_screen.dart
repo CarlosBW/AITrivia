@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'live_menu_screen.dart';
 import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/profile_avatar_button.dart';
 
 class FindOpponentScreen extends StatelessWidget {
   const FindOpponentScreen({super.key});
@@ -15,6 +16,7 @@ class FindOpponentScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
+          actions: const [ProfileAvatarButton()],
           title: Text(l10n.findOpponentTitle),
           bottom: TabBar(
             tabs: [

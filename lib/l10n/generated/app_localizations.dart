@@ -2798,6 +2798,36 @@ abstract class AppLocalizations {
   /// **'Enviando revancha...'**
   String get asyncMatchPlaySendingRematch;
 
+  /// No description provided for @asyncMatchPlayConnectionError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos conectar con la partida. Revisa tu conexión e inténtalo de nuevo.'**
+  String get asyncMatchPlayConnectionError;
+
+  /// No description provided for @asyncMatchPlayLeaveTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Salir del reto?'**
+  String get asyncMatchPlayLeaveTitle;
+
+  /// No description provided for @asyncMatchPlayLeaveBody.
+  ///
+  /// In es, this message translates to:
+  /// **'El reloj sigue corriendo mientras no estás. Si sales ahora, la pregunta en pantalla contará como fallada cuando se acabe su tiempo.'**
+  String get asyncMatchPlayLeaveBody;
+
+  /// No description provided for @asyncMatchPlayLeaveStay.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguir jugando'**
+  String get asyncMatchPlayLeaveStay;
+
+  /// No description provided for @asyncMatchPlayLeaveConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Salir'**
+  String get asyncMatchPlayLeaveConfirm;
+
   /// No description provided for @pvpSeasonTabSeason.
   ///
   /// In es, this message translates to:
@@ -4695,18 +4725,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No perteneces a este reto'**
   String get serviceNotYourChallenge;
-
-  /// No description provided for @serviceAsyncMatchNotFound.
-  ///
-  /// In es, this message translates to:
-  /// **'Async match no existe'**
-  String get serviceAsyncMatchNotFound;
-
-  /// No description provided for @serviceNotYourMatch.
-  ///
-  /// In es, this message translates to:
-  /// **'No perteneces a este match'**
-  String get serviceNotYourMatch;
 
   /// No description provided for @servicePoolEmptyForCategory.
   ///

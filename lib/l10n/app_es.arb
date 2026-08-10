@@ -829,6 +829,11 @@
   "asyncMatchPlayCalculatingFinal": "Tu resultado fue enviado. Calculando resultado final.",
   "asyncMatchPlayWaitingOpponentPlay": "Tu resultado fue enviado. Esperando que tu rival juegue.",
   "asyncMatchPlaySendingRematch": "Enviando revancha...",
+  "asyncMatchPlayConnectionError": "No pudimos conectar con la partida. Revisa tu conexión e inténtalo de nuevo.",
+  "asyncMatchPlayLeaveTitle": "¿Salir del reto?",
+  "asyncMatchPlayLeaveBody": "El reloj sigue corriendo mientras no estás. Si sales ahora, la pregunta en pantalla contará como fallada cuando se acabe su tiempo.",
+  "asyncMatchPlayLeaveStay": "Seguir jugando",
+  "asyncMatchPlayLeaveConfirm": "Salir",
 
   "pvpSeasonTabSeason": "Temporada",
   "pvpSeasonTabLeaderboard": "Clasificación",
@@ -1593,8 +1598,6 @@
   "serviceCannotChallengeSelfNoPeriod": "No puedes retarte a ti mismo",
   "serviceChallengeNotFound": "Reto no encontrado",
   "serviceNotYourChallenge": "No perteneces a este reto",
-  "serviceAsyncMatchNotFound": "Async match no existe",
-  "serviceNotYourMatch": "No perteneces a este match",
   "servicePoolEmptyForCategory": "Pool vacío para {categoryId}",
   "@servicePoolEmptyForCategory": {
     "placeholders": {

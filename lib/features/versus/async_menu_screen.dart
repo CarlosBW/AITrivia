@@ -4,20 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../../services/economy_service.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
   final int difficulty;
   final int timePerQuestionSec;
   final int totalQuestions;
-  final int winReward;
 
   const AsyncMenuScreen({
     super.key,
     this.difficulty = 1,
     this.timePerQuestionSec = 15,
     this.totalQuestions = 10,
-    this.winReward = EconomyService.defaultPvpWinReward,
   });
 
   @override
@@ -49,7 +46,6 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
           difficulty: widget.difficulty,
           totalQuestions: widget.totalQuestions,
           timePerQuestionSec: widget.timePerQuestionSec,
-          winReward: widget.winReward,
         ),
       ),
     );

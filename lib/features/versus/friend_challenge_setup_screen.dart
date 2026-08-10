@@ -128,9 +128,6 @@ class _FriendChallengeSetupScreenState
         difficulty: _difficulty,
         totalQuestions: _totalQuestions,
         timePerQuestionSec: _timePerQuestionSec,
-        winReward: EconomyService.defaultPvpWinReward,
-        challengerDisplayName: myName,
-        challengedDisplayName: widget.friendName,
       );
 
       if (!mounted) return;

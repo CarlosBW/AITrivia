@@ -9,6 +9,50 @@ import 'pvp_league_service.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
 
+/// Where the server says a player stands in an async match.
+///
+/// [remainingMs] is a duration rather than a deadline on purpose: the
+/// countdown runs off it directly, so a wrong device clock can't buy time.
+class AsyncPvpTurn {
+  const AsyncPvpTurn({
+    required this.index,
+    required this.finished,
+    required this.remainingMs,
+    required this.answers,
+  });
+
+  /// Question to show; equals the question count once [finished].
+  final int index;
+  final bool finished;
+  final int remainingMs;
+
+  /// Everything banked so far, keyed by question index.
+  final Map<int, int> answers;
+}
+
+/// What the server banked for one answer, plus the next question's clock.
+class AsyncPvpAnswer {
+  const AsyncPvpAnswer({
+    required this.storedIndex,
+    required this.timedOut,
+    required this.nextIndex,
+    required this.nextRemainingMs,
+    required this.finished,
+  });
+
+  /// The option actually recorded — -1 when the answer arrived too late,
+  /// whatever the client sent.
+  final int storedIndex;
+  final bool timedOut;
+  final int nextIndex;
+
+  /// Clock for [nextIndex], counted from the moment this call returned.
+  /// Covers the play screen's reveal pause, so it is a question's full time
+  /// plus that pause.
+  final int nextRemainingMs;
+  final bool finished;
+}
+
 class MatchService {
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
@@ -698,15 +742,24 @@ class MatchService {
   // ASYNC (diferido) 1 vs 1 (async_matches) - existente
   // ============================================================
 
+  /// Creates an async challenge. Server-side (createAsyncPvpMatch), because
+  /// firestore.rules can check the shape of a document but not where its
+  /// contents came from — so the client used to pick the `questions`
+  /// itself. A modified client could write its own questions, with its own
+  /// `answerIndex`, into a match the opponent then had to play, and could
+  /// set any `timePerQuestionSec` it liked — the field every server-anchored
+  /// deadline is now measured from.
+  ///
+  /// The reward is the server's constant, and both display names are read
+  /// from the two user docs, so nothing shown to the other player travels
+  /// from here. The "you've been challenged" notification is sent by the
+  /// same call.
   Future<String> createAsyncFixedMatch({
     required String challengedUid,
     required String categoryId,
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 15,
-    int winReward = EconomyService.defaultPvpWinReward,
-    String challengerDisplayName = 'Player',
-    String challengedDisplayName = 'Player',
   }) async {
     if (challengedUid.trim().isEmpty) {
       throw Exception(_l10n.serviceChallengedUidEmpty);
@@ -715,66 +768,20 @@ class MatchService {
       throw Exception(_l10n.serviceCannotChallengeSelfNoPeriod);
     }
 
-    final matchRef = _db.collection('async_matches').doc();
-
-    final questions = await _generateFixedQuestions(
-      categoryId: categoryId,
-      difficulty: difficulty,
-      total: totalQuestions,
-    );
-
-    final now = FieldValue.serverTimestamp();
-
-    await matchRef.set({
-      'createdAt': now,
-      'lastUpdatedAt': now, // ✅ nuevo: para ordenar Inbox/Outbox
-
-      'status': 'waiting_challenged', // waiting_challenged | completed
-      'mode': 'fixed',
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'createAsyncPvpMatch',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+        )
+        .call({
+      'challengedUid': challengedUid,
       'categoryId': categoryId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
       'timePerQuestionSec': timePerQuestionSec,
-      'questions': questions,
-
-      'challengerUid': uid,
-      'challengedUid': challengedUid,
-
-      'challengerDisplayName': challengerDisplayName,
-      'challengedDisplayName': challengedDisplayName,
-
-      'challengerStatus': 'pending', // pending | finished
-      'challengedStatus': 'pending',
-
-      // scores (map)
-      'challenger': {'score': 0, 'finishedAt': null},
-      'challenged': {'score': 0, 'finishedAt': null},
-
-      // ✅ opcional recomendado: scores planos (más fácil para listas)
-      'challengerScore': 0,
-      'challengedScore': 0,
-
-      'winnerUid': null,
-      'rewarded': false,
-      'winReward': winReward,
-      'endedAt': null,
     });
 
-    // =========================================================
-    // NOTIFICATIONS
-    // =========================================================
-
-    // Only `matchId` travels now: the rest of what used to ride along here
-    // (names, category, difficulty) is either derivable from the match doc
-    // the recipient can already read, or was only ever used to build text
-    // that the server composes itself.
-    await _notificationService.notifyUser(
-      targetUid: challengedUid,
-      type: 'match_invite',
-      data: {'matchId': matchRef.id},
-    );
-
-    return matchRef.id;
+    return ((result.data as Map)['matchId'] ?? '').toString();
   }
 
   Future<void> declineAsyncMatch({
@@ -815,136 +822,96 @@ class MatchService {
     });
   }
 
-  // `score` is still stored for this player's own live/result display
-  // (e.g. active_matches_screen.dart, result screens) but
-  // finalizeAsyncPvpMatch ignores it and recomputes the authoritative
-  // score itself from `answers` (this player's actual selected option per
-  // question, keyed by questionIndex) against the match's own stored
-  // `questions` — a modified client reporting an inflated score can no
-  // longer affect the real result.
-  /// Persists a single async answer the moment it is given, so leaving the
-  /// screen can't rewind it.
+  /// Opens (or resumes) my turn in an async match — the only way to learn
+  /// which question to show and how long is left on it.
   ///
-  /// Async matches used to keep every answer in the play screen's memory
-  /// and write them all on the last question, which meant backing out
-  /// mid-match discarded the run entirely: the player could re-enter to the
-  /// same questions, look the answers up in between, and there was no life
-  /// cost, no clock and no opponent watching to make that expensive. This
-  /// mirrors [submitAnswer]'s contract for live matches — first write for a
-  /// question index wins, later ones are ignored — so a re-entry replays
-  /// the questions but cannot change what was already answered.
+  /// Playing an async match used to be a direct client write, which left
+  /// two holes firestore.rules could not close: the rule had to allow "this
+  /// player edits their own answers map", so a modified client could go
+  /// back and fix its wrong answers any time before the match finalized,
+  /// and the per-question countdown only ever existed in the play screen,
+  /// so a modified client could simply not run it. The server now stamps
+  /// each question's deadline and judges every answer against it.
   ///
-  /// [selectedAnswerIndex] is -1 when the question timed out. The server
-  /// scores from these answers (`computeVerifiedPvpScore`), and -1 never
-  /// matches a valid `answerIndex`, so a timeout counts as wrong exactly
-  /// like it did when it was only tracked locally.
-  Future<void> submitAsyncAnswer({
+  /// A deadline is stamped once per question and never refreshed: leave
+  /// mid-question and come back after it passed and that question is banked
+  /// as a timeout, which is what makes leaving to look an answer up
+  /// expensive.
+  Future<AsyncPvpTurn> openAsyncTurn({required String matchId}) async {
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'openAsyncPvpTurn',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({'matchId': matchId});
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+
+    return AsyncPvpTurn(
+      index: (data['index'] as num).toInt(),
+      finished: data['finished'] == true,
+      remainingMs: ((data['remainingMs'] ?? 0) as num).toInt(),
+      answers: _parseAnswerMap(data['answers']),
+    );
+  }
+
+  /// Banks one answer and returns the clock for the question after it.
+  ///
+  /// [selectedAnswerIndex] is -1 when the local countdown ran out. The
+  /// server banks -1 too for anything that arrives past its deadline, and
+  /// -1 never matches a valid `answerIndex`, so a timeout scores as wrong
+  /// exactly like a wrong tap.
+  ///
+  /// Throws when the server can't line the call up with the turn it expects
+  /// (already answered, out of order, never opened) — the caller's answer
+  /// to all of those is the same: call [openAsyncTurn] again and take the
+  /// server's word for where the run is.
+  Future<AsyncPvpAnswer> submitAsyncAnswer({
     required String matchId,
     required int questionIndex,
     required int selectedAnswerIndex,
   }) async {
-    final ref = _db.collection('async_matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) throw Exception(_l10n.serviceAsyncMatchNotFound);
-
-      final challengerUid = (data['challengerUid'] ?? '').toString();
-      final challengedUid = (data['challengedUid'] ?? '').toString();
-
-      if (uid != challengerUid && uid != challengedUid) {
-        throw Exception(_l10n.serviceNotYourMatch);
-      }
-
-      final role = uid == challengerUid ? 'challenger' : 'challenged';
-      final statusKey =
-          role == 'challenger' ? 'challengerStatus' : 'challengedStatus';
-
-      // Nothing may be added once the round is closed.
-      if ((data[statusKey] ?? 'pending').toString() == 'finished') return;
-
-      final mine = Map<String, dynamic>.from(data[role] ?? {});
-      final answers = Map<String, dynamic>.from(mine['answers'] ?? {});
-
-      final key = questionIndex.toString();
-      if (answers.containsKey(key)) return;
-
-      tx.update(ref, {'$role.answers.$key': selectedAnswerIndex});
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'submitAsyncPvpAnswer',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({
+      'matchId': matchId,
+      'questionIndex': questionIndex,
+      'selectedIndex': selectedAnswerIndex,
     });
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+
+    return AsyncPvpAnswer(
+      storedIndex: ((data['storedIndex'] ?? -1) as num).toInt(),
+      timedOut: data['timedOut'] == true,
+      nextIndex: ((data['nextIndex'] ?? 0) as num).toInt(),
+      nextRemainingMs: ((data['nextRemainingMs'] ?? 0) as num).toInt(),
+      finished: data['finished'] == true,
+    );
   }
 
-  /// Answers already persisted for this player, keyed by question index —
-  /// what [submitAsyncAnswer] has banked so far. Used to resume a match the
-  /// player backed out of instead of restarting it.
-  Future<Map<int, int>> loadAsyncAnswers({required String matchId}) async {
-    final snap = await _db.collection('async_matches').doc(matchId).get();
-    final data = snap.data();
-    if (data == null) return {};
+  /// Closes my round and returns the score the server computed from the
+  /// answers it banked — the same one finalizeAsyncPvpMatch settles the
+  /// match on, so the result screen can't show a number that disagrees
+  /// with the outcome.
+  Future<int> finishAsyncMatch({required String matchId}) async {
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'finishAsyncPvpMatch',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({'matchId': matchId});
 
-    final challengerUid = (data['challengerUid'] ?? '').toString();
-    final role = uid == challengerUid ? 'challenger' : 'challenged';
-
-    final mine = Map<String, dynamic>.from(data[role] ?? {});
-    final answers = Map<String, dynamic>.from(mine['answers'] ?? {});
-
-    final parsed = <int, int>{};
-    answers.forEach((key, value) {
-      final index = int.tryParse(key);
-      if (index != null && value is num) parsed[index] = value.toInt();
-    });
-    return parsed;
-  }
-
-  Future<void> submitAsyncResult({
-    required String matchId,
-    required int score,
-    required Map<int, int> answers,
-  }) async {
-    final ref = _db.collection('async_matches').doc(matchId);
-    final answersMap = answers.map((k, v) => MapEntry(k.toString(), v));
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) throw Exception(_l10n.serviceAsyncMatchNotFound);
-
-      final challengerUid = (data['challengerUid'] ?? '').toString();
-      final challengedUid = (data['challengedUid'] ?? '').toString();
-
-      if (uid != challengerUid && uid != challengedUid) {
-        throw Exception(_l10n.serviceNotYourMatch);
-      }
-
-      final role = uid == challengerUid ? 'challenger' : 'challenged';
-      final statusKey =
-          role == 'challenger' ? 'challengerStatus' : 'challengedStatus';
-
-      if ((data[statusKey] ?? 'pending').toString() == 'finished') return;
-
-      final mine = Map<String, dynamic>.from(data[role] ?? {});
-      final banked = Map<String, dynamic>.from(mine['answers'] ?? {});
-
-      // Fills gaps instead of replacing the map: [submitAsyncAnswer] has
-      // already banked each answer as it was given, and overwriting here
-      // would let a re-entered match replace answers that were meant to be
-      // final — the very thing banking them per question prevents.
-      final patch = <String, Object?>{
-        statusKey: 'finished',
-        '$role.score': score,
-        '$role.finishedAt': FieldValue.serverTimestamp(),
-      };
-
-      answersMap.forEach((key, value) {
-        if (!banked.containsKey(key)) patch['$role.answers.$key'] = value;
-      });
-
-      tx.update(ref, patch);
-    });
+    final score = ((result.data as Map)['score'] ?? 0) as num;
 
     // =========================================================
 // TURN / RESULT NOTIFICATIONS
 // =========================================================
+
+    final ref = _db.collection('async_matches').doc(matchId);
 
     try {
       final snap = await ref.get();
@@ -975,6 +942,20 @@ class MatchService {
     // Reward computation + "you won/lost" result notifications are now
     // handled server-side by the finalizeAsyncPvpMatch Cloud Function,
     // triggered by the challengerStatus/challengedStatus update above.
+
+    return score.toInt();
+  }
+
+  /// An answers map as the callables return it, keyed by question index.
+  Map<int, int> _parseAnswerMap(Object? raw) {
+    if (raw is! Map) return {};
+
+    final parsed = <int, int>{};
+    raw.forEach((key, value) {
+      final index = int.tryParse(key.toString());
+      if (index != null && value is num) parsed[index] = value.toInt();
+    });
+    return parsed;
   }
 
   /// Inbox de retos: soy el retado.

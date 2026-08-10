@@ -36,6 +36,10 @@ import {
   mergeRecordedAnswers,
 } from "./quiz_answers";
 import {
+  openTurn,
+  resolveAnswer,
+} from "./async_pvp_turns";
+import {
   AI_METER_CAPS,
   AiMeter,
   checkAiBudget,
@@ -2170,6 +2174,465 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
     });
   }
 );
+
+// The spread the challenge UI actually offers (friend_challenge_setup_screen
+// and create_match_screen): 5/10/15 questions at 8-20 seconds each, three
+// difficulties. Clamped rather than rejected so a UI tweak doesn't start
+// failing calls, but bounded so a modified client can't create a match with
+// a 10-minute clock or a hundred questions.
+const ASYNC_QUESTION_COUNT_RANGE = {min: 5, max: 15};
+const ASYNC_SECONDS_PER_QUESTION_RANGE = {min: 8, max: 20};
+const ASYNC_DIFFICULTY_RANGE = {min: 1, max: 3};
+
+/**
+ * @param {number} value Raw value.
+ * @param {{min: number, max: number}} range Inclusive bounds.
+ * @return {number} `value` held inside `range`.
+ */
+function clampToRange(
+  value: number, range: {min: number; max: number}
+): number {
+  return Math.max(range.min, Math.min(range.max, value));
+}
+
+/**
+ * Creates an async (turn-based) challenge against another player.
+ *
+ * Creating one used to be a direct client write, and firestore.rules can
+ * only check the shape of a document, not where its contents came from —
+ * so the client picked the `questions` themselves. A modified client could
+ * therefore write its own questions (with its own `answerIndex`) into a
+ * match the opponent then had to play, which is an unbeatable async match,
+ * and could set `timePerQuestionSec` to anything it liked — the very field
+ * the server-anchored clock now measures every deadline from.
+ *
+ * Note this is not about *seeing* the questions: both players read the
+ * match doc to play it, so both can always see everything in it. It is
+ * about who chooses what goes in.
+ *
+ * Display names are read from the two user docs rather than taken from the
+ * request, for the same reason `sendUserNotification` reads the sender's:
+ * they are shown to the other player.
+ */
+export const createAsyncPvpMatch = onCall({
+  // Selecting questions reads a whole category pool, which is slower than
+  // a plain write — the client gives up well before this.
+  timeoutSeconds: 60,
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const challengedUid = String(request.data?.challengedUid || "");
+
+  if (!challengedUid) {
+    throw new HttpsError("invalid-argument", "Missing challengedUid.");
+  }
+
+  if (challengedUid === uid) {
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "No puedes retarte a ti mismo",
+      "You can't challenge yourself"
+    );
+  }
+
+  const categoryId = String(request.data?.categoryId || "random");
+  const difficulty = clampToRange(
+    safeInt(request.data?.difficulty, 1), ASYNC_DIFFICULTY_RANGE
+  );
+  const totalQuestions = clampToRange(
+    safeInt(request.data?.totalQuestions, 10), ASYNC_QUESTION_COUNT_RANGE
+  );
+  const timePerQuestionSec = clampToRange(
+    safeInt(request.data?.timePerQuestionSec, 15),
+    ASYNC_SECONDS_PER_QUESTION_RANGE
+  );
+
+  const [challengerSnap, challengedSnap] = await db.getAll(
+    db.collection("users").doc(uid),
+    db.collection("users").doc(challengedUid)
+  );
+
+  if (!challengedSnap.exists) {
+    throw new HttpsError("not-found", "That player no longer exists.");
+  }
+
+  if (categoryId !== "random") {
+    const categorySnap = await db.collection("fixed_categories")
+      .doc(categoryId).get();
+
+    if (categorySnap.data()?.isActive !== true) {
+      throw new HttpsError("invalid-argument", "Unknown category.");
+    }
+  }
+
+  const questions = await selectFixedMatchQuestions(
+    categoryId, difficulty, totalQuestions
+  );
+
+  if (questions.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions available.");
+  }
+
+  const challengerData = challengerSnap.data() || {};
+  const challengedData = challengedSnap.data() || {};
+
+  const challengerName = String(
+    challengerData.displayName || challengerData.username || "Player"
+  );
+  const challengedName = String(
+    challengedData.displayName || challengedData.username || "Player"
+  );
+
+  const matchRef = db.collection("async_matches").doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  await matchRef.set({
+    createdAt: now,
+    lastUpdatedAt: now,
+
+    status: "waiting_challenged",
+    mode: "fixed",
+    categoryId,
+    difficulty,
+    totalQuestions: questions.length,
+    timePerQuestionSec,
+    questions,
+
+    challengerUid: uid,
+    challengedUid,
+
+    challengerDisplayName: challengerName,
+    challengedDisplayName: challengedName,
+
+    challengerStatus: "pending",
+    challengedStatus: "pending",
+
+    challenger: {score: 0, finishedAt: null},
+    challenged: {score: 0, finishedAt: null},
+
+    challengerScore: 0,
+    challengedScore: 0,
+
+    winnerUid: null,
+    rewarded: false,
+    winReward: MAX_WIN_REWARD,
+    endedAt: null,
+  });
+
+  // Written here rather than through sendUserNotification: the challenge
+  // and the invite that announces it now land in one call, and this is
+  // already past every check that call would repeat.
+  const {title, body} = crossUserNotificationText(
+    "match_invite", challengedData.languageCode, challengerName
+  );
+
+  await db.collection("users").doc(challengedUid)
+    .collection("notifications").add({
+      type: "match_invite",
+      title,
+      body,
+      data: {matchId: matchRef.id},
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+  return {matchId: matchRef.id};
+});
+
+// ============================================================
+// ASYNC PVP TURNS
+//
+// Playing an async match used to be a direct client write: the play screen
+// ran its own countdown and wrote each answer into
+// `async_matches/{id}.{role}.answers` itself. firestore.rules could stop a
+// player touching the *opponent's* map, but the write it had to allow was
+// "this player edits their own answers" — which is exactly what
+// finalizeAsyncPvpMatch scores from, so a modified client could rewrite
+// its own answers to the right ones any time before the match finalized,
+// and could simply not run the clock at all.
+//
+// These three calls are the only way in now (firestore.rules leaves the
+// client nothing on this collection but declining a challenge): the server
+// stamps each question's deadline, judges every answer against it, and
+// computes the finishing score itself. Turn/clock decisions live in
+// async_pvp_turns.ts so they can be unit-tested; everything here is
+// Firestore plumbing around them.
+// ============================================================
+
+type AsyncMatchRole = "challenger" | "challenged";
+
+interface AsyncMatchContext {
+  data: FirebaseFirestore.DocumentData;
+  role: AsyncMatchRole;
+  statusKey: "challengerStatus" | "challengedStatus";
+  answers: Record<string, unknown>;
+  deadlines: Record<string, unknown>;
+  questionCount: number;
+  timePerQuestionSec: number;
+  finishedAlready: boolean;
+}
+
+/**
+ * The caller's side of an async match, or an error if they have no side.
+ * @param {FirebaseFirestore.DocumentData|undefined} data The match doc.
+ * @param {string} uid Caller.
+ * @return {AsyncMatchContext} Everything the turn calls need to decide.
+ */
+function asyncMatchContextFor(
+  data: FirebaseFirestore.DocumentData | undefined, uid: string
+): AsyncMatchContext {
+  if (!data) {
+    throw new HttpsError("not-found", "Match not found.");
+  }
+
+  const challengerUid = String(data.challengerUid || "");
+  const challengedUid = String(data.challengedUid || "");
+
+  if (uid !== challengerUid && uid !== challengedUid) {
+    throw new HttpsError("permission-denied", "Not your match.");
+  }
+
+  if (String(data.status || "") === "declined") {
+    throw new HttpsError("failed-precondition", "Challenge was declined.");
+  }
+
+  const role: AsyncMatchRole =
+    uid === challengerUid ? "challenger" : "challenged";
+  const statusKey = role === "challenger" ?
+    "challengerStatus" : "challengedStatus";
+
+  const mine = (data[role] && typeof data[role] === "object") ?
+    data[role] as Record<string, unknown> : {};
+
+  return {
+    data,
+    role,
+    statusKey,
+    answers: (mine.answers && typeof mine.answers === "object") ?
+      mine.answers as Record<string, unknown> : {},
+    deadlines: (mine.deadlines && typeof mine.deadlines === "object") ?
+      mine.deadlines as Record<string, unknown> : {},
+    questionCount: Array.isArray(data.questions) ? data.questions.length : 0,
+    timePerQuestionSec: safeInt(data.timePerQuestionSec, 15),
+    finishedAlready: String(data[statusKey] || "pending") === "finished",
+  };
+}
+
+/**
+ * Opens (or resumes) the caller's turn and returns the question to serve.
+ *
+ * A question's deadline is stamped once and never refreshed, so backing out
+ * of the screen doesn't rewind it — come back after it passed and it is
+ * banked as a timeout. `remainingMs` is a duration rather than a timestamp
+ * on purpose: the client counts down from it and never has to trust its own
+ * device clock.
+ */
+export const openAsyncPvpTurn = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const matchId = String(request.data?.matchId || "");
+  if (!matchId) {
+    throw new HttpsError("invalid-argument", "Missing matchId.");
+  }
+
+  const matchRef = db.collection("async_matches").doc(matchId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const ctx = asyncMatchContextFor(snap.data(), uid);
+
+    if (ctx.finishedAlready) {
+      return {
+        index: ctx.questionCount,
+        finished: true,
+        remainingMs: 0,
+        answers: ctx.answers,
+      };
+    }
+
+    const turn = openTurn({
+      answers: ctx.answers,
+      deadlines: ctx.deadlines,
+      questionCount: ctx.questionCount,
+      timePerQuestionSec: ctx.timePerQuestionSec,
+      nowMs: Date.now(),
+    });
+
+    const patch: Record<string, unknown> = {};
+    const answers: Record<string, unknown> = {...ctx.answers};
+
+    for (const index of turn.timedOutIndices) {
+      patch[`${ctx.role}.answers.${index}`] = TIMED_OUT_ANSWER;
+      answers[String(index)] = TIMED_OUT_ANSWER;
+    }
+
+    if (turn.deadlineIsNew && turn.deadlineMs !== null) {
+      patch[`${ctx.role}.deadlines.${turn.index}`] = turn.deadlineMs;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      tx.update(matchRef, patch);
+    }
+
+    return {
+      index: turn.index,
+      finished: turn.finished,
+      remainingMs: turn.remainingMs,
+      answers,
+    };
+  });
+});
+
+/**
+ * Banks one answer and stamps the next question's clock.
+ *
+ * The next deadline is set here rather than by a follow-up call so
+ * advancing costs no round trip — which is why it has to cover the play
+ * screen's reveal pause (see REVEAL_DELAY_MS).
+ *
+ * Anything the server can't line up with the turn it expects
+ * (already answered, out of order, never opened) fails with
+ * `failed-precondition`: the client's answer to all of them is the same,
+ * re-open the turn and take the server's word for where it is.
+ */
+export const submitAsyncPvpAnswer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const matchId = String(request.data?.matchId || "");
+  if (!matchId) {
+    throw new HttpsError("invalid-argument", "Missing matchId.");
+  }
+
+  const questionIndex = safeInt(request.data?.questionIndex, -1);
+  // TIMED_OUT_ANSWER (-1) is a legitimate value: the client's own countdown
+  // hitting zero closes the question as wrong without waiting for the
+  // server to notice.
+  const selectedIndex = safeInt(request.data?.selectedIndex, TIMED_OUT_ANSWER);
+
+  const matchRef = db.collection("async_matches").doc(matchId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const ctx = asyncMatchContextFor(snap.data(), uid);
+
+    if (ctx.finishedAlready) {
+      throw new HttpsError("failed-precondition", "Round already closed.");
+    }
+
+    const resolution = resolveAnswer({
+      answers: ctx.answers,
+      deadlines: ctx.deadlines,
+      questionCount: ctx.questionCount,
+      timePerQuestionSec: ctx.timePerQuestionSec,
+      nowMs: Date.now(),
+    }, questionIndex, selectedIndex);
+
+    if (resolution.kind === "out-of-range") {
+      throw new HttpsError("invalid-argument", "Question out of range.");
+    }
+
+    if (resolution.kind !== "accepted") {
+      throw new HttpsError("failed-precondition", resolution.kind);
+    }
+
+    const patch: Record<string, unknown> = {
+      [`${ctx.role}.answers.${questionIndex}`]: resolution.storedIndex,
+    };
+
+    if (resolution.nextDeadlineMs !== null) {
+      patch[`${ctx.role}.deadlines.${resolution.nextIndex}`] =
+        resolution.nextDeadlineMs;
+    }
+
+    tx.update(matchRef, patch);
+
+    return {
+      storedIndex: resolution.storedIndex,
+      timedOut: resolution.timedOut,
+      nextIndex: resolution.nextIndex,
+      nextRemainingMs: resolution.nextRemainingMs,
+      finished: resolution.finished,
+    };
+  });
+});
+
+/**
+ * Closes the caller's round: marks their side finished and stores the score.
+ *
+ * The score is computed here from the banked answers against the match's
+ * own questions rather than taken from the client, so the value the result
+ * screen shows is the same one finalizeAsyncPvpMatch settles the match on.
+ * Setting the status is also what triggers that finalization.
+ */
+export const finishAsyncPvpMatch = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const matchId = String(request.data?.matchId || "");
+  if (!matchId) {
+    throw new HttpsError("invalid-argument", "Missing matchId.");
+  }
+
+  const matchRef = db.collection("async_matches").doc(matchId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const ctx = asyncMatchContextFor(snap.data(), uid);
+
+    if (ctx.finishedAlready) {
+      return {
+        alreadyFinished: true,
+        score: computeVerifiedPvpScore(ctx.data.questions, ctx.answers),
+      };
+    }
+
+    const turn = openTurn({
+      answers: ctx.answers,
+      deadlines: ctx.deadlines,
+      questionCount: ctx.questionCount,
+      timePerQuestionSec: ctx.timePerQuestionSec,
+      nowMs: Date.now(),
+    });
+
+    // The last question is commonly still open here: the client submits it
+    // and finishes in the same breath, and `openTurn` only reports the run
+    // over once every question is banked.
+    if (!turn.finished) {
+      throw new HttpsError("failed-precondition", "Round not finished.");
+    }
+
+    const answers: Record<string, unknown> = {...ctx.answers};
+    const patch: Record<string, unknown> = {
+      [ctx.statusKey]: "finished",
+      [`${ctx.role}.finishedAt`]:
+        admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    for (const index of turn.timedOutIndices) {
+      patch[`${ctx.role}.answers.${index}`] = TIMED_OUT_ANSWER;
+      answers[String(index)] = TIMED_OUT_ANSWER;
+    }
+
+    const score = computeVerifiedPvpScore(ctx.data.questions, answers);
+    patch[`${ctx.role}.score`] = score;
+
+    tx.update(matchRef, patch);
+
+    return {alreadyFinished: false, score};
+  });
+});
 
 // A stale one-sided async match forfeits after this long with no response
 // from the other side — otherwise a losing/absent player could dodge the

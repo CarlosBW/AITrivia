@@ -390,7 +390,6 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                               difficulty: widget.difficulty,
                               timePerQuestionSec: widget.timePerQuestionSec,
                               totalQuestions: widget.totalQuestions,
-                              winReward: widget.winReward,
                             ),
                           ),
                         );

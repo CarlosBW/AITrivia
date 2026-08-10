@@ -49,19 +49,28 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   Timer? _timer;
   int _timerForIndex = -1;
 
+  /// The server's clock for the question on screen. Null means we don't
+  /// know where the run is and have to ask.
+  _TurnAnchor? _anchor;
+
   bool _timedOut = false;
   int? _timeoutAnswerIndex;
   bool _autoNextScheduled = false;
   String? _statusMsg;
 
   bool _answerSubmitting = false;
+  bool _answerInFlight = false;
+  bool _openingTurn = false;
+  bool _turnError = false;
   bool _submittedFinal = false;
-  bool _resumeChecked = false;
-  bool _restoring = true;
   bool _presenceInitialized = false;
   bool _leavingScreen = false;
   bool _resultLogged = false;
   bool _requestingRematch = false;
+
+  /// Whether leaving right now costs the player the question on screen.
+  /// Written by `build`, read when they try to back out.
+  bool _questionInProgress = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
@@ -102,54 +111,68 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     _answerSubmitting = false;
   }
 
-  void _startTimerForQuestion(int seconds, int questionIndex, int answerIndex) {
+  /// Seconds left on the question on screen, per the server's anchor.
+  int _secondsLeftFromAnchor() {
+    final anchor = _anchor;
+    if (anchor == null || anchor.index != _index) return 0;
+
+    return (anchor.leftMs / 1000).ceil().clamp(0, 999);
+  }
+
+  /// Runs the countdown off the server's anchor rather than a local
+  /// per-question budget, so the clock a modified client shows itself has
+  /// no bearing on what the server accepts. Ticks faster than once a second
+  /// because it reads a deadline instead of decrementing a counter.
+  void _startTimerForQuestion(int questionIndex, int answerIndex) {
     _timer?.cancel();
 
     _timerForIndex = questionIndex;
-    _secondsLeft = seconds;
 
     _resetPerQuestion();
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _secondsLeft = _secondsLeftFromAnchor();
+
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (t) {
       if (!mounted) return;
 
+      if (_locked) {
+        t.cancel();
+        return;
+      }
+
+      final left = _secondsLeftFromAnchor();
+
+      if (left > 0) {
+        if (left != _secondsLeft) setState(() => _secondsLeft = left);
+        return;
+      }
+
+      t.cancel();
+
       setState(() {
-        if (_locked) {
-          t.cancel();
-          return;
-        }
-
-        final next = _secondsLeft - 1;
-
-        if (next <= 0) {
-          _secondsLeft = 0;
-          t.cancel();
-
-          _locked = true;
-          _timedOut = true;
-          _timeoutAnswerIndex = answerIndex;
-          _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
-
-          SfxService.instance.playTimeout();
-
-          // Banked as -1 (no answer) rather than left unrecorded: an
-          // unrecorded question is one the player can come back and answer
-          // after looking it up, which would make running the clock out the
-          // cheapest way to buy time.
-          _answers[questionIndex] = -1;
-          unawaited(_persistAnswer(questionIndex, -1));
-
-          if (!_autoNextScheduled) {
-            _autoNextScheduled = true;
-            Future.delayed(_revealDelay, () {
-              if (!mounted) return;
-              if (_index == questionIndex) _goNextQuestion();
-            });
-          }
-        } else {
-          _secondsLeft = next;
-        }
+        _secondsLeft = 0;
+        _locked = true;
+        _timedOut = true;
+        _timeoutAnswerIndex = answerIndex;
+        _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
       });
+
+      SfxService.instance.playTimeout();
+
+      // Banked as -1 (no answer) rather than left unrecorded: an
+      // unrecorded question is one the player can come back and answer
+      // after looking it up, which would make running the clock out the
+      // cheapest way to buy time.
+      _answers[questionIndex] = -1;
+      unawaited(_persistAnswer(questionIndex, -1, answerIndex));
+
+      if (!_autoNextScheduled) {
+        _autoNextScheduled = true;
+        Future.delayed(_revealDelay, () {
+          if (!mounted) return;
+          if (_index == questionIndex) _goNextQuestion();
+        });
+      }
     });
   }
 
@@ -164,13 +187,15 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     });
   }
 
-  Future<void> _onTapAnswer({
+  void _onTapAnswer({
     required int tappedIndex,
     required int answerIndex,
-  }) async {
+  }) {
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
+
+    final questionIndex = _index;
 
     setState(() {
       _answerSubmitting = true;
@@ -183,16 +208,17 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
     _timer?.cancel();
 
-    final correct = tappedIndex == answerIndex;
-    _answers[_index] = tappedIndex;
-    await _persistAnswer(_index, tappedIndex);
-
-    if (correct) {
+    if (tappedIndex == answerIndex) {
       SfxService.instance.playCorrect();
-      setState(() => _correct++);
     } else {
       SfxService.instance.playWrong();
     }
+
+    // Banked alongside the reveal rather than before it: the round trip
+    // fits inside the pause, and the running score follows what the server
+    // actually stored (see [_persistAnswer]) instead of the tap.
+    _answers[questionIndex] = tappedIndex;
+    unawaited(_persistAnswer(questionIndex, tappedIndex, answerIndex));
 
     if (!_autoNextScheduled) {
       _autoNextScheduled = true;
@@ -203,64 +229,94 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     }
   }
 
-  /// Banks one answer server-side. Best-effort: if it fails the run still
-  /// works, because [MatchService.submitAsyncResult] fills in whatever is
-  /// missing when the round closes — the player just keeps the old
-  /// behaviour of being able to restart that question by leaving.
-  Future<void> _persistAnswer(int questionIndex, int selectedAnswerIndex) async {
+  /// Banks one answer server-side and picks up the next question's clock
+  /// from the response, so advancing costs no extra round trip.
+  ///
+  /// A failure drops the anchor instead of being swallowed: the server owns
+  /// both the answers and the clock now, so carrying on with a local
+  /// countdown would only show the player a run the server doesn't have.
+  /// The rebuild that follows re-opens the turn and takes its word for it.
+  Future<void> _persistAnswer(
+    int questionIndex,
+    int selectedAnswerIndex,
+    int answerIndex,
+  ) async {
+    _answerInFlight = true;
+
     try {
-      await _service.submitAsyncAnswer(
+      final result = await _service.submitAsyncAnswer(
         matchId: widget.asyncMatchId,
         questionIndex: questionIndex,
         selectedAnswerIndex: selectedAnswerIndex,
       );
+
+      if (!mounted) return;
+
+      setState(() {
+        _answers[questionIndex] = result.storedIndex;
+        if (result.storedIndex == answerIndex) _correct++;
+
+        _anchor = result.finished
+            ? null
+            : _TurnAnchor(
+                index: result.nextIndex,
+                remainingMs: result.nextRemainingMs,
+              );
+      });
     } catch (_) {
-      // Sin ruido en la UI: la respuesta ya está en `_answers` y el cierre
-      // de la ronda la persiste igual.
+      if (!mounted) return;
+      setState(() => _anchor = null);
+    } finally {
+      _answerInFlight = false;
     }
   }
 
-  /// Puts the player back where they left off after backing out mid-match.
+  /// Asks the server which question to show and how long is left on it.
   ///
-  /// Without this the screen always started at question 1, which — since
-  /// nothing was written until the last question — is what let a player
-  /// leave, look the answers up, and come back to a clean run.
-  Future<void> _restoreProgress(List<dynamic> questions) async {
-    if (_resumeChecked) return;
-    _resumeChecked = true;
+  /// This is the only way in: the screen used to start at question 1 and
+  /// run its own clock, so a player could back out, look the answers up,
+  /// and come back to a clean run. A question's deadline is stamped once
+  /// server-side and never refreshed, so coming back after it passed banks
+  /// that question as a timeout and moves on.
+  Future<void> _openTurn(List<dynamic> questions) async {
+    if (_openingTurn) return;
+    _openingTurn = true;
 
-    Map<int, int> stored = {};
     try {
-      stored = await _service.loadAsyncAnswers(matchId: widget.asyncMatchId);
+      final turn = await _service.openAsyncTurn(matchId: widget.asyncMatchId);
+
+      if (!mounted) return;
+
+      var correct = 0;
+
+      turn.answers.forEach((index, selected) {
+        if (index < 0 || index >= questions.length) return;
+
+        final question = Map<String, dynamic>.from(questions[index] as Map);
+        final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
+
+        if (selected == answerIndex) correct++;
+      });
+
+      setState(() {
+        _answers
+          ..clear()
+          ..addAll(turn.answers);
+        _correct = correct;
+        _index = turn.finished ? questions.length : turn.index;
+        _anchor = turn.finished
+            ? null
+            : _TurnAnchor(index: turn.index, remainingMs: turn.remainingMs);
+        _timerForIndex = -1;
+        _turnError = false;
+        _resetPerQuestion();
+      });
     } catch (_) {
-      // Se arranca desde cero: es el comportamiento previo, no una regresión.
+      if (!mounted) return;
+      setState(() => _turnError = true);
+    } finally {
+      _openingTurn = false;
     }
-
-    if (!mounted) return;
-
-    var correct = 0;
-    var nextIndex = 0;
-
-    stored.forEach((index, selected) {
-      if (index < 0 || index >= questions.length) return;
-
-      final question = Map<String, dynamic>.from(questions[index] as Map);
-      final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
-
-      if (selected == answerIndex) correct++;
-      if (index + 1 > nextIndex) nextIndex = index + 1;
-    });
-
-    setState(() {
-      _answers
-        ..clear()
-        ..addAll(stored);
-      _correct = correct;
-      _index = nextIndex;
-      _timerForIndex = -1;
-      _resetPerQuestion();
-      _restoring = false;
-    });
   }
 
   Future<void> _submitFinalScoreIfNeeded() async {
@@ -272,29 +328,91 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       await NotificationService.instance.markMatchNotificationsAsRead(
         matchId: widget.asyncMatchId,
       );
-      await _service.submitAsyncResult(
+
+      // The server scores the round from the answers it banked; showing its
+      // number here keeps the waiting card from disagreeing with the result
+      // the match is settled on.
+      final score = await _service.finishAsyncMatch(
         matchId: widget.asyncMatchId,
-        score: _correct,
-        answers: _answers,
       );
+
+      if (mounted) setState(() => _correct = score);
+
       try {
         await _presenceService.setAvailable();
       } catch (_) {}
     } catch (_) {
-      // Silencioso para no romper UX.
+      // Closing the round is what triggers finalization, so a failure here
+      // can't be swallowed — it would leave the match open with the player
+      // believing they had finished it.
+      //
+      // Rewinding to the turn-open path is what makes the retry work: the
+      // server refuses to close a round with a question still open, so if
+      // the last answer never landed, only re-opening the turn resolves it
+      // — either the question is still playable or its clock has run out.
+      // `_index` is a placeholder here; `_openTurn` overwrites it with
+      // whatever the server says.
+      _submittedFinal = false;
+
+      if (!mounted) return;
+
+      setState(() {
+        _turnError = true;
+        _anchor = null;
+        _index = 0;
+      });
     }
+  }
+
+  /// Confirms backing out of a question that is still on the clock.
+  ///
+  /// The clock is server-anchored and keeps running, so leaving is not the
+  /// free pause it used to be — the player is told before it costs them.
+  Future<void> _leaveScreen() async {
+    if (_questionInProgress) {
+      final l10n = AppLocalizations.of(context);
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.asyncMatchPlayLeaveTitle),
+          content: Text(l10n.asyncMatchPlayLeaveBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.asyncMatchPlayLeaveStay),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.asyncMatchPlayLeaveConfirm),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+    }
+
+    if (!mounted) return;
+
+    _leavingScreen = true;
+
+    try {
+      await _presenceService.setAvailable();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   Future<void> _requestRematch({
     required BuildContext context,
     required String opponentUid,
-    required String myName,
-    required String opponentName,
     required String categoryId,
     required int difficulty,
     required int totalQuestions,
     required int timePerQuestionSec,
-    required int winReward,
   }) async {
     if (_requestingRematch) return;
 
@@ -307,9 +425,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         difficulty: difficulty,
         totalQuestions: totalQuestions,
         timePerQuestionSec: timePerQuestionSec,
-        winReward: winReward,
-        challengerDisplayName: myName,
-        challengedDisplayName: opponentName,
       );
 
       if (!context.mounted) return;
@@ -341,28 +456,20 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     final l10n = AppLocalizations.of(context);
 
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         actions: const [ProfileAvatarButton(openProfileOnTap: false)],
         title: Text(l10n.asyncMatchPlayTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            _leavingScreen = true;
-
-            try {
-              await _presenceService.setAvailable();
-            } catch (_) {}
-
-            if (!context.mounted) return;
-
-            Navigator.popUntil(context, (route) => route.isFirst);
-          },
+          onPressed: _leaveScreen,
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _matchDoc,
         builder: (context, snap) {
+          _questionInProgress = false;
+
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -446,20 +553,15 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               difficulty: ((data['difficulty'] ?? 1) as num).toInt(),
               totalQuestions: ((data['totalQuestions'] ?? 10) as num).toInt(),
               timePerQuestionSec: timePerQ,
-              winReward: ((data['winReward'] ?? 2) as num).toInt(),
             );
           }
 
-          // Gated before any question renders: answering while the restore
-          // is still in flight would let a locally-counted answer be
-          // overwritten by the resume.
-          if (_restoring) {
-            if (!_resumeChecked) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _restoreProgress(questions);
-              });
-            }
-            return const Center(child: CircularProgressIndicator());
+          // The server owns the answers and the clock, so a call that
+          // failed leaves nothing safe to show — better a retry than a run
+          // that only exists on this device.
+          if (_turnError) {
+            _timer?.cancel();
+            return _buildTurnErrorCard(context);
           }
 
           if (_index >= questions.length) {
@@ -479,6 +581,26 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
             );
           }
 
+          // Gated before any question renders: only the server knows which
+          // question is next and how long is left on it, and showing one
+          // without its clock would start it at zero. Mid-reveal the anchor
+          // already points at the *next* question and no clock is running,
+          // so the revealed answer stays on screen.
+          //
+          // A pending answer carries the next question's clock in its
+          // response, so waiting for that is enough — asking again while it
+          // is in flight would just race it.
+          final anchored = _anchor?.index == _index;
+
+          if (!anchored && !_locked) {
+            if (!_answerInFlight) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _openTurn(questions);
+              });
+            }
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final qMap = Map<String, dynamic>.from(questions[_index] as Map);
           final qText = (qMap['q'] ?? '').toString();
 
@@ -489,12 +611,10 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           final answerIndex = ((qMap['answerIndex'] ?? 0) as num).toInt();
 
           if (_timerForIndex != _index) {
-            _startTimerForQuestion(
-              timePerQ,
-              _index,
-              answerIndex,
-            );
+            _startTimerForQuestion(_index, answerIndex);
           }
+
+          _questionInProgress = !_locked;
 
           return AnimatedSwitcher(
             duration: _switchDuration,
@@ -525,6 +645,18 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           );
         },
       ),
+    );
+
+    // Every exit goes through `_leaveScreen`, which warns first when a
+    // question is still on the clock — the clock is anchored server-side
+    // now, so backing out is no longer the free pause it used to be.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _leaveScreen();
+      },
+      child: scaffold,
     );
   }
 
@@ -815,6 +947,36 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     );
   }
 
+  /// Shown when a turn call fails. Clearing the flag is enough to retry:
+  /// the next build re-runs whichever step was pending, opening the turn or
+  /// closing the round.
+  Widget _buildTurnErrorCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              l10n.asyncMatchPlayConnectionError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => setState(() => _turnError = false),
+              child: Text(l10n.commonRetry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildWaitingSubmitCard(
     BuildContext context, {
     required String myName,
@@ -832,17 +994,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       myScore: myScore,
       opponentScore: null,
       primaryButtonText: l10n.matchPlayExit,
-      onPrimaryPressed: () async {
-        _leavingScreen = true;
-
-        try {
-          await _presenceService.setAvailable();
-        } catch (_) {}
-
-        if (!context.mounted) return;
-
-        Navigator.popUntil(context, (route) => route.isFirst);
-      },
+      onPrimaryPressed: _leaveScreen,
     );
   }
 
@@ -861,7 +1013,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     required int difficulty,
     required int totalQuestions,
     required int timePerQuestionSec,
-    required int winReward,
   }) {
     final l10n = AppLocalizations.of(context);
 
@@ -877,17 +1028,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         myScore: myScore,
         opponentScore: opponentFinished ? opponentScore : null,
         primaryButtonText: l10n.matchPlayExit,
-        onPrimaryPressed: () async {
-          _leavingScreen = true;
-
-          try {
-            await _presenceService.setAvailable();
-          } catch (_) {}
-
-          if (!context.mounted) return;
-
-          Navigator.popUntil(context, (route) => route.isFirst);
-        },
+        onPrimaryPressed: _leaveScreen,
       );
     }
 
@@ -936,17 +1077,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       myScore: myScore,
       opponentScore: opponentScore,
       primaryButtonText: l10n.matchPlayExit,
-      onPrimaryPressed: () async {
-        _leavingScreen = true;
-
-        try {
-          await _presenceService.setAvailable();
-        } catch (_) {}
-
-        if (!context.mounted) return;
-
-        Navigator.popUntil(context, (route) => route.isFirst);
-      },
+      onPrimaryPressed: _leaveScreen,
       secondaryButtonText: _requestingRematch
           ? l10n.asyncMatchPlaySendingRematch
           : l10n.matchPlayRematch,
@@ -955,14 +1086,29 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
           : () => _requestRematch(
                 context: context,
                 opponentUid: opponentUid,
-                myName: myName,
-                opponentName: opponentName,
                 categoryId: categoryId,
                 difficulty: difficulty,
                 totalQuestions: totalQuestions,
                 timePerQuestionSec: timePerQuestionSec,
-                winReward: winReward,
               ),
     );
   }
+}
+
+/// The server's clock for one question: how much was left when the call
+/// returned, and a stopwatch running since then.
+///
+/// Elapsed time comes from a [Stopwatch] rather than wall-clock arithmetic
+/// so a device clock that jumps mid-question — by accident or on purpose —
+/// can't buy or burn time. The server judges the real deadline anyway; this
+/// only has to keep the countdown honest on screen.
+class _TurnAnchor {
+  _TurnAnchor({required this.index, required this.remainingMs})
+      : _since = Stopwatch()..start();
+
+  final int index;
+  final int remainingMs;
+  final Stopwatch _since;
+
+  int get leftMs => remainingMs - _since.elapsedMilliseconds;
 }

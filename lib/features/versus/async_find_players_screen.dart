@@ -12,7 +12,6 @@ class AsyncFindPlayersScreen extends StatefulWidget {
   final int difficulty;
   final int timePerQuestionSec;
   final int totalQuestions;
-  final int winReward;
 
   const AsyncFindPlayersScreen({
     super.key,
@@ -20,7 +19,6 @@ class AsyncFindPlayersScreen extends StatefulWidget {
     required this.difficulty,
     required this.timePerQuestionSec,
     required this.totalQuestions,
-    required this.winReward,
   });
 
   @override
@@ -75,16 +73,6 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
     });
   }
 
-  Future<String> _getMyDisplayName() async {
-    try {
-      final me = await _db.collection('users').doc(_uid).get();
-      final data = me.data();
-      final name = (data?['displayName'] ?? '').toString().trim();
-      if (name.isNotEmpty) return name;
-    } catch (_) {}
-    return 'Player';
-  }
-
   String _safeDisplayName(Map<String, dynamic> data) {
     final v = (data['displayName'] ?? '').toString().trim();
     return v.isEmpty ? 'Player' : v;
@@ -92,7 +80,6 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
 
   Future<void> _challenge({
     required String challengedUid,
-    required String challengedName,
   }) async {
     if (_loadingUid != null) return;
 
@@ -108,26 +95,19 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
         );
       }
 
-      // 1) crear match async
+      // 1) crear match async. Antes se creaba el doc aquí y luego se
+      //    escribían los nombres en un segundo `set`; ahora lo crea
+      //    createAsyncPvpMatch, que además resuelve ambos nombres desde los
+      //    docs de usuario y manda la notificación del reto.
       final matchId = await _service.createAsyncFixedMatch(
         challengedUid: challengedUid,
         categoryId: widget.categoryId,
         difficulty: widget.difficulty,
         totalQuestions: widget.totalQuestions,
         timePerQuestionSec: widget.timePerQuestionSec,
-        winReward: widget.winReward,
       );
 
-      // 2) guardar display names
-      final myName = await _getMyDisplayName();
-
-      await _db.collection('async_matches').doc(matchId).set({
-        'challengerDisplayName': myName,
-        'challengedDisplayName': challengedName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      // 3) navegar a jugar
+      // 2) navegar a jugar
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -249,10 +229,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                             : FilledButton(
                                 onPressed: disableAll
                                     ? null
-                                    : () => _challenge(
-                                          challengedUid: doc.id,
-                                          challengedName: name,
-                                        ),
+                                    : () => _challenge(challengedUid: doc.id),
                                 child: Text(l10n.asyncFindPlayersChallengeButton),
                               ),
                       );

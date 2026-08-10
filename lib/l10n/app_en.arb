@@ -806,6 +806,11 @@
   "asyncMatchPlayCalculatingFinal": "Your result was sent. Calculating final result.",
   "asyncMatchPlayWaitingOpponentPlay": "Your result was sent. Waiting for your opponent to play.",
   "asyncMatchPlaySendingRematch": "Sending rematch...",
+  "asyncMatchPlayConnectionError": "We couldn't reach the match. Check your connection and try again.",
+  "asyncMatchPlayLeaveTitle": "Leave the challenge?",
+  "asyncMatchPlayLeaveBody": "The clock keeps running while you're away. If you leave now, the question on screen will count as wrong once its time is up.",
+  "asyncMatchPlayLeaveStay": "Keep playing",
+  "asyncMatchPlayLeaveConfirm": "Leave",
 
   "pvpSeasonTabSeason": "Season",
   "pvpSeasonTabLeaderboard": "Leaderboard",
@@ -1560,8 +1565,6 @@
   "serviceCannotChallengeSelfNoPeriod": "You can't challenge yourself",
   "serviceChallengeNotFound": "Challenge not found",
   "serviceNotYourChallenge": "This challenge isn't yours",
-  "serviceAsyncMatchNotFound": "Async match doesn't exist",
-  "serviceNotYourMatch": "This match isn't yours",
   "servicePoolEmptyForCategory": "Empty pool for {categoryId}",
   "@servicePoolEmptyForCategory": {
     "placeholders": {

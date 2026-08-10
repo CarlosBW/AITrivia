@@ -1554,6 +1554,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get asyncMatchPlaySendingRematch => 'Enviando revancha...';
 
   @override
+  String get asyncMatchPlayConnectionError =>
+      'No pudimos conectar con la partida. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get asyncMatchPlayLeaveTitle => '¿Salir del reto?';
+
+  @override
+  String get asyncMatchPlayLeaveBody =>
+      'El reloj sigue corriendo mientras no estás. Si sales ahora, la pregunta en pantalla contará como fallada cuando se acabe su tiempo.';
+
+  @override
+  String get asyncMatchPlayLeaveStay => 'Seguir jugando';
+
+  @override
+  String get asyncMatchPlayLeaveConfirm => 'Salir';
+
+  @override
   String get pvpSeasonTabSeason => 'Temporada';
 
   @override
@@ -2725,12 +2742,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get serviceNotYourChallenge => 'No perteneces a este reto';
-
-  @override
-  String get serviceAsyncMatchNotFound => 'Async match no existe';
-
-  @override
-  String get serviceNotYourMatch => 'No perteneces a este match';
 
   @override
   String servicePoolEmptyForCategory(String categoryId) {

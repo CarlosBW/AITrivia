@@ -593,11 +593,27 @@ service cloud.firestore {
     }
 
     // Same reasoning as /matches — only the challenger and the challenged
-    // player may read or write an async match. Both UIDs are always set
-    // at creation (no open "guest slot" here), so create/update only need
-    // the participant check, no empty-slot claim clause. `questions` is
-    // locked immutable post-creation for the same reason as /matches —
-    // finalizeAsyncPvpMatch recomputes scores from `answers` against it.
+    // player may read an async match.
+    //
+    // Creating one is Cloud-Function-only (createAsyncPvpMatch, Admin SDK).
+    // These rules can check the shape of a document but not where its
+    // contents came from, so a client-side create meant the client chose
+    // the `questions` — a modified one could write its own questions, with
+    // its own `answerIndex`, into a match the opponent then had to play,
+    // and could set any `timePerQuestionSec` it liked, which is the field
+    // every server-anchored deadline is measured from.
+    //
+    // Playing one is Cloud-Function-only too (openAsyncPvpTurn /
+    // submitAsyncPvpAnswer / finishAsyncPvpMatch, Admin SDK). Restricting
+    // the diff to the caller's own side stopped a player rewriting their
+    // *opponent's* answers, but never their own — and their own map is
+    // exactly what finalizeAsyncPvpMatch scores from, so a modified client
+    // could go back and fix its wrong answers any time before the match
+    // finalized, and could ignore the per-question clock entirely (that
+    // clock only ever existed in the play screen). The only client write
+    // left here is declining a challenge: everything else — `answers`,
+    // `deadlines`, `score`, the two `*Status` fields — is written with the
+    // Admin SDK, which bypasses these rules.
     match /async_matches/{matchId} {
       allow read: if request.auth != null
         && (
@@ -605,29 +621,17 @@ service cloud.firestore {
           request.auth.uid == resource.data.challengedUid
         );
 
-      allow create: if request.auth != null
-        && (
-          request.auth.uid == request.resource.data.challengerUid ||
-          request.auth.uid == request.resource.data.challengedUid
-        )
-        && request.resource.data.challengerUid
-            != request.resource.data.challengedUid
-        && isSanctionedWinReward(request.resource.data.winReward);
+      allow create: if false;
 
       allow update: if request.auth != null
         && (
           request.auth.uid == resource.data.challengerUid ||
           request.auth.uid == resource.data.challengedUid
         )
-        && request.resource.data.winReward == resource.data.winReward
-        && request.resource.data.questions == resource.data.questions
-        // Same hole as /matches, different shape: answers live in the
-        // top-level `challenger`/`challenged` maps here, and
-        // finalizeAsyncPvpMatch scores each side from its own map. Whichever
-        // side you are, the other one has to come back untouched.
-        && (request.auth.uid == resource.data.challengerUid
-              ? request.resource.data.challenged == resource.data.challenged
-              : request.resource.data.challenger == resource.data.challenger);
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'declinedByUid', 'declinedAt', 'lastUpdatedAt'])
+        && request.resource.data.status == 'declined'
+        && request.resource.data.declinedByUid == request.auth.uid;
     }
 
     match /realtime_invites/{inviteId} {

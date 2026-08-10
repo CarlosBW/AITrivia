@@ -2560,7 +2560,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingLivesBody =>
-      'You have 5 lives. Each one refills on its own every 5 minutes, or you can buy it instantly with coins if you don\'t want to wait.';
+      'You have 10 lives. Each one refills on its own every 3 minutes, or you can buy it instantly with coins if you don\'t want to wait.';
 
   @override
   String get onboardingCoinsTitle => 'Coins and daily streak';

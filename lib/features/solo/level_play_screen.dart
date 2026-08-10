@@ -1637,11 +1637,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            _AnimatedXpProgressCard(
-              previousXp: previousXp,
-              currentXp: _userTotalXp,
-            ),
+            // Solo una vez que el guardado resolvió: hasta entonces
+            // `_userTotalXp` sigue en 0 y la tarjeta anunciaría "Nivel 1 ·
+            // 0 / 100 XP" a cualquier jugador, sin importar su XP real. El
+            // hueco ya está justificado por el spinner de "guardando" que
+            // viene justo debajo.
+            if (_saved && !_saving) ...[
+              const SizedBox(height: 18),
+              _AnimatedXpProgressCard(
+                previousXp: previousXp,
+                currentXp: _userTotalXp,
+              ),
+            ],
             if (_saving) ...[
               const SizedBox(height: 18),
               const CircularProgressIndicator(strokeWidth: 3),
@@ -2010,7 +2017,7 @@ class _AnimatedXpProgressCard extends StatefulWidget {
 }
 
 class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
-  late final List<_XpSegment> _segments;
+  late List<_XpSegment> _segments;
 
   int _visibleSegmentIndex = 0;
   bool _started = false;
@@ -2019,6 +2026,33 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
   void initState() {
     super.initState();
     _segments = _buildSegments(widget.previousXp, widget.currentXp);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _started = true);
+    });
+  }
+
+  // Los segmentos se calculaban solo en initState. Si la tarjeta se monta
+  // antes de conocer el XP real — como pasaba en la pantalla de resultados,
+  // que se dibuja mientras `submitSoloLevelResult` sigue en vuelo — los XP
+  // llegan después como cambio de props y los segmentos quedaban congelados
+  // en el estado inicial ("Nivel 1 · 0 / 100"), mientras la cabecera, que sí
+  // se recalcula en cada build, ya mostraba el nivel real. La tarjeta se
+  // contradecía a sí misma.
+  @override
+  void didUpdateWidget(covariant _AnimatedXpProgressCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.previousXp == widget.previousXp &&
+        oldWidget.currentXp == widget.currentXp) {
+      return;
+    }
+
+    // Asignación directa: didUpdateWidget ya corre dentro de un rebuild.
+    _segments = _buildSegments(widget.previousXp, widget.currentXp);
+    _visibleSegmentIndex = 0;
+    _started = false;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

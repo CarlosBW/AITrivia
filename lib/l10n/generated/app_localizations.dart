@@ -4429,7 +4429,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingLivesBody.
   ///
   /// In es, this message translates to:
-  /// **'Tienes 5 vidas. Cada una se recupera sola cada 5 minutos, o puedes comprarla al instante con monedas si no quieres esperar.'**
+  /// **'Tienes 10 vidas. Cada una se recupera sola cada 3 minutos, o puedes comprarla al instante con monedas si no quieres esperar.'**
   String get onboardingLivesBody;
 
   /// No description provided for @onboardingCoinsTitle.

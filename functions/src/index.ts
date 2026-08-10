@@ -39,6 +39,7 @@ import {
   openTurn,
   resolveAnswer,
 } from "./async_pvp_turns";
+import {resolveWrongAnswerSpend} from "./life_costs";
 import {
   AI_METER_CAPS,
   AiMeter,
@@ -5559,25 +5560,34 @@ export const consumeWrongAnswerLife = onCall(async (request) => {
     const gamesPlayed = safeInt(data.gamesPlayed, 0);
     const state = computeLifeState(data, nowMs);
 
-    if (gamesPlayed < NEW_PLAYER_GRACE_LEVELS) {
+    const spend = resolveWrongAnswerSpend(
+      state.lifeUnits, WRONG_ANSWER_COST_UNITS,
+      gamesPlayed, NEW_PLAYER_GRACE_LEVELS
+    );
+
+    // Covers the grace window and, previously missed, a player already at
+    // zero: the deduction clamped to zero but this still answered
+    // `lifeLost: true`, so a wrong answer that cost them nothing was
+    // reported as one that did — and the "no life lost" message it
+    // suppresses is exactly the one that case should show. Skipping the
+    // write too, since it would only rewrite the values it just read.
+    if (!spend.lifeLost) {
       return {lifeLost: false, ...lifeStateResponse(state)};
     }
 
     const wasFull = state.lifeUnits >= state.maxLifeUnits;
-    const newUnits = state.lifeUnits < WRONG_ANSWER_COST_UNITS ?
-      0 : state.lifeUnits - WRONG_ANSWER_COST_UNITS;
-    const newTickMs = (wasFull && newUnits < state.maxLifeUnits) ?
+    const newTickMs = (wasFull && spend.newUnits < state.maxLifeUnits) ?
       nowMs : state.lastTickMs;
 
     tx.set(userRef, {
-      lifeUnits: newUnits,
+      lifeUnits: spend.newUnits,
       maxLifeUnits: state.maxLifeUnits,
       lifeRegenSeconds: state.lifeRegenSeconds,
       lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
     }, {merge: true});
 
     return {lifeLost: true, ...lifeStateResponse(stateAfterSpend(state,
-      newUnits, newTickMs))};
+      spend.newUnits, newTickMs))};
   });
 });
 
@@ -6565,7 +6575,13 @@ async function getOrCreatePoolEntry(
       languageCode: languageCode === "en" ? "en" : "es",
       status: "pending_generation",
       generatedLevels: 0,
-      targetLevels: AI_INITIAL_GENERATED_LEVELS,
+      // How deep this topic is meant to go, not how much of it exists yet
+      // — that's `generatedLevels`. Seeded with
+      // AI_INITIAL_GENERATED_LEVELS (2) it recorded the up-front
+      // generation batch instead, so every pool claimed a 2-level target
+      // while every topic adopting it targeted ten, and the only thing
+      // that ever raised it afterwards was generation catching up.
+      targetLevels: AI_LEVELS_PER_TOPIC,
       usageCount: 1,
       createdByUid: uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -7310,14 +7326,22 @@ export const createAiTopic = onCall({
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // A pool's target is the deepest one any adopter holds, so both
+    // branches raise it — a topic reusing a pool still targets
+    // AI_LEVELS_PER_TOPIC, and the pool used to hear nothing about it.
     tx.set(poolRef, reuseFromPool ? {
       usageCount: admin.firestore.FieldValue.increment(1),
+      targetLevels: Math.max(
+        safeInt(freshPoolData.targetLevels, 0), AI_LEVELS_PER_TOPIC
+      ),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     } : {
       status: "ready",
       generatedLevels: freshPoolGeneratedLevels,
       targetLevels: Math.max(
-        safeInt(freshPoolData.targetLevels, 0), freshPoolGeneratedLevels
+        safeInt(freshPoolData.targetLevels, 0),
+        AI_LEVELS_PER_TOPIC,
+        freshPoolGeneratedLevels
       ),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, {merge: true});
@@ -7637,15 +7661,16 @@ export const expandAiTopic = onCall(async (request) => {
   // further already), buffering finds nothing left to generate and this
   // expand is still charged the same — paying to raise your own ceiling,
   // not for the generation itself.
-  await ensureTopicAdoptedIntoPool(
+  const poolId = await ensureTopicAdoptedIntoPool(
     uid, topicRef, topicData, userSnap.data()?.languageCode
   );
+  const poolRef = db.collection("ai_topic_pool").doc(poolId);
 
   const currentTarget = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
   const newTarget = currentTarget + AI_LEVELS_PER_TOPIC;
 
   return db.runTransaction(async (tx) => {
-    const freshSnap = await tx.get(userRef);
+    const [freshSnap, poolSnap] = await tx.getAll(userRef, poolRef);
     const freshCoins = safeInt(freshSnap.data()?.coins, 0);
 
     if (freshCoins < EXPAND_AI_TOPIC_COST) {
@@ -7662,6 +7687,22 @@ export const expandAiTopic = onCall(async (request) => {
         targetLevels: newTarget,
         levelCount: newTarget,
         levelsCount: newTarget,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    // The pool tracks the deepest target any of its adopters holds, and
+    // this player just paid to raise theirs past it. Nothing generates as
+    // a result — buffering is still bounded by each topic's own target
+    // (see ensureAiTopicLevelsGenerated) — but leaving it out is what let
+    // a pool sit at a target its adopters had long since passed.
+    tx.set(
+      poolRef,
+      {
+        targetLevels: Math.max(
+          safeInt(poolSnap.data()?.targetLevels, 0), newTarget
+        ),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true}

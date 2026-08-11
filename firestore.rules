@@ -182,9 +182,15 @@ service cloud.firestore {
               'avatar_1', 'avatar_2', 'avatar_3', 'avatar_4',
               'avatar_5', 'avatar_6', 'avatar_7', 'avatar_8'
             ])
-        && (!('lifeUnits' in request.resource.data) || request.resource.data.lifeUnits == 10)
-        && (!('maxLifeUnits' in request.resource.data) || request.resource.data.maxLifeUnits == 10)
-        && (!('lifeRegenSeconds' in request.resource.data) || request.resource.data.lifeRegenSeconds == 150)
+        // 20 units = 10 lives, 90s per unit (3 min per life). These mirror
+        // life_service.dart's `defaultMaxLifeUnits`/`defaultRegenSeconds`
+        // and index.ts's DEFAULT_MAX_LIFE_UNITS/DEFAULT_LIFE_REGEN_SECONDS —
+        // change the balance and this has to move with it, or sign-up is
+        // denied outright (that is exactly what happened when lives went
+        // from 5 to 10 and these still said 10/10/150).
+        && (!('lifeUnits' in request.resource.data) || request.resource.data.lifeUnits == 20)
+        && (!('maxLifeUnits' in request.resource.data) || request.resource.data.maxLifeUnits == 20)
+        && (!('lifeRegenSeconds' in request.resource.data) || request.resource.data.lifeRegenSeconds == 90)
         && (!('loginStreak' in request.resource.data) || request.resource.data.loginStreak == 1)
         && (!('gamesPlayed' in request.resource.data) || request.resource.data.gamesPlayed == 0)
         && (!('correctAnswers' in request.resource.data) || request.resource.data.correctAnswers == 0)

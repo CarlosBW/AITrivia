@@ -41,6 +41,11 @@ import {
 } from "./async_pvp_turns";
 import {resolveWrongAnswerSpend} from "./life_costs";
 import {
+  DailyPoolEntry,
+  orderByAscendingDifficulty,
+  selectDailyEntries,
+} from "./daily_question_set";
+import {
   AI_METER_CAPS,
   AiMeter,
   checkAiBudget,
@@ -3014,6 +3019,10 @@ const DAILY_STREAK_7_DAYS_COINS = 15;
 const DAILY_STREAK_14_DAYS_COINS = 30;
 const DAILY_LEVEL_UP_COINS = 15;
 const DAILY_QUESTION_LIMIT = 60;
+// Server-only: the day's shared question set, including answerIndex. No
+// firestore.rules entry, so clients can't read it — they only ever see the
+// copy in their own daily_challenges doc.
+const DAILY_QUESTION_SET_COLLECTION = "daily_question_sets";
 const DAILY_DURATION_SECONDS = 120;
 
 type LeagueInfo = {
@@ -3531,21 +3540,22 @@ function dateIdMinusDays(dateId: string, days: number): string {
 }
 
 /**
- * Mirrors DailyChallengeService's `_recentlyUsedQuestionIds` — question
- * ids this user was already served on the last 2 Daily Challenges, so
- * today's pick can avoid repeating them.
- * @param {admin.firestore.DocumentReference} userRef The user's doc ref.
+ * Question ids served on the last 2 Daily Challenges, so today's draw can
+ * avoid repeating them.
  * @param {string} dateId Today's date id.
  * @return {Promise<Set<string>>} Recently-served `sourceQuestionId`s.
  */
 async function recentlyUsedDailyQuestionIds(
-  userRef: admin.firestore.DocumentReference, dateId: string
+  dateId: string
 ): Promise<Set<string>> {
   const ids = new Set<string>();
 
+  // Read off the shared day sets rather than one player's history: the day
+  // is the same for everyone now, so "recently served" is a property of the
+  // day, not of who is asking.
   for (let i = 1; i <= 2; i++) {
     const pastDateId = dateIdMinusDays(dateId, i);
-    const snap = await userRef.collection("daily_challenges")
+    const snap = await db.collection(DAILY_QUESTION_SET_COLLECTION)
       .doc(pastDateId).get();
     const questions = snap.data()?.questions;
     if (!Array.isArray(questions)) continue;
@@ -3563,6 +3573,51 @@ async function recentlyUsedDailyQuestionIds(
 }
 
 /**
+ * The one question set everybody plays on [dateId], drawn once and reused.
+ *
+ * Each player used to draw their own random sixty, which meant the daily
+ * leaderboard ranked people who had answered different questions — the
+ * board compared scores that were never comparable. Drawing once per date
+ * fixes that, and costs one document read per player instead of sixty.
+ *
+ * Two players can race here on the day's first play. The loser's draw is
+ * discarded rather than written, so everyone still ends up on one set; a
+ * transaction would only save a wasted read.
+ * @param {string} dateId Day to build the set for.
+ * @return {Promise<Record<string, unknown>[]>} The day's questions.
+ */
+async function loadSharedDailyQuestions(
+  dateId: string
+): Promise<Record<string, unknown>[]> {
+  const setRef = db.collection(DAILY_QUESTION_SET_COLLECTION).doc(dateId);
+
+  const existing = await setRef.get();
+  const cached = existing.data()?.questions;
+  if (Array.isArray(cached) && cached.length > 0) {
+    return cached as Record<string, unknown>[];
+  }
+
+  const excludeQuestionIds = await recentlyUsedDailyQuestionIds(dateId);
+  const questions = await loadRandomDailyQuestions(excludeQuestionIds);
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(setRef);
+    if (Array.isArray(snap.data()?.questions)) return;
+
+    tx.set(setRef, {
+      dateId,
+      questions,
+      builtAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  const settled = await setRef.get();
+  const stored = settled.data()?.questions;
+  return Array.isArray(stored) ?
+    stored as Record<string, unknown>[] : questions;
+}
+
+/**
  * Mirrors DailyChallengeService's `loadRandomQuestions` — reads every
  * active fixed-pool category/difficulty question bank and returns a
  * random `DAILY_QUESTION_LIMIT`-sized subset, preferring questions not in
@@ -3571,14 +3626,8 @@ async function recentlyUsedDailyQuestionIds(
  * avoid repeating when enough fresh ones are available.
  * @return {Promise<Record<string, unknown>[]>} The chosen questions.
  */
-interface DailyPoolEntry {
-  /** fixed_pools category id. */
-  c: string;
-  /** Difficulty tier (1-3). */
-  d: number;
-  /** Question document id. */
-  q: string;
-}
+// DailyPoolEntry now lives in ./daily_question_set, next to the selection
+// rules that operate on it.
 
 // The fixed question bank is admin-seeded and barely changes, but every
 // player opening the Daily Challenge used to re-read all of it —
@@ -3728,19 +3777,12 @@ async function loadRandomDailyQuestions(
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
-  const limit = Math.min(DAILY_QUESTION_LIMIT, shuffled.length);
-
-  const fresh: DailyPoolEntry[] = [];
-  const recentlyUsed: DailyPoolEntry[] = [];
-  for (const entry of shuffled) {
-    if (excludeQuestionIds.has(entry.q)) recentlyUsed.push(entry);
-    else fresh.push(entry);
-  }
-
-  const selected = fresh.slice(0, limit);
-  if (selected.length < limit) {
-    selected.push(...recentlyUsed.slice(0, limit - selected.length));
-  }
+  // Easy first, hardest last. The daily is a timed sprint, so shuffling the
+  // tiers together turned "how far did you get" into a lottery over which
+  // difficulties happened to land early.
+  const selected = orderByAscendingDifficulty(selectDailyEntries(
+    shuffled, excludeQuestionIds, DAILY_QUESTION_LIMIT
+  ));
 
   if (selected.length === 0) {
     throw new HttpsError("failed-precondition", "No questions in pools.");
@@ -3909,10 +3951,8 @@ export const ensureDailyChallengeSession = onCall(async (request) => {
     return {created: false};
   }
 
-  const excludeQuestionIds = await recentlyUsedDailyQuestionIds(
-    userRef, dateId
-  );
-  const questions = await loadRandomDailyQuestions(excludeQuestionIds);
+  // Everyone who plays today gets this same set, in this same order.
+  const questions = await loadSharedDailyQuestions(dateId);
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(dailyRef);

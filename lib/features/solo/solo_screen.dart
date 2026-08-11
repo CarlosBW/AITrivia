@@ -41,12 +41,6 @@ class _SoloScreenState extends State<SoloScreen> {
   Future<void> _loadCategoriesAndProgress() async {
     if (!mounted) return;
 
-    // Read before the Firestore round trips below: the status colours are
-    // needed inside the per-category futures, and reaching for `context`
-    // after an await is what `use_build_context_synchronously` is warning
-    // about — the screen may be gone by then.
-    final appColors = context.appColors;
-
     setState(() {
       _loading = true;
       _error = null;
@@ -136,17 +130,13 @@ class _SoloScreenState extends State<SoloScreen> {
               completedCount >= levelCount;
 
           _SoloCategoryStatus status;
-          Color statusColor;
 
           if (completedAll) {
             status = _SoloCategoryStatus.completed;
-            statusColor = appColors.success;
           } else if (completedCount > 0) {
             status = _SoloCategoryStatus.inProgress;
-            statusColor = appColors.reward;
           } else {
             status = _SoloCategoryStatus.fresh;
-            statusColor = const Color(0xFF85B7EB);
           }
 
           return _SoloCategoryItem(
@@ -158,7 +148,6 @@ class _SoloScreenState extends State<SoloScreen> {
             nextLevel: nextLevel,
             completedAll: completedAll,
             status: status,
-            statusColor: statusColor,
           );
         }),
       );
@@ -553,7 +542,6 @@ class _SoloCategoryItem {
   final int nextLevel;
   final bool completedAll;
   final _SoloCategoryStatus status;
-  final Color statusColor;
 
   const _SoloCategoryItem({
     required this.categoryId,
@@ -564,7 +552,6 @@ class _SoloCategoryItem {
     required this.nextLevel,
     required this.completedAll,
     required this.status,
-    required this.statusColor,
   });
 }
 
@@ -632,6 +619,21 @@ class _CategoryCard extends StatelessWidget {
     }
   }
 
+  /// Derived here rather than carried on [_SoloCategoryItem]: the colour is
+  /// presentation, and having the loader resolve it meant reading the theme
+  /// from a method `initState` calls — which throws, and left this screen
+  /// stuck on its spinner.
+  Color _statusColor(BuildContext context) {
+    switch (item.status) {
+      case _SoloCategoryStatus.completed:
+        return context.appColors.success;
+      case _SoloCategoryStatus.inProgress:
+        return context.appColors.reward;
+      case _SoloCategoryStatus.fresh:
+        return const Color(0xFF85B7EB);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -673,13 +675,13 @@ class _CategoryCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: item.statusColor.withValues(alpha: 0.16),
+                      color: _statusColor(context).withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(context.radii.pill),
                     ),
                     child: Text(
                       _statusLabel(l10n),
                       style: TextStyle(
-                        color: item.statusColor,
+                        color: _statusColor(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),

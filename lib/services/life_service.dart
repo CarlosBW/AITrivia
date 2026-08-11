@@ -23,6 +23,19 @@ class LifeActionResult {
   final Map<String, dynamic> state;
 }
 
+/// A level-entry result, which also says whether the level was free.
+class LifeEntryResult extends LifeActionResult {
+  const LifeEntryResult({
+    required super.applied,
+    required super.state,
+    required this.replayFree,
+  });
+
+  /// True when the player had already passed this level, so entering costs
+  /// nothing. [applied] is still true — they may play — but no life moved.
+  final bool replayFree;
+}
+
 class LifeService {
   LifeService._();
   static final instance = LifeService._();
@@ -175,17 +188,41 @@ class LifeService {
     return lifeUnits >= levelEntryCostUnits;
   }
 
-  Future<LifeActionResult> tryConsumeLevelEntry(String uid) async {
+  /// Spends the level-entry cost, or reports what it would cost.
+  ///
+  /// Pass the level context so the server can recognise a replay: a level
+  /// the player already passed is free (see `consumeLevelEntryLife`). Weekly
+  /// Topic rounds have no level to have passed and omit it.
+  ///
+  /// With [preview] nothing is spent — it only answers whether the player
+  /// can afford the level and whether it's free. The play screen uses that
+  /// to gate on open and then charges once the first answer is given, so
+  /// backing out of a level costs nothing.
+  Future<LifeEntryResult> tryConsumeLevelEntry(
+    String uid, {
+    bool? isAiTopic,
+    String? categoryId,
+    String? aiTopicId,
+    int? levelNumber,
+    bool preview = false,
+  }) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
           'consumeLevelEntryLife',
           options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
         )
-        .call();
+        .call({
+      if (isAiTopic != null) 'isAiTopic': isAiTopic,
+      if (categoryId != null) 'categoryId': categoryId,
+      if (aiTopicId != null) 'aiTopicId': aiTopicId,
+      if (levelNumber != null) 'levelNumber': levelNumber,
+      if (preview) 'preview': true,
+    });
 
     final data = Map<String, dynamic>.from(result.data as Map);
-    return LifeActionResult(
+    return LifeEntryResult(
       applied: data['ok'] == true,
+      replayFree: data['replayFree'] == true,
       state: _stateFromCallableResponse(data),
     );
   }

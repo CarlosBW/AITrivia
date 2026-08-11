@@ -5516,15 +5516,59 @@ export const consumeLevelEntryLife = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
+  // Level context is optional: Weekly Topic rounds have no level to have
+  // passed, so calls without it are charged the normal way.
+  const isAiTopic = request.data?.isAiTopic === true;
+  const categoryId = String(request.data?.categoryId || "");
+  const aiTopicId = request.data?.aiTopicId ?
+    String(request.data.aiTopicId) : null;
+  const levelNumber = safeInt(request.data?.levelNumber, -1);
+
+  // Answers "would this cost a life?" without spending one. The play screen
+  // asks on open so it can gate a player who can't afford the level, then
+  // charges for real once they actually answer — opening a level and backing
+  // out used to cost a life for nothing.
+  const preview = request.data?.preview === true;
+
   const userRef = db.collection("users").doc(uid);
+
+  const progressRef = levelNumber < 1 ? null :
+    isAiTopic && aiTopicId ?
+      userRef.collection("progress_ai").doc(aiTopicId) :
+      !isAiTopic && categoryId ?
+        userRef.collection("progress_fixed").doc(categoryId) :
+        null;
 
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(userRef);
     const data = snap.data() || {};
     const state = computeLifeState(data, Date.now());
 
+    // Replaying a level that was already passed is free. Its one-time coin
+    // payout is spent and it only pays a 20% XP trickle (see
+    // submitSoloLevelResult), so charging a full life made revisiting a
+    // level the worst trade in the game — and worked against the very
+    // completionist play that trickle exists to reward. Decided here rather
+    // than client-side: a modified client would otherwise declare every
+    // level a replay and play for free.
+    let replayFree = false;
+    if (progressRef) {
+      const progressSnap = await tx.get(progressRef);
+      const passed = ((progressSnap.data()?.passedLevels as unknown[]) || [])
+        .map((entry) => safeInt(entry, 0));
+      replayFree = passed.includes(levelNumber);
+    }
+
+    if (replayFree) {
+      return {ok: true, replayFree: true, ...lifeStateResponse(state)};
+    }
+
     if (state.lifeUnits < LEVEL_ENTRY_COST_UNITS) {
-      return {ok: false, ...lifeStateResponse(state)};
+      return {ok: false, replayFree: false, ...lifeStateResponse(state)};
+    }
+
+    if (preview) {
+      return {ok: true, replayFree: false, ...lifeStateResponse(state)};
     }
 
     const wasFull = state.lifeUnits >= state.maxLifeUnits;
@@ -5539,8 +5583,8 @@ export const consumeLevelEntryLife = onCall(async (request) => {
       lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
     }, {merge: true});
 
-    return {ok: true, ...lifeStateResponse(stateAfterSpend(state, newUnits,
-      newTickMs))};
+    return {ok: true, replayFree: false,
+      ...lifeStateResponse(stateAfterSpend(state, newUnits, newTickMs))};
   });
 });
 

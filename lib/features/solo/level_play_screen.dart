@@ -45,6 +45,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   bool _resumeApplied = false;
   bool _resuming = true;
+
+  /// True once this level's entry cost has actually been taken, so it is
+  /// taken once per level and only refunded when it really happened.
+  bool _entryCharged = false;
+
+  /// True when the player already passed this level, so entering is free.
+  bool _entryFree = false;
   bool _saved = false;
   bool _saving = false;
   String? _saveError;
@@ -399,6 +406,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           final uid = FirebaseAuth.instance.currentUser!.uid;
 
           Future.microtask(() async {
+            // Igual que una respuesta tocada: dejar correr el reloj es
+            // comprometerse con la pregunta, así que aquí se cobra la
+            // entrada si aún no se había cobrado.
+            if (!await _chargeLevelEntryIfNeeded(uid)) return;
+
             final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
             final lifeLost = life.applied;
             await _refreshLivesAndStopIfEmpty(knownState: life.state);
@@ -505,6 +517,44 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
+  /// Takes the entry cost the first time the player commits to an answer.
+  ///
+  /// Deferred to here rather than charged on open so that opening a level and
+  /// leaving costs nothing. A free replay never charges at all. Returns false
+  /// only if the charge was refused, which means the player ran out of life
+  /// between opening the level and answering.
+  Future<bool> _chargeLevelEntryIfNeeded(String uid) async {
+    if (_entryCharged || _entryFree) return true;
+
+    try {
+      final entry = await LifeService.instance.tryConsumeLevelEntry(
+        uid,
+        isAiTopic: widget.isAiTopic,
+        categoryId: widget.categoryId,
+        aiTopicId: widget.aiTopicId,
+        levelNumber: widget.levelNumber,
+      );
+
+      if (entry.replayFree) {
+        _entryFree = true;
+        return true;
+      }
+
+      if (!entry.applied) {
+        await _refreshLivesAndStopIfEmpty(knownState: entry.state);
+        return false;
+      }
+
+      _entryCharged = true;
+      await _syncLivesUiFromFirestore(knownState: entry.state);
+      return true;
+    } catch (_) {
+      // La partida sigue: cobrar es responsabilidad del servidor y un fallo
+      // de red aquí no debería costarle el nivel al jugador.
+      return true;
+    }
+  }
+
   void _goNextQuestion() {
     if (!mounted || _endedByNoLives) return;
     setState(() {
@@ -534,6 +584,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
 
     _timer?.cancel();
+
+    // El costo de entrada se cobra aquí, en la primera respuesta, no al
+    // abrir el nivel. Si se rechaza, el jugador se quedó sin vidas entre
+    // abrir y responder y el nivel termina como cualquier otro caso de
+    // vidas agotadas.
+    final uidForEntry = FirebaseAuth.instance.currentUser!.uid;
+    if (!await _chargeLevelEntryIfNeeded(uidForEntry)) return;
 
     final correct = tappedIndex == answerIndex;
 
@@ -603,6 +660,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     }
   }
 
+  /// Checks the player can afford this level without spending anything yet.
+  ///
+  /// The cost used to be taken here, on open, which meant opening a level and
+  /// backing out paid a life for nothing — and that got worse once leaving
+  /// stopped rewinding progress. Now the charge happens on the first answer
+  /// (see [_chargeLevelEntryIfNeeded]); this only gates and records whether
+  /// the level is a free replay.
   Future<void> _checkAndConsumeLife(String uid) async {
     if (_lifeChecked || _lifeLoading) return;
 
@@ -615,9 +679,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     try {
       await LifeService.instance.ensureUserLifeDoc(uid);
-      final entry = await LifeService.instance.tryConsumeLevelEntry(uid);
+      final entry = await LifeService.instance.tryConsumeLevelEntry(
+        uid,
+        isAiTopic: widget.isAiTopic,
+        categoryId: widget.categoryId,
+        aiTopicId: widget.aiTopicId,
+        levelNumber: widget.levelNumber,
+        preview: true,
+      );
 
       await _syncLivesUiFromFirestore(knownState: entry.state);
+
+      _entryFree = entry.replayFree;
 
       if (!entry.applied) {
         _lifeGateError = l10n.levelPlayNeedFullLife;
@@ -729,14 +802,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           );
                           _kickAiBuffer();
                         } catch (e) {
-                          // The life for this level entry was already
-                          // charged in _checkAndConsumeLife before session
-                          // creation was attempted — refund it here so a
-                          // failed session creation (empty pool, transient
-                          // error) doesn't leave the player down a life for
-                          // nothing. _lifeChecked is reset by the Retry
-                          // button below, not here, so this doesn't loop.
-                          await LifeService.instance.refundLevelEntry(uid);
+                          // Only if it was really taken. The entry cost is
+                          // now charged on the first answer, so session
+                          // creation normally fails before any life moved —
+                          // refunding unconditionally here would have handed
+                          // the player a life they never paid.
+                          if (_entryCharged) {
+                            await LifeService.instance.refundLevelEntry(uid);
+                            _entryCharged = false;
+                          }
                           // Just the message: `e.toString()` on a
                           // FirebaseFunctionsException drags the whole
                           // async stack trace onto the screen, which the

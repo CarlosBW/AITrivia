@@ -67,7 +67,11 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
       'wrongAnswers': 0,
 
       'pvpRating': 1000,
-      'pvpRatingDelta': 0,
+      // `pvpRatingDelta` no se siembra: firestore.rules exige que este
+      // ausente al crear la cuenta (lo escribe finalizePvpMatch al cerrar
+      // una partida). Mandarlo hacia que el create fuera denegado, y como
+      // el nombre de usuario se reserva en la misma transaccion, el error
+      // salia en la pantalla de elegir nombre.
       'pvpLeagueId': defaultPvpLeague.id,
       'pvpLeagueName': defaultPvpLeague.name,
       'pvpAbandonCount': 0,

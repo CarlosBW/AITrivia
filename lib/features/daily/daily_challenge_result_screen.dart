@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
@@ -41,10 +40,7 @@ class DailyChallengeResultScreen extends StatelessWidget {
             Text(
               l10n.dailyResultComplete,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(26),
             ),
 
             const SizedBox(height: 32),
@@ -54,14 +50,14 @@ class DailyChallengeResultScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(context.radii.md),
               ),
               child: Column(
                 children: [
                   _ResultRow(
                     icon: Icons.check_circle_outline,
-                    accent: AppColors.success,
-                    background: AppColors.successBg,
+                    accent: context.appColors.success,
+                    background: context.appColors.successBg,
                     label: l10n.dailyResultCorrectAnswers,
                     value: '${result.correct}',
                   ),
@@ -75,23 +71,23 @@ class DailyChallengeResultScreen extends StatelessWidget {
                   ),
                   _ResultRow(
                     icon: Icons.monetization_on_outlined,
-                    accent: AppColors.reward,
-                    background: AppColors.rewardBg,
+                    accent: context.appColors.reward,
+                    background: context.appColors.rewardBg,
                     label: l10n.dailyResultCoinsEarned,
                     value: '+${result.totalCoinsEarned}',
                   ),
                   _ResultRow(
                     icon: Icons.local_fire_department_outlined,
-                    accent: AppColors.reward,
-                    background: AppColors.rewardBg,
+                    accent: context.appColors.reward,
+                    background: context.appColors.rewardBg,
                     label: l10n.dailyResultStreakLabel,
                     value: l10n.dailyResultDaysValue(result.streak),
                   ),
                   if (result.streakBonusCoins > 0)
                     _ResultRow(
                       icon: Icons.bolt_outlined,
-                      accent: AppColors.reward,
-                      background: AppColors.rewardBg,
+                      accent: context.appColors.reward,
+                      background: context.appColors.rewardBg,
                       label: l10n.dailyResultStreakBonus,
                       value: '+${result.streakBonusCoins}',
                     ),

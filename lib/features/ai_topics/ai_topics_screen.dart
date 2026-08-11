@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
@@ -8,6 +7,7 @@ import 'create_ai_topic_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../theme/app_theme.dart';
 
 class AiTopicsScreen extends StatefulWidget {
   const AiTopicsScreen({super.key});
@@ -25,11 +25,11 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
   Color _statusColor(String status) {
     switch (status) {
       case 'ready':
-        return Colors.green;
+        return context.appColors.success;
       case 'failed':
       case 'invalid':
       case 'blocked':
-        return Colors.redAccent;
+        return context.appColors.danger;
       case 'deleted':
         return Colors.grey;
       case 'pending_generation':
@@ -260,7 +260,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       end: Alignment.bottomRight,
                       colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
                     ),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(context.radii.md),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFF6C4FF2).withValues(alpha: 0.45),
@@ -374,7 +374,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       padding: const EdgeInsets.only(right: 20),
                       decoration: BoxDecoration(
                         color: Colors.redAccent.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(context.radii.md),
                       ),
                       child: const Icon(
                         Icons.delete,
@@ -385,7 +385,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       elevation: 0,
                       color: color.withValues(alpha: 0.10),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(context.radii.md),
                         side: BorderSide(color: color.withValues(alpha: 0.35)),
                       ),
                       child: ListTile(
@@ -397,7 +397,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                         title: Text(
                           title,
                           style:
-                              GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                              context.headingFace,
                         ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 6),
@@ -514,10 +514,7 @@ class _EmptyAiTopics extends StatelessWidget {
             Text(
               l10n.aiTopicsEmptyTitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 23,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(23),
             ),
             const SizedBox(height: 8),
             Text(

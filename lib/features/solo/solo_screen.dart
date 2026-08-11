@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
@@ -41,6 +40,12 @@ class _SoloScreenState extends State<SoloScreen> {
 
   Future<void> _loadCategoriesAndProgress() async {
     if (!mounted) return;
+
+    // Read before the Firestore round trips below: the status colours are
+    // needed inside the per-category futures, and reaching for `context`
+    // after an await is what `use_build_context_synchronously` is warning
+    // about — the screen may be gone by then.
+    final appColors = context.appColors;
 
     setState(() {
       _loading = true;
@@ -135,10 +140,10 @@ class _SoloScreenState extends State<SoloScreen> {
 
           if (completedAll) {
             status = _SoloCategoryStatus.completed;
-            statusColor = AppColors.success;
+            statusColor = appColors.success;
           } else if (completedCount > 0) {
             status = _SoloCategoryStatus.inProgress;
-            statusColor = AppColors.reward;
+            statusColor = appColors.reward;
           } else {
             status = _SoloCategoryStatus.fresh;
             statusColor = const Color(0xFF85B7EB);
@@ -433,10 +438,7 @@ class _SoloScreenState extends State<SoloScreen> {
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
               l10n.soloFixedTopics,
-              style: GoogleFonts.baloo2(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(22),
             ),
           );
         }
@@ -480,7 +482,7 @@ class _AllCategoriesCompletedBanner extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,11 +494,7 @@ class _AllCategoriesCompletedBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.soloAllCompletedTitle,
-                  style: GoogleFonts.baloo2(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
+                  style: context.heading(16, color: colorScheme.onPrimaryContainer),
                 ),
               ),
             ],
@@ -640,7 +638,7 @@ class _CategoryCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(context.radii.md),
         onTap: disabled ? null : onOpenLevels,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -654,7 +652,7 @@ class _CategoryCard extends StatelessWidget {
                     height: 40,
                     decoration: BoxDecoration(
                       color: accent.background,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderRadius: BorderRadius.circular(context.radii.sm),
                     ),
                     child: Icon(
                       _iconForCategory(item.categoryId, item.name),
@@ -666,10 +664,7 @@ class _CategoryCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item.name,
-                      style: GoogleFonts.baloo2(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: context.heading(18),
                     ),
                   ),
                   Container(
@@ -679,7 +674,7 @@ class _CategoryCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: item.statusColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(context.radii.pill),
                     ),
                     child: Text(
                       _statusLabel(l10n),
@@ -699,7 +694,7 @@ class _CategoryCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(context.radii.xs),
                 child: LinearProgressIndicator(
                   value: item.progress,
                   minHeight: 8,

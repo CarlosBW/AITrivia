@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../daily/daily_challenge_screen.dart';
@@ -412,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text(
                           l10n.homeStatsErrorLoading(snap.error.toString()),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.redAccent),
+                          style: TextStyle(color: context.appColors.danger),
                         ),
                       );
                     }
@@ -457,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderRadius: BorderRadius.circular(context.radii.md),
                       ),
                       child: Column(
                         children: [
@@ -468,8 +467,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Flexible(
                                       child: Text(
                                         l10n.homeLivesUnavailable,
-                                        style: const TextStyle(
-                                          color: Colors.redAccent,
+                                        style: TextStyle(
+                                          color: context.appColors.danger,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -503,8 +502,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: StatChip(
                                   icon: Icons.monetization_on_outlined,
                                   label: l10n.homeCoins,
-                                  accent: AppColors.reward,
-                                  background: AppColors.rewardBg,
+                                  accent: context.appColors.reward,
+                                  background: context.appColors.rewardBg,
                                   value: '$coins',
                                 ),
                               ),
@@ -664,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         .colorScheme
                         .primary
                         .withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(context.radii.md),
                     border: Border.all(
                       color: Theme.of(context)
                           .colorScheme
@@ -710,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.danger,
+                    color: context.appColors.danger,
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -725,11 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeStreakUpTitle,
-                        style: GoogleFonts.baloo2(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                        style: context.heading(26, color: Colors.white),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -771,11 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeWelcomeBackTitle,
-                        style: GoogleFonts.baloo2(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                        style: context.heading(26, color: Colors.white),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -826,7 +817,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.reward,
+                    color: context.appColors.reward,
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -841,11 +832,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeAchievementUnlockedTitle,
-                        style: GoogleFonts.baloo2(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF412402),
-                        ),
+                        style: context.heading(24, color: Color(0xFF412402)),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -902,11 +889,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeAvatarUnlockedTitle,
-                        style: GoogleFonts.baloo2(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
+                        style: context.heading(24, color: Colors.white),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -1013,8 +996,8 @@ class _LivesCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.dangerBg,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: context.appColors.dangerBg,
+        borderRadius: BorderRadius.circular(context.radii.sm),
       ),
       child: Row(
         children: [
@@ -1022,11 +1005,7 @@ class _LivesCard extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             l10n.homeLivesSuffix(livesText),
-            style: GoogleFonts.baloo2(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-            ),
+            style: context.heading(15, color: valueColor),
           ),
           const Spacer(),
           Icon(
@@ -1110,7 +1089,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.reward.withValues(
+                    color: context.appColors.reward.withValues(
                       alpha: 0.25 + t * 0.30,
                     ),
                     blurRadius: 14 + t * 12,
@@ -1125,7 +1104,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.reward,
+                        color: context.appColors.reward,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
@@ -1142,11 +1121,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                       children: [
                         Text(
                           l10n.homeAiTopicTitle,
-                          style: GoogleFonts.baloo2(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: context.heading(19, color: Colors.white),
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -1210,7 +1185,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.rewardBg,
+              color: context.appColors.rewardBg,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
@@ -1263,7 +1238,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
               end: Alignment.bottomRight,
               colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
             ),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1287,11 +1262,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.baloo2(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: context.heading(16, color: Colors.white),
                     ),
                   ),
                   if (rewardCoins > 0)
@@ -1302,7 +1273,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
                       ),
                       child: Text(
                         l10n.homeWeeklyTopicRewardCoins(rewardCoins),
@@ -1361,7 +1332,7 @@ class _WeeklyTopicUnavailableCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Row(
         children: [
@@ -1426,8 +1397,8 @@ class _WeeklyButtonIcon extends StatelessWidget {
             child: Container(
               width: 10,
               height: 10,
-              decoration: const BoxDecoration(
-                color: AppColors.danger,
+              decoration: BoxDecoration(
+                color: context.appColors.danger,
                 shape: BoxShape.circle,
               ),
             ),
@@ -1452,7 +1423,7 @@ class _DailyChallengeCard extends StatelessWidget {
   });
 
   Color _streakColor(BuildContext context) {
-    if (streak >= 7) return AppColors.danger;
+    if (streak >= 7) return context.appColors.danger;
     return const Color(0xFFE5622C);
   }
 
@@ -1517,11 +1488,7 @@ class _DailyChallengeCard extends StatelessWidget {
                     children: [
                       Text(
                         l10n.homeDailyChallengeTitle,
-                        style: GoogleFonts.baloo2(
-                          color: colorScheme.onSurface,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: context.heading(17, color: colorScheme.onSurface),
                       ),
                       const SizedBox(height: 3),
                       Row(
@@ -1545,8 +1512,8 @@ class _DailyChallengeCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.reward,
-                                borderRadius: BorderRadius.circular(999),
+                                color: context.appColors.reward,
+                                borderRadius: BorderRadius.circular(context.radii.pill),
                               ),
                               child: Text(
                                 l10n.homeReward,

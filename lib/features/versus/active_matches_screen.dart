@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -369,9 +368,9 @@ class _AsyncMatchTile extends StatelessWidget {
   Color _statusColor(BuildContext context) {
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return AppColors.success;
+        return context.appColors.success;
       case _AsyncSectionMode.waitingOpponent:
-        return AppColors.reward;
+        return context.appColors.reward;
       case _AsyncSectionMode.finished:
         return Theme.of(context).colorScheme.onSurfaceVariant;
     }
@@ -431,10 +430,7 @@ class _SectionCard extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.baloo2(
-            fontSize: 21,
-            fontWeight: FontWeight.w800,
-          ),
+          style: context.heading(21),
         ),
         const SizedBox(height: 10),
         child,
@@ -453,7 +449,7 @@ class _LoadingLine extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Row(
         children: [
@@ -484,7 +480,7 @@ class _EmptyLine extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Text(
         text,
@@ -507,10 +503,10 @@ class _SoftStatusCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.reward.withValues(alpha: 0.12),
+        color: context.appColors.reward.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.reward.withValues(alpha: 0.35),
+          color: context.appColors.reward.withValues(alpha: 0.35),
         ),
       ),
       child: Row(

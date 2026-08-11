@@ -13,6 +13,7 @@ import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/l10n_for.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../theme/app_theme.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
   final String categoryId;
@@ -374,7 +375,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                 if (_error != null) ...[
                   Text(
                     _error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: context.appColors.danger),
                   ),
                   const SizedBox(height: 12),
                 ],

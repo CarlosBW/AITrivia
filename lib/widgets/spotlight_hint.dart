@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/spotlight_service.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -218,7 +217,7 @@ class _TooltipBubble extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(context.radii.md),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -233,15 +232,12 @@ class _TooltipBubble extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lightbulb_outline, color: AppColors.reward),
+              Icon(Icons.lightbulb_outline, color: context.appColors.reward),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.baloo2(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: context.heading(17),
                 ),
               ),
             ],

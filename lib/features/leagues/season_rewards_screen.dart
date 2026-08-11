@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/season_service.dart';
 import '../../services/league_service.dart';
@@ -116,10 +115,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
 
           Text(
             l10n.weeklyRewardsHistoryTitle,
-            style: GoogleFonts.baloo2(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(20),
           ),
 
           const SizedBox(height: 12),
@@ -195,7 +191,7 @@ class _LoadingCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Row(
         children: [
@@ -224,7 +220,7 @@ class _NoPendingRewardsCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         children: [
@@ -232,10 +228,7 @@ class _NoPendingRewardsCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             l10n.weeklyRewardsNoPendingTitle,
-            style: GoogleFonts.baloo2(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(18),
           ),
           const SizedBox(height: 6),
           Text(
@@ -269,15 +262,15 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.rewardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.reward),
+        color: context.appColors.rewardBg,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        border: Border.all(color: context.appColors.reward),
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.card_giftcard_outlined,
-            color: AppColors.reward,
+            color: context.appColors.reward,
             size: 42,
           ),
           const SizedBox(height: 10),
@@ -285,10 +278,7 @@ class _PendingRewardsCard extends StatelessWidget {
             pending.length == 1
                 ? l10n.weeklyRewardsPendingSingle(pending.length)
                 : l10n.weeklyRewardsPendingMultiple(pending.length),
-            style: GoogleFonts.baloo2(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(20),
           ),
           const SizedBox(height: 6),
           Text(
@@ -380,7 +370,7 @@ class _EmptyHistoryCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Text(
         AppLocalizations.of(context).weeklyRewardsNoHistory,
@@ -450,7 +440,7 @@ class _HistoryTile extends StatelessWidget {
               children: [
                 Text(
                   l10n.weeklyRewardsHistoryTitleLine(seasonId, leagueName),
-                  style: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+                  style: context.headingFace,
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -465,11 +455,7 @@ class _HistoryTile extends StatelessWidget {
           ),
           Text(
             '+$rewardCoins',
-            style: GoogleFonts.baloo2(
-              fontWeight: FontWeight.w800,
-              fontSize: 17,
-              color: Color.lerp(color, Colors.black, 0.35),
-            ),
+            style: context.heading(17, color: Color.lerp(color, Colors.black, 0.35)),
           ),
         ],
       ),

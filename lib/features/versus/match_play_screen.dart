@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/match_service.dart';
 import '../../services/sfx_service.dart';
@@ -598,10 +597,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
         timePerQ == 0 ? 0.0 : (_secondsLeft / timePerQ).clamp(0.0, 1.0);
 
     final timerColor = timeFraction > 0.5
-        ? AppColors.success
+        ? context.appColors.success
         : timeFraction > 0.2
-            ? AppColors.reward
-            : AppColors.danger;
+            ? context.appColors.reward
+            : context.appColors.danger;
 
     return AbsorbPointer(
       key: key,
@@ -628,7 +627,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       ),
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 8,
@@ -649,7 +648,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: timerColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(context.radii.pill),
                     border: Border.all(color: timerColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
@@ -704,11 +703,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
               if (_locked && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = AppColors.success.withValues(alpha: 0.16);
+                  fillColor = context.appColors.success.withValues(alpha: 0.16);
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withValues(alpha: 0.16);
+                  fillColor = context.appColors.danger.withValues(alpha: 0.16);
                 }
               } else if (!_locked && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
@@ -719,17 +718,17 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
               if (_timedOut && _timeoutAnswerIndex != null) {
                 if (i == _timeoutAnswerIndex) {
-                  borderColor = AppColors.reward;
+                  borderColor = context.appColors.reward;
                   borderWidth = 3;
                 }
               } else if (_locked) {
                 if (isCorrect) {
-                  borderColor = AppColors.success;
+                  borderColor = context.appColors.success;
                   borderWidth = 2;
                 }
 
                 if (isSelected && !isCorrect) {
-                  borderColor = AppColors.danger;
+                  borderColor = context.appColors.danger;
                   borderWidth = 2;
                 }
               } else if (isSelected) {
@@ -738,9 +737,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               }
 
               final badgeColor = (_locked && isCorrect)
-                  ? AppColors.success
+                  ? context.appColors.success
                   : (_locked && isSelected && !isCorrect)
-                      ? AppColors.danger
+                      ? context.appColors.danger
                       : (!_locked && isSelected)
                           ? colorScheme.primary
                           : colorScheme.surfaceContainerHighest;
@@ -755,10 +754,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               if (_locked && !_timedOut) {
                 if (isCorrect) {
                   trailingIcon = Icons.check_circle;
-                  trailingIconColor = AppColors.success;
+                  trailingIconColor = context.appColors.success;
                 } else if (isSelected) {
                   trailingIcon = Icons.cancel;
-                  trailingIconColor = AppColors.danger;
+                  trailingIconColor = context.appColors.danger;
                 }
               }
 
@@ -840,8 +839,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                   : Center(
                       child: Text(
                         _statusMsg!,
-                        style: const TextStyle(
-                          color: AppColors.reward,
+                        style: TextStyle(
+                          color: context.appColors.reward,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -883,10 +882,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             Text(
               l10n.matchPlayWaitingFinalResult,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(24),
             ),
             const SizedBox(height: 12),
             Text(
@@ -897,10 +893,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             const SizedBox(height: 24),
             Text(
               l10n.matchPlayYourScoreLine(myScore),
-              style: GoogleFonts.baloo2(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(20),
             ),
             const SizedBox(height: 24),
             const CircularProgressIndicator(),

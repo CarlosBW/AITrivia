@@ -25,7 +25,7 @@ class NoLivesDialog extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(context.radii.lg)),
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
@@ -34,14 +34,14 @@ class NoLivesDialog extends StatelessWidget {
             Container(
               width: 74,
               height: 74,
-              decoration: const BoxDecoration(
-                color: AppColors.dangerBg,
+              decoration: BoxDecoration(
+                color: context.appColors.dangerBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.favorite_border,
                 size: 38,
-                color: AppColors.danger,
+                color: context.appColors.danger,
               ),
             ),
             const SizedBox(height: 16),

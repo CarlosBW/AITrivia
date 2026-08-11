@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
@@ -268,10 +267,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     return [
       Text(
         l10n.createAiTopicSubtitle,
-        style: GoogleFonts.baloo2(
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-        ),
+        style: context.heading(22),
       ),
       const SizedBox(height: 10),
       Text(
@@ -336,7 +332,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     return [
       Text(
         l10n.createAiTopicMatchesFoundTitle,
-        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+        style: context.heading(20),
       ),
       const SizedBox(height: 6),
       Text(
@@ -403,7 +399,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     return [
       Text(
         l10n.createAiTopicAiSuggestionsTitle,
-        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+        style: context.heading(20),
       ),
       const SizedBox(height: 6),
       Text(
@@ -466,7 +462,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     return [
       Text(
         l10n.createAiTopicSuggestionsUnavailableTitle,
-        style: GoogleFonts.baloo2(fontSize: 20, fontWeight: FontWeight.w800),
+        style: context.heading(20),
       ),
       const SizedBox(height: 6),
       Text(
@@ -583,7 +579,7 @@ class _CoinsBalanceLine extends StatelessWidget {
       textAlign: TextAlign.center,
       style: TextStyle(
         fontWeight: FontWeight.w600,
-        color: hasFreePass ? Colors.green : null,
+        color: hasFreePass ? context.appColors.success : null,
       ),
     );
   }
@@ -616,7 +612,7 @@ class _TopicChoiceCard extends StatelessWidget {
     final (IconData icon, Color iconColor, String tooltip) = switch (badge) {
       _ChoiceBadge.popular => (
           Icons.star,
-          AppColors.reward,
+          context.appColors.reward,
           l10n.createAiTopicPopularBadgeTooltip,
         ),
       _ChoiceBadge.existing => (
@@ -708,7 +704,7 @@ class _PricingCardState extends State<_PricingCard> {
         };
         final canAfford = hasFreePass || coins >= cost;
 
-        final accentColor = canAfford ? Colors.green : Colors.redAccent;
+        final accentColor = canAfford ? context.appColors.success : context.appColors.danger;
 
         return Container(
           width: double.infinity,
@@ -815,10 +811,7 @@ class _PopularTopicsSectionState extends State<_PopularTopicsSection> {
               children: [
                 Text(
                   l10n.createAiTopicPopularSectionTitle,
-                  style: GoogleFonts.baloo2(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: context.heading(16),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -927,10 +920,10 @@ class _PopularTopicCard extends StatelessWidget {
                   l10n.createAiTopicPopularCostLabel(
                     EconomyService.createAiTopicFromPoolCost,
                   ),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: context.appColors.success,
                   ),
                 ),
               ],

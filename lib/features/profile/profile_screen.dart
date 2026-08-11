@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/app.dart';
@@ -117,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               l10n.profileDeleteAccountConfirmAction,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: context.appColors.danger),
             ),
           ),
         ],
@@ -293,10 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Text(
                   l10n.profileAvatarCollection,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.baloo2(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: context.heading(21),
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -312,7 +308,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(context.radii.md),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                     ),
@@ -376,7 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     final isUnlocked = unlockedIds.contains(avatar.id);
 
                     return InkWell(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(context.radii.md),
                       onTap: () {
                         if (!isUnlocked) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -401,7 +397,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       .colorScheme
                                       .surface
                                       .withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(context.radii.md),
                           border: Border.all(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
@@ -550,10 +546,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             Text(
               l10n.profileChooseFrame,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(20),
             ),
             const SizedBox(height: 20),
             ...unlockedFrames.map(
@@ -565,9 +558,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 title: Text(frame.name),
                 subtitle: Text(frame.unlockLabel),
                 trailing: frame.id == equippedFrame
-                    ? const Icon(
+                    ? Icon(
                         Icons.check_circle,
-                        color: AppColors.success,
+                        color: context.appColors.success,
                       )
                     : null,
                 onTap: () {
@@ -743,7 +736,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(context.radii.lg),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                   ),
@@ -751,7 +744,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Column(
                   children: [
                     InkWell(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(context.radii.pill),
                       onTap: _saving
                           ? null
                           : () => _chooseAvatar(
@@ -810,7 +803,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       title: l10n.spotlightFramesTitle,
                       description: l10n.spotlightFramesBody,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
                         onTap: _saving
                             ? null
                             : () => _chooseFrame(
@@ -826,7 +819,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           decoration: BoxDecoration(
                             color:
                                 Color(frame.colorValue).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(context.radii.pill),
                             border: Border.all(
                               color: Color(frame.colorValue)
                                   .withValues(alpha: 0.40),
@@ -851,7 +844,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 10),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(context.radii.pill),
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 12,
@@ -865,9 +858,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 18),
               Material(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -883,7 +876,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         end: Alignment.bottomRight,
                         colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
                       ),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(context.radii.md),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -908,11 +901,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               Text(
                                 l10n.profileAchievements,
-                                style: GoogleFonts.baloo2(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                style: context.heading(18, color: Colors.white),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -941,8 +930,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: StatChip(
                       icon: Icons.monetization_on_outlined,
                       label: l10n.profileCoins,
-                      accent: AppColors.reward,
-                      background: AppColors.rewardBg,
+                      accent: context.appColors.reward,
+                      background: context.appColors.rewardBg,
                       value: '$coins',
                     ),
                   ),
@@ -970,7 +959,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       icon: Icons.local_fire_department_outlined,
                       label: l10n.profileStreak,
                       accent: const Color(0xFFFF6B5B),
-                      background: AppColors.dangerBg,
+                      background: context.appColors.dangerBg,
                       value: '$dailyStreak',
                     ),
                   ),
@@ -979,8 +968,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: StatChip(
                       icon: Icons.whatshot_outlined,
                       label: l10n.profileBestStreak,
-                      accent: AppColors.reward,
-                      background: AppColors.rewardBg,
+                      accent: context.appColors.reward,
+                      background: context.appColors.rewardBg,
                       value: '$maxDailyStreak',
                     ),
                   ),
@@ -989,10 +978,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 18),
               Text(
                 l10n.profileStats,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
               const SizedBox(height: 10),
               _WideStatTile(
@@ -1026,7 +1012,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Color(pvpLeague.colorValue).withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   border: Border.all(
                     color: Color(pvpLeague.colorValue).withValues(alpha: 0.35),
                   ),
@@ -1068,7 +1054,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 12),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(context.radii.pill),
                       child: LinearProgressIndicator(
                         value: pvpLeagueProgress,
                         minHeight: 10,
@@ -1088,10 +1074,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 20),
               Text(
                 l10n.profile1v1Stats,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
               const SizedBox(height: 10),
               _WideStatTile(
@@ -1139,20 +1122,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 20),
               Text(
                 l10n.profileRecentMatches,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
               const SizedBox(height: 10),
               _RecentMatchHistory(uid: uid),
               const SizedBox(height: 24),
               Text(
                 l10n.profileLegalSectionTitle,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
               const SizedBox(height: 10),
               _LegalLinkTile(
@@ -1168,23 +1145,19 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 24),
               Text(
                 l10n.profileDangerZoneTitle,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.red,
-                ),
+                style: context.heading(20, color: context.appColors.danger),
               ),
               const SizedBox(height: 10),
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Colors.red),
+                  side: BorderSide(color: context.appColors.danger),
                 ),
                 child: ListTile(
-                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  leading: Icon(Icons.delete_forever, color: context.appColors.danger),
                   title: Text(
                     l10n.profileDeleteAccount,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: context.appColors.danger),
                   ),
                   onTap: _saving ? null : _confirmDeleteAccount,
                 ),
@@ -1267,7 +1240,7 @@ class _AvatarCategoryBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(context.radii.pill),
         border: Border.all(
           color: color.withValues(alpha: 0.35),
         ),
@@ -1336,9 +1309,9 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
   Color _resultColor(BuildContext context, String result) {
     switch (result) {
       case 'victory':
-        return AppColors.success;
+        return context.appColors.success;
       case 'defeat':
-        return AppColors.danger;
+        return context.appColors.danger;
       case 'draw':
       default:
         return Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1442,7 +1415,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                           ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(context.radii.pill),
                           ),
                           child: Text(
                             deltaText,
@@ -1484,10 +1457,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                               const SizedBox(height: 4),
                               Text(
                                 '$myScore - $opponentScore',
-                                style: GoogleFonts.baloo2(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                style: context.heading(22),
                               ),
                             ],
                           ),

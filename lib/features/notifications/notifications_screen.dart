@@ -73,9 +73,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'match_invite':
         return Theme.of(context).colorScheme.primary;
       case 'match_turn':
-        return AppColors.success;
+        return context.appColors.success;
       case 'match_result':
-        return AppColors.reward;
+        return context.appColors.reward;
       case 'friend_request':
         return const Color(0xFF185FA5);
       case 'season_reward':
@@ -85,7 +85,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'rematch_request':
         return Theme.of(context).colorScheme.primary;
       case 'streak_at_risk':
-        return AppColors.danger;
+        return context.appColors.danger;
       default:
         return Theme.of(context).colorScheme.primary;
     }
@@ -385,7 +385,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 18),
                   decoration: BoxDecoration(
-                    color: AppColors.danger,
+                    color: context.appColors.danger,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -571,8 +571,8 @@ class _NotificationTile extends StatelessWidget {
             : Container(
                 width: 10,
                 height: 10,
-                decoration: const BoxDecoration(
-                  color: AppColors.danger,
+                decoration: BoxDecoration(
+                  color: context.appColors.danger,
                   shape: BoxShape.circle,
                 ),
               ),

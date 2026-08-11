@@ -124,8 +124,8 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
     setState(() {
       _flashColor = isCorrect
-          ? AppColors.success.withValues(alpha: 0.18)
-          : AppColors.danger.withValues(alpha: 0.18);
+          ? context.appColors.success.withValues(alpha: 0.18)
+          : context.appColors.danger.withValues(alpha: 0.18);
       _selectedIndex = index;
       _lastCorrect = isCorrect;
 
@@ -213,9 +213,9 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
   Color _buttonColor(int index, int correctIndex) {
     if (_selectedIndex == null) return Theme.of(context).colorScheme.primary;
-    if (index == correctIndex) return AppColors.success;
+    if (index == correctIndex) return context.appColors.success;
     if (index == _selectedIndex) {
-      return _lastCorrect == true ? AppColors.success : AppColors.danger;
+      return _lastCorrect == true ? context.appColors.success : context.appColors.danger;
     }
     return Theme.of(context).colorScheme.surfaceContainerHighest;
   }
@@ -275,7 +275,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                   children: [
                     Icon(
                       Icons.favorite,
-                      color: AppColors.danger,
+                      color: context.appColors.danger,
                       size: 20,
                     ),
                     const SizedBox(width: 6),

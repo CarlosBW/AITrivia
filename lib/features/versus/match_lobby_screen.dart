@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
@@ -304,10 +303,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       const SizedBox(height: 8),
                       Text(
                         l10n.matchLobbyHeading,
-                        style: GoogleFonts.baloo2(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: context.heading(25),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -561,7 +557,7 @@ class _PlayerStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final Color borderColor = ready ? AppColors.success : AppColors.reward;
+    final Color borderColor = ready ? context.appColors.success : context.appColors.reward;
 
     final IconData icon =
         ready ? Icons.check_circle_outline : Icons.access_time;
@@ -572,14 +568,14 @@ class _PlayerStatusCard extends StatelessWidget {
             ? l10n.matchLobbyReadyLabel
             : l10n.matchLobbyWaitingLabel;
 
-    final Color statusColor = ready ? AppColors.success : AppColors.reward;
+    final Color statusColor = ready ? context.appColors.success : context.appColors.reward;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ready
-            ? AppColors.success.withValues(alpha: 0.10)
-            : AppColors.reward.withValues(alpha: 0.10),
+            ? context.appColors.success.withValues(alpha: 0.10)
+            : context.appColors.reward.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: borderColor,

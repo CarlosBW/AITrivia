@@ -692,10 +692,10 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         timePerQ == 0 ? 0.0 : (_secondsLeft / timePerQ).clamp(0.0, 1.0);
 
     final timerColor = timeFraction > 0.5
-        ? AppColors.success
+        ? context.appColors.success
         : timeFraction > 0.2
-            ? AppColors.reward
-            : AppColors.danger;
+            ? context.appColors.reward
+            : context.appColors.danger;
 
     return AbsorbPointer(
       key: key,
@@ -722,7 +722,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                       ),
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 8,
@@ -743,7 +743,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: timerColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(context.radii.pill),
                     border: Border.all(color: timerColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
@@ -798,11 +798,11 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
               if (_locked && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = AppColors.success.withValues(alpha: 0.16);
+                  fillColor = context.appColors.success.withValues(alpha: 0.16);
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = AppColors.danger.withValues(alpha: 0.16);
+                  fillColor = context.appColors.danger.withValues(alpha: 0.16);
                 }
               } else if (!_locked && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
@@ -813,17 +813,17 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
               if (_timedOut && _timeoutAnswerIndex != null) {
                 if (i == _timeoutAnswerIndex) {
-                  borderColor = AppColors.reward;
+                  borderColor = context.appColors.reward;
                   borderWidth = 3;
                 }
               } else if (_locked) {
                 if (isCorrect) {
-                  borderColor = AppColors.success;
+                  borderColor = context.appColors.success;
                   borderWidth = 2;
                 }
 
                 if (isSelected && !isCorrect) {
-                  borderColor = AppColors.danger;
+                  borderColor = context.appColors.danger;
                   borderWidth = 2;
                 }
               } else if (isSelected) {
@@ -832,9 +832,9 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               }
 
               final badgeColor = (_locked && isCorrect)
-                  ? AppColors.success
+                  ? context.appColors.success
                   : (_locked && isSelected && !isCorrect)
-                      ? AppColors.danger
+                      ? context.appColors.danger
                       : (!_locked && isSelected)
                           ? colorScheme.primary
                           : colorScheme.surfaceContainerHighest;
@@ -849,10 +849,10 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               if (_locked && !_timedOut) {
                 if (isCorrect) {
                   trailingIcon = Icons.check_circle;
-                  trailingIconColor = AppColors.success;
+                  trailingIconColor = context.appColors.success;
                 } else if (isSelected) {
                   trailingIcon = Icons.cancel;
-                  trailingIconColor = AppColors.danger;
+                  trailingIconColor = context.appColors.danger;
                 }
               }
 
@@ -934,8 +934,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                   : Center(
                       child: Text(
                         _statusMsg!,
-                        style: const TextStyle(
-                          color: AppColors.reward,
+                        style: TextStyle(
+                          color: context.appColors.reward,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

@@ -5,6 +5,7 @@ import '../../services/realtime_invite_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../theme/app_theme.dart';
 
 class RealtimeInvitesScreen extends StatefulWidget {
   const RealtimeInvitesScreen({super.key});
@@ -204,7 +205,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                     elevation: 0,
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(context.radii.md),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.45),
                       ),
@@ -329,7 +330,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
               elevation: 0,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 side: BorderSide(
                   color: Theme.of(context).colorScheme.outlineVariant,
                 ),

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'realtime_invites_screen.dart';
 import 'find_opponent_screen.dart';
@@ -53,7 +52,7 @@ class _PvPScreenState extends State<PvPScreen> {
         children: [
           Text(
             l10n.pvpHubHeading,
-            style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
+            style: context.heading(22),
           ),
           const SizedBox(height: 8),
           Text(
@@ -178,14 +177,14 @@ class _PvpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = alert ? AppColors.danger : accent;
-    final bg = alert ? AppColors.dangerBg : accentBg;
+    final color = alert ? context.appColors.danger : accent;
+    final bg = alert ? context.appColors.dangerBg : accentBg;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: color.withValues(alpha: alert ? 0.7 : 0.35),
           width: alert ? 1.6 : 1.2,
@@ -193,9 +192,9 @@ class _PvpCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(context.radii.md),
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(context.radii.md),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -217,7 +216,7 @@ class _PvpCard extends StatelessWidget {
                           width: 11,
                           height: 11,
                           decoration: BoxDecoration(
-                            color: AppColors.danger,
+                            color: context.appColors.danger,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: Theme.of(context).scaffoldBackgroundColor,
@@ -235,11 +234,7 @@ class _PvpCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: GoogleFonts.baloo2(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: colorScheme.onSurface,
-                        ),
+                        style: context.heading(16, color: colorScheme.onSurface),
                       ),
                       const SizedBox(height: 4),
                       Text(

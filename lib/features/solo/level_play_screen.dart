@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
 import '../../services/player_level_service.dart';
@@ -843,16 +842,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             children: [
                               Text(
                                 l10n.levelPlaySessionCreateErrorTitle,
-                                style: GoogleFonts.baloo2(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                                style: context.heading(18),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 _sessionError!,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.red),
+                                style: TextStyle(color: context.appColors.danger),
                               ),
                               const SizedBox(height: 12),
                               FilledButton(
@@ -1140,8 +1136,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.dangerBg,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: context.appColors.dangerBg,
+        borderRadius: BorderRadius.circular(context.radii.sm),
       ),
       child: Row(
         children: [
@@ -1150,11 +1146,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           Expanded(
             child: Text(
               l10n.levelPlayLivesHeader(lifeText),
-              style: GoogleFonts.baloo2(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: valueColor,
-              ),
+              style: context.heading(15, color: valueColor),
             ),
           ),
           Icon(
@@ -1336,10 +1328,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         : (_secondsLeft / _defaultTimePerQ).clamp(0.0, 1.0);
 
     final timerColor = timeFraction > 0.5
-        ? AppColors.success
+        ? context.appColors.success
         : timeFraction > 0.2
-            ? AppColors.reward
-            : AppColors.danger;
+            ? context.appColors.reward
+            : context.appColors.danger;
 
     return AbsorbPointer(
       key: key,
@@ -1368,7 +1360,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       ),
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
                         child: LinearProgressIndicator(
                           value: progress,
                           minHeight: 8,
@@ -1389,7 +1381,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: timerColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(context.radii.pill),
                     border: Border.all(color: timerColor.withValues(alpha: 0.5)),
                   ),
                   child: Row(
@@ -1443,8 +1435,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   : Center(
                       child: Text(
                         _statusMsg!,
-                        style: const TextStyle(
-                          color: AppColors.reward,
+                        style: TextStyle(
+                          color: context.appColors.reward,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1611,10 +1603,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           children: [
             Text(
               pct >= 0.4 ? l10n.levelPlayLevelPassed : l10n.levelPlayLevelFinished,
-              style: GoogleFonts.baloo2(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(28),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
@@ -1635,10 +1624,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             const SizedBox(height: 6),
             Text(
               l10n.levelPlayRankLine(label),
-              style: GoogleFonts.baloo2(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(22),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 22),
@@ -1647,16 +1633,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(context.radii.md),
               ),
               child: Column(
                 children: [
                   Text(
                     l10n.levelPlayRewardsTitle,
-                    style: GoogleFonts.baloo2(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: context.heading(19),
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -1684,12 +1667,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         child: _RewardCard(
                           icon: Icons.monetization_on_outlined,
                           label: l10n.homeCoins,
-                          accent: AppColors.reward,
-                          background: AppColors.rewardBg,
+                          accent: context.appColors.reward,
+                          background: context.appColors.rewardBg,
                           child: _AnimatedRewardNumber(
                             value: _earnedCoins,
                             prefix: '+',
-                            color: Color.lerp(AppColors.reward, Colors.black, 0.35)!,
+                            color: Color.lerp(context.appColors.reward, Colors.black, 0.35)!,
                           ),
                         ),
                       ),
@@ -1735,7 +1718,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               const SizedBox(height: 18),
               Text(
                 l10n.levelPlaySaveError(_saveError!),
-                style: const TextStyle(color: Colors.red),
+                style: TextStyle(color: context.appColors.danger),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -1838,7 +1821,7 @@ class _NoLivesCard extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(context.radii.lg),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1850,20 +1833,17 @@ class _NoLivesCard extends StatelessWidget {
                   color: Colors.red.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.favorite_border,
                   size: 40,
-                  color: Colors.red,
+                  color: context.appColors.danger,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.baloo2(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(24),
               ),
               const SizedBox(height: 10),
               Text(
@@ -2026,11 +2006,7 @@ class _AnimatedRewardNumber extends StatelessWidget {
       builder: (context, animatedValue, _) {
         return Text(
           '$prefix$animatedValue',
-          style: GoogleFonts.baloo2(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
+          style: context.heading(24, color: color),
         );
       },
     );
@@ -2201,17 +2177,14 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.levelPlayPlayerLevel(currentLevel),
-            style: GoogleFonts.baloo2(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(18),
           ),
           const SizedBox(height: 8),
           ...List.generate(_segments.length, (i) {
@@ -2397,7 +2370,7 @@ class _XpSegmentViewState extends State<_XpSegmentView>
               alignment: Alignment.center,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(context.radii.xs),
                   child: LinearProgressIndicator(
                     value: value,
                     minHeight: 12,
@@ -2415,7 +2388,7 @@ class _XpSegmentViewState extends State<_XpSegmentView>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(context.radii.pill),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.amber.withValues(alpha: 0.35),
@@ -2539,7 +2512,7 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
                 ),
                 decoration: BoxDecoration(
                   color: Colors.amber.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(context.radii.pill),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.amber.withValues(alpha: 0.35),

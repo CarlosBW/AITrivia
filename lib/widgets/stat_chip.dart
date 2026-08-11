@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 
@@ -42,7 +41,7 @@ class StatChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderRadius: BorderRadius.circular(context.radii.sm),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -51,11 +50,7 @@ class StatChip extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '$label: $value',
-              style: GoogleFonts.baloo2(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: valueColor,
-              ),
+              style: context.heading(15, color: valueColor),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -67,7 +62,7 @@ class StatChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(context.radii.sm),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -76,11 +71,7 @@ class StatChip extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
-            style: GoogleFonts.baloo2(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-            ),
+            style: context.heading(22, color: valueColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

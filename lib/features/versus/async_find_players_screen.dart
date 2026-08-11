@@ -6,6 +6,7 @@ import '../../services/match_service.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../theme/app_theme.dart';
 
 class AsyncFindPlayersScreen extends StatefulWidget {
   final String categoryId;
@@ -168,7 +169,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: context.appColors.danger),
                 ),
               ),
               const SizedBox(height: 8),

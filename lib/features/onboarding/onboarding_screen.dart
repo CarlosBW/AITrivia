@@ -1,12 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../auth/user_bootstrap.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/analytics_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../theme/app_theme.dart';
 
 class _OnboardingPageData {
   final String emoji;
@@ -131,10 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           page.title,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.baloo2(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: context.heading(24),
                         ),
                         const SizedBox(height: 14),
                         Text(
@@ -165,7 +162,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     color: active
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(context.radii.pill),
                   ),
                 );
               }),

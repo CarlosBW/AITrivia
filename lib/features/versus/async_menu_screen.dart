@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'async_find_players_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../theme/app_theme.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
   final int difficulty;
@@ -64,7 +64,7 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.asyncMenuConfigTitle,
-              style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
+              style: context.heading(18),
             ),
             const SizedBox(height: 12),
 

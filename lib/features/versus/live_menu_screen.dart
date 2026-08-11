@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/economy_service.dart';
 import '../../services/pvp_league_service.dart';
@@ -92,7 +91,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: color.withValues(alpha: 0.28),
         ),
@@ -110,11 +109,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               children: [
                 Text(
                   l10n.liveMenuLeagueTitle(league.name),
-                  style: GoogleFonts.baloo2(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
+                  style: context.heading(18, color: color),
                 ),
                 const SizedBox(height: 4),
                 Text('$rating MMR'),
@@ -134,7 +129,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               delta > 0 ? '+$delta' : '$delta',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: delta > 0 ? AppColors.success : AppColors.danger,
+                color: delta > 0 ? context.appColors.success : context.appColors.danger,
               ),
             ),
         ],
@@ -208,7 +203,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
           const SizedBox(height: 22),
           Text(
             l10n.liveMenuPublicMatchmaking,
-            style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
+            style: context.heading(18),
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
@@ -228,7 +223,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
           const SizedBox(height: 24),
           Text(
             l10n.liveMenuPrivateMatches,
-            style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
+            style: context.heading(18),
           ),
           const SizedBox(height: 12),
           FilledButton.tonalIcon(

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
@@ -469,10 +468,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                     : widget.isAiTopic
                         ? l10n.levelSelectAiTopicProgressApproved
                         : l10n.levelSelectCategoryProgressApproved,
-                style: GoogleFonts.baloo2(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(17),
               ),
               const SizedBox(height: 8),
               Text(
@@ -481,7 +477,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               ),
               const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(context.radii.xs),
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 10,
@@ -539,12 +535,12 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             String subtitle;
 
             if (isCompleted) {
-              tileColor = AppColors.success.withValues(alpha: 0.15);
+              tileColor = context.appColors.success.withValues(alpha: 0.15);
               icon = Icons.check_circle_outline;
               subtitle = l10n.soloStatusCompleted;
             } else if (isUnlocked) {
               tileColor = isPlayed
-                  ? AppColors.reward.withValues(alpha: 0.12)
+                  ? context.appColors.reward.withValues(alpha: 0.12)
                   : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
               icon = isPlayed ? Icons.refresh : Icons.play_circle_outline;
               subtitle = isPlayed ? l10n.commonRetry : l10n.levelSelectAvailable;
@@ -596,10 +592,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                       const SizedBox(height: 8),
                       Text(
                         l10n.levelSelectLevelNumber(level),
-                        style: GoogleFonts.baloo2(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: context.heading(17),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
@@ -619,7 +612,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                           ),
                           decoration: BoxDecoration(
                             color: Colors.blue.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(context.radii.pill),
                           ),
                           child: Text(
                             l10n.levelSelectNextBadge,
@@ -685,16 +678,13 @@ class _LoadErrorView extends StatelessWidget {
             Text(
               l10n.levelSelectLoadFailedTitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(18),
             ),
             const SizedBox(height: 8),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: context.appColors.danger),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(

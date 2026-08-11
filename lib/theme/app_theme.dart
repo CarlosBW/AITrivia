@@ -1,15 +1,234 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+/// The semantic palette — reward, success, danger — carried on the theme
+/// so it can be swapped.
+///
+/// These live in [AppColors] as `static const`, which is what a constant
+/// is good at and exactly wrong for a theme: a purchasable skin has to be
+/// able to restyle "reward gold" or "danger red", and a compile-time
+/// constant can't change at runtime. [AppColors] stays as the default
+/// palette this is built from; screens read the theme instead.
+///
+/// Distinct from the brand `ColorScheme` on purpose, same as before: a
+/// semantic colour shouldn't double as the brand colour.
+@immutable
+class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
+  const AppSemanticColors({
+    required this.reward,
+    required this.rewardBg,
+    required this.success,
+    required this.successBg,
+    required this.danger,
+    required this.dangerBg,
+  });
+
+  final Color reward;
+  final Color rewardBg;
+  final Color success;
+  final Color successBg;
+  final Color danger;
+  final Color dangerBg;
+
+  /// The palette the app ships with.
+  static const AppSemanticColors standard = AppSemanticColors(
+    reward: AppColors.reward,
+    rewardBg: AppColors.rewardBg,
+    success: AppColors.success,
+    successBg: AppColors.successBg,
+    danger: AppColors.danger,
+    dangerBg: AppColors.dangerBg,
+  );
+
+  @override
+  AppSemanticColors copyWith({
+    Color? reward,
+    Color? rewardBg,
+    Color? success,
+    Color? successBg,
+    Color? danger,
+    Color? dangerBg,
+  }) {
+    return AppSemanticColors(
+      reward: reward ?? this.reward,
+      rewardBg: rewardBg ?? this.rewardBg,
+      success: success ?? this.success,
+      successBg: successBg ?? this.successBg,
+      danger: danger ?? this.danger,
+      dangerBg: dangerBg ?? this.dangerBg,
+    );
+  }
+
+  @override
+  AppSemanticColors lerp(ThemeExtension<AppSemanticColors>? other, double t) {
+    if (other is! AppSemanticColors) return this;
+    return AppSemanticColors(
+      reward: Color.lerp(reward, other.reward, t) ?? reward,
+      rewardBg: Color.lerp(rewardBg, other.rewardBg, t) ?? rewardBg,
+      success: Color.lerp(success, other.success, t) ?? success,
+      successBg: Color.lerp(successBg, other.successBg, t) ?? successBg,
+      danger: Color.lerp(danger, other.danger, t) ?? danger,
+      dangerBg: Color.lerp(dangerBg, other.dangerBg, t) ?? dangerBg,
+    );
+  }
+}
+
+extension AppSemanticColorsContext on BuildContext {
+  /// The semantic palette for the active theme.
+  AppSemanticColors get appColors =>
+      Theme.of(this).extension<AppSemanticColors>() ??
+      AppSemanticColors.standard;
+}
+
+/// The display face, carried on the theme so it can be swapped.
+///
+/// Screens used to call `GoogleFonts.baloo2(...)` directly — 98 times — so
+/// the font was hardcoded at every call site and the `textTheme` defined
+/// below was almost never consulted. Nothing could restyle the app's
+/// typography, which is what a purchasable theme would need to do.
+///
+/// [heading] deliberately carries **no colour**. Call sites sit on both the
+/// page background and saturated cards, and rely on inheriting the
+/// surrounding text colour; Material's own `textTheme` entries bake in
+/// `onSurface`, which would have turned white-on-purple labels dark.
+///
+/// It also carries its own weight rather than being restyled per call:
+/// google_fonts encodes the weight in the family name (`Baloo2_800` vs
+/// `Baloo2_regular`), so a style built at one weight and `copyWith`n to
+/// another renders a synthetic bold instead of the real face.
+@immutable
+class AppTypography extends ThemeExtension<AppTypography> {
+  const AppTypography({required this.heading});
+
+  /// Headings, scores, and anything meant to read as "game".
+  final TextStyle heading;
+
+  @override
+  AppTypography copyWith({TextStyle? heading}) =>
+      AppTypography(heading: heading ?? this.heading);
+
+  @override
+  AppTypography lerp(ThemeExtension<AppTypography>? other, double t) {
+    if (other is! AppTypography) return this;
+    return AppTypography(
+      heading: TextStyle.lerp(heading, other.heading, t) ?? heading,
+    );
+  }
+}
+
+extension AppTypographyContext on BuildContext {
+  /// The display face with no size of its own, for the few call sites that
+  /// only wanted the family and inherit their size from the surrounding
+  /// text style.
+  TextStyle get headingFace =>
+      Theme.of(this).extension<AppTypography>()?.heading ??
+      const TextStyle(fontWeight: FontWeight.w800);
+
+  /// The display style at [fontSize], for what used to be a direct
+  /// `GoogleFonts.baloo2(...)` call.
+  ///
+  /// Passing no [color] keeps the inherited one, exactly as before.
+  TextStyle heading(
+    double fontSize, {
+    Color? color,
+    FontWeight? fontWeight,
+    double? height,
+  }) {
+    final base = Theme.of(this).extension<AppTypography>()?.heading ??
+        const TextStyle(fontWeight: FontWeight.w800);
+
+    return base.copyWith(
+      fontSize: fontSize,
+      color: color,
+      fontWeight: fontWeight,
+      height: height,
+    );
+  }
+}
+
 /// Shared corner-radius scale, replacing the ~11 ad hoc values used
 /// across the app before this design system existed.
 class AppRadius {
   AppRadius._();
 
+  static const double xs = 8;
   static const double sm = 12;
   static const double md = 18;
   static const double lg = 24;
   static const double pill = 999;
+}
+
+/// The corner-radius scale, carried on the theme so it can be swapped.
+///
+/// Same reasoning as [AppSemanticColors]: [AppRadius] is `static const`, so
+/// a skin that wants sharper or rounder corners can't touch it. The
+/// constants stay as the default this is built from.
+@immutable
+class AppShapes extends ThemeExtension<AppShapes> {
+  const AppShapes({
+    required this.xs,
+    required this.sm,
+    required this.md,
+    required this.lg,
+    required this.pill,
+  });
+
+  final double xs;
+  final double sm;
+  final double md;
+  final double lg;
+
+  /// Fully rounded. Left out of any theme's scaling — a pill that stops
+  /// being a pill is a different component, not a restyled one.
+  final double pill;
+
+  static const AppShapes standard = AppShapes(
+    xs: AppRadius.xs,
+    sm: AppRadius.sm,
+    md: AppRadius.md,
+    lg: AppRadius.lg,
+    pill: AppRadius.pill,
+  );
+
+  @override
+  AppShapes copyWith({
+    double? xs,
+    double? sm,
+    double? md,
+    double? lg,
+    double? pill,
+  }) {
+    return AppShapes(
+      xs: xs ?? this.xs,
+      sm: sm ?? this.sm,
+      md: md ?? this.md,
+      lg: lg ?? this.lg,
+      pill: pill ?? this.pill,
+    );
+  }
+
+  @override
+  AppShapes lerp(ThemeExtension<AppShapes>? other, double t) {
+    if (other is! AppShapes) return this;
+
+    // Interpolado a mano en vez de con `lerpDouble`: son dobles no nulos,
+    // así que traer `dart:ui` solo por esto no compensa.
+    double at(double a, double b) => a + (b - a) * t;
+
+    return AppShapes(
+      xs: at(xs, other.xs),
+      sm: at(sm, other.sm),
+      md: at(md, other.md),
+      lg: at(lg, other.lg),
+      pill: at(pill, other.pill),
+    );
+  }
+}
+
+extension AppShapesContext on BuildContext {
+  /// The corner-radius scale for the active theme.
+  AppShapes get radii =>
+      Theme.of(this).extension<AppShapes>() ?? AppShapes.standard;
 }
 
 /// Semantic colors that sit alongside the brand ColorScheme — reward,
@@ -138,6 +357,15 @@ ThemeData buildAppTheme() {
 
   return base.copyWith(
     scaffoldBackgroundColor: AppColors.pageBackground,
+    // Resolved once here so the family lives on the theme instead of at 98
+    // call sites. Built at w800 on purpose — see [AppTypography].
+    extensions: <ThemeExtension<dynamic>>[
+      AppTypography(
+        heading: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
+      ),
+      AppSemanticColors.standard,
+      AppShapes.standard,
+    ],
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.pageBackground,

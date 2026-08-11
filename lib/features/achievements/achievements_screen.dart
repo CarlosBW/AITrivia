@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/achievement_service.dart';
 import '../../widgets/spotlight_hint.dart';
@@ -126,29 +125,22 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                 ),
                 child: Column(
                   children: [
                     Text(
                       l10n.achievementsProgressTitle,
-                      style: GoogleFonts.baloo2(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: context.heading(20),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       l10n.achievementsCompletedCount(completedCount, achievements.length),
-                      style: GoogleFonts.baloo2(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style: context.heading(18, color: Theme.of(context).colorScheme.primary),
                     ),
                     const SizedBox(height: 14),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(context.radii.sm),
                       child: LinearProgressIndicator(
                         value: achievements.isEmpty
                             ? 0
@@ -246,11 +238,11 @@ class _AchievementCard extends StatelessWidget {
     final Color accentBg;
 
     if (claimed) {
-      accentColor = AppColors.success;
-      accentBg = AppColors.successBg;
+      accentColor = context.appColors.success;
+      accentBg = context.appColors.successBg;
     } else if (completed) {
-      accentColor = AppColors.reward;
-      accentBg = AppColors.rewardBg;
+      accentColor = context.appColors.reward;
+      accentBg = context.appColors.rewardBg;
     } else {
       accentColor = Theme.of(context).colorScheme.primary;
       accentBg = Theme.of(context).colorScheme.surfaceContainerHighest;
@@ -262,7 +254,7 @@ class _AchievementCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: accentBg,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: accentColor.withValues(alpha: completed || claimed ? 1 : 0.25),
           width: 2,
@@ -293,10 +285,7 @@ class _AchievementCard extends StatelessWidget {
                   children: [
                     Text(
                       achievement.title,
-                      style: GoogleFonts.baloo2(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 17,
-                      ),
+                      style: context.heading(17),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -324,16 +313,12 @@ class _AchievementCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.reward.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(999),
+                  color: context.appColors.reward.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(context.radii.pill),
                 ),
                 child: Text(
                   l10n.achievementsCoinsPill(achievement.rewardCoins),
-                  style: GoogleFonts.baloo2(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    color: Color.lerp(AppColors.reward, Colors.black, 0.35),
-                  ),
+                  style: context.heading(13, color: Color.lerp(context.appColors.reward, Colors.black, 0.35)),
                 ),
               ),
             ],
@@ -342,7 +327,7 @@ class _AchievementCard extends StatelessWidget {
           const SizedBox(height: 8),
 
           ClipRRect(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(context.radii.pill),
             child: LinearProgressIndicator(
               value: progressValue,
               minHeight: 10,
@@ -354,7 +339,7 @@ class _AchievementCard extends StatelessWidget {
           if (claimed)
             _StatusChip(
               text: l10n.achievementsClaimed,
-              color: AppColors.success,
+              color: context.appColors.success,
             )
           else if (completed)
             SizedBox(
@@ -368,7 +353,7 @@ class _AchievementCard extends StatelessWidget {
           else
             _StatusChip(
               text: l10n.achievementsInProgress,
-              color: AppColors.reward,
+              color: context.appColors.reward,
             ),
         ],
       ),
@@ -394,7 +379,7 @@ class _StatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(context.radii.pill),
       ),
       child: Text(
         text,

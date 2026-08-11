@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/league_service.dart';
 import '../../services/season_service.dart';
@@ -255,10 +254,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                           children: [
                             Text(
                               l10n.weeklyLeagueRankingTitle,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: context.heading(22),
                             ),
 
                             const SizedBox(height: 14),
@@ -453,7 +449,7 @@ class _LeagueHeader extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(context.radii.lg),
         border: Border.all(
           color: color.withValues(alpha: 0.55),
         ),
@@ -493,7 +489,7 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Row(
         children: [
@@ -552,24 +548,21 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.rewardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.reward),
+        color: context.appColors.rewardBg,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        border: Border.all(color: context.appColors.reward),
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.card_giftcard_outlined,
-            color: AppColors.reward,
+            color: context.appColors.reward,
             size: 36,
           ),
           const SizedBox(height: 8),
           Text(
             l10n.weeklyLeaguePendingSeasonRewards,
-            style: GoogleFonts.baloo2(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(18),
           ),
           const SizedBox(height: 6),
           Text(
@@ -638,7 +631,7 @@ class _RewardsCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         crossAxisAlignment:
@@ -650,10 +643,7 @@ class _RewardsCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 l10n.weeklyLeagueWeeklyRewardsTitle,
-                style: GoogleFonts.baloo2(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(18),
               ),
             ],
           ),
@@ -848,10 +838,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
               ),
               Text(
                 '$weeklyScore',
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
             ],
           ),

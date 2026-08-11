@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/sfx_service.dart';
@@ -142,8 +141,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     setState(() {
       _flashColor = isCorrect
-          ? AppColors.success.withValues(alpha: 0.18)
-          : AppColors.danger.withValues(alpha: 0.18);
+          ? context.appColors.success.withValues(alpha: 0.18)
+          : context.appColors.danger.withValues(alpha: 0.18);
       _selectedIndex = index;
       _totalAnswered++;
 
@@ -286,10 +285,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
               Text(
                 l10n.dailyChallengeCompletedTitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.baloo2(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(24),
               ),
               const SizedBox(height: 8),
               Text(
@@ -406,8 +402,8 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.reward,
-                      borderRadius: BorderRadius.circular(18),
+                      color: context.appColors.reward,
+                      borderRadius: BorderRadius.circular(context.radii.md),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.25),
@@ -418,11 +414,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     ),
                     child: Text(
                       _coinPopupText!,
-                      style: GoogleFonts.baloo2(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
+                      style: context.heading(24, color: Colors.black),
                     ),
                   ),
                 ),
@@ -455,7 +447,7 @@ class _HeaderCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(context.radii.sm),
       ),
       child: Column(
         children: [

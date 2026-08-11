@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/economy_service.dart';
@@ -126,11 +125,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             const SizedBox(height: 16),
             Text(
               l10n.coinShopComingSoonTitle,
-              style: GoogleFonts.baloo2(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: colorScheme.onSurface,
-              ),
+              style: context.heading(20, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
@@ -160,7 +155,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           child: Row(
             children: [
@@ -168,12 +163,12 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.rewardBg,
+                  color: context.appColors.rewardBg,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.monetization_on_outlined,
-                  color: AppColors.reward,
+                  color: context.appColors.reward,
                 ),
               ),
               const SizedBox(width: 14),
@@ -183,10 +178,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                   children: [
                     Text(
                       l10n.coinShopCoinsAmount(pack.coins),
-                      style: GoogleFonts.baloo2(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: context.heading(16),
                     ),
                     const SizedBox(height: 2),
                     Text(

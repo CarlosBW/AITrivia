@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/locale_controller.dart';
+import '../theme/app_theme.dart';
 
 class LanguageSwitch extends StatelessWidget {
   const LanguageSwitch({super.key});
@@ -19,7 +20,7 @@ class LanguageSwitch extends StatelessWidget {
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(context.radii.sm),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

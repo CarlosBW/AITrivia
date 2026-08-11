@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/daily_challenge_service.dart';
 import '../../services/league_service.dart';
@@ -9,6 +8,7 @@ import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../theme/app_theme.dart';
 
 // Stateful only to hold the leaderboard query: built inside `build()` it
 // was a fresh Future on every rebuild, and this one is a 50-document read,
@@ -111,10 +111,7 @@ class _DailyLeaderboardScreenState extends State<DailyLeaderboardScreen> {
               const SizedBox(height: 16),
               Text(
                 l10n.dailyLeaderboardRankingTitle,
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
               const SizedBox(height: 10),
               ...List.generate(docs.length, (index) {
@@ -258,7 +255,7 @@ class _PodiumPlayer extends StatelessWidget {
         color: isMe
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.20)
             : Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: 2,
@@ -426,10 +423,7 @@ class _LeaderboardTile extends StatelessWidget {
               ),
               Text(
                 '$score',
-                style: GoogleFonts.baloo2(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(20),
               ),
             ],
           ),

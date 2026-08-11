@@ -108,7 +108,7 @@ class _NotificationBellButtonState
               height: 38,
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(context.radii.sm),
               ),
               child: Icon(
                 Icons.notifications_outlined,
@@ -124,7 +124,7 @@ class _NotificationBellButtonState
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: AppColors.danger,
+                    color: context.appColors.danger,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Theme.of(context).scaffoldBackgroundColor,

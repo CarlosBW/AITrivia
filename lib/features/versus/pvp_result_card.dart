@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
@@ -88,9 +87,9 @@ class PvpResultCard extends StatelessWidget {
   Color _colorFor(BuildContext context) {
     switch (state) {
       case PvpResultState.victory:
-        return AppColors.reward;
+        return context.appColors.reward;
       case PvpResultState.defeat:
-        return AppColors.danger;
+        return context.appColors.danger;
       case PvpResultState.draw:
         return Theme.of(context).colorScheme.onSurfaceVariant;
       case PvpResultState.waiting:
@@ -163,10 +162,7 @@ class PvpResultCard extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.baloo2(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-              ),
+              style: context.heading(30),
             ),
             const SizedBox(height: 8),
             Text(
@@ -186,7 +182,7 @@ class PvpResultCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: resultColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(context.radii.pill),
                   border: Border.all(
                     color: resultColor.withValues(alpha: 0.35),
                   ),
@@ -206,16 +202,13 @@ class PvpResultCard extends StatelessWidget {
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(context.radii.lg),
               ),
               child: Column(
                 children: [
                   Text(
                     l10n.pvpResultFinalResult,
-                    style: GoogleFonts.baloo2(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: context.heading(19),
                   ),
                   const SizedBox(height: 18),
                   Row(
@@ -237,7 +230,7 @@ class PvpResultCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(context.radii.pill),
                         ),
                         child: Text(
                           l10n.pvpResultVs,
@@ -381,11 +374,7 @@ class _ScoreColumn extends StatelessWidget {
           child: Text(
             '$score',
             key: ValueKey(score),
-            style: GoogleFonts.baloo2(
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
+            style: context.heading(38, color: color),
           ),
         ),
       ],
@@ -413,7 +402,7 @@ class _MatchSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         children: [
@@ -423,9 +412,7 @@ class _MatchSummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 l10n.pvpResultMatchSummary,
-                style: GoogleFonts.baloo2(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.headingFace,
               ),
             ],
           ),
@@ -473,10 +460,7 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.baloo2(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-          ),
+          style: context.heading(18),
         ),
         const SizedBox(height: 3),
         Text(
@@ -509,7 +493,7 @@ class _RewardMiniCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         children: [
@@ -519,10 +503,7 @@ class _RewardMiniCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.baloo2(
-              fontWeight: FontWeight.w800,
-              fontSize: 17,
-            ),
+            style: context.heading(17),
           ),
         ],
       ),
@@ -561,8 +542,8 @@ class _RatingChangeCard extends StatelessWidget {
     final color = neutral
         ? Theme.of(context).colorScheme.onSurfaceVariant
         : positive
-            ? AppColors.success
-            : AppColors.danger;
+            ? context.appColors.success
+            : context.appColors.danger;
 
     final hasLeague = (oldLeagueName != null && oldLeagueName!.isNotEmpty) ||
         (newLeagueName != null && newLeagueName!.isNotEmpty);
@@ -572,7 +553,7 @@ class _RatingChangeCard extends StatelessWidget {
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: color.withValues(alpha: 0.35),
         ),
@@ -593,19 +574,12 @@ class _RatingChangeCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.profileRankedMmr,
-                  style: GoogleFonts.baloo2(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
+                  style: context.heading(16),
                 ),
               ),
               Text(
                 _deltaText,
-                style: GoogleFonts.baloo2(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
+                style: context.heading(18, color: color),
               ),
             ],
           ),
@@ -695,10 +669,7 @@ class _MmrBox extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             '$value',
-            style: GoogleFonts.baloo2(
-              fontWeight: FontWeight.w800,
-              fontSize: highlight ? 18 : 16,
-            ),
+            style: context.heading(highlight ? 18 : 16),
           ),
         ],
       ),

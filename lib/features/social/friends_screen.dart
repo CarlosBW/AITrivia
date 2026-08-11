@@ -7,6 +7,7 @@ import '../../services/daily_challenge_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../theme/app_theme.dart';
 
 enum _RelationStatus { friend, requestSent, requestReceived, none }
 
@@ -349,7 +350,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
           const SizedBox(height: 10),
           Text(
             _error!,
-            style: const TextStyle(color: Colors.red),
+            style: TextStyle(color: context.appColors.danger),
           ),
         ],
         if (_hasSearched) ...[
@@ -920,7 +921,7 @@ class _LoadingCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -955,7 +956,7 @@ class _EmptyCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

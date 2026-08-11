@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
@@ -156,7 +155,7 @@ class _FriendChallengeSetupScreenState
     final l10n = AppLocalizations.of(context);
     final onlineText = widget.isOnline ? l10n.friendChallengeOnline : l10n.friendChallengeOffline;
     final onlineColor = widget.isOnline
-        ? AppColors.success
+        ? context.appColors.success
         : Theme.of(context).colorScheme.onSurfaceVariant;
 
     final canSendRealtime = widget.isOnline;
@@ -179,7 +178,7 @@ class _FriendChallengeSetupScreenState
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   border: Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
                   ),
@@ -224,7 +223,7 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 18),
               Text(
                 l10n.friendChallengeTypeLabel,
-                style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
+                style: context.heading(18),
               ),
               const SizedBox(height: 10),
               SegmentedButton<String>(
@@ -263,7 +262,7 @@ class _FriendChallengeSetupScreenState
               const SizedBox(height: 20),
               Text(
                 l10n.friendChallengeMatchConfig,
-                style: GoogleFonts.baloo2(fontSize: 18, fontWeight: FontWeight.w800),
+                style: context.heading(18),
               ),
               const SizedBox(height: 10),
               FutureBuilder<List<_CategoryOption>>(
@@ -361,7 +360,7 @@ class _FriendChallengeSetupScreenState
                 const SizedBox(height: 14),
                 Text(
                   _error!,
-                  style: const TextStyle(color: AppColors.danger),
+                  style: TextStyle(color: context.appColors.danger),
                   textAlign: TextAlign.center,
                 ),
               ],

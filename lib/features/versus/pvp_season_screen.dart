@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
@@ -152,7 +151,7 @@ class _SeasonOverviewTab extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(context.radii.lg),
             border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
           child: Column(
@@ -170,10 +169,7 @@ class _SeasonOverviewTab extends StatelessWidget {
                 children: [
                   Text(
                     '$rating MMR',
-                    style: GoogleFonts.baloo2(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
+                    style: context.heading(18),
                   ),
                   if (deltaText != null) ...[
                     const SizedBox(width: 8),
@@ -181,7 +177,7 @@ class _SeasonOverviewTab extends StatelessWidget {
                       '($deltaText)',
                       style: TextStyle(
                         color:
-                            ratingDelta > 0 ? Colors.green : Colors.redAccent,
+                            ratingDelta > 0 ? context.appColors.success : context.appColors.danger,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -190,7 +186,7 @@ class _SeasonOverviewTab extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               ClipRRect(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(context.radii.pill),
                 child: LinearProgressIndicator(
                   value: league.progressFor(rating),
                   minHeight: 10,
@@ -220,14 +216,14 @@ class _SeasonOverviewTab extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 l10n.pvpSeasonHowItWorksTitle,
-                style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 18),
+                style: context.heading(18),
               ),
               const SizedBox(height: 8),
               Text(l10n.pvpSeasonHowItWorksBullet1),
@@ -490,10 +486,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                   const SizedBox(height: 12),
                   Text(
                     l10n.pvpSeasonNoFriendsTitle,
-                    style: GoogleFonts.baloo2(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
+                    style: context.heading(18),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -823,7 +816,7 @@ class _RewardsTabState extends State<_RewardsTab> {
           const SizedBox(height: 16),
           Text(
             l10n.pvpSeasonRewardsTitle,
-            style: GoogleFonts.baloo2(fontSize: 22, fontWeight: FontWeight.w800),
+            style: context.heading(22),
           ),
           const SizedBox(height: 8),
           Text(
@@ -879,7 +872,7 @@ class _RewardsTabState extends State<_RewardsTab> {
                 color: isCurrent
                     ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 border: Border.all(
                   color: isCurrent ? color : Colors.transparent,
                   width: isCurrent ? 2 : 1,
@@ -949,7 +942,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(
@@ -976,10 +969,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                   l10n.liveMenuLeagueTitle(
                     PvpLeagueService.instance.displayNameForRating(rating),
                   ),
-                  style: GoogleFonts.baloo2(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: context.heading(18),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -991,10 +981,7 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
           ),
           Text(
             '+${reward.coins}',
-            style: GoogleFonts.baloo2(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
+            style: context.heading(20),
           ),
         ],
       ),
@@ -1050,7 +1037,7 @@ class _PendingRewardsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(context.radii.md),
         ),
         child: Row(
           children: [
@@ -1072,7 +1059,7 @@ class _PendingRewardsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.redAccent.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(context.radii.md),
           border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
         ),
         child: Column(
@@ -1080,12 +1067,12 @@ class _PendingRewardsCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.error_outline, color: Colors.redAccent),
+                Icon(Icons.error_outline, color: context.appColors.danger),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     l10n.pvpSeasonCouldNotLoad,
-                    style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
+                    style: context.heading(16),
                   ),
                 ),
               ],
@@ -1114,7 +1101,7 @@ class _PendingRewardsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.blueGrey.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(context.radii.md),
           border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.35)),
         ),
         child: Row(
@@ -1128,7 +1115,7 @@ class _PendingRewardsCard extends StatelessWidget {
                 children: [
                   Text(
                     l10n.pvpSeasonNoRewardYetTitle,
-                    style: GoogleFonts.baloo2(fontWeight: FontWeight.w800, fontSize: 16),
+                    style: context.heading(16),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -1154,7 +1141,7 @@ class _PendingRewardsCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.amber.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.55)),
       ),
       child: Column(
@@ -1162,15 +1149,12 @@ class _PendingRewardsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.card_giftcard, color: Colors.amber),
+              Icon(Icons.card_giftcard, color: context.appColors.reward),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   pendingText,
-                  style: GoogleFonts.baloo2(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
+                  style: context.heading(16),
                 ),
               ),
               Text(

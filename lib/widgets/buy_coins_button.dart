@@ -42,9 +42,9 @@ class BuyCoinsButton extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.monetization_on_outlined,
-                  color: AppColors.reward,
+                  color: context.appColors.reward,
                   size: 18,
                 ),
               ),
@@ -59,9 +59,9 @@ class BuyCoinsButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.add_circle_outline,
-                color: AppColors.reward,
+                color: context.appColors.reward,
                 size: 20,
               ),
             ],

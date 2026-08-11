@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../../services/avatar_service.dart';
@@ -282,10 +281,10 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: AppColors.rewardBg,
-                          borderRadius: BorderRadius.circular(18),
+                          color: context.appColors.rewardBg,
+                          borderRadius: BorderRadius.circular(context.radii.md),
                           border: Border.all(
-                            color: AppColors.reward.withValues(alpha: 0.5),
+                            color: context.appColors.reward.withValues(alpha: 0.5),
                           ),
                         ),
                         child: Column(
@@ -293,7 +292,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.star_border, color: AppColors.reward),
+                                Icon(Icons.star_border, color: context.appColors.reward),
                                 const SizedBox(width: 8),
                                 Text(
                                   l10n.weeklyTopicFeaturedBadge,
@@ -306,10 +305,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                             const SizedBox(height: 12),
                             Text(
                               title,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: context.heading(22),
                             ),
                             const SizedBox(height: 8),
                             Text(description),
@@ -321,17 +317,14 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(context.radii.md),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               l10n.weeklyTopicProgressTitle,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: context.heading(18),
                             ),
                             const SizedBox(height: 12),
                             LinearProgressIndicator(value: progress),
@@ -349,18 +342,15 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(18),
+                          color: context.appColors.success.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(context.radii.md),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               l10n.weeklyTopicRewardsTitle,
-                              style: GoogleFonts.baloo2(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: context.heading(18),
                             ),
                             const SizedBox(height: 12),
                             Text(

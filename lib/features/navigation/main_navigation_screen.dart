@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
@@ -766,7 +765,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                 vertical: 22,
               ),
               decoration: BoxDecoration(
-                color: AppColors.reward,
+                color: context.appColors.reward,
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
@@ -787,11 +786,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     l10n.navNewNotificationTitle,
-                    style: GoogleFonts.baloo2(
-                      color: const Color(0xFF412402),
-                      fontSize: 23,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: context.heading(23, color: Color(0xFF412402)),
                   ),
                   const SizedBox(height: 4),
                   Text(

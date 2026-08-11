@@ -33,7 +33,7 @@ class TierBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.circular(context.radii.pill),
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(

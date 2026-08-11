@@ -9,14 +9,19 @@ import '../theme/app_theme.dart';
 class AppCard extends StatelessWidget {
   final Widget child;
   final Color? accent;
-  final double radius;
+
+  /// Null takes the theme's medium radius. It can't default to it in the
+  /// parameter list — a `const` constructor's defaults have to be
+  /// compile-time constants, and the scale now comes from the theme.
+  final double? radius;
+
   final EdgeInsetsGeometry padding;
 
   const AppCard({
     super.key,
     required this.child,
     this.accent,
-    this.radius = AppRadius.md,
+    this.radius,
     this.padding = const EdgeInsets.all(16),
   });
 
@@ -29,7 +34,7 @@ class AppCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(radius),
+        borderRadius: BorderRadius.circular(radius ?? context.radii.md),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: child,

@@ -62,9 +62,9 @@ class QuestionAnswerCard extends StatelessWidget {
 
           Color? fillColor;
           if (locked && !timedOut) {
-            if (isCorrect) fillColor = AppColors.success.withValues(alpha: 0.16);
+            if (isCorrect) fillColor = context.appColors.success.withValues(alpha: 0.16);
             if (isSelected && !isCorrect) {
-              fillColor = AppColors.danger.withValues(alpha: 0.16);
+              fillColor = context.appColors.danger.withValues(alpha: 0.16);
             }
           } else if (!locked && isSelected) {
             fillColor = colorScheme.surfaceContainerHighest;
@@ -75,16 +75,16 @@ class QuestionAnswerCard extends StatelessWidget {
 
           if (timedOut && timeoutAnswerIndex != null) {
             if (i == timeoutAnswerIndex) {
-              borderColor = AppColors.reward;
+              borderColor = context.appColors.reward;
               borderWidth = 3;
             }
           } else if (locked) {
             if (isCorrect) {
-              borderColor = AppColors.success;
+              borderColor = context.appColors.success;
               borderWidth = 2;
             }
             if (isSelected && !isCorrect) {
-              borderColor = AppColors.danger;
+              borderColor = context.appColors.danger;
               borderWidth = 2;
             }
           } else if (isSelected) {
@@ -93,9 +93,9 @@ class QuestionAnswerCard extends StatelessWidget {
           }
 
           final badgeColor = (locked && isCorrect)
-              ? AppColors.success
+              ? context.appColors.success
               : (locked && isSelected && !isCorrect)
-                  ? AppColors.danger
+                  ? context.appColors.danger
                   : (!locked && isSelected)
                       ? colorScheme.primary
                       : colorScheme.surfaceContainerHighest;
@@ -109,10 +109,10 @@ class QuestionAnswerCard extends StatelessWidget {
           if (locked && !timedOut) {
             if (isCorrect) {
               trailingIcon = Icons.check_circle;
-              trailingIconColor = AppColors.success;
+              trailingIconColor = context.appColors.success;
             } else if (isSelected) {
               trailingIcon = Icons.cancel;
-              trailingIconColor = AppColors.danger;
+              trailingIconColor = context.appColors.danger;
             }
           }
 

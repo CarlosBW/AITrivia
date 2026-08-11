@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../services/locale_controller.dart';
+import '../../theme/app_theme.dart';
 
 /// First-launch language picker — shown once, before anything else in the
 /// app (including auth), since every screen's text depends on this choice.
@@ -40,10 +40,7 @@ class _LanguagePickerScreenState extends State<LanguagePickerScreen> {
               const SizedBox(height: 16),
               Text(
                 'TriviaIA',
-                style: GoogleFonts.baloo2(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(32),
               ),
               const SizedBox(height: 40),
               const Text(

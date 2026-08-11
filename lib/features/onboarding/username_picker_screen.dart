@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/user_bootstrap.dart';
+import '../../theme/app_theme.dart';
 
 /// 3-20 chars, letters/numbers/underscore only. Returns null if [username]
 /// is valid, else a symbolic reason ('length' or 'chars') for the caller
@@ -102,10 +102,7 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
               Text(
                 l10n.usernamePickerTitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.baloo2(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: context.heading(26),
               ),
               const SizedBox(height: 12),
               Text(

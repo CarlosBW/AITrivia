@@ -805,7 +805,7 @@ class _UserTile extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: ListTile(
         leading: PlayerAvatarWidget.fromPlayer(

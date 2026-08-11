@@ -172,7 +172,7 @@ class _TopThreePodium extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(context.radii.lg),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
         ),
@@ -358,7 +358,7 @@ class _LeaderboardTile extends StatelessWidget {
         color: isMe
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(context.radii.sm),
         border: Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: isMe ? 2 : 1,

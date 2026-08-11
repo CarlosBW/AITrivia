@@ -526,7 +526,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                   color: isMe
                       ? color.withValues(alpha: 0.14)
                       : Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   border: Border.all(
                     color: isMe ? color : Colors.transparent,
                     width: 2,
@@ -664,7 +664,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                 color: isMe
                     ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 border: Border.all(
                   color: isMe ? color : Colors.transparent,
                   width: 2,

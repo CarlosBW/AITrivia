@@ -1150,7 +1150,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(height: 10),
               Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   side: BorderSide(color: context.appColors.danger),
                 ),
                 child: ListTile(
@@ -1355,7 +1355,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(context.radii.md),
             ),
             child: Text(
               l10n.profileNoMatches,
@@ -1381,7 +1381,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 border: Border.all(
                   color: color.withValues(alpha: 0.30),
                 ),
@@ -1443,7 +1443,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(context.radii.sm),
                           ),
                           child: Column(
                             children: [
@@ -1471,7 +1471,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(context.radii.sm),
                         ),
                         child: Text(
                           ranked ? l10n.profileRanked : l10n.profileCasual,
@@ -1524,7 +1524,7 @@ class _LegalLinkTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: ListTile(
         leading: Icon(icon),
@@ -1552,7 +1552,7 @@ class _WideStatTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: ListTile(
         leading: Icon(icon),

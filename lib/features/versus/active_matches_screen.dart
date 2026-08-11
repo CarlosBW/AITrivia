@@ -384,7 +384,7 @@ class _AsyncMatchTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
       ),
       child: ListTile(
         leading: CircleAvatar(
@@ -504,7 +504,7 @@ class _SoftStatusCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.appColors.reward.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: context.appColors.reward.withValues(alpha: 0.35),
         ),

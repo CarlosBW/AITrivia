@@ -681,7 +681,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(context.radii.md),
               ),
               child: Text(
                 qText,
@@ -764,7 +764,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   onTap: () => _onTapAnswer(
                     tappedIndex: i,
                     answerIndex: answerIndex,
@@ -778,7 +778,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: fillColor ?? colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(context.radii.md),
                       border: Border.all(
                         color: borderColor,
                         width: borderWidth,

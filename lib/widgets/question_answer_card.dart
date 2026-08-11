@@ -42,7 +42,7 @@ class QuestionAnswerCard extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           child: Text(
             qText,
@@ -119,7 +119,7 @@ class QuestionAnswerCard extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(context.radii.md),
               onTap: () => onTapAnswer(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
@@ -134,7 +134,7 @@ class QuestionAnswerCard extends StatelessWidget {
                 padding: EdgeInsets.all(15 - borderWidth),
                 decoration: BoxDecoration(
                   color: fillColor ?? colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(context.radii.md),
                   border: Border.all(
                     color: borderColor,
                     width: borderWidth,

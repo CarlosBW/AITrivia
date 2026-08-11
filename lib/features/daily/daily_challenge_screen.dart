@@ -265,7 +265,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(context.radii.lg),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.25),

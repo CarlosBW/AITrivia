@@ -655,7 +655,7 @@ class _MmrBox extends StatelessWidget {
         color: highlight
             ? Theme.of(context).colorScheme.surfaceContainerHighest
             : Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(context.radii.sm),
       ),
       child: Column(
         children: [

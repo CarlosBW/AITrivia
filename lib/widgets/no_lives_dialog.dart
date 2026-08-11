@@ -68,7 +68,7 @@ class NoLivesDialog extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(context.radii.md),
               ),
               child: Column(
                 children: [

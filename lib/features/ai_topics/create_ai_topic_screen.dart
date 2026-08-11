@@ -628,14 +628,14 @@ class _TopicChoiceCard extends StatelessWidget {
     };
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(context.radii.sm),
       onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(context.radii.sm),
           border: Border.all(color: scheme.outline.withValues(alpha: 0.2)),
         ),
         child: Row(
@@ -711,7 +711,7 @@ class _PricingCardState extends State<_PricingCard> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(context.radii.md),
             border: Border.all(color: accentColor.withValues(alpha: 0.3)),
           ),
           child: Column(
@@ -872,7 +872,7 @@ class _PopularTopicCard extends StatelessWidget {
     final accentColor = selected ? scheme.primary : scheme.outline;
 
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(context.radii.sm),
       onTap: onTap,
       child: Container(
         width: 160,
@@ -881,7 +881,7 @@ class _PopularTopicCard extends StatelessWidget {
           color: selected
               ? scheme.primary.withValues(alpha: 0.1)
               : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(context.radii.sm),
           border: Border.all(
             color: accentColor.withValues(alpha: selected ? 0.6 : 0.2),
           ),

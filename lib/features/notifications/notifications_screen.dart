@@ -386,7 +386,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   padding: const EdgeInsets.only(right: 18),
                   decoration: BoxDecoration(
                     color: context.appColors.danger,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(context.radii.md),
                   ),
                   child: const Icon(
                     Icons.delete_outline,
@@ -488,7 +488,7 @@ class _NotificationTile extends StatelessWidget {
       elevation: 0,
       color: cardColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
         side: BorderSide(
           color: read ? Colors.transparent : accentColor,
           width: read ? 0 : 1.5,

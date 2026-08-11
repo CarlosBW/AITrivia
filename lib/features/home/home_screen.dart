@@ -710,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: context.appColors.danger,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.3),
@@ -752,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.3),
@@ -818,7 +818,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: context.appColors.reward,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.3),
@@ -875,7 +875,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.3),
@@ -1066,9 +1066,9 @@ class _AiTopicCtaState extends State<_AiTopicCta>
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(context.radii.md),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(context.radii.md),
         onTap: widget.onTap,
         child: AnimatedBuilder(
           animation: _controller,
@@ -1081,7 +1081,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                 vertical: 20,
               ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1105,7 +1105,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: context.appColors.reward,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(context.radii.sm),
                       ),
                       child: const Icon(
                         Icons.auto_awesome,
@@ -1186,7 +1186,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.appColors.rewardBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(context.radii.sm),
             ),
             child: Row(
               children: [
@@ -1437,7 +1437,7 @@ class _DailyChallengeCard extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: streakColor.withValues(alpha: glow ? 0.8 : 0.25),
           width: glow ? 1.6 : 1,
@@ -1454,9 +1454,9 @@ class _DailyChallengeCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(context.radii.md),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(context.radii.md),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -1472,7 +1472,7 @@ class _DailyChallengeCard extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: streakColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(context.radii.sm),
                     ),
                     child: Icon(
                       Icons.local_fire_department,

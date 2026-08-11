@@ -67,7 +67,7 @@ class _LangOption extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           color: selected ? colorScheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(context.radii.xs),
         ),
         child: Text(
           label,

@@ -139,7 +139,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Color(league.colorValue).withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
         border: Border.all(color: Color(league.colorValue).withValues(alpha: 0.35)),
       ),
       child: Column(

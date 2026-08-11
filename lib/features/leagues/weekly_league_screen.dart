@@ -763,7 +763,7 @@ class _WeeklyLeagueTile extends StatelessWidget {
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
         borderRadius:
-            BorderRadius.circular(16),
+            BorderRadius.circular(context.radii.md),
         border: Border.all(
           color: isMe
               ? Theme.of(context).colorScheme.primary

@@ -14,9 +14,9 @@ class BuyCoinsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(context.radii.md),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.radii.md),
         onTap: () {
           Navigator.push(
             context,
@@ -30,7 +30,7 @@ class BuyCoinsButton extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(

@@ -455,7 +455,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(context.radii.md),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,7 +557,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               curve: Curves.easeOut,
               decoration: BoxDecoration(
                 color: tileColor,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 border: Border.all(
                   color: showRecommended
                       ? Theme.of(context).colorScheme.primary
@@ -575,7 +575,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                     : [],
               ),
               child: InkWell(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(context.radii.md),
                 onTap: (!isUnlocked || _isNavigating || _buyingLife)
                     ? null
                     : () => _openLevel(

@@ -766,7 +766,7 @@ class _NewNotificationOverlay extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: context.appColors.reward,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(context.radii.lg),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.28),

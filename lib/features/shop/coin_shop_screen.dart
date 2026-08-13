@@ -13,7 +13,15 @@ import '../../widgets/profile_avatar_button.dart';
 /// Console / App Store Connect, `queryCoinPackProducts` returns nothing, so
 /// this shows a "coming soon" state instead of an empty/broken shop.
 class CoinShopScreen extends StatefulWidget {
-  const CoinShopScreen({super.key});
+  /// True when this is the store tab rather than a pushed route.
+  ///
+  /// The navigation shell paints the language switch, the bell and the
+  /// profile avatar in an overlay above whatever tab is showing, so a tab
+  /// must not draw its own copy: the avatar would sit stacked under the
+  /// overlay's, and a long title runs underneath the two of them.
+  final bool embeddedInShell;
+
+  const CoinShopScreen({super.key, this.embeddedInShell = false});
 
   @override
   State<CoinShopScreen> createState() => _CoinShopScreenState();
@@ -96,8 +104,14 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).coinShopTitle),
-        actions: const [ProfileAvatarButton()],
+        title: Text(
+          widget.embeddedInShell
+              ? AppLocalizations.of(context).storeTabTitle
+              : AppLocalizations.of(context).coinShopTitle,
+        ),
+        actions: widget.embeddedInShell
+            ? const []
+            : const [ProfileAvatarButton()],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

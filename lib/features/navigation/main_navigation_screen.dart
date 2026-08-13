@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../home/home_screen.dart';
-import '../profile/profile_screen.dart';
+import '../shop/coin_shop_screen.dart';
 import '../social/friends_screen.dart';
 import '../versus/pvp_screen.dart';
 import '../versus/match_lobby_screen.dart';
@@ -47,7 +47,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _unreadNotifications =
       NotificationService.instance.watchMyUnreadNotifications(limit: 99);
 
-  static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'profile'];
+  static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'store'];
 
   void _selectTab(int index) {
     if (_index == index) return;
@@ -274,9 +274,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     tabIndex: 3,
                     child: const FriendsScreen(),
                   ),
+                  // El perfil salio de la barra: se abre desde el avatar
+                  // que ahora esta en la cabecera de todas las pantallas,
+                  // y este hueco pasa a la tienda.
                   _lazyTab(
                     tabIndex: 4,
-                    child: const ProfileScreen(),
+                    child: const CoinShopScreen(embeddedInShell: true),
                   ),
                 ],
               ),
@@ -407,7 +410,7 @@ class _BottomNavBar extends StatelessWidget {
                   _buildItem(context, 2, (c) => _SwordsPainter(c)),
                   const Expanded(child: SizedBox()),
                   _buildItem(context, 3, (c) => _UsersIconPainter(c)),
-                  _buildItem(context, 4, (c) => _PersonIconPainter(c)),
+                  _buildItem(context, 4, (c) => _StoreIconPainter(c)),
                 ],
               ),
             ),
@@ -707,10 +710,16 @@ class _UsersIconPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-class _PersonIconPainter extends CustomPainter {
+/// Storefront with an awning, for the store tab. Replaced the person glyph
+/// when the profile moved out of the bar and into the header avatar.
+///
+/// The awning's scalloped edge is drawn as three arcs rather than a plain
+/// line: at this size it is the detail that makes the shape read as a shop
+/// instead of a house.
+class _StoreIconPainter extends CustomPainter {
   final Color color;
 
-  _PersonIconPainter(this.color);
+  _StoreIconPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -719,20 +728,61 @@ class _PersonIconPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = s * 0.085
       ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
 
-    canvas.drawCircle(Offset(s * 0.5, s * 0.27), s * 0.15, paint);
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(s * 0.5, s * 0.78), radius: s * 0.22),
-      math.pi,
-      math.pi,
-      false,
-      paint,
-    );
+    // Alto igualado al del resto de la barra: la casa ocupa de 0.10 a 0.88
+    // y los amigos de 0.15 a 0.80. Este iba de 0.28 a 0.84 — mas corto y
+    // con el centro 7 puntos mas abajo, que es por lo que se veia
+    // descolgado respecto a sus vecinos.
+    const awningTop = 0.14;
+    const awningBottom = 0.38;
+    const bodyTop = 0.44;
+    const bodyBottom = 0.86;
+
+    const awningLeft = 0.08;
+    const awningRight = 0.92;
+
+    // Toldo: se ensancha hacia abajo y sobresale del cuerpo. Sin trazar su
+    // base, que la cierra el feston.
+    final awning = Path()
+      ..moveTo(s * awningLeft, s * awningBottom)
+      ..lineTo(s * 0.18, s * awningTop)
+      ..lineTo(s * 0.82, s * awningTop)
+      ..lineTo(s * awningRight, s * awningBottom);
+    canvas.drawPath(awning, paint);
+
+    // Feston: cuatro ondas que hacen las veces de borde inferior del toldo.
+    const scallops = 4;
+    const scallopWidth = (awningRight - awningLeft) / scallops;
+    for (var i = 0; i < scallops; i++) {
+      final left = awningLeft + scallopWidth * i;
+      canvas.drawArc(
+        Rect.fromLTRB(
+          s * left,
+          s * (awningBottom - 0.06),
+          s * (left + scallopWidth),
+          s * (awningBottom + 0.06),
+        ),
+        0,
+        math.pi,
+        false,
+        paint,
+      );
+    }
+
+    // Cuerpo en forma de U: el feston ya cierra la parte de arriba, asi que
+    // trazar tambien su techo duplicaria la linea.
+    final body = Path()
+      ..moveTo(s * 0.18, s * bodyTop)
+      ..lineTo(s * 0.18, s * bodyBottom)
+      ..lineTo(s * 0.82, s * bodyBottom)
+      ..lineTo(s * 0.82, s * bodyTop);
+    canvas.drawPath(body, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _PersonIconPainter oldDelegate) =>
+  bool shouldRepaint(covariant _StoreIconPainter oldDelegate) =>
       oldDelegate.color != color;
 }
 

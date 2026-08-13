@@ -532,14 +532,39 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     final l10n = AppLocalizations.of(context);
 
-    final unlockedFrames = FrameService.instance.unlockedLeagueFrames(
-      bestLeagueId: bestLeagueId,
-    );
+    // Every frame is listed, not just the ones already earned: seeing what
+    // is still ahead — and what it takes — is the point of the locked half.
+    final allFrames = FrameService.instance.leagueFrames;
+    final unlockedIds = FrameService.instance
+        .unlockedLeagueFrames(bestLeagueId: bestLeagueId)
+        .map((frame) => frame.id)
+        .toSet();
+
+    final unlockedFrames =
+        allFrames.where((frame) => unlockedIds.contains(frame.id)).toList();
+    final lockedFrames =
+        allFrames.where((frame) => !unlockedIds.contains(frame.id)).toList();
 
     final selectedFrameId = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) {
+        final onSurfaceVariant =
+            Theme.of(sheetContext).colorScheme.onSurfaceVariant;
+
+        Widget sectionLabel(String text) => Padding(
+              padding: const EdgeInsets.only(bottom: 4, top: 8),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4,
+                  color: onSurfaceVariant,
+                ),
+              ),
+            );
+
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
@@ -548,7 +573,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               textAlign: TextAlign.center,
               style: context.heading(20),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            sectionLabel(l10n.profileFramesUnlocked),
             ...unlockedFrames.map(
               (frame) => ListTile(
                 leading: Text(
@@ -571,6 +597,26 @@ class _ProfileScreenState extends State<ProfileScreen>
                 },
               ),
             ),
+            if (lockedFrames.isNotEmpty) ...[
+              sectionLabel(l10n.profileFramesLocked),
+              // `enabled: false` greys the tile out and drops the tap, so
+              // the row reads as unavailable rather than merely unstyled.
+              ...lockedFrames.map(
+                (frame) => ListTile(
+                  enabled: false,
+                  leading: Opacity(
+                    opacity: 0.4,
+                    child: Text(
+                      frame.emoji,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                  ),
+                  title: Text(frame.name),
+                  subtitle: Text(frame.unlockLabel),
+                  trailing: Icon(Icons.lock_outline, color: onSurfaceVariant),
+                ),
+              ),
+            ],
           ],
         );
       },

@@ -213,6 +213,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileChooseFrame => 'Choose Frame';
 
   @override
+  String get profileFramesUnlocked => 'Unlocked';
+
+  @override
+  String get profileFramesLocked => 'Locked';
+
+  @override
   String profileEquippedNotice(String emoji, String name) {
     return '$emoji $name equipped';
   }
@@ -2355,6 +2361,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coinShopTitle => 'Buy coins';
+
+  @override
+  String get storeTabTitle => 'Store';
 
   @override
   String coinShopPurchaseSuccess(int coins) {

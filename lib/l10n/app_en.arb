@@ -100,6 +100,8 @@
   },
   "profileCurrentlyEquipped": "Currently equipped",
   "profileChooseFrame": "Choose Frame",
+  "profileFramesUnlocked": "Unlocked",
+  "profileFramesLocked": "Locked",
   "profileEquippedNotice": "{emoji} {name} equipped",
   "@profileEquippedNotice": {
     "placeholders": {
@@ -1379,6 +1381,7 @@
   "createAiTopicRetrySuggestionsButton": "Retry suggestions",
 
   "coinShopTitle": "Buy coins",
+  "storeTabTitle": "Store",
   "coinShopPurchaseSuccess": "+{coins} coins",
   "@coinShopPurchaseSuccess": {
     "placeholders": {

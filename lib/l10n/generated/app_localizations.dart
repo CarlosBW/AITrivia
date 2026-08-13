@@ -446,6 +446,18 @@ abstract class AppLocalizations {
   /// **'Elegir marco'**
   String get profileChooseFrame;
 
+  /// No description provided for @profileFramesUnlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloqueados'**
+  String get profileFramesUnlocked;
+
+  /// No description provided for @profileFramesLocked.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloqueados'**
+  String get profileFramesLocked;
+
   /// No description provided for @profileEquippedNotice.
   ///
   /// In es, this message translates to:
@@ -4077,6 +4089,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Comprar monedas'**
   String get coinShopTitle;
+
+  /// No description provided for @storeTabTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienda'**
+  String get storeTabTitle;
 
   /// No description provided for @coinShopPurchaseSuccess.
   ///

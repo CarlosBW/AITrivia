@@ -123,6 +123,8 @@
   },
   "profileCurrentlyEquipped": "Equipado actualmente",
   "profileChooseFrame": "Elegir marco",
+  "profileFramesUnlocked": "Desbloqueados",
+  "profileFramesLocked": "Bloqueados",
   "profileEquippedNotice": "{emoji} {name} equipado",
   "@profileEquippedNotice": {
     "placeholders": {
@@ -1407,6 +1409,7 @@
   "createAiTopicRetrySuggestionsButton": "Reintentar sugerencias",
 
   "coinShopTitle": "Comprar monedas",
+  "storeTabTitle": "Tienda",
   "coinShopPurchaseSuccess": "+{coins} monedas",
   "@coinShopPurchaseSuccess": {
     "placeholders": {

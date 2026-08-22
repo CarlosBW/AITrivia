@@ -1,0 +1,38 @@
+name: Callables health
+
+# Deliberately NOT on push or pull_request. This checks the state of
+# *production*, not of the commit: a PR that only touches Dart would go red
+# because a function has been broken for days, and a PR that breaks a
+# function would go green because nothing is deployed yet. Wrong signal
+# either way — a check that lies gets ignored.
+#
+# `npm run deploy` already runs this probe locally after a successful
+# deploy. This workflow covers what that can't see: a deploy from another
+# machine, a rollback, or an IAM binding changed by hand in the console.
+# That is exactly how `ensureAiTopicLevelsGenerated` and
+# `submitWeeklyTopicRound` sat unreachable for three days — every call
+# rejected by Cloud Run before the function ran, and the client swallowing
+# the error by design.
+on:
+  schedule:
+    # Daily, off-peak. Drift here is measured in days, not minutes.
+    - cron: "0 11 * * *"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Every callable is reachable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # No credentials needed: the probe calls each function unauthenticated
+      # and reads the shape of the refusal. A healthy callable answers with
+      # its own JSON error ("sign-in required"); one that Cloud Run blocks
+      # answers with an HTML page instead.
+      - name: Probe callables
+        run: node tools/check_callables.js

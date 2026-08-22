@@ -4,6 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'economy_service.dart';
 import 'locale_controller.dart';
+import 'match_rules.dart' as rules;
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -242,27 +243,21 @@ class MatchService {
 
   static const int _defaultPvpRating = 1000;
 
+  // Las reglas viven en match_rules.dart; aqui solo se traduce de los
+  // tipos de Firestore a valores planos. Esa frontera es lo que las hace
+  // testeables sin Firestore ni reloj.
   Timestamp? _activePvpCooldownUntil(Map<String, dynamic>? userData) {
     final raw = userData?['pvpCooldownUntil'];
     if (raw is! Timestamp) return null;
 
-    if (raw.toDate().isAfter(DateTime.now())) return raw;
-    return null;
+    final active = rules.activeCooldownUntil(raw.toDate(), DateTime.now());
+    return active == null ? null : raw;
   }
 
   String _formatCooldownRemaining(Timestamp cooldownUntil) {
-    final seconds = cooldownUntil
-        .toDate()
-        .difference(DateTime.now())
-        .inSeconds
-        .clamp(0, 999999)
-        .toInt();
-
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-
-    if (minutes <= 0) return '${remainingSeconds}s';
-    return '${minutes}m ${remainingSeconds.toString().padLeft(2, '0')}s';
+    return rules.formatCooldownRemaining(
+      cooldownUntil.toDate().difference(DateTime.now()),
+    );
   }
 
   Future<Timestamp?> getActivePvpCooldownUntil() async {
@@ -273,30 +268,19 @@ class MatchService {
   DocumentReference<Map<String, dynamic>> _userRef(String userId) =>
       _db.collection('users').doc(userId);
 
-  bool _timestampIsRecent(
-    dynamic value, {
-    required Duration maxAge,
-  }) {
-    if (value is! Timestamp) return true;
-
-    final age = DateTime.now().difference(value.toDate());
-    return age <= maxAge;
-  }
-
-  int _safeInt(dynamic value, int fallback) {
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? fallback;
-  }
+  int _safeInt(dynamic value, int fallback) =>
+      rules.safeInt(value, fallback);
 
   bool _isLiveQueueEntryValid(Map<String, dynamic>? data) {
     if (data == null) return false;
 
-    final status = (data['status'] ?? '').toString();
-    if (status != 'searching') return false;
-    if (data['matchId'] != null) return false;
+    final heartbeat = data['lastHeartbeatAt'] ?? data['updatedAt'];
 
-    return _timestampIsRecent(
-      data['lastHeartbeatAt'] ?? data['updatedAt'],
+    return rules.isLiveQueueEntryValid(
+      status: (data['status'] ?? '').toString(),
+      matchId: data['matchId'],
+      lastSeenAt: heartbeat is Timestamp ? heartbeat.toDate() : null,
+      now: DateTime.now(),
       maxAge: _liveSearchMaxAge,
     );
   }
@@ -947,16 +931,7 @@ class MatchService {
   }
 
   /// An answers map as the callables return it, keyed by question index.
-  Map<int, int> _parseAnswerMap(Object? raw) {
-    if (raw is! Map) return {};
-
-    final parsed = <int, int>{};
-    raw.forEach((key, value) {
-      final index = int.tryParse(key.toString());
-      if (index != null && value is num) parsed[index] = value.toInt();
-    });
-    return parsed;
-  }
+  Map<int, int> _parseAnswerMap(Object? raw) => rules.parseAnswerMap(raw);
 
   /// Inbox de retos: soy el retado.
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyAsyncChallengesInbox({

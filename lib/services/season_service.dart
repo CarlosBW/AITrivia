@@ -73,7 +73,12 @@ class SeasonService {
   static final instance = SeasonService._();
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
-  final _notificationService = NotificationService.instance;
+
+  // Getter y no campo, igual que `_db` justo arriba: como campo se
+  // construía al tocar `SeasonService.instance`, lo que arrastraba a
+  // Firebase y hacía imposible probar el cálculo de recompensas —
+  // aritmética que no necesita red alguna.
+  NotificationService get _notificationService => NotificationService.instance;
 
   String currentSeasonId([DateTime? now]) {
     return WeeklyLeagueService.instance.currentWeekId(now);

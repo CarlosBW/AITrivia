@@ -110,10 +110,16 @@ class PvpSeasonService {
 
   static final PvpSeasonService instance = PvpSeasonService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Getter y no campo: como campo se resolvía al tocar
+  // `PvpSeasonService.instance`, lo que arrastraba Firebase y hacía
+  // imposible probar el calendario de temporadas o el pago por rating —
+  // ninguno de los dos necesita red.
+  FirebaseFirestore get _db => FirebaseFirestore.instance;
 
-  PvpSeasonInfo currentSeason() {
-    final now = DateTime.now();
+  /// Temporada en curso. [now] existe para poder fijar el reloj en las
+  /// pruebas, igual que en `WeeklyLeagueService.currentWeekId`.
+  PvpSeasonInfo currentSeason([DateTime? clock]) {
+    final now = clock ?? DateTime.now();
     final start = DateTime(now.year, now.month, 1);
     final end = DateTime(now.year, now.month + 1, 1);
     final id = 'pvp_${now.year}_${now.month.toString().padLeft(2, '0')}';
@@ -125,8 +131,8 @@ class PvpSeasonService {
     );
   }
 
-  PvpSeasonInfo previousSeason() {
-    final now = DateTime.now();
+  PvpSeasonInfo previousSeason([DateTime? clock]) {
+    final now = clock ?? DateTime.now();
     final start = DateTime(now.year, now.month - 1, 1);
     final end = DateTime(now.year, now.month, 1);
     final id = 'pvp_${start.year}_${start.month.toString().padLeft(2, '0')}';

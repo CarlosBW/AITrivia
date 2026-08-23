@@ -30,6 +30,8 @@ const SEP = argOf("sep", ",");
 const IN = argOf("in", null);
 
 const TARGET = {1: 30, 2: 40, 3: 30};
+const BATCH_LIMIT = 400;
+const READ_LIMIT = 300;
 
 if (!IN) {
   console.error("Falta --in=<csv revisado>.");
@@ -106,6 +108,7 @@ function resolveAnswerIndex(row, options, fallbackIndex) {
 
 async function buildChanges(records) {
   const changes = [];
+  const pending = [];
 
   for (const row of records) {
     const intent = readIntent(row);
@@ -122,8 +125,23 @@ async function buildChanges(records) {
       continue;
     }
 
-    const ref = questionDoc(categoryId, difficulty, docId);
-    const snap = await ref.get();
+    pending.push({
+      row, intent, categoryId, difficulty, docId,
+      ref: questionDoc(categoryId, difficulty, docId),
+    });
+  }
+
+  // De golpe y no uno a uno: una rebaraja completa son ~900 filas, y en
+  // serie eso es una ida y vuelta por documento.
+  const snapshots = new Map();
+  for (let i = 0; i < pending.length; i += READ_LIMIT) {
+    const slice = pending.slice(i, i + READ_LIMIT);
+    const snaps = await db.getAll(...slice.map((p) => p.ref));
+    snaps.forEach((snap, j) => snapshots.set(slice[j].ref.path, snap));
+  }
+
+  for (const {row, intent, categoryId, difficulty, docId, ref} of pending) {
+    const snap = snapshots.get(ref.path);
 
     if (!snap.exists) {
       problems.push(
@@ -492,21 +510,32 @@ async function run() {
     process.exit(0);
   }
 
-  const batch = db.batch();
-  for (const change of changes) {
-    if (change.kind === "drop") {
-      batch.delete(change.ref);
-    } else {
-      batch.update(change.ref, {
-        q: change.updated.q,
-        options: change.updated.options,
-        answerIndex: change.updated.answerIndex,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+  // En lotes: un batch de Firestore admite 500 operaciones como maximo, y
+  // una correccion masiva (rebarajar las opciones de todo el pool) pasa de
+  // ahi de sobra.
+  for (let i = 0; i < changes.length; i += BATCH_LIMIT) {
+    const slice = changes.slice(i, i + BATCH_LIMIT);
+    const batch = db.batch();
+
+    for (const change of slice) {
+      if (change.kind === "drop") {
+        batch.delete(change.ref);
+      } else {
+        batch.update(change.ref, {
+          q: change.updated.q,
+          options: change.updated.options,
+          answerIndex: change.updated.answerIndex,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
     }
+
+    await batch.commit();
+    console.log(
+      `OK Firestore: ${Math.min(i + slice.length, changes.length)}/` +
+      `${changes.length} documentos.`
+    );
   }
-  await batch.commit();
-  console.log(`\nOK Firestore: ${changes.length} documentos.`);
 
   for (const patch of patches) {
     fs.writeFileSync(patch.file, patch.patched, "utf8");

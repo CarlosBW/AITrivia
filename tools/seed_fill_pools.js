@@ -19,6 +19,7 @@ const admin = require("firebase-admin");
 const path = require("path");
 
 const DATA = require("./fill_pools_data");
+const {validateQuestion} = require("./question_shape");
 
 const COMMIT = process.argv.includes("--commit");
 const onlyArg = process.argv.find((a) => a.startsWith("--only="));
@@ -40,27 +41,6 @@ function questionsCol(categoryId, difficulty) {
     .collection("questions");
 }
 
-/** Valida la forma de una pregunta antes de subirla. */
-function validate(q, where) {
-  const errs = [];
-  if (typeof q.q !== "string" || q.q.trim().length < 8) {
-    errs.push("enunciado vacio o muy corto");
-  }
-  if (!Array.isArray(q.options) || q.options.length !== 4) {
-    errs.push("options debe tener exactamente 4 entradas");
-  } else {
-    if (q.options.some((o) => typeof o !== "string" || !o.trim())) {
-      errs.push("alguna opcion vacia");
-    }
-    const uniq = new Set(q.options.map((o) => o.trim().toLowerCase()));
-    if (uniq.size !== 4) errs.push("opciones duplicadas");
-  }
-  if (!Number.isInteger(q.answerIndex) || q.answerIndex < 0 || q.answerIndex > 3) {
-    errs.push("answerIndex fuera de rango 0-3");
-  }
-  return errs.map((e) => `${where}: ${e}`);
-}
-
 async function run() {
   const cats = Object.keys(DATA).sort();
   const plan = [];
@@ -72,7 +52,7 @@ async function run() {
     for (const d of [1, 2, 3]) {
       const list = DATA[cat][`d${d}`] || [];
       list.forEach((q, i) => {
-        problems.push(...validate(q, `${cat}/d${d}[${i}]`));
+        problems.push(...validateQuestion(q, `${cat}/d${d}[${i}]`));
         const key = q.q.trim().toLowerCase();
         if (seenTexts.has(key)) {
           problems.push(`${cat}/d${d}[${i}]: duplicada de ${seenTexts.get(key)}`);

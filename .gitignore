@@ -49,6 +49,11 @@ tools/serviceAccountKey.json
 # Dependencias reinstalables desde tools/package.json — no van al repo.
 tools/node_modules/
 
+# Hojas de revisión que genera tools/export_questions.js. Se regeneran con un
+# comando y llevan una copia completa de los pools; la fuente son
+# tools/fill_pools/ y Firestore, no esto.
+tools/review/
+
 # Claves de firma. android/.gitignore ya cubre android/**; esto lo extiende a
 # todo el repo por si el keystore acaba en otra carpeta.
 key.properties

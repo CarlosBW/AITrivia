@@ -388,9 +388,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     color: context.appColors.danger,
                     borderRadius: BorderRadius.circular(context.radii.md),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.delete_outline,
-                    color: Colors.white,
+                    color: context.appColors.onAccent,
                   ),
                 ),
                 onDismissed: (_) => _delete(doc.id),
@@ -504,7 +504,7 @@ class _NotificationTile extends StatelessWidget {
             icon,
             color: read
                 ? Theme.of(context).colorScheme.onSurfaceVariant
-                : Colors.white,
+                : context.appColors.onAccent,
           ),
         ),
         title: Text(

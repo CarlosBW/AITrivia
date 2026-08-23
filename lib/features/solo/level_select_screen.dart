@@ -346,7 +346,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             _buildContent(context: context, uid: uid, l10n: l10n),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .scrim
+                  .withValues(alpha: 0.4),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -355,7 +358,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                     const SizedBox(height: 12),
                     Text(
                       l10n.commonLoading,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appColors.onScrim),
                     ),
                   ],
                 ),

@@ -39,7 +39,7 @@ class BuyCoinsButton extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: context.appColors.onAccent.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -52,8 +52,8 @@ class BuyCoinsButton extends StatelessWidget {
               Expanded(
                 child: Text(
                   AppLocalizations.of(context).buyCoinsButtonLabel,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.appColors.onAccent,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),

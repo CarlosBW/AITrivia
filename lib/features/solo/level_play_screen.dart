@@ -1039,7 +1039,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .scrim
+                  .withValues(alpha: 0.4),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1048,7 +1051,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     const SizedBox(height: 12),
                     Text(
                       l10n.commonLoading,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appColors.onScrim),
                     ),
                   ],
                 ),
@@ -2399,11 +2402,11 @@ class _XpSegmentViewState extends State<_XpSegmentView>
                         ),
                         child: Text(
                           l10n.levelPlayLevelUp(widget.segment.level + 1),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
-                            color: Colors.black,
+                            color: context.appColors.onReward,
                           ),
                         ),
                       ),
@@ -2521,13 +2524,13 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
                     ),
                   ],
                 ),
-                child: const Text(
+                child: Text(
                   'PERFECT!',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.8,
-                    color: Colors.black,
+                    color: context.appColors.onReward,
                   ),
                 ),
               ),

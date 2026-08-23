@@ -46,11 +46,11 @@ class QuestionAnswerCard extends StatelessWidget {
           ),
           child: Text(
             qText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 21,
               fontWeight: FontWeight.w700,
               height: 1.35,
-              color: Colors.white,
+              color: context.appColors.onAccent,
             ),
           ),
         ),
@@ -102,7 +102,7 @@ class QuestionAnswerCard extends StatelessWidget {
 
           final badgeTextColor = badgeColor == colorScheme.surfaceContainerHighest
               ? colorScheme.onSurfaceVariant
-              : Colors.white;
+              : context.appColors.onAccent;
 
           IconData? trailingIcon;
           Color? trailingIconColor;
@@ -142,7 +142,7 @@ class QuestionAnswerCard extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),

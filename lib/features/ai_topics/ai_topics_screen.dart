@@ -272,7 +272,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                   child: FloatingActionButton.extended(
                     onPressed: () => _openCreate(context),
                     backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: context.appColors.onAccent,
                     elevation: 0,
                     highlightElevation: 0,
                     icon: const Icon(Icons.auto_awesome),
@@ -376,9 +376,9 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                         color: Colors.redAccent.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(context.radii.md),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.delete,
-                        color: Colors.white,
+                        color: context.appColors.onAccent,
                       ),
                     ),
                     child: Card(

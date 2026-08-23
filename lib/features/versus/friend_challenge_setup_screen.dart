@@ -391,7 +391,7 @@ class _FriendChallengeSetupScreenState
           ),
           if (_loading)
             Container(
-              color: Colors.black.withValues(alpha: 0.25),
+              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.25),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),

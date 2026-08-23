@@ -80,7 +80,7 @@ class PlayerAvatarWidget extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: radius,
-            backgroundColor: Colors.white.withValues(alpha: 0.85),
+            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
             child: Text(
               avatar.emoji,
               style: TextStyle(
@@ -96,7 +96,7 @@ class PlayerAvatarWidget extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.all(radius * 0.08),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.95),
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: frameColor.withValues(alpha: 0.55),

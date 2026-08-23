@@ -21,6 +21,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     required this.successBg,
     required this.danger,
     required this.dangerBg,
+    required this.onAccent,
+    required this.onScrim,
+    required this.onReward,
   });
 
   final Color reward;
@@ -30,6 +33,30 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
   final Color danger;
   final Color dangerBg;
 
+  /// Foreground for text and icons sitting on a saturated brand surface —
+  /// the gradient cards, the accent buttons, the coloured chips.
+  ///
+  /// Those call sites used `Colors.white` directly, which is right only for
+  /// as long as the surface underneath stays dark. A theme that repaints
+  /// those cards in a pale palette needs to move the foreground with them,
+  /// and it cannot if the white is written into the screen.
+  final Color onAccent;
+
+  /// Foreground for the blocking overlay drawn while a screen is busy,
+  /// over [ColorScheme.scrim].
+  ///
+  /// Separate from [onAccent] even though both ship white: a theme can
+  /// lighten its cards without touching the scrim, and vice versa.
+  final Color onScrim;
+
+  /// Foreground for text sitting on [reward] — the coin popups, the streak
+  /// badge, the level-up pill.
+  ///
+  /// Ships black rather than white because [reward] is a bright gold, which
+  /// is exactly why it cannot share [onAccent]: a single "foreground on a
+  /// coloured surface" token would have to be wrong on one of the two.
+  final Color onReward;
+
   /// The palette the app ships with.
   static const AppSemanticColors standard = AppSemanticColors(
     reward: AppColors.reward,
@@ -38,6 +65,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     successBg: AppColors.successBg,
     danger: AppColors.danger,
     dangerBg: AppColors.dangerBg,
+    onAccent: Colors.white,
+    onScrim: Colors.white,
+    onReward: Colors.black,
   );
 
   @override
@@ -48,6 +78,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     Color? successBg,
     Color? danger,
     Color? dangerBg,
+    Color? onAccent,
+    Color? onScrim,
+    Color? onReward,
   }) {
     return AppSemanticColors(
       reward: reward ?? this.reward,
@@ -56,6 +89,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       successBg: successBg ?? this.successBg,
       danger: danger ?? this.danger,
       dangerBg: dangerBg ?? this.dangerBg,
+      onAccent: onAccent ?? this.onAccent,
+      onScrim: onScrim ?? this.onScrim,
+      onReward: onReward ?? this.onReward,
     );
   }
 
@@ -69,6 +105,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       successBg: Color.lerp(successBg, other.successBg, t) ?? successBg,
       danger: Color.lerp(danger, other.danger, t) ?? danger,
       dangerBg: Color.lerp(dangerBg, other.dangerBg, t) ?? dangerBg,
+      onAccent: Color.lerp(onAccent, other.onAccent, t) ?? onAccent,
+      onScrim: Color.lerp(onScrim, other.onScrim, t) ?? onScrim,
+      onReward: Color.lerp(onReward, other.onReward, t) ?? onReward,
     );
   }
 }
@@ -309,34 +348,42 @@ class CategoryAccent {
 /// page, saturated purple/amber/coral accents) replacing the earlier dark
 /// violet theme — the dark theme read as serious/professional rather than
 /// playful. Baloo 2 carries headings/scores; Manrope carries body/UI text.
+/// The brand palette the default theme is built from.
+///
+/// Top-level rather than local to [buildAppTheme] so it can be read without
+/// building the whole theme — [buildAppTheme] resolves its typography
+/// through google_fonts, which needs the font at runtime and so cannot run
+/// in a unit test.
+const ColorScheme appColorScheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: Color(0xFF6C4FF2),
+  onPrimary: Colors.white,
+  primaryContainer: Color(0xFFE4DBFF),
+  onPrimaryContainer: Color(0xFF2B1A66),
+  secondary: Color(0xFFB4A8F5),
+  onSecondary: Color(0xFF2B1A66),
+  secondaryContainer: Color(0xFFF1EEFF),
+  onSecondaryContainer: Color(0xFF2B1A66),
+  tertiary: Color(0xFFF2A93B),
+  onTertiary: Color(0xFF4A3200),
+  surface: Colors.white,
+  onSurface: Color(0xFF241A38),
+  surfaceContainerHighest: Color(0xFFF1EEFF),
+  onSurfaceVariant: Color(0xFF6B6280),
+  outline: Color(0xFFE3DFF2),
+  outlineVariant: Color(0xFFEDEAFF),
+  error: Color(0xFFB3392C),
+  onError: Colors.white,
+  errorContainer: Color(0xFFFFEDE9),
+  onErrorContainer: Color(0xFF7A2A20),
+  inverseSurface: Color(0xFF2B2140),
+  onInverseSurface: Colors.white,
+  shadow: Colors.black,
+  scrim: Colors.black,
+);
+
 ThemeData buildAppTheme() {
-  const colorScheme = ColorScheme(
-    brightness: Brightness.light,
-    primary: Color(0xFF6C4FF2),
-    onPrimary: Colors.white,
-    primaryContainer: Color(0xFFE4DBFF),
-    onPrimaryContainer: Color(0xFF2B1A66),
-    secondary: Color(0xFFB4A8F5),
-    onSecondary: Color(0xFF2B1A66),
-    secondaryContainer: Color(0xFFF1EEFF),
-    onSecondaryContainer: Color(0xFF2B1A66),
-    tertiary: Color(0xFFF2A93B),
-    onTertiary: Color(0xFF4A3200),
-    surface: Colors.white,
-    onSurface: Color(0xFF241A38),
-    surfaceContainerHighest: Color(0xFFF1EEFF),
-    onSurfaceVariant: Color(0xFF6B6280),
-    outline: Color(0xFFE3DFF2),
-    outlineVariant: Color(0xFFEDEAFF),
-    error: Color(0xFFB3392C),
-    onError: Colors.white,
-    errorContainer: Color(0xFFFFEDE9),
-    onErrorContainer: Color(0xFF7A2A20),
-    inverseSurface: Color(0xFF2B2140),
-    onInverseSurface: Colors.white,
-    shadow: Colors.black,
-    scrim: Colors.black,
-  );
+  const colorScheme = appColorScheme;
 
   final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
 
@@ -351,8 +398,7 @@ ThemeData buildAppTheme() {
     headlineMedium: headingFont.headlineMedium,
     headlineSmall: headingFont.headlineSmall,
     titleLarge: headingFont.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-    titleMedium:
-        headingFont.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    titleMedium: headingFont.titleMedium?.copyWith(fontWeight: FontWeight.w700),
   );
 
   return base.copyWith(
@@ -444,8 +490,7 @@ ThemeData buildAppTheme() {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: colorScheme.surfaceContainerHighest,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: BorderSide.none,
@@ -476,15 +521,17 @@ ThemeData buildAppTheme() {
         return TextStyle(
           fontSize: 12,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          color:
-              selected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+          color: selected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-          color:
-              selected ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+          color: selected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant,
         );
       }),
     ),

@@ -226,7 +226,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         index != _selectedIndex) {
       return Theme.of(context).colorScheme.onSurfaceVariant;
     }
-    return Colors.white;
+    return context.appColors.onAccent;
   }
 
   @override

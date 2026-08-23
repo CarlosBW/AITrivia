@@ -542,7 +542,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                       ),
                     ),
                     CircleAvatar(
-                      backgroundColor: Colors.white70,
+                      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
                       child: Text(widget.avatarBuilder(player.avatarId)),
                     ),
                     const SizedBox(width: 12),
@@ -680,7 +680,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                     ),
                   ),
                   CircleAvatar(
-                    backgroundColor: Colors.white70,
+                    backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
                     child: Text(widget.avatarBuilder(avatarId)),
                   ),
                   const SizedBox(width: 12),

@@ -747,7 +747,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               final badgeTextColor =
                   badgeColor == colorScheme.surfaceContainerHighest
                       ? colorScheme.onSurfaceVariant
-                      : Colors.white;
+                      : context.appColors.onAccent;
 
               IconData? trailingIcon;
               Color? trailingIconColor;
@@ -786,7 +786,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
+                                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

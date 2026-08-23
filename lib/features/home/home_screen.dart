@@ -682,7 +682,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Theme.of(context)
+                  .colorScheme
+                  .scrim
+                  .withValues(alpha: 0.4),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -691,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
                     Text(
                       l10n.commonLoading,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appColors.onScrim),
                     ),
                   ],
                 ),
@@ -713,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -724,14 +727,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeStreakUpTitle,
-                        style: context.heading(26, color: Colors.white),
+                        style: context.heading(26, color: context.appColors.onAccent),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         l10n.homeStreakUpSubtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: context.appColors.onAccent,
                         ),
                       ),
                     ],
@@ -755,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -766,14 +769,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeWelcomeBackTitle,
-                        style: context.heading(26, color: Colors.white),
+                        style: context.heading(26, color: context.appColors.onAccent),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         l10n.homeLoginStreakLabel(_loginStreakForPopup),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: context.appColors.onAccent,
                         ),
                       ),
                       if (_loginCoinsForPopup > 0) ...[
@@ -821,7 +824,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -878,7 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(context.radii.lg),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -889,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeAvatarUnlockedTitle,
-                        style: context.heading(24, color: Colors.white),
+                        style: context.heading(24, color: context.appColors.onAccent),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -897,9 +900,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           _avatarUnlockEmoji,
                           _avatarUnlockName,
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white,
+                          color: context.appColors.onAccent,
                         ),
                       ),
                     ],
@@ -1121,22 +1124,22 @@ class _AiTopicCtaState extends State<_AiTopicCta>
                       children: [
                         Text(
                           l10n.homeAiTopicTitle,
-                          style: context.heading(19, color: Colors.white),
+                          style: context.heading(19, color: context.appColors.onAccent),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           l10n.homeAiTopicSubtitle,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: context.appColors.onAccent.withValues(alpha: 0.7),
                             fontSize: 13,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_forward_ios,
-                    color: Colors.white70,
+                    color: context.appColors.onAccent.withValues(alpha: 0.7),
                     size: 18,
                   ),
                 ],
@@ -1249,12 +1252,12 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                     width: 34,
                     height: 34,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.22),
+                      color: context.appColors.onAccent.withValues(alpha: 0.22),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.star_rounded,
-                      color: Colors.white,
+                      color: context.appColors.onAccent,
                       size: 18,
                     ),
                   ),
@@ -1262,7 +1265,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                   Expanded(
                     child: Text(
                       title,
-                      style: context.heading(16, color: Colors.white),
+                      style: context.heading(16, color: context.appColors.onAccent),
                     ),
                   ),
                   if (rewardCoins > 0)
@@ -1272,13 +1275,13 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.22),
+                        color: context.appColors.onAccent.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(context.radii.pill),
                       ),
                       child: Text(
                         l10n.homeWeeklyTopicRewardCoins(rewardCoins),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.appColors.onAccent,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
                         ),
@@ -1289,8 +1292,8 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
               const SizedBox(height: 8),
               Text(
                 description,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.appColors.onAccent,
                   fontSize: 12,
                 ),
               ),
@@ -1299,7 +1302,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
+                    backgroundColor: context.appColors.onAccent,
                     foregroundColor: const Color(0xFFB35C1E),
                   ),
                   onPressed:
@@ -1517,10 +1520,10 @@ class _DailyChallengeCard extends StatelessWidget {
                               ),
                               child: Text(
                                 l10n.homeReward,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 10,
-                                  color: Colors.black,
+                                  color: context.appColors.onReward,
                                 ),
                               ),
                             ),

@@ -349,7 +349,10 @@ class _SoloScreenState extends State<SoloScreen> {
           ),
           if (_isNavigating || _buyingLife)
             Container(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Theme.of(context)
+                  .colorScheme
+                  .scrim
+                  .withValues(alpha: 0.35),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -358,7 +361,7 @@ class _SoloScreenState extends State<SoloScreen> {
                     const SizedBox(height: 12),
                     Text(
                       l10n.commonLoading,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appColors.onScrim),
                     ),
                   ],
                 ),

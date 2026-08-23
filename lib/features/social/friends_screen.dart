@@ -306,7 +306,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             ),
             if (_actionLoading)
               Container(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.25),
                 child: const Center(child: CircularProgressIndicator()),
               ),
           ],

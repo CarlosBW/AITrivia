@@ -206,7 +206,7 @@ class _PvpCard extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       backgroundColor: color,
-                      child: Icon(icon, color: Colors.white),
+                      child: Icon(icon, color: context.appColors.onAccent),
                     ),
                     if (alert)
                       Positioned(

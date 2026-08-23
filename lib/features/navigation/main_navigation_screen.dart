@@ -458,7 +458,7 @@ class _AppIconFab extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.35),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -819,7 +819,7 @@ class _NewNotificationOverlay extends StatelessWidget {
                 borderRadius: BorderRadius.circular(context.radii.lg),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
+                    color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.28),
                     blurRadius: 22,
                     offset: const Offset(0, 10),
                   ),

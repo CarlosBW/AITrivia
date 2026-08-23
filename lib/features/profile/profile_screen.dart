@@ -931,12 +931,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
+                            color: context.appColors.onAccent.withValues(alpha: 0.22),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.emoji_events,
-                            color: Colors.white,
+                            color: context.appColors.onAccent,
                             size: 24,
                           ),
                         ),
@@ -947,22 +947,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                             children: [
                               Text(
                                 l10n.profileAchievements,
-                                style: context.heading(18, color: Colors.white),
+                                style: context.heading(18, color: context.appColors.onAccent),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 l10n.profileAchievementsSubtitle,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: context.appColors.onAccent,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
-                          color: Colors.white,
+                          color: context.appColors.onAccent,
                         ),
                       ],
                     ),
@@ -1212,7 +1212,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           if (_saving)
             Container(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Theme.of(context)
+                  .colorScheme
+                  .scrim
+                  .withValues(alpha: 0.35),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1221,7 +1224,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     const SizedBox(height: 12),
                     Text(
                       l10n.commonSaving,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: context.appColors.onScrim),
                     ),
                   ],
                 ),

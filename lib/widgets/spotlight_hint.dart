@@ -142,7 +142,14 @@ class _SpotlightScrim extends StatelessWidget {
           children: [
             Positioned.fill(
               child: CustomPaint(
-                painter: _SpotlightPainter(holeRect: holeRect),
+                painter: _SpotlightPainter(
+                  holeRect: holeRect,
+                  scrimColor: Theme.of(context)
+                      .colorScheme
+                      .scrim
+                      .withValues(alpha: 0.78),
+                  ringColor: context.appColors.onScrim,
+                ),
               ),
             ),
             Positioned(
@@ -168,7 +175,16 @@ class _SpotlightScrim extends StatelessWidget {
 class _SpotlightPainter extends CustomPainter {
   final Rect holeRect;
 
-  _SpotlightPainter({required this.holeRect});
+  /// Painted, not built, so there is no `BuildContext` to read the theme
+  /// from here — the colours come in from the widget that mounts it.
+  final Color scrimColor;
+  final Color ringColor;
+
+  _SpotlightPainter({
+    required this.holeRect,
+    required this.scrimColor,
+    required this.ringColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -180,12 +196,12 @@ class _SpotlightPainter extends CustomPainter {
     // saveLayer + BlendMode.clear instead — the standard, portable way to
     // make a hole transparent rather than just outlining it.
     canvas.saveLayer(screenRect, Paint());
-    canvas.drawRect(screenRect, Paint()..color = Colors.black.withValues(alpha: 0.78));
+    canvas.drawRect(screenRect, Paint()..color = scrimColor);
     canvas.drawRRect(holeRRect, Paint()..blendMode = BlendMode.clear);
     canvas.restore();
 
     final ringPaint = Paint()
-      ..color = Colors.white
+      ..color = ringColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
 
@@ -220,7 +236,7 @@ class _TooltipBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(context.radii.md),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

@@ -257,7 +257,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Container(
-      color: Colors.black.withValues(alpha: 0.45),
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.45),
       child: Center(
         child: Container(
           width: double.infinity,
@@ -268,7 +268,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
             borderRadius: BorderRadius.circular(context.radii.lg),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -406,7 +406,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                       borderRadius: BorderRadius.circular(context.radii.md),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -414,7 +414,10 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     ),
                     child: Text(
                       _coinPopupText!,
-                      style: context.heading(24, color: Colors.black),
+                      style: context.heading(
+                        24,
+                        color: context.appColors.onReward,
+                      ),
                     ),
                   ),
                 ),

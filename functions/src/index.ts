@@ -5758,6 +5758,79 @@ export const buyFullLife = onCall(async (request) => {
 });
 
 // ============================================================
+// THEME PURCHASES
+//
+// Themes are code, not data — the client renders them from its own
+// catalogue in lib/theme/app_themes.dart, and Firestore only records which
+// ids a player owns. So this table is the authority on *price*, never the
+// client: `purchaseTheme` ignores any amount the caller sends.
+//
+// Mirrors AppThemes in lib/theme/app_themes.dart — the free theme isn't
+// listed because nothing is charged for it and nobody needs to own it
+// explicitly. `test/theme/theme_catalog_sync_test.dart` keeps the prices
+// here and there from drifting apart.
+// ============================================================
+
+const THEME_PRICES: Record<string, number> = {
+  "playful": 400,
+};
+
+export const purchaseTheme = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const themeId = String(request.data?.themeId || "");
+  const price = THEME_PRICES[themeId];
+
+  if (price === undefined) {
+    throw new HttpsError("invalid-argument", `Unknown theme: ${themeId}`);
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+
+    const owned: string[] = Array.isArray(data.ownedThemes) ?
+      data.ownedThemes.map((id: unknown) => String(id)) :
+      [];
+
+    const coins = safeInt(data.coins, 0);
+
+    // Idempotent rather than an error: a retry after a dropped response
+    // must not charge twice, and the client can't tell the two apart.
+    if (owned.includes(themeId)) {
+      return {themeId, coins, alreadyOwned: true};
+    }
+
+    if (coins < price) {
+      throw localizedError(
+        data.languageCode, "failed-precondition",
+        "No tienes suficientes monedas.",
+        "Not enough coins."
+      );
+    }
+
+    const newCoins = coins - price;
+
+    tx.set(
+      userRef,
+      {
+        coins: newCoins,
+        ownedThemes: [...owned, themeId],
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {themeId, coins: newCoins, alreadyOwned: false};
+  });
+});
+
+// ============================================================
 // COIN PURCHASES (IAP)
 //
 // Structure only — Google Play Console / App Store Connect aren't set up

@@ -1426,6 +1426,29 @@
     }
   },
   "coinShopBuyButton": "Comprar",
+  "coinShopCoinsSectionTitle": "Monedas",
+
+  "themeShopSectionTitle": "Temas",
+  "themeShopSectionSubtitle": "Cambia el aspecto de todo el juego.",
+  "themeShopEquip": "Usar",
+  "themeShopEquipped": "En uso",
+  "themeShopPriceButton": "{coins}",
+  "@themeShopPriceButton": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "themeShopNotEnoughCoins": "Te faltan monedas para este tema.",
+  "themeShopPurchased": "¡{theme} desbloqueado!",
+  "@themeShopPurchased": {
+    "placeholders": {
+      "theme": {"type": "String"}
+    }
+  },
+  "themeNameDefault": "Clásico",
+  "themeDescriptionDefault": "El aspecto original de TriviaIA.",
+  "themeNamePlayful": "Juguetón",
+  "themeDescriptionPlayful": "Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.",
 
   "notificationsChallengeDeclined": "Reto rechazado",
   "notificationsContinue": "Continuar",

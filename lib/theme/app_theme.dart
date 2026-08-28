@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_themes.dart';
+
 /// The semantic palette — reward, success, danger — carried on the theme
 /// so it can be swapped.
 ///
@@ -117,6 +119,109 @@ extension AppSemanticColorsContext on BuildContext {
   AppSemanticColors get appColors =>
       Theme.of(this).extension<AppSemanticColors>() ??
       AppSemanticColors.standard;
+}
+
+/// How a raised surface is drawn — its outline and its shadow.
+///
+/// This is what separates a "card" from a "game piece". The default theme
+/// draws no outline and a soft blurred shadow, the way a Material app does.
+/// A playful theme draws a thick dark outline and a *solid* shadow with no
+/// blur, offset a few pixels, which is what makes a button look physically
+/// pressable rather than merely elevated.
+///
+/// It has to be a token rather than per-screen styling for the same reason
+/// the colours did: a purchasable skin cannot reach a `BoxDecoration`
+/// written into a widget.
+@immutable
+class AppSurfaces extends ThemeExtension<AppSurfaces> {
+  const AppSurfaces({
+    required this.borderWidth,
+    required this.borderColor,
+    required this.shadowColor,
+    required this.shadowBlur,
+    required this.shadowOffset,
+    required this.buttonLip,
+  });
+
+  /// Outline thickness for cards and buttons. Zero means no outline.
+  final double borderWidth;
+  final Color borderColor;
+
+  final Color shadowColor;
+
+  /// Zero blur is what makes the shadow read as a solid block underneath
+  /// the surface instead of a diffuse glow.
+  final double shadowBlur;
+  final Offset shadowOffset;
+
+  /// How far a button sits above its own shadow, so pressing it can drop
+  /// it by the same amount. Zero disables the effect.
+  final double buttonLip;
+
+  /// The restrained treatment the app shipped with.
+  static const AppSurfaces standard = AppSurfaces(
+    borderWidth: 0,
+    borderColor: Color(0x00000000),
+    shadowColor: Color(0x14000000),
+    shadowBlur: 18,
+    shadowOffset: Offset(0, 8),
+    buttonLip: 0,
+  );
+
+  bool get hasBorder => borderWidth > 0;
+
+  /// The outline for a card, or null when the theme doesn't draw one.
+  BorderSide? get side =>
+      hasBorder ? BorderSide(color: borderColor, width: borderWidth) : null;
+
+  List<BoxShadow> get shadows => [
+        BoxShadow(
+          color: shadowColor,
+          blurRadius: shadowBlur,
+          offset: shadowOffset,
+        ),
+      ];
+
+  @override
+  AppSurfaces copyWith({
+    double? borderWidth,
+    Color? borderColor,
+    Color? shadowColor,
+    double? shadowBlur,
+    Offset? shadowOffset,
+    double? buttonLip,
+  }) {
+    return AppSurfaces(
+      borderWidth: borderWidth ?? this.borderWidth,
+      borderColor: borderColor ?? this.borderColor,
+      shadowColor: shadowColor ?? this.shadowColor,
+      shadowBlur: shadowBlur ?? this.shadowBlur,
+      shadowOffset: shadowOffset ?? this.shadowOffset,
+      buttonLip: buttonLip ?? this.buttonLip,
+    );
+  }
+
+  @override
+  AppSurfaces lerp(ThemeExtension<AppSurfaces>? other, double t) {
+    if (other is! AppSurfaces) return this;
+    return AppSurfaces(
+      borderWidth: lerpDouble(borderWidth, other.borderWidth, t),
+      borderColor: Color.lerp(borderColor, other.borderColor, t) ?? borderColor,
+      shadowColor: Color.lerp(shadowColor, other.shadowColor, t) ?? shadowColor,
+      shadowBlur: lerpDouble(shadowBlur, other.shadowBlur, t),
+      shadowOffset:
+          Offset.lerp(shadowOffset, other.shadowOffset, t) ?? shadowOffset,
+      buttonLip: lerpDouble(buttonLip, other.buttonLip, t),
+    );
+  }
+}
+
+double lerpDouble(double a, double b, double t) => a + (b - a) * t;
+
+extension AppSurfacesContext on BuildContext {
+  /// How raised surfaces are drawn in the active theme.
+  AppSurfaces get surfaces =>
+      Theme.of(this).extension<AppSurfaces>() ?? AppSurfaces.standard;
 }
 
 /// The display face, carried on the theme so it can be swapped.
@@ -382,8 +487,18 @@ const ColorScheme appColorScheme = ColorScheme(
   scrim: Colors.black,
 );
 
-ThemeData buildAppTheme() {
-  const colorScheme = appColorScheme;
+/// Builds the [ThemeData] for [spec], or for the theme the app ships with
+/// when none is given.
+///
+/// Everything a purchasable theme can change goes through the spec: the
+/// palette, the semantic colours, the radii and how surfaces are drawn.
+/// Nothing here reads a global — that is what makes swapping a theme at
+/// runtime possible.
+ThemeData buildAppTheme([AppThemeSpec? spec]) {
+  final theme = spec ?? AppThemes.byId(AppThemes.defaultId);
+  final colorScheme = theme.colorScheme;
+  final surfaces = theme.surfaces;
+  final shapes = theme.shapes;
 
   final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
 
@@ -402,19 +517,20 @@ ThemeData buildAppTheme() {
   );
 
   return base.copyWith(
-    scaffoldBackgroundColor: AppColors.pageBackground,
+    scaffoldBackgroundColor: theme.scaffoldBackground,
     // Resolved once here so the family lives on the theme instead of at 98
     // call sites. Built at w800 on purpose — see [AppTypography].
     extensions: <ThemeExtension<dynamic>>[
       AppTypography(
         heading: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
       ),
-      AppSemanticColors.standard,
-      AppShapes.standard,
+      theme.semanticColors,
+      shapes,
+      surfaces,
     ],
     textTheme: textTheme,
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: theme.scaffoldBackground,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: false,
@@ -435,7 +551,8 @@ ThemeData buildAppTheme() {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(shapes.md),
+        side: surfaces.side ?? BorderSide.none,
       ),
     ),
     dividerTheme: DividerThemeData(
@@ -454,7 +571,8 @@ ThemeData buildAppTheme() {
         foregroundColor: colorScheme.onPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+          borderRadius: BorderRadius.circular(shapes.pill),
+          side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
@@ -466,7 +584,8 @@ ThemeData buildAppTheme() {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+          borderRadius: BorderRadius.circular(shapes.pill),
+          side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
@@ -474,10 +593,11 @@ ThemeData buildAppTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: colorScheme.onSurface,
-        side: BorderSide(color: colorScheme.primary, width: 1.4),
+        side: surfaces.side ??
+            BorderSide(color: colorScheme.primary, width: 1.4),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.pill),
+          borderRadius: BorderRadius.circular(shapes.pill),
         ),
       ),
     ),
@@ -492,15 +612,15 @@ ThemeData buildAppTheme() {
       fillColor: colorScheme.surfaceContainerHighest,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(shapes.sm),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(shapes.sm),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(shapes.sm),
         borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
       ),
       labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -540,13 +660,13 @@ ThemeData buildAppTheme() {
       contentTextStyle: TextStyle(color: colorScheme.onSurface),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(shapes.sm),
       ),
     ),
     dialogTheme: DialogThemeData(
       backgroundColor: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(shapes.lg),
       ),
     ),
   );

@@ -4,7 +4,9 @@ import '../features/auth/auth_gate.dart';
 import '../features/onboarding/language_picker_screen.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../services/locale_controller.dart';
+import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_themes.dart';
 
 class TriviaIAApp extends StatelessWidget {
   const TriviaIAApp({super.key});
@@ -14,21 +16,32 @@ class TriviaIAApp extends StatelessWidget {
     return ValueListenableBuilder<Locale>(
       valueListenable: LocaleController.instance.locale,
       builder: (context, locale, _) {
-        return MaterialApp(
-          title: 'TriviaIA',
-          debugShowCheckedModeBanner: false,
-          theme: buildAppTheme(),
-          locale: locale,
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: const LanguageGate(),
+        return ValueListenableBuilder<String>(
+          // Nested rather than merged into one listenable: the theme has to
+          // be applied above every screen, and this is the only place that
+          // is true. Equipping a theme repaints the app from here without
+          // any screen knowing a theme exists.
+          valueListenable: ThemeService.instance.equippedThemeId,
+          builder: (context, themeId, _) => _buildApp(locale, themeId),
         );
       },
+    );
+  }
+
+  Widget _buildApp(Locale locale, String themeId) {
+    return MaterialApp(
+      title: 'TriviaIA',
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(AppThemes.byId(themeId)),
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: const LanguageGate(),
     );
   }
 }

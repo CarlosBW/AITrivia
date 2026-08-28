@@ -2404,6 +2404,47 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coinShopBuyButton => 'Comprar';
 
   @override
+  String get coinShopCoinsSectionTitle => 'Monedas';
+
+  @override
+  String get themeShopSectionTitle => 'Temas';
+
+  @override
+  String get themeShopSectionSubtitle => 'Cambia el aspecto de todo el juego.';
+
+  @override
+  String get themeShopEquip => 'Usar';
+
+  @override
+  String get themeShopEquipped => 'En uso';
+
+  @override
+  String themeShopPriceButton(int coins) {
+    return '$coins';
+  }
+
+  @override
+  String get themeShopNotEnoughCoins => 'Te faltan monedas para este tema.';
+
+  @override
+  String themeShopPurchased(String theme) {
+    return '¡$theme desbloqueado!';
+  }
+
+  @override
+  String get themeNameDefault => 'Clásico';
+
+  @override
+  String get themeDescriptionDefault => 'El aspecto original de TriviaIA.';
+
+  @override
+  String get themeNamePlayful => 'Juguetón';
+
+  @override
+  String get themeDescriptionPlayful =>
+      'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

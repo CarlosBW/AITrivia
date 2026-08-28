@@ -12,6 +12,7 @@ import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
+import '../../services/theme_service.dart';
 import '../../services/avatar_service.dart';
 import '../achievements/achievements_screen.dart';
 import '../../widgets/buy_coins_button.dart';
@@ -135,6 +136,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           )
           .call();
       await FirebaseAuth.instance.signOut();
+
+      // The deleted account's theme would otherwise stay painted over the
+      // brand-new one, which owns nothing.
+      ThemeService.instance.stop();
 
       if (!mounted) return;
 

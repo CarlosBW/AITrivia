@@ -92,7 +92,7 @@ service cloud.firestore {
         'gamesPlayed', 'correctAnswers', 'wrongAnswers',
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
-        'unlockedAvatars', 'dynamicAvatars',
+        'unlockedAvatars', 'dynamicAvatars', 'ownedThemes',
         'categoriesExploredCount', 'weeklyTopicsCompletedCount',
         'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt'
       ];
@@ -148,6 +148,20 @@ service cloud.firestore {
     function equippedFrameFieldValid() {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['equippedFrame'])
         || request.resource.data.equippedFrame in unlockedFramesForLeague(resource.data.bestLeagueId);
+    }
+
+    // Same shape for themes: `ownedThemes` is server-granted (it's in
+    // economyProtectedFields, so only purchaseTheme can add to it), while
+    // `equippedTheme` stays client-writable but only ever to a theme the
+    // player already owns. Read off `resource.data` — the doc as it stands
+    // before this write — so owning and equipping can't be forged in one go.
+    // The free theme is always allowed: it isn't stored in ownedThemes
+    // because nothing was ever charged for it.
+    function equippedThemeFieldValid() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['equippedTheme'])
+        || request.resource.data.equippedTheme == 'default'
+        || (('ownedThemes' in resource.data)
+            && request.resource.data.equippedTheme in resource.data.ownedThemes);
     }
 
     // The only winReward value any PvP match is ever created with today
@@ -228,7 +242,8 @@ service cloud.firestore {
         && !('pvpCoinsDate' in request.resource.data)
         && !('dynamicAvatars' in request.resource.data)
         && !('categoriesExploredCount' in request.resource.data)
-        && !('weeklyTopicsCompletedCount' in request.resource.data);
+        && !('weeklyTopicsCompletedCount' in request.resource.data)
+        && !('ownedThemes' in request.resource.data);
     }
 
     match /users/{userId} {
@@ -249,7 +264,8 @@ service cloud.firestore {
         && !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(economyProtectedFields())
         && avatarIdFieldValid()
-        && equippedFrameFieldValid();
+        && equippedFrameFieldValid()
+        && equippedThemeFieldValid();
 
       // Per-user data nobody else may read, in contrast to the user doc
       // above. Today that means the FCM push token: it lived on the user

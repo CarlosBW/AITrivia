@@ -4132,6 +4132,78 @@ abstract class AppLocalizations {
   /// **'Comprar'**
   String get coinShopBuyButton;
 
+  /// No description provided for @coinShopCoinsSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Monedas'**
+  String get coinShopCoinsSectionTitle;
+
+  /// No description provided for @themeShopSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Temas'**
+  String get themeShopSectionTitle;
+
+  /// No description provided for @themeShopSectionSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambia el aspecto de todo el juego.'**
+  String get themeShopSectionSubtitle;
+
+  /// No description provided for @themeShopEquip.
+  ///
+  /// In es, this message translates to:
+  /// **'Usar'**
+  String get themeShopEquip;
+
+  /// No description provided for @themeShopEquipped.
+  ///
+  /// In es, this message translates to:
+  /// **'En uso'**
+  String get themeShopEquipped;
+
+  /// No description provided for @themeShopPriceButton.
+  ///
+  /// In es, this message translates to:
+  /// **'{coins}'**
+  String themeShopPriceButton(int coins);
+
+  /// No description provided for @themeShopNotEnoughCoins.
+  ///
+  /// In es, this message translates to:
+  /// **'Te faltan monedas para este tema.'**
+  String get themeShopNotEnoughCoins;
+
+  /// No description provided for @themeShopPurchased.
+  ///
+  /// In es, this message translates to:
+  /// **'¡{theme} desbloqueado!'**
+  String themeShopPurchased(String theme);
+
+  /// No description provided for @themeNameDefault.
+  ///
+  /// In es, this message translates to:
+  /// **'Clásico'**
+  String get themeNameDefault;
+
+  /// No description provided for @themeDescriptionDefault.
+  ///
+  /// In es, this message translates to:
+  /// **'El aspecto original de TriviaIA.'**
+  String get themeDescriptionDefault;
+
+  /// No description provided for @themeNamePlayful.
+  ///
+  /// In es, this message translates to:
+  /// **'Juguetón'**
+  String get themeNamePlayful;
+
+  /// No description provided for @themeDescriptionPlayful.
+  ///
+  /// In es, this message translates to:
+  /// **'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.'**
+  String get themeDescriptionPlayful;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

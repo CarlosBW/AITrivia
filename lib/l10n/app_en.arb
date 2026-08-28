@@ -1398,6 +1398,29 @@
     }
   },
   "coinShopBuyButton": "Buy",
+  "coinShopCoinsSectionTitle": "Coins",
+
+  "themeShopSectionTitle": "Themes",
+  "themeShopSectionSubtitle": "Change how the whole game looks.",
+  "themeShopEquip": "Use",
+  "themeShopEquipped": "In use",
+  "themeShopPriceButton": "{coins}",
+  "@themeShopPriceButton": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
+  "themeShopNotEnoughCoins": "Not enough coins for this theme.",
+  "themeShopPurchased": "{theme} unlocked!",
+  "@themeShopPurchased": {
+    "placeholders": {
+      "theme": {"type": "String"}
+    }
+  },
+  "themeNameDefault": "Classic",
+  "themeDescriptionDefault": "TriviaIA's original look.",
+  "themeNamePlayful": "Playful",
+  "themeDescriptionPlayful": "Bold outlines and solid shadows — everything feels like a game piece.",
 
   "notificationsChallengeDeclined": "Challenge declined",
   "notificationsContinue": "Continue",

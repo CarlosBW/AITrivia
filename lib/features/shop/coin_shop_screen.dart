@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../services/economy_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/profile_avatar_button.dart';
 
@@ -113,11 +114,30 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             ? const []
             : const [ProfileAvatarButton()],
       ),
+      // Themes are bought with coins the player already has, so they show
+      // whether or not the IAP store is reachable — only the coin packs
+      // below wait on the app-store accounts.
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _storeAvailable
-              ? _buildShop(context)
-              : _buildComingSoon(context),
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const ThemeShopSection(),
+                const SizedBox(height: 28),
+                Text(
+                  AppLocalizations.of(context).coinShopCoinsSectionTitle,
+                  style: context.heading(
+                    20,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (_storeAvailable)
+                  _buildShop(context)
+                else
+                  _buildComingSoon(context),
+              ],
+            ),
     );
   }
 
@@ -156,8 +176,12 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   Widget _buildShop(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // Nested inside the screen's own ListView now, so it must size to its
+    // children and leave the scrolling to the parent.
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
       itemCount: EconomyService.coinPacks.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {

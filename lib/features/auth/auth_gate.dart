@@ -7,6 +7,7 @@ import '../onboarding/username_picker_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
+import '../../services/theme_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class AuthGate extends StatefulWidget {
@@ -71,6 +72,12 @@ class _AuthGateState extends State<AuthGate> {
     );
 
     PresenceService.instance.markReady();
+
+    // Starts following the equipped theme once there is a user doc to
+    // follow. Not awaited: the app paints in the default theme and swaps
+    // as soon as the first snapshot lands, which beats holding the whole
+    // launch on a read that only decides how things look.
+    ThemeService.instance.watch(uid);
 
     await MatchService().recoverMyRealtimeStateOnAppStart();
     await PresenceService.instance.setOnline();

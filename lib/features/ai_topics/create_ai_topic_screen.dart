@@ -636,7 +636,8 @@ class _TopicChoiceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(context.radii.sm),
-          border: Border.all(color: scheme.outline.withValues(alpha: 0.2)),
+          boxShadow: context.surfaces.shadowsOr(null),
+          border: context.surfaces.borderOr(Border.all(color: scheme.outline.withValues(alpha: 0.2))),
         ),
         child: Row(
           children: [
@@ -712,7 +713,8 @@ class _PricingCardState extends State<_PricingCard> {
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(context.radii.md),
-            border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+            boxShadow: context.surfaces.shadowsOr(null),
+            border: context.surfaces.borderOr(Border.all(color: accentColor.withValues(alpha: 0.3))),
           ),
           child: Column(
             children: [
@@ -882,9 +884,10 @@ class _PopularTopicCard extends StatelessWidget {
               ? scheme.primary.withValues(alpha: 0.1)
               : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(context.radii.sm),
-          border: Border.all(
+          boxShadow: context.surfaces.shadowsOr(null),
+          border: context.surfaces.borderOr(Border.all(
             color: accentColor.withValues(alpha: selected ? 0.6 : 0.2),
-          ),
+          )),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

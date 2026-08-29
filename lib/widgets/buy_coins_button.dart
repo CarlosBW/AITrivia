@@ -31,6 +31,8 @@ class BuyCoinsButton extends StatelessWidget {
               colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
             ),
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(

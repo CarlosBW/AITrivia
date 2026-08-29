@@ -450,6 +450,8 @@ class _LoadingLine extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -481,6 +483,8 @@ class _EmptyLine extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Text(
         text,
@@ -505,9 +509,10 @@ class _SoftStatusCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.reward.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: context.appColors.reward.withValues(alpha: 0.35),
-        ),
+        )),
       ),
       child: Row(
         children: [

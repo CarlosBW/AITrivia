@@ -43,6 +43,8 @@ class QuestionAnswerCard extends StatelessWidget {
               colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
             ),
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Text(
             qText,
@@ -62,7 +64,9 @@ class QuestionAnswerCard extends StatelessWidget {
 
           Color? fillColor;
           if (locked && !timedOut) {
-            if (isCorrect) fillColor = context.appColors.success.withValues(alpha: 0.16);
+            if (isCorrect) {
+              fillColor = context.appColors.success.withValues(alpha: 0.16);
+            }
             if (isSelected && !isCorrect) {
               fillColor = context.appColors.danger.withValues(alpha: 0.16);
             }
@@ -100,9 +104,10 @@ class QuestionAnswerCard extends StatelessWidget {
                       ? colorScheme.primary
                       : colorScheme.surfaceContainerHighest;
 
-          final badgeTextColor = badgeColor == colorScheme.surfaceContainerHighest
-              ? colorScheme.onSurfaceVariant
-              : context.appColors.onAccent;
+          final badgeTextColor =
+              badgeColor == colorScheme.surfaceContainerHighest
+                  ? colorScheme.onSurfaceVariant
+                  : context.appColors.onAccent;
 
           IconData? trailingIcon;
           Color? trailingIconColor;
@@ -139,15 +144,23 @@ class QuestionAnswerCard extends StatelessWidget {
                     color: borderColor,
                     width: borderWidth,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
+                  // El borde de arriba codifica la seleccion, asi que se
+                  // deja tal cual; solo la sombra pasa por el tema, que es
+                  // lo que convierte el boton en una ficha.
+                  boxShadow: context.surfaces.shadowsOr(
+                    isSelected
+                        ? [
+                            BoxShadow(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .shadow
+                                  .withValues(alpha: 0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
+                  ),
                 ),
                 child: Row(
                   children: [

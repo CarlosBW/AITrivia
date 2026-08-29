@@ -126,6 +126,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(context.radii.md),
+                  border: context.surfaces.borderOr(null),
+                  boxShadow: context.surfaces.shadowsOr(null),
                 ),
                 child: Column(
                   children: [
@@ -255,10 +257,11 @@ class _AchievementCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: accentBg,
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: accentColor.withValues(alpha: completed || claimed ? 1 : 0.25),
           width: 2,
-        ),
+        )),
       ),
       child: Column(
         children: [

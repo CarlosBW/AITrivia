@@ -92,9 +92,10 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: color.withValues(alpha: 0.28),
-        ),
+        )),
       ),
       child: Row(
         children: [

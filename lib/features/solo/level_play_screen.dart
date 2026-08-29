@@ -1141,6 +1141,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       decoration: BoxDecoration(
         color: context.appColors.dangerBg,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -1637,6 +1639,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(context.radii.md),
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr(null),
               ),
               child: Column(
                 children: [
@@ -1825,6 +1829,8 @@ class _NoLivesCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(context.radii.lg),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1861,6 +1867,8 @@ class _NoLivesCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(context.radii.md),
+                  border: context.surfaces.borderOr(null),
+                  boxShadow: context.surfaces.shadowsOr(null),
                 ),
                 child: Column(
                   children: [
@@ -1972,6 +1980,8 @@ class _RewardCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [
@@ -2181,6 +2191,8 @@ class _AnimatedXpProgressCardState extends State<_AnimatedXpProgressCard> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

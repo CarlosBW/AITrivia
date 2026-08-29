@@ -42,6 +42,8 @@ class StatChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(context.radii.sm),
+          border: context.surfaces.borderOr(null),
+          boxShadow: context.surfaces.shadowsOr(null),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -63,6 +65,8 @@ class StatChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

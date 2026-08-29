@@ -261,13 +261,14 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
                     ),
                     borderRadius: BorderRadius.circular(context.radii.md),
-                    boxShadow: [
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
                         color: const Color(0xFF6C4FF2).withValues(alpha: 0.45),
                         blurRadius: 18,
                         offset: const Offset(0, 6),
                       ),
-                    ],
+                    ]),
                   ),
                   child: FloatingActionButton.extended(
                     onPressed: () => _openCreate(context),
@@ -375,6 +376,8 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       decoration: BoxDecoration(
                         color: Colors.redAccent.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(context.radii.md),
+                        border: context.surfaces.borderOr(null),
+                        boxShadow: context.surfaces.shadowsOr(null),
                       ),
                       child: Icon(
                         Icons.delete,

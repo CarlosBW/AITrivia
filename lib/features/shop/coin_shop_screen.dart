@@ -194,6 +194,8 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Row(
             children: [

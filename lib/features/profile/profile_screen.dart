@@ -314,9 +314,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(context.radii.md),
-                    border: Border.all(
+                    boxShadow: context.surfaces.shadowsOr(null),
+                    border: context.surfaces.borderOr(Border.all(
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
-                    ),
+                    )),
                   ),
                   child: Row(
                     children: [
@@ -403,12 +404,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       .surface
                                       .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(context.radii.md),
-                          border: Border.all(
+                          boxShadow: context.surfaces.shadowsOr(null),
+                          border: context.surfaces.borderOr(Border.all(
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
                                 : Colors.transparent,
                             width: isSelected ? 2 : 1,
-                          ),
+                          )),
                         ),
                         child: Stack(
                           children: [
@@ -788,9 +790,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(context.radii.lg),
-                  border: Border.all(
+                  boxShadow: context.surfaces.shadowsOr(null),
+                  border: context.surfaces.borderOr(Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
-                  ),
+                  )),
                 ),
                 child: Column(
                   children: [
@@ -928,6 +931,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
                       ),
                       borderRadius: BorderRadius.circular(context.radii.md),
+                      border: context.surfaces.borderOr(null),
+                      boxShadow: context.surfaces.shadowsOr(null),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -1064,9 +1069,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 decoration: BoxDecoration(
                   color: Color(pvpLeague.colorValue).withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(context.radii.md),
-                  border: Border.all(
+                  boxShadow: context.surfaces.shadowsOr(null),
+                  border: context.surfaces.borderOr(Border.all(
                     color: Color(pvpLeague.colorValue).withValues(alpha: 0.35),
-                  ),
+                  )),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1410,6 +1416,8 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(context.radii.md),
+              border: context.surfaces.borderOr(null),
+              boxShadow: context.surfaces.shadowsOr(null),
             ),
             child: Text(
               l10n.profileNoMatches,
@@ -1436,9 +1444,10 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(context.radii.md),
-                border: Border.all(
+                boxShadow: context.surfaces.shadowsOr(null),
+                border: context.surfaces.borderOr(Border.all(
                   color: color.withValues(alpha: 0.30),
-                ),
+                )),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1498,6 +1507,8 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(context.radii.sm),
+                            border: context.surfaces.borderOr(null),
+                            boxShadow: context.surfaces.shadowsOr(null),
                           ),
                           child: Column(
                             children: [
@@ -1526,6 +1537,8 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(context.radii.sm),
+                          border: context.surfaces.borderOr(null),
+                          boxShadow: context.surfaces.shadowsOr(null),
                         ),
                         child: Text(
                           ranked ? l10n.profileRanked : l10n.profileCasual,

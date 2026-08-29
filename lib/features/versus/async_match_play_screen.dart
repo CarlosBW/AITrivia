@@ -777,6 +777,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(context.radii.md),
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr(null),
               ),
               child: Text(
                 qText,
@@ -878,15 +880,22 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                         color: borderColor,
                         width: borderWidth,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [],
+                      // El borde de arriba codifica la seleccion; solo la
+                      // sombra pasa por el tema.
+                      boxShadow: context.surfaces.shadowsOr(
+                        isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .shadow
+                                      .withValues(alpha: 0.08),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
+                      ),
                     ),
                     child: Row(
                       children: [

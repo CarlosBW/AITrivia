@@ -266,13 +266,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(context.radii.lg),
-            boxShadow: [
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr([
               BoxShadow(
                 color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
-            ],
+            ]),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -404,13 +405,14 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                     decoration: BoxDecoration(
                       color: context.appColors.reward,
                       borderRadius: BorderRadius.circular(context.radii.md),
-                      boxShadow: [
+                      border: context.surfaces.borderOr(null),
+                      boxShadow: context.surfaces.shadowsOr([
                         BoxShadow(
                           color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
-                      ],
+                      ]),
                     ),
                     child: Text(
                       _coinPopupText!,
@@ -451,6 +453,8 @@ class _HeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [

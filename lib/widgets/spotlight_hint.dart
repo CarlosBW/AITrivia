@@ -234,13 +234,13 @@ class _TooltipBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
-        boxShadow: [
+        boxShadow: context.surfaces.shadowsOr([
           BoxShadow(
             color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
-        ],
+        ]),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

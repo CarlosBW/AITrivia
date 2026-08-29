@@ -140,7 +140,8 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       decoration: BoxDecoration(
         color: Color(league.colorValue).withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: Color(league.colorValue).withValues(alpha: 0.35)),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: Color(league.colorValue).withValues(alpha: 0.35))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

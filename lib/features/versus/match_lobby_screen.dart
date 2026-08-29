@@ -290,9 +290,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(context.radii.lg),
-                    border: Border.all(
+                    boxShadow: context.surfaces.shadowsOr(null),
+                    border: context.surfaces.borderOr(Border.all(
                       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
-                    ),
+                    )),
                   ),
                   child: Column(
                     children: [
@@ -450,6 +451,8 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.lg),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: children,
@@ -577,9 +580,10 @@ class _PlayerStatusCard extends StatelessWidget {
             ? context.appColors.success.withValues(alpha: 0.10)
             : context.appColors.reward.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: borderColor,
-        ),
+        )),
       ),
       child: Row(
         children: [
@@ -656,9 +660,10 @@ class _RoomCodeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(context.radii.lg),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
-        ),
+        )),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

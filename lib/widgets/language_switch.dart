@@ -21,6 +21,8 @@ class LanguageSwitch extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(context.radii.sm),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

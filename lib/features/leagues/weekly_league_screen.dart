@@ -450,9 +450,10 @@ class _LeagueHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(context.radii.lg),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: color.withValues(alpha: 0.55),
-        ),
+        )),
       ),
       child: Column(
         children: [
@@ -490,6 +491,8 @@ class _PendingRewardsLoadingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -550,7 +553,8 @@ class _PendingRewardsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.rewardBg,
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: context.appColors.reward),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: context.appColors.reward)),
       ),
       child: Column(
         children: [
@@ -632,6 +636,8 @@ class _RewardsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         crossAxisAlignment:
@@ -762,14 +768,14 @@ class _WeeklyLeagueTile extends StatelessWidget {
         color: isMe
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
-        borderRadius:
-            BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        borderRadius: BorderRadius.circular(context.radii.md),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: isMe
               ? Theme.of(context).colorScheme.primary
               : Colors.transparent,
           width: isMe ? 2 : 1,
-        ),
+        )),
       ),
       child: Row(
         children: [

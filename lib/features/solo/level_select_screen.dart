@@ -459,6 +459,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -561,13 +563,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               decoration: BoxDecoration(
                 color: tileColor,
                 borderRadius: BorderRadius.circular(context.radii.md),
-                border: Border.all(
+                border: context.surfaces.borderOr(Border.all(
                   color: showRecommended
                       ? Theme.of(context).colorScheme.primary
                       : Colors.transparent,
                   width: showRecommended ? 2 : 1,
-                ),
-                boxShadow: showRecommended
+                )),
+                boxShadow: context.surfaces.shadowsOr(showRecommended
                     ? [
                         BoxShadow(
                           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
@@ -575,7 +577,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                           offset: const Offset(0, 4),
                         ),
                       ]
-                    : [],
+                    : []),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(context.radii.md),

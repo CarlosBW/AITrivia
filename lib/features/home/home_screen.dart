@@ -457,6 +457,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(context.radii.md),
+                        border: context.surfaces.borderOr(null),
+                        boxShadow: context.surfaces.shadowsOr(null),
                       ),
                       child: Column(
                         children: [
@@ -664,6 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         .primary
                         .withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(context.radii.md),
+                    boxShadow: context.surfaces.shadowsOr(null),
                     border: Border.all(
                       color: Theme.of(context)
                           .colorScheme
@@ -714,13 +717,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: context.appColors.danger,
                     borderRadius: BorderRadius.circular(context.radii.lg),
-                    boxShadow: [
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
                         color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
-                    ],
+                    ]),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -756,13 +760,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(context.radii.lg),
-                    boxShadow: [
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
                         color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
-                    ],
+                    ]),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -822,13 +827,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: context.appColors.reward,
                     borderRadius: BorderRadius.circular(context.radii.lg),
-                    boxShadow: [
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
                         color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
-                    ],
+                    ]),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -879,13 +885,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(context.radii.lg),
-                    boxShadow: [
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
                         color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.3),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
-                    ],
+                    ]),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1001,6 +1008,8 @@ class _LivesCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.dangerBg,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -1085,6 +1094,7 @@ class _AiTopicCtaState extends State<_AiTopicCta>
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(context.radii.md),
+                border: context.surfaces.borderOr(null),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1190,6 +1200,8 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
             decoration: BoxDecoration(
               color: context.appColors.rewardBg,
               borderRadius: BorderRadius.circular(context.radii.sm),
+              border: context.surfaces.borderOr(null),
+              boxShadow: context.surfaces.shadowsOr(null),
             ),
             child: Row(
               children: [
@@ -1242,6 +1254,8 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
               colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
             ),
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1336,6 +1350,8 @@ class _WeeklyTopicUnavailableCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [

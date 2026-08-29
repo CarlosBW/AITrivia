@@ -173,9 +173,10 @@ class _TopThreePodium extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(context.radii.lg),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
-        ),
+        )),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -256,10 +257,11 @@ class _PodiumPlayer extends StatelessWidget {
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.20)
             : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: 2,
-        ),
+        )),
       ),
       child: Column(
         children: [
@@ -359,10 +361,11 @@ class _LeaderboardTile extends StatelessWidget {
             ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.14)
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.sm),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: isMe ? Theme.of(context).colorScheme.primary : Colors.transparent,
           width: isMe ? 2 : 1,
-        ),
+        )),
       ),
       child: Row(
         children: [

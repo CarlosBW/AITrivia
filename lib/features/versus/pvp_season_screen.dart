@@ -152,7 +152,8 @@ class _SeasonOverviewTab extends StatelessWidget {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(context.radii.lg),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
+            boxShadow: context.surfaces.shadowsOr(null),
+            border: context.surfaces.borderOr(Border.all(color: color.withValues(alpha: 0.35))),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,6 +218,8 @@ class _SeasonOverviewTab extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(context.radii.md),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,10 +530,11 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                       ? color.withValues(alpha: 0.14)
                       : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(context.radii.md),
-                  border: Border.all(
+                  boxShadow: context.surfaces.shadowsOr(null),
+                  border: context.surfaces.borderOr(Border.all(
                     color: isMe ? color : Colors.transparent,
                     width: 2,
-                  ),
+                  )),
                 ),
                 child: Row(
                   children: [
@@ -665,10 +669,11 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                     ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(context.radii.md),
-                border: Border.all(
+                boxShadow: context.surfaces.shadowsOr(null),
+                border: context.surfaces.borderOr(Border.all(
                   color: isMe ? color : Colors.transparent,
                   width: 2,
-                ),
+                )),
               ),
               child: Row(
                 children: [
@@ -873,10 +878,11 @@ class _RewardsTabState extends State<_RewardsTab> {
                     ? color.withValues(alpha: 0.14)
                     : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(context.radii.md),
-                border: Border.all(
+                boxShadow: context.surfaces.shadowsOr(null),
+                border: context.surfaces.borderOr(Border.all(
                   color: isCurrent ? color : Colors.transparent,
                   width: isCurrent ? 2 : 1,
-                ),
+                )),
               ),
               child: Row(
                 children: [
@@ -943,7 +949,8 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: color.withValues(alpha: 0.45))),
       ),
       child: Row(
         children: [
@@ -1038,6 +1045,8 @@ class _PendingRewardsCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(context.radii.md),
+          border: context.surfaces.borderOr(null),
+          boxShadow: context.surfaces.shadowsOr(null),
         ),
         child: Row(
           children: [
@@ -1060,7 +1069,8 @@ class _PendingRewardsCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.redAccent.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(context.radii.md),
-          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
+          boxShadow: context.surfaces.shadowsOr(null),
+          border: context.surfaces.borderOr(Border.all(color: Colors.redAccent.withValues(alpha: 0.35))),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1102,7 +1112,8 @@ class _PendingRewardsCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.blueGrey.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(context.radii.md),
-          border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.35)),
+          boxShadow: context.surfaces.shadowsOr(null),
+          border: context.surfaces.borderOr(Border.all(color: Colors.blueGrey.withValues(alpha: 0.35))),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1142,7 +1153,8 @@ class _PendingRewardsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.amber.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: Colors.amber.withValues(alpha: 0.55)),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: Colors.amber.withValues(alpha: 0.55))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

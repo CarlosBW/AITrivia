@@ -203,6 +203,8 @@ class PvpResultCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(context.radii.lg),
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr(null),
               ),
               child: Column(
                 children: [
@@ -403,6 +405,8 @@ class _MatchSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [
@@ -494,6 +498,8 @@ class _RewardMiniCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [
@@ -554,9 +560,10 @@ class _RatingChangeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: color.withValues(alpha: 0.35),
-        ),
+        )),
       ),
       child: Column(
         children: [
@@ -656,6 +663,8 @@ class _MmrBox extends StatelessWidget {
             ? Theme.of(context).colorScheme.surfaceContainerHighest
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [

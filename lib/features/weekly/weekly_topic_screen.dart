@@ -283,9 +283,10 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         decoration: BoxDecoration(
                           color: context.appColors.rewardBg,
                           borderRadius: BorderRadius.circular(context.radii.md),
-                          border: Border.all(
+                          boxShadow: context.surfaces.shadowsOr(null),
+                          border: context.surfaces.borderOr(Border.all(
                             color: context.appColors.reward.withValues(alpha: 0.5),
-                          ),
+                          )),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,6 +319,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(context.radii.md),
+                          border: context.surfaces.borderOr(null),
+                          boxShadow: context.surfaces.shadowsOr(null),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,6 +347,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                         decoration: BoxDecoration(
                           color: context.appColors.success.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(context.radii.md),
+                          border: context.surfaces.borderOr(null),
+                          boxShadow: context.surfaces.shadowsOr(null),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

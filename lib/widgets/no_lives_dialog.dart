@@ -25,7 +25,8 @@ class NoLivesDialog extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(context.radii.lg)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(context.radii.lg)),
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
@@ -69,6 +70,8 @@ class NoLivesDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(context.radii.md),
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr(null),
               ),
               child: Column(
                 children: [

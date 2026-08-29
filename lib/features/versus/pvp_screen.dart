@@ -185,10 +185,11 @@ class _PvpCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(
           color: color.withValues(alpha: alert ? 0.7 : 0.35),
           width: alert ? 1.6 : 1.2,
-        ),
+        )),
       ),
       child: Material(
         color: Colors.transparent,

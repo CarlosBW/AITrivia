@@ -387,6 +387,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   decoration: BoxDecoration(
                     color: context.appColors.danger,
                     borderRadius: BorderRadius.circular(context.radii.md),
+                    border: context.surfaces.borderOr(null),
+                    boxShadow: context.surfaces.shadowsOr(null),
                   ),
                   child: Icon(
                     Icons.delete_outline,

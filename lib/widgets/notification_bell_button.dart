@@ -109,6 +109,8 @@ class _NotificationBellButtonState
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(context.radii.sm),
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr(null),
               ),
               child: Icon(
                 Icons.notifications_outlined,

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trivia_ia_flutter/theme/app_theme.dart';
 import 'package:trivia_ia_flutter/theme/app_themes.dart';
@@ -127,6 +129,63 @@ void main() {
   group('AppSurfaces', () {
     test('sin contorno no produce BorderSide', () {
       expect(AppSurfaces.standard.side, isNull);
+    });
+
+    // La promesa del barrido: enrutar 37 superficies por el token no cambia
+    // ni un pixel del tema clasico. Si `standard` empezara a imponer lo
+    // suyo, restilaria toda la app de golpe sin que nadie lo pidiera.
+    group('el tema clasico devuelve lo que le den, intacto', () {
+      test('conserva la ausencia de borde', () {
+        expect(AppSurfaces.standard.borderOr(null), isNull);
+      });
+
+      test('conserva el borde que trae la pantalla', () {
+        final own = Border.all(color: const Color(0xFF123456), width: 1.5);
+        expect(AppSurfaces.standard.borderOr(own), same(own));
+      });
+
+      test('conserva la sombra que trae la pantalla', () {
+        final own = [
+          const BoxShadow(color: Color(0x22000000), blurRadius: 7),
+        ];
+        expect(AppSurfaces.standard.shadowsOr(own), same(own));
+      });
+
+      test('conserva la ausencia de sombra', () {
+        expect(AppSurfaces.standard.shadowsOr(null), isNull);
+      });
+    });
+
+    group('el tema juguetón impone lo suyo', () {
+      final playful = AppThemes.byId(AppThemes.playfulId).surfaces;
+
+      test('pone contorno donde no habia ninguno', () {
+        expect(playful.borderOr(null), isNotNull);
+      });
+
+      test('sustituye el borde de la pantalla', () {
+        final own = Border.all(color: const Color(0xFF123456), width: 1.5);
+        final result = playful.borderOr(own);
+
+        expect(result, isNotNull);
+        expect(result!.top.color, playful.borderColor);
+        expect(result.top.width, playful.borderWidth);
+      });
+
+      test('sustituye la sombra por la suya, solida', () {
+        final own = [
+          const BoxShadow(color: Color(0x22000000), blurRadius: 7),
+        ];
+        final result = playful.shadowsOr(own);
+
+        expect(result, hasLength(1));
+        expect(result!.first.blurRadius, 0);
+        expect(result.first.color, playful.shadowColor);
+      });
+
+      test('pone sombra donde no habia ninguna', () {
+        expect(playful.shadowsOr(null), hasLength(1));
+      });
     });
 
     test('lerp interpola el grosor y el desenfoque', () {

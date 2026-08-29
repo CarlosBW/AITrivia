@@ -192,6 +192,8 @@ class _LoadingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -221,6 +223,8 @@ class _NoPendingRewardsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         children: [
@@ -264,7 +268,8 @@ class _PendingRewardsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.rewardBg,
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: context.appColors.reward),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: context.appColors.reward)),
       ),
       child: Column(
         children: [
@@ -330,6 +335,8 @@ class _PendingRewardMiniTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(context.radii.sm),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Row(
         children: [
@@ -371,6 +378,8 @@ class _EmptyHistoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Text(
         AppLocalizations.of(context).weeklyRewardsNoHistory,
@@ -419,7 +428,8 @@ class _HistoryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        boxShadow: context.surfaces.shadowsOr(null),
+        border: context.surfaces.borderOr(Border.all(color: color.withValues(alpha: 0.3))),
       ),
       child: Row(
         children: [

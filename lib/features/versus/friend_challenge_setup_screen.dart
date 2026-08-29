@@ -179,9 +179,10 @@ class _FriendChallengeSetupScreenState
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(context.radii.md),
-                  border: Border.all(
+                  boxShadow: context.surfaces.shadowsOr(null),
+                  border: context.surfaces.borderOr(Border.all(
                     color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
-                  ),
+                  )),
                 ),
                 child: Column(
                   children: [

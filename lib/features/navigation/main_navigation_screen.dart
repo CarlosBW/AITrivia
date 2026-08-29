@@ -456,13 +456,13 @@ class _AppIconFab extends StatelessWidget {
             color: selected ? const Color(0xFFEF9F27) : Colors.transparent,
             width: 2,
           ),
-          boxShadow: [
+          boxShadow: context.surfaces.shadowsOr([
             BoxShadow(
               color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.35),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
-          ],
+          ]),
         ),
         child: const CustomPaint(painter: _AppLogoPainter()),
       ),
@@ -817,13 +817,14 @@ class _NewNotificationOverlay extends StatelessWidget {
               decoration: BoxDecoration(
                 color: context.appColors.reward,
                 borderRadius: BorderRadius.circular(context.radii.lg),
-                boxShadow: [
+                border: context.surfaces.borderOr(null),
+                boxShadow: context.surfaces.shadowsOr([
                   BoxShadow(
                     color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.28),
                     blurRadius: 22,
                     offset: const Offset(0, 10),
                   ),
-                ],
+                ]),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

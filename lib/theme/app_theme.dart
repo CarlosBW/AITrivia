@@ -141,6 +141,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     required this.shadowBlur,
     required this.shadowOffset,
     required this.buttonLip,
+    this.overridesSurfaces = false,
   });
 
   /// Outline thickness for cards and buttons. Zero means no outline.
@@ -158,6 +159,17 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
   /// it by the same amount. Zero disables the effect.
   final double buttonLip;
 
+  /// Whether this theme takes over how every surface is outlined and
+  /// shadowed, rather than only styling Material's own components.
+  ///
+  /// The default theme deliberately does not. Screens were written with
+  /// their own `BoxDecoration`s — a soft shadow here, a hairline outline
+  /// there — and those were tuned individually; replacing them wholesale
+  /// with one shadow would restyle the classic look under the guise of
+  /// making it themeable. So [borderOr] and [shadowsOr] hand the screen's
+  /// own values back untouched unless a theme asks to override them.
+  final bool overridesSurfaces;
+
   /// The restrained treatment the app shipped with.
   static const AppSurfaces standard = AppSurfaces(
     borderWidth: 0,
@@ -166,6 +178,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     shadowBlur: 18,
     shadowOffset: Offset(0, 8),
     buttonLip: 0,
+    overridesSurfaces: false,
   );
 
   bool get hasBorder => borderWidth > 0;
@@ -182,6 +195,20 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
         ),
       ];
 
+  /// This theme's outline, or [fallback] when it doesn't draw its own.
+  ///
+  /// Pass what the screen would have drawn — including `null` for a card
+  /// that had no outline at all. That is what lets one theme add outlines
+  /// everywhere without any screen deciding to have one.
+  Border? borderOr(Border? fallback) =>
+      overridesSurfaces && hasBorder
+          ? Border.all(color: borderColor, width: borderWidth)
+          : fallback;
+
+  /// This theme's shadow, or [fallback] when it doesn't impose its own.
+  List<BoxShadow>? shadowsOr(List<BoxShadow>? fallback) =>
+      overridesSurfaces ? shadows : fallback;
+
   @override
   AppSurfaces copyWith({
     double? borderWidth,
@@ -190,6 +217,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     double? shadowBlur,
     Offset? shadowOffset,
     double? buttonLip,
+    bool? overridesSurfaces,
   }) {
     return AppSurfaces(
       borderWidth: borderWidth ?? this.borderWidth,
@@ -198,6 +226,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
       shadowBlur: shadowBlur ?? this.shadowBlur,
       shadowOffset: shadowOffset ?? this.shadowOffset,
       buttonLip: buttonLip ?? this.buttonLip,
+      overridesSurfaces: overridesSurfaces ?? this.overridesSurfaces,
     );
   }
 
@@ -212,6 +241,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
       shadowOffset:
           Offset.lerp(shadowOffset, other.shadowOffset, t) ?? shadowOffset,
       buttonLip: lerpDouble(buttonLip, other.buttonLip, t),
+      overridesSurfaces: t < 0.5 ? overridesSurfaces : other.overridesSurfaces,
     );
   }
 }

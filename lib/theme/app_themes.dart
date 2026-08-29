@@ -98,6 +98,7 @@ class AppThemes {
       shadowBlur: 0,
       shadowOffset: Offset(0, 4),
       buttonLip: 3,
+      overridesSurfaces: true,
     ),
     scaffoldBackground: AppColors.pageBackground,
     preview: [

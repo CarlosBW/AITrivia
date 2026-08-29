@@ -475,6 +475,8 @@ class _AllCategoriesCompletedBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -658,6 +660,8 @@ class _CategoryCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: accent.background,
                       borderRadius: BorderRadius.circular(context.radii.sm),
+                      border: context.surfaces.borderOr(null),
+                      boxShadow: context.surfaces.shadowsOr(null),
                     ),
                     child: Icon(
                       _iconForCategory(item.categoryId, item.name),

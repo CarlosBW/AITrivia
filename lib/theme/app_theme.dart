@@ -254,6 +254,76 @@ extension AppSurfacesContext on BuildContext {
       Theme.of(this).extension<AppSurfaces>() ?? AppSurfaces.standard;
 }
 
+/// Gives a button a solid lip it can sink into when pressed.
+///
+/// Built as `ButtonStyle` builders rather than a wrapper widget on purpose:
+/// there are ~74 buttons across the app, and every one of them already
+/// resolves its style from the theme. A wrapper would have meant editing
+/// all 74 and would still have missed the next one somebody writes.
+///
+/// The lip lives *inside* the button's own box — the face occupies all but
+/// the bottom [AppSurfaces.buttonLip] pixels, and pressing moves it down
+/// onto the block underneath. Same trick the answer cards already use for
+/// their animated border: the outer size never changes, so nothing below
+/// the button shifts when it is pressed.
+///
+/// Returns `(null, null)` when the theme has no lip, which leaves the
+/// button exactly as Material drew it before.
+({
+  Widget Function(BuildContext, Set<WidgetState>, Widget?)? background,
+  Widget Function(BuildContext, Set<WidgetState>, Widget?)? foreground,
+}) buttonLipBuilders(AppSurfaces surfaces, double radius) {
+  if (surfaces.buttonLip <= 0) {
+    return (background: null, foreground: null);
+  }
+
+  final lip = surfaces.buttonLip;
+  final shape = BorderRadius.circular(radius);
+  const duration = Duration(milliseconds: 70);
+
+  return (
+    background: (context, states, child) {
+      final pressed = states.contains(WidgetState.pressed);
+
+      return Stack(
+        children: [
+          // The block the face sits on. Always full-height: once the face
+          // drops onto it, it is simply covered.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: surfaces.shadowColor,
+                borderRadius: shape,
+              ),
+            ),
+          ),
+          AnimatedPositioned(
+            duration: duration,
+            curve: Curves.easeOut,
+            left: 0,
+            right: 0,
+            top: pressed ? lip : 0,
+            bottom: pressed ? 0 : lip,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        ],
+      );
+    },
+    // The label has to travel with the face, or it floats while the button
+    // moves out from under it.
+    foreground: (context, states, child) {
+      final pressed = states.contains(WidgetState.pressed);
+
+      return AnimatedContainer(
+        duration: duration,
+        curve: Curves.easeOut,
+        transform: Matrix4.translationValues(0, pressed ? lip : 0, 0),
+        child: child,
+      );
+    },
+  );
+}
+
 /// The display face, carried on the theme so it can be swapped.
 ///
 /// Screens used to call `GoogleFonts.baloo2(...)` directly — 98 times — so
@@ -532,6 +602,8 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
 
   final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
 
+  final lip = buttonLipBuilders(surfaces, shapes.pill);
+
   final bodyFont = GoogleFonts.manropeTextTheme(base.textTheme);
   final headingFont = GoogleFonts.baloo2TextTheme(base.textTheme);
 
@@ -599,12 +671,16 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
       style: FilledButton.styleFrom(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        // The lip eats into the bottom of the box, so the label needs that
+        // much more room under it to stay centred on the face.
+        padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + surfaces.buttonLip),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(shapes.pill),
           side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        backgroundBuilder: lip.background,
+        foregroundBuilder: lip.foreground,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -612,12 +688,14 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + surfaces.buttonLip),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(shapes.pill),
           side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        backgroundBuilder: lip.background,
+        foregroundBuilder: lip.foreground,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -625,10 +703,13 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
         foregroundColor: colorScheme.onSurface,
         side: surfaces.side ??
             BorderSide(color: colorScheme.primary, width: 1.4),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + surfaces.buttonLip),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(shapes.pill),
         ),
+        // No `backgroundBuilder`: an outlined button has no fill, so the
+        // block would show through it as a solid pill. It still sinks.
+        foregroundBuilder: lip.foreground,
       ),
     ),
     textButtonTheme: TextButtonThemeData(

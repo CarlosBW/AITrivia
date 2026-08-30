@@ -18,6 +18,7 @@ import '../../services/avatar_service.dart';
 import '../../services/sfx_service.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
+import '../../widgets/life_hearts.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/buy_coins_button.dart';
@@ -486,8 +487,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : Column(
                                       children: [
                                         _LivesCard(
-                                          livesText:
-                                              '${LifeService.instance.formatLives(_lifeState!['lifeUnits'])}/${LifeService.instance.formatLives(_lifeState!['maxLifeUnits'])}',
+                                          lifeUnits:
+                                              _lifeState!['lifeUnits'] as int,
+                                          maxLifeUnits: _lifeState![
+                                              'maxLifeUnits'] as int,
                                           isFull: _lifeState!['lifeUnits'] >=
                                               _lifeState!['maxLifeUnits'],
                                           countdownText: _formatCountdown(
@@ -985,12 +988,14 @@ class _WeeklyCountdownLabelState extends State<_WeeklyCountdownLabel> {
 // Vidas + tiempo de regeneración are one system, so they read as one card
 // instead of two separate stat chips.
 class _LivesCard extends StatelessWidget {
-  final String livesText;
+  final int lifeUnits;
+  final int maxLifeUnits;
   final bool isFull;
   final String countdownText;
 
   const _LivesCard({
-    required this.livesText,
+    required this.lifeUnits,
+    required this.maxLifeUnits,
     required this.isFull,
     required this.countdownText,
   });
@@ -999,7 +1004,6 @@ class _LivesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     const iconColor = Color(0xFFFF6B5B);
-    const valueColor = Color(0xFFB23A2C);
     const labelColor = Color(0xFFD9695B);
 
     return Container(
@@ -1013,11 +1017,12 @@ class _LivesCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.favorite_border, size: 22, color: iconColor),
-          const SizedBox(width: 10),
-          Text(
-            l10n.homeLivesSuffix(livesText),
-            style: context.heading(15, color: valueColor),
+          // Hearts instead of "8/10 lives": the number is information, the
+          // row is a game. The exact figure still reaches screen readers.
+          LifeHearts(
+            lifeUnits: lifeUnits,
+            maxLifeUnits: maxLifeUnits,
+            color: iconColor,
           ),
           const Spacer(),
           Icon(

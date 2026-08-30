@@ -188,6 +188,69 @@ void main() {
       });
     });
 
+    // El labio se monta en el `ButtonStyle` del tema, no envolviendo los ~74
+    // botones de la app. Que el clasico devuelva `null` es lo que garantiza
+    // que sus botones siguen siendo los de Material, intactos.
+    group('el labio de los botones', () {
+      test('el tema clasico no produce constructores', () {
+        final lip = buttonLipBuilders(AppSurfaces.standard, 999);
+
+        expect(lip.background, isNull);
+        expect(lip.foreground, isNull);
+      });
+
+      test('el juguetón produce ambos', () {
+        final lip = buttonLipBuilders(
+          AppThemes.byId(AppThemes.playfulId).surfaces,
+          999,
+        );
+
+        expect(lip.background, isNotNull);
+        expect(lip.foreground, isNotNull);
+      });
+
+      testWidgets('el fondo baja al pulsarse y vuelve al soltarse',
+          (tester) async {
+        final lip = buttonLipBuilders(
+          AppThemes.byId(AppThemes.playfulId).surfaces,
+          999,
+        );
+        const marker = Key('cara');
+
+        Future<void> pump(Set<WidgetState> states) => tester.pumpWidget(
+              MaterialApp(
+                home: Scaffold(
+                  body: SizedBox(
+                    width: 200,
+                    height: 50,
+                    child: Builder(
+                      builder: (context) => lip.background!(
+                        context,
+                        states,
+                        const SizedBox.shrink(key: marker),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+
+        await pump({});
+        await tester.pumpAndSettle();
+        final resting = tester.getTopLeft(find.byKey(marker)).dy;
+
+        await pump({WidgetState.pressed});
+        await tester.pumpAndSettle();
+        final pressed = tester.getTopLeft(find.byKey(marker)).dy;
+
+        expect(
+          pressed - resting,
+          AppThemes.byId(AppThemes.playfulId).surfaces.buttonLip,
+          reason: 'la cara deberia hundirse exactamente el labio',
+        );
+      });
+    });
+
     test('lerp interpola el grosor y el desenfoque', () {
       final playful = AppThemes.byId(AppThemes.playfulId).surfaces;
       final mid = AppSurfaces.standard.lerp(playful, 1.0);

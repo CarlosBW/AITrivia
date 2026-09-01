@@ -23,6 +23,11 @@ jobs:
   probe:
     name: Every callable is reachable
     runs-on: ubuntu-latest
+    # The probe paces itself — one function at a time, with a pause — because
+    # firing 40 at once made Cloud Run 500 on the tail of the run and the
+    # check reported healthy functions as broken. That costs ~8 minutes; this
+    # is a ceiling for a hang, not a target.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +38,7 @@ jobs:
       # No credentials needed: the probe calls each function unauthenticated
       # and reads the shape of the refusal. A healthy callable answers with
       # its own JSON error ("sign-in required"); one that Cloud Run blocks
-      # answers with an HTML page instead.
+      # answers with a 403 HTML page instead. A 5xx is reported apart from
+      # both — the call got through, so access is not the problem.
       - name: Probe callables
         run: node tools/check_callables.js

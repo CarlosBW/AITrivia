@@ -37,6 +37,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # firebase-tools no es dependencia del paquete: lo invoca `npm test`
+      # con npx y versión fijada. Como devDependency arrastraba 713 paquetes
+      # a un paquete que necesita dos, y su subárbol opcional hacía que un
+      # lockfile generado en Windows fuera irreproducible en Linux —
+      # `npm ci` fallaba aquí con "Missing: picomatch@4.0.7 from lock file".
       - name: Install
         working-directory: firestore-tests
         run: npm ci

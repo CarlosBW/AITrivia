@@ -5,11 +5,10 @@
   "type": "commonjs",
   "description": "Pruebas de firestore.rules contra el emulador.",
   "scripts": {
-    "test": "firebase emulators:exec --only firestore --project demo-triviaia \"node --test --test-concurrency=1\""
+    "test": "npx -y firebase-tools@15 emulators:exec --only firestore --project demo-triviaia \"node --test --test-concurrency=1\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
-    "firebase": "^11.0.0",
-    "firebase-tools": "^15.29.0"
+    "firebase": "^11.0.0"
   }
 }

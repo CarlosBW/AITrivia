@@ -1,0 +1,49 @@
+name: Firestore rules
+
+# Al contrario que "Callables health", esto sí corre en cada push: prueba el
+# commit, no el estado de producción. Las reglas son el único sitio del repo
+# donde un error se paga en datos ajenos — y ya rompieron el registro dos
+# veces sin que nada lo notara hasta que un usuario real no pudo entrar.
+#
+# No necesita credenciales: el emulador de Firestore evalúa firestore.rules
+# contra un proyecto de mentira.
+on:
+  push:
+    paths:
+      - "firestore.rules"
+      - "firestore-tests/**"
+      - ".github/workflows/firestore-rules.yml"
+  pull_request:
+    paths:
+      - "firestore.rules"
+      - "firestore-tests/**"
+  workflow_dispatch:
+
+jobs:
+  rules:
+    name: firestore.rules se comporta como dice
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # El emulador de Firestore es un JAR.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install
+        working-directory: firestore-tests
+        run: npm ci
+
+      # `npm test` para no duplicar el comando: lleva --test-concurrency=1,
+      # sin el cual los dos archivos se pisan los datos en el emulador
+      # compartido y la suite sale intermitente.
+      - name: Run rules tests
+        working-directory: firestore-tests
+        run: npm test

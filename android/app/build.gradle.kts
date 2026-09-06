@@ -70,9 +70,17 @@ android {
                 // Sin key.properties no hay clave de subida: se firma con la
                 // debug key y Play rechazará el AAB. Solo sirve para pruebas
                 // locales de release.
-                logger.warn(
-                    "WARNING: android/key.properties no existe. El build release " +
-                        "se firma con la debug key y NO es publicable en Play."
+                // Por stderr y no por `logger.warn`/`logger.lifecycle`:
+                // `flutter build` filtra la salida de Gradle y ninguno de los
+                // dos llegaba a verse, así que el aviso existía y no servía
+                // de nada — se podía generar un AAB con la debug key y no
+                // enterarse hasta que Play lo rechazara. stderr sí pasa.
+                System.err.println(
+                    "\n**********************************************************\n" +
+                        "AVISO: android/key.properties no existe.\n" +
+                        "Este build se firma con la DEBUG KEY y NO es publicable\n" +
+                        "en Play. Solo sirve para pruebas locales de release.\n" +
+                        "**********************************************************\n"
                 )
                 signingConfig = signingConfigs.getByName("debug")
             }

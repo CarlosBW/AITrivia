@@ -16,6 +16,13 @@ import {
   AI_TOPIC_SIMILARITY_THRESHOLD,
 } from "./ai_topic_similarity";
 import {
+  PvpLeagueInfo,
+  DEFAULT_RATING,
+  leagueForRating,
+  bestLeaguePatch,
+  calculateRatings,
+} from "./pvp_rating";
+import {
   isPlausibleDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
@@ -157,8 +164,6 @@ const ACHIEVEMENT_TITLES: Record<string, {es: string; en: string}> = {
   categories_explored_5: {es: "Mente curiosa", en: "Curious Mind"},
 };
 
-const DEFAULT_RATING = 1000;
-const K_FACTOR = 32;
 
 // Max coins a match can pay its winner. Matches firestore.rules'
 // isSanctionedWinReward (only winReward == 2 is ever allowed to be
@@ -175,67 +180,6 @@ const RANKED_DISCONNECT_WINNER_BONUS = 12;
 const RANKED_ABANDON_RATING_PENALTY = 32;
 const RANKED_ABANDON_COOLDOWN_MINUTES = 5;
 
-type PvpLeagueInfo = {
-  id: string;
-  name: string;
-  emoji: string;
-  minRating: number;
-  maxRating: number;
-  colorValue: number;
-};
-
-// Mirrors lib/services/pvp_league_service.dart's `leagues` list exactly,
-// including colorValue — keep both in sync.
-const PVP_LEAGUES: PvpLeagueInfo[] = [
-  {
-    id: "bronze",
-    name: "Bronze",
-    emoji: "🥉",
-    minRating: 0,
-    maxRating: 999,
-    colorValue: 0xFF8D6E63,
-  },
-  {
-    id: "silver",
-    name: "Silver",
-    emoji: "🥈",
-    minRating: 1000,
-    maxRating: 1199,
-    colorValue: 0xFF78909C,
-  },
-  {
-    id: "gold",
-    name: "Gold",
-    emoji: "🥇",
-    minRating: 1200,
-    maxRating: 1399,
-    colorValue: 0xFFFFA000,
-  },
-  {
-    id: "platinum",
-    name: "Platinum",
-    emoji: "💎",
-    minRating: 1400,
-    maxRating: 1599,
-    colorValue: 0xFF00ACC1,
-  },
-  {
-    id: "diamond",
-    name: "Diamond",
-    emoji: "🔷",
-    minRating: 1600,
-    maxRating: 1899,
-    colorValue: 0xFF5E35B1,
-  },
-  {
-    id: "master",
-    name: "Master",
-    emoji: "👑",
-    minRating: 1900,
-    maxRating: 5000,
-    colorValue: 0xFFD81B60,
-  },
-];
 
 /**
  * Safely converts a value to integer.
@@ -400,109 +344,6 @@ function clampDailyPvpCoins(
   };
 }
 
-/**
- * Returns the PvP league for a rating.
- * @param {number} rating Player rating.
- * @return {PvpLeagueInfo} League information.
- */
-function leagueForRating(rating: number): PvpLeagueInfo {
-  const league = PVP_LEAGUES.find((item) => {
-    return rating >= item.minRating && rating <= item.maxRating;
-  });
-
-  if (league) return league;
-
-  if (rating < PVP_LEAGUES[0].minRating) {
-    return PVP_LEAGUES[0];
-  }
-
-  return PVP_LEAGUES[PVP_LEAGUES.length - 1];
-}
-
-/**
- * Returns a league's ordinal rank (index in PVP_LEAGUES), used to compare
- * "how good" two leagues are relative to each other.
- * @param {string} id League id.
- * @return {number} Ordinal rank, or -1 if unknown.
- */
-function leagueRank(id: string): number {
-  return PVP_LEAGUES.findIndex((item) => item.id === id);
-}
-
-/**
- * Mirrors match_service.dart's `_bestLeaguePatch` — only patches the user's
- * "best league ever reached" fields if the candidate league actually ranks
- * higher than what's already stored.
- * @param {Record<string, unknown>} userData Current user document data.
- * @param {PvpLeagueInfo} candidateLeague League to compare against the
- * stored best.
- * @return {Record<string, unknown>} Fields to merge, or {} if unchanged.
- */
-function bestLeaguePatch(
-  userData: Record<string, unknown>,
-  candidateLeague: PvpLeagueInfo
-): Record<string, unknown> {
-  const currentBestLeagueId = String(
-    userData.bestLeagueId || userData.pvpLeagueId || ""
-  );
-
-  if (leagueRank(candidateLeague.id) <= leagueRank(currentBestLeagueId)) {
-    return {};
-  }
-
-  return {
-    bestLeagueId: candidateLeague.id,
-    bestLeagueName: candidateLeague.name,
-    bestLeagueEmoji: candidateLeague.emoji,
-    bestLeagueColorValue: candidateLeague.colorValue,
-  };
-}
-
-/**
- * Calculates ELO rating changes.
- * @param {{
- *   playerARating:number,
- *   playerBRating:number,
- *   playerAScore:number,
- *   playerBScore:number
- * }} params Match parameters.
- * @return {{newA:number,newB:number}} New ratings.
- */
-function calculateRatings(params: {
-  playerARating: number;
-  playerBRating: number;
-  playerAScore: number;
-  playerBScore: number;
-}): {newA: number; newB: number} {
-  let resultA = 0.5;
-
-  if (params.playerAScore > params.playerBScore) resultA = 1.0;
-  if (params.playerBScore > params.playerAScore) resultA = 0.0;
-
-  const expectedA =
-    1 / (1 + Math.pow(10, (params.playerBRating - params.playerARating) / 400));
-
-  const expectedB = 1 - expectedA;
-  const resultB = 1 - resultA;
-
-  const newA = Math.max(
-    100,
-    Math.min(
-      5000,
-      Math.round(params.playerARating + K_FACTOR * (resultA - expectedA))
-    )
-  );
-
-  const newB = Math.max(
-    100,
-    Math.min(
-      5000,
-      Math.round(params.playerBRating + K_FACTOR * (resultB - expectedB))
-    )
-  );
-
-  return {newA, newB};
-}
 
 /**
  * Returns match result for a specific user.

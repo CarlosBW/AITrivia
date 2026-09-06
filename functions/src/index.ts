@@ -23,6 +23,14 @@ import {
   calculateRatings,
 } from "./pvp_rating";
 import {
+  levelForXp,
+  calculateLevelRewards,
+  calculateDailyCoinsEarned,
+  calculateDailyXpEarned,
+  calculateDailyScore,
+  calculateDailyStreakBonusCoins,
+} from "./rewards";
+import {
   isPlausibleDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
@@ -2853,11 +2861,6 @@ export const claimPvpSeasonRewards = onCall(async (request) => {
 // DAILY CHALLENGE
 // ============================================================
 
-const DAILY_COINS_PER_BLOCK = 5;
-const DAILY_CORRECT_PER_COIN_BLOCK = 10;
-const DAILY_STREAK_3_DAYS_COINS = 5;
-const DAILY_STREAK_7_DAYS_COINS = 15;
-const DAILY_STREAK_14_DAYS_COINS = 30;
 const DAILY_LEVEL_UP_COINS = 15;
 const DAILY_QUESTION_LIMIT = 60;
 // Server-only: the day's shared question set, including answerIndex. No
@@ -2911,90 +2914,6 @@ function getLeagueFromScore(score: number): LeagueInfo {
   return current;
 }
 
-/**
- * Mirrors lib/services/player_level_service.dart's `xpRequiredForLevel`.
- * @param {number} level Player level.
- * @return {number} XP required to complete that level.
- */
-function xpRequiredForLevel(level: number): number {
-  if (level <= 1) return 100;
-  return Math.round(100 * (1.18 * (level - 1)));
-}
-
-/**
- * Mirrors lib/services/player_level_service.dart's `getLevelInfo` — only
- * the `level` field is needed here.
- * @param {number} totalXp Player's total XP.
- * @return {number} Player level for that XP total.
- */
-function levelForXp(totalXp: number): number {
-  let level = 1;
-  let remainingXp = totalXp;
-
-  for (;;) {
-    const needed = xpRequiredForLevel(level);
-    if (remainingXp < needed) return level;
-    remainingXp -= needed;
-    level++;
-  }
-}
-
-/**
- * Mirrors DailyChallengeService's `calculateCoinsEarned`.
- * @param {number} correct Correct answers.
- * @return {number} Coins earned.
- */
-function calculateDailyCoinsEarned(correct: number): number {
-  return Math.floor(correct / DAILY_CORRECT_PER_COIN_BLOCK) *
-    DAILY_COINS_PER_BLOCK;
-}
-
-/**
- * Mirrors DailyChallengeService's `calculateXpEarned`.
- * @param {number} correct Correct answers.
- * @param {number} totalAnswered Total questions answered.
- * @return {number} XP earned.
- */
-function calculateDailyXpEarned(
-  correct: number,
-  totalAnswered: number
-): number {
-  const wrong = Math.max(totalAnswered - correct, 0);
-  const baseXp = correct * 2;
-  const participationXp = totalAnswered > 0 ? 5 : 0;
-  const accuracyBonus = totalAnswered > 0 && wrong === 0 ? 5 : 0;
-  return baseXp + participationXp + accuracyBonus;
-}
-
-/**
- * Mirrors DailyChallengeService's `calculateScore`.
- * @param {number} correct Correct answers.
- * @param {number} totalAnswered Total questions answered.
- * @param {number} streak Daily streak after this play.
- * @return {number} Daily score.
- */
-function calculateDailyScore(
-  correct: number,
-  totalAnswered: number,
-  streak: number
-): number {
-  const accuracyBonus = totalAnswered <= 0 ?
-    0 : Math.round((correct / totalAnswered) * 100);
-  const streakBonus = Math.min(streak, 30) * 2;
-  return correct * 10 + accuracyBonus + streakBonus;
-}
-
-/**
- * Mirrors DailyChallengeService's `calculateStreakBonusCoins`.
- * @param {number} streak Daily streak after this play.
- * @return {number} Bonus coins for hitting a streak milestone.
- */
-function calculateDailyStreakBonusCoins(streak: number): number {
-  if (streak > 0 && streak % 14 === 0) return DAILY_STREAK_14_DAYS_COINS;
-  if (streak > 0 && streak % 7 === 0) return DAILY_STREAK_7_DAYS_COINS;
-  if (streak > 0 && streak % 3 === 0) return DAILY_STREAK_3_DAYS_COINS;
-  return 0;
-}
 
 /**
  * Checks whether `dateId` (yyyy-MM-dd) is exactly one day before `today`.
@@ -4373,9 +4292,6 @@ export const claimLoginStreakBonus = onCall(async (request) => {
 // the client, closing a minor "claim the completion bonus early" gap.
 // ============================================================
 
-const SOLO_PERFECT_LEVEL_COINS = 3;
-const SOLO_GREAT_LEVEL_COINS = 2;
-const SOLO_GOOD_LEVEL_COINS = 1;
 const COMPLETE_FIXED_CATEGORY_COINS = 10;
 const AI_LEVELS_PER_TOPIC = 10;
 const AI_QUESTIONS_PER_LEVEL = 10;
@@ -4411,28 +4327,6 @@ const AI_TOPIC_SYSTEM_PROMPT = "You generate trivia questions for a " +
   "health subject), keep every question strictly factual, encyclopedic, " +
   "and free of graphic or gratuitous detail — write it the way a " +
   "school textbook or family-friendly encyclopedia would.";
-
-/**
- * Reward math for a single Solo level attempt — fully server-side now,
- * no client-side equivalent to mirror.
- * @param {number} correct Correct answers in this level attempt.
- * @param {number} total Total questions in this level attempt.
- * @return {{xp:number, coins:number}} Reward for this attempt.
- */
-function calculateLevelRewards(
-  correct: number,
-  total: number
-): {xp: number; coins: number} {
-  const pct = total === 0 ? 0 : correct / total;
-  const xp = correct * 10;
-
-  let coins = 0;
-  if (pct >= 0.9) coins = SOLO_PERFECT_LEVEL_COINS;
-  else if (pct >= 0.7) coins = SOLO_GREAT_LEVEL_COINS;
-  else if (pct >= 0.4) coins = SOLO_GOOD_LEVEL_COINS;
-
-  return {xp, coins};
-}
 
 export const submitSoloLevelResult = onCall(async (request) => {
   const uid = request.auth?.uid;

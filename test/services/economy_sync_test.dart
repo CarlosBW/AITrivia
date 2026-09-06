@@ -14,17 +14,27 @@ import 'package:trivia_ia_flutter/services/economy_service.dart';
 /// The test reads `index.ts` instead of restating its values, so the only
 /// way to make it pass is to change both sides.
 void main() {
-  final indexTs = File('functions/src/index.ts').readAsStringSync();
+  // Todo `functions/src`, no solo `index.ts`: la lógica pura se va sacando
+  // a módulos propios conforme se cubre con tests, y este test no debería
+  // romperse cada vez que una constante cambia de archivo — solo cuando
+  // cambia de valor, que es lo que vigila.
+  final serverSource = Directory('functions/src')
+      .listSync()
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.ts') && !f.path.endsWith('.test.ts'))
+      .map((f) => f.readAsStringSync())
+      .join('\n');
 
   int serverConstant(String name) {
-    final match = RegExp('^const $name = (-?\\d+);', multiLine: true)
-        .firstMatch(indexTs);
+    final match = RegExp('^(?:export )?const $name = (-?\\d+);',
+            multiLine: true)
+        .firstMatch(serverSource);
 
     expect(
       match,
       isNotNull,
-      reason: 'functions/src/index.ts no declara `const $name`. Si lo '
-          'renombraste, actualiza este test para que siga vigilando.',
+      reason: 'functions/src no declara `const $name` en ningún módulo. Si '
+          'lo renombraste, actualiza este test para que siga vigilando.',
     );
 
     return int.parse(match!.group(1)!);

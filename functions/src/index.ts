@@ -18,6 +18,8 @@ import {
 import {
   PvpLeagueInfo,
   DEFAULT_RATING,
+  RATING_FLOOR,
+  RATING_CEILING,
   leagueForRating,
   bestLeaguePatch,
   calculateRatings,
@@ -627,8 +629,14 @@ function computeRankedReward(params: {
     const bonus = RANKED_DISCONNECT_WINNER_BONUS;
     const penalty = RANKED_ABANDON_RATING_PENALTY;
     newRating = params.won ?
-      Math.max(100, Math.min(5000, params.oldRating + bonus)) :
-      Math.max(100, Math.min(5000, params.oldRating - penalty));
+      Math.max(
+        RATING_FLOOR,
+        Math.min(RATING_CEILING, params.oldRating + bonus)
+      ) :
+      Math.max(
+        RATING_FLOOR,
+        Math.min(RATING_CEILING, params.oldRating - penalty)
+      );
   } else {
     const {newA} = calculateRatings({
       playerARating: params.oldRating,

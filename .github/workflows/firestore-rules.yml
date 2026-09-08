@@ -12,11 +12,13 @@ on:
     paths:
       - "firestore.rules"
       - "firestore-tests/**"
+      - "lib/features/auth/user_bootstrap.dart"
       - ".github/workflows/firestore-rules.yml"
   pull_request:
     paths:
       - "firestore.rules"
       - "firestore-tests/**"
+      - "lib/features/auth/user_bootstrap.dart"
   workflow_dispatch:
 
 jobs:

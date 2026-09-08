@@ -38,21 +38,40 @@ export function xpRequiredForLevel(level: number): number {
 }
 
 /**
+ * Tope del XP que `levelForXp` acepta consumir.
+ *
+ * No es una cota de juego, es lo que hace que su bucle termine. Descontar
+ * el coste de un nivel de un total lo bastante grande no cambia el total:
+ * el sumando se pierde en la precisión del double y `remainingXp` se queda
+ * clavado para siempre — con `Number.MAX_VALUE` sigue idéntico tras dos
+ * millones de vueltas. `Number.isFinite` no cubre este caso, porque
+ * `MAX_VALUE` es finito.
+ *
+ * 1e8 deja el bucle en ~1300 vueltas con toda la aritmética en enteros
+ * exactos. Como cota de juego sobra: son ~10 millones de respuestas
+ * correctas, muy por encima de cualquier cuenta real.
+ */
+export const MAX_TOTAL_XP = 100_000_000;
+
+/**
  * Mirrors lib/services/player_level_service.dart's `getLevelInfo` — only
  * the `level` field is needed here.
  *
  * El bucle avanza mientras quede XP por consumir. Termina porque
- * `xpRequiredForLevel` nunca devuelve menos de 100, así que cada vuelta
- * descuenta al menos esa cantidad; un XP no finito o negativo sale en la
- * primera comparación con el nivel 1. Corre dentro de una transacción de
- * Firestore en cada resultado de Solo y de Diario, así que no puede
- * depender de que el dato de entrada sea sensato.
+ * `xpRequiredForLevel` nunca devuelve menos de 100 y porque la entrada
+ * viene acotada a `MAX_TOTAL_XP`, así que cada vuelta descuenta de verdad;
+ * un XP no finito o negativo sale en la primera comparación con el nivel
+ * 1. Corre dentro de una transacción de Firestore en cada resultado de
+ * Solo y de Diario, así que no puede depender de que el dato de entrada
+ * sea sensato.
  * @param {number} totalXp Player's total XP.
  * @return {number} Player level for that XP total.
  */
 export function levelForXp(totalXp: number): number {
   let level = 1;
-  let remainingXp = Number.isFinite(totalXp) ? totalXp : 0;
+  let remainingXp = Number.isFinite(totalXp) ?
+    Math.min(totalXp, MAX_TOTAL_XP) :
+    0;
 
   for (;;) {
     const needed = xpRequiredForLevel(level);

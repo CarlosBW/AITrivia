@@ -196,3 +196,14 @@ test("nivel: termina con entradas absurdas", () => {
   assert.strictEqual(levelForXp(Infinity), 1);
   assert.ok(levelForXp(10_000_000) > 1);
 });
+
+// El caso que `Number.isFinite` no cubre y que sí cuelga: un total tan
+// grande que restarle el coste del nivel no lo cambia —el sumando se
+// pierde en la precisión del double— y el bucle deja de avanzar. Se
+// verificó que sin la cota `remainingXp` sigue idéntico tras dos millones
+// de vueltas.
+test("nivel: termina con un XP corrupto pero finito", () => {
+  assert.ok(Number.isFinite(levelForXp(Number.MAX_VALUE)));
+  assert.ok(Number.isFinite(levelForXp(1e300)));
+  assert.ok(Number.isFinite(levelForXp(Number.MAX_SAFE_INTEGER)));
+});

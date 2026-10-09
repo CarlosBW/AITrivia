@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBQFi-tg_-glqSiX4Yomemsazs-E6CmwEU',
-    appId: '1:1049545801330:android:2aae921fcdb556ccd18ceb',
+    appId: '1:1049545801330:android:bb4b3946c9eefa6ad18ceb',
     messagingSenderId: '1049545801330',
     projectId: 'trivia-ia-app',
     storageBucket: 'trivia-ia-app.firebasestorage.app',
@@ -60,20 +60,20 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyA4S8T8uxIZyWF37swoRVUYbAUvclDcFJw',
-    appId: '1:1049545801330:ios:72ccbf254b44ba1bd18ceb',
+    appId: '1:1049545801330:ios:0c3a80dd0023086ed18ceb',
     messagingSenderId: '1049545801330',
     projectId: 'trivia-ia-app',
     storageBucket: 'trivia-ia-app.firebasestorage.app',
-    iosBundleId: 'com.example.triviaIaFlutter',
+    iosBundleId: 'pe.massivedynamics.triviaia',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyA4S8T8uxIZyWF37swoRVUYbAUvclDcFJw',
-    appId: '1:1049545801330:ios:72ccbf254b44ba1bd18ceb',
+    appId: '1:1049545801330:ios:0c3a80dd0023086ed18ceb',
     messagingSenderId: '1049545801330',
     projectId: 'trivia-ia-app',
     storageBucket: 'trivia-ia-app.firebasestorage.app',
-    iosBundleId: 'com.example.triviaIaFlutter',
+    iosBundleId: 'pe.massivedynamics.triviaia',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

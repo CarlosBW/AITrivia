@@ -6,6 +6,7 @@ plugins {
 
     // Firebase
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 
     id("kotlin-android")
 
@@ -42,7 +43,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.trivia_ia_flutter"
+        applicationId = "pe.massivedynamics.triviaia"
 
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

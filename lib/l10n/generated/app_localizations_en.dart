@@ -1742,7 +1742,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dailyResultDaysValue(int days) {
-    return '$days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
   }
 
   @override

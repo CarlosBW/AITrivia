@@ -927,7 +927,7 @@
   "dailyResultTotalAnswered": "Total answered",
   "dailyResultCoinsEarned": "Coins earned",
   "dailyResultStreakLabel": "Daily streak",
-  "dailyResultDaysValue": "{days} days",
+  "dailyResultDaysValue": "{days, plural, =1{1 day} other{{days} days}}",
   "@dailyResultDaysValue": {
     "placeholders": {
       "days": {"type": "int"}

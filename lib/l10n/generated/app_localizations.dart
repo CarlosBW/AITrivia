@@ -3107,7 +3107,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyResultDaysValue.
   ///
   /// In es, this message translates to:
-  /// **'{days} días'**
+  /// **'{days, plural, =1{1 día} other{{days} días}}'**
   String dailyResultDaysValue(int days);
 
   /// No description provided for @dailyResultStreakBonus.

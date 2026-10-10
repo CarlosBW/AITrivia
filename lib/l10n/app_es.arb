@@ -950,7 +950,7 @@
   "dailyResultTotalAnswered": "Total respondidas",
   "dailyResultCoinsEarned": "Monedas ganadas",
   "dailyResultStreakLabel": "Racha diaria",
-  "dailyResultDaysValue": "{days} días",
+  "dailyResultDaysValue": "{days, plural, =1{1 día} other{{days} días}}",
   "@dailyResultDaysValue": {
     "placeholders": {
       "days": {"type": "int"}

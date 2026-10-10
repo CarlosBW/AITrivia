@@ -4305,7 +4305,7 @@ const AI_LEVELS_PER_TOPIC = 10;
 const AI_QUESTIONS_PER_LEVEL = 10;
 const AI_INITIAL_GENERATED_LEVELS = 2;
 const AI_GENERATION_BUFFER_LEVELS = 2;
-const AI_MODEL = "claude-haiku-4-5";
+const AI_MODEL = "claude-haiku-5-5";
 
 // Buffering now starts when a level *opens* rather than when it's
 // submitted, so two callers can legitimately want the same level at once
@@ -5917,7 +5917,7 @@ async function requestAiQuestionsFromClaude(
     try {
       const response = await client.messages.create({
         model: AI_MODEL,
-        max_tokens: 4096,
+        max_tokens: 16000,
         system: AI_TOPIC_SYSTEM_PROMPT,
         messages: [{role: "user", content: prompt}],
         output_config: {format: {type: "json_schema", schema}},
@@ -5932,8 +5932,10 @@ async function requestAiQuestionsFromClaude(
         throw new TopicBlockedError("Topic refused by model.");
       }
 
-      const block = response.content[0];
-      if (!block || block.type !== "text") {
+      // Haiku 5.5 thinks by default, so the text is no longer guaranteed
+      // to be the first block — reasoning blocks precede it.
+      const block = response.content.find((b) => b.type === "text");
+      if (!block) {
         throw new Error("Unexpected response block type from Claude.");
       }
 
@@ -6915,7 +6917,7 @@ export const suggestAiTopicTitles = onCall({
     try {
       const response = await client.messages.create({
         model: AI_MODEL,
-        max_tokens: 512,
+        max_tokens: 4096,
         system: AI_TOPIC_SYSTEM_PROMPT,
         messages: [{role: "user", content: prompt}],
         output_config: {format: {type: "json_schema", schema}},
@@ -6926,8 +6928,10 @@ export const suggestAiTopicTitles = onCall({
         return {blocked: true, suggestions: []};
       }
 
-      const block = response.content[0];
-      if (!block || block.type !== "text") {
+      // Haiku 5.5 thinks by default, so the text is no longer guaranteed
+      // to be the first block — reasoning blocks precede it.
+      const block = response.content.find((b) => b.type === "text");
+      if (!block) {
         throw new Error("Unexpected response block type from Claude.");
       }
 

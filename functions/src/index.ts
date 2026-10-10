@@ -38,6 +38,7 @@ import {
 } from "./daily_challenge_dates";
 import {
   AI_QUESTIONS_PER_SESSION,
+  avoidListCapacity,
   bankHeadroom,
   buildAnswerOptions,
   capAvoidList,
@@ -73,10 +74,8 @@ import {
   sliceForLevel,
 } from "./fixed_level_slicing";
 
-// Bounds on the "don't repeat these" list sent to Claude when topping up
-// a level's bank: enough context to actually avoid duplicates, not so
-// much that the avoid-list dwarfs the generation request itself.
-const AI_AVOID_LIST_MAX_QUESTIONS = 60;
+// How much of each question the "don't repeat these" list sent to Claude
+// carries: enough to recognise the question, not its whole wording.
 const AI_AVOID_LIST_MAX_CHARS = 120;
 
 setGlobalOptions({maxInstances: 10});
@@ -4303,6 +4302,9 @@ export const claimLoginStreakBonus = onCall(async (request) => {
 
 const COMPLETE_FIXED_CATEGORY_COINS = 10;
 const AI_LEVELS_PER_TOPIC = 10;
+// Every question a topic can bank — see [avoidListCapacity] on why the
+// "don't repeat these" list is no longer a sample.
+const AI_AVOID_LIST_MAX_QUESTIONS = avoidListCapacity(AI_LEVELS_PER_TOPIC);
 const AI_QUESTIONS_PER_LEVEL = 10;
 const AI_INITIAL_GENERATED_LEVELS = 2;
 const AI_GENERATION_BUFFER_LEVELS = 2;
@@ -4771,9 +4773,7 @@ export const ensureSoloLevelSession = onCall({
         String(topicData.title || "Custom Topic"),
         languageCode,
         {
-          avoidQuestions: await existingPoolQuestionTexts(
-            poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-          ),
+          avoidQuestions: await existingPoolQuestionTexts(poolRef),
         }
       );
 
@@ -5878,10 +5878,8 @@ async function requestAiQuestionsFromClaude(
   const difficulty = aiLevelDifficultyLabel(levelNumber, languageCode);
 
   // Questions already banked for this topic, so a top-up doesn't hand
-  // back what the player has already been asked. Capped and truncated
-  // because the bank spans every level and grows to
-  // AI_QUESTION_BANK_CAP per level — sending all of it verbatim would
-  // dominate the prompt and cost more than the generation itself.
+  // back what the player has already been asked. The whole topic goes
+  // in, each question cut to a recognisable prefix.
   const avoidList = avoidQuestions
     .slice(0, AI_AVOID_LIST_MAX_QUESTIONS)
     .map((q) => `- ${q.slice(0, AI_AVOID_LIST_MAX_CHARS)}`)
@@ -6008,13 +6006,11 @@ async function requestAiQuestionsFromClaude(
  * query would span unrelated content and need its own index. Callers
  * should do this once per generation run, not once per level.
  * @param {FirebaseFirestore.DocumentReference} poolRef Pool document ref.
- * @param {number} maxQuestions Ceiling on how many texts are collected.
  * @return {Promise<string[]>} Existing question texts, ordered for
  * [capAvoidList]'s `rest`.
  */
 async function existingPoolQuestionTexts(
-  poolRef: FirebaseFirestore.DocumentReference,
-  maxQuestions: number
+  poolRef: FirebaseFirestore.DocumentReference
 ): Promise<string[]> {
   const levelsSnap = await poolRef.collection("levels").get();
 
@@ -6024,18 +6020,13 @@ async function existingPoolQuestionTexts(
 
   if (levelDocs.length === 0) return [];
 
-  // A slice of every level rather than everything from the newest few.
-  // This used to read whole levels until the budget ran out, which meant
-  // banks grown to AI_QUESTION_BANK_CAP let three or four recent levels
-  // consume the entire allowance — the older ones were never sent, so the
-  // model happily rewrote them. Same read cost, spread evenly.
-  const perLevelBudget = Math.max(
-    1, Math.ceil(maxQuestions / levelDocs.length)
-  );
-
+  // Every question, not a slice of each level. A slice left the rest of
+  // the bank unknown to both the model and the duplicate check on what it
+  // returns, and those questions were written again verbatim. Only the
+  // text is fetched: a document read each, but none of the payload.
   const perLevel = await Promise.all(levelDocs.map(async (levelDoc) => {
     const questionsSnap = await levelDoc.ref
-      .collection("questions").limit(perLevelBudget).get();
+      .collection("questions").select("q").get();
 
     return questionsSnap.docs
       .map((doc) => String(doc.data().q || ""))
@@ -6583,9 +6574,7 @@ async function ensureTopicAdoptedIntoPool(
       const poolGeneratedLevels = safeInt(poolData.generatedLevels, 0);
 
       if (ownGeneratedLevels > poolGeneratedLevels) {
-        let avoidQuestions = await existingPoolQuestionTexts(
-          poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-        );
+        let avoidQuestions = await existingPoolQuestionTexts(poolRef);
 
         for (
           let level = poolGeneratedLevels + 1;
@@ -7138,9 +7127,7 @@ export const createAiTopic = onCall({
     try {
       // Carried across levels: without it each level only avoided its own
       // (empty) bank, so level 2 happily re-issued level 1's questions.
-      let avoidQuestions = await existingPoolQuestionTexts(
-        poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-      );
+      let avoidQuestions = await existingPoolQuestionTexts(poolRef);
 
       for (
         let level = startLevel;
@@ -7398,9 +7385,7 @@ export const regenerateAiTopicQuestions = onCall({
   let questionsAdded = 0;
 
   try {
-    let avoidQuestions = await existingPoolQuestionTexts(
-      poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-    );
+    let avoidQuestions = await existingPoolQuestionTexts(poolRef);
 
     for (const level of expandableLevels) {
       // Each level's new questions join the avoid-list, so level N doesn't
@@ -7736,9 +7721,7 @@ async function topUpAiLevelBanks(params: {
     if (toGenerate <= 0) continue;
 
     if (avoidQuestions === null) {
-      avoidQuestions = await existingPoolQuestionTexts(
-        poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-      );
+      avoidQuestions = await existingPoolQuestionTexts(poolRef);
     }
 
     const added = await generateAiTopicLevel(
@@ -7825,9 +7808,7 @@ export const ensureAiTopicLevelsGenerated = onCall({
     ) {
       if (level > lastSuccessfulPoolLevel) {
         if (avoidQuestions === null) {
-          avoidQuestions = await existingPoolQuestionTexts(
-            poolRef, AI_AVOID_LIST_MAX_QUESTIONS
-          );
+          avoidQuestions = await existingPoolQuestionTexts(poolRef);
         }
 
         const added = await generateAiTopicLevel(

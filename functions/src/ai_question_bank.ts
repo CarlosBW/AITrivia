@@ -22,6 +22,22 @@ export const AI_QUESTIONS_PER_SESSION = 10;
 export const AI_QUESTION_BANK_CAP = 50;
 
 /**
+ * How many questions the "don't repeat these" list must hold to cover a
+ * whole topic: every level at its bank cap.
+ *
+ * The list was once a fixed 60, sampled across levels, to keep the prompt
+ * cheap. A topic outgrows that after six batches, and from then on the
+ * questions left out were unknown to the model *and* to the duplicate
+ * check that runs on its answer — so they came back, some word for word.
+ * Sized from the bank cap instead, the list cannot fall behind the bank.
+ * @param {number} levels Levels a topic has.
+ * @return {number} Ceiling for the avoid-list.
+ */
+export function avoidListCapacity(levels: number): number {
+  return levels * AI_QUESTION_BANK_CAP;
+}
+
+/**
  * Numeric suffix of a `q_N` question id, or -1 if it isn't one.
  *
  * Firestore returns documents ordered by id *lexicographically*, which

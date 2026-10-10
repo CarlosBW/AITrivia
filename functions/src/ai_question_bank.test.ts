@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   AI_QUESTIONS_PER_SESSION,
   AI_QUESTION_BANK_CAP,
+  avoidListCapacity,
   bankHeadroom,
   buildAnswerOptions,
   capAvoidList,
@@ -417,5 +418,34 @@ describe("buildAnswerOptions", () => {
       buildAnswerOptions("Júpiter", ["Marte", "Venus", "MARTE"], 1),
       null
     );
+  });
+});
+
+describe("avoidListCapacity", () => {
+  // The list used to be capped at 60 while a topic banked past 100, so
+  // half the topic was invisible to the model and to the duplicate check
+  // alike: the same question was written again, word for word, three
+  // levels later.
+  test("holds every question a full topic can bank", () => {
+    const levels = 10;
+    const everyLevel = Array.from({length: levels}, (_, level) =>
+      Array.from(
+        {length: AI_QUESTION_BANK_CAP},
+        (_, i) => `level ${level + 1} question ${i + 1}`
+      )
+    );
+    const [target, ...others] = everyLevel;
+
+    const list = capAvoidList(
+      target, interleaveByLevel(others), avoidListCapacity(levels)
+    );
+
+    assert.equal(list.length, levels * AI_QUESTION_BANK_CAP);
+    assert.deepEqual([...list].sort(), everyLevel.flat().sort());
+  });
+
+  test("grows with the number of levels", () => {
+    assert.equal(avoidListCapacity(1), AI_QUESTION_BANK_CAP);
+    assert.equal(avoidListCapacity(4), 4 * AI_QUESTION_BANK_CAP);
   });
 });

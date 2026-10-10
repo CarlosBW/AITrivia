@@ -22,121 +22,162 @@ class DailyChallengeResultScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         actions: const [ProfileAvatarButton()],
-        title: Text(l10n.dailyResultTitle),
         automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.emoji_events,
-              size: 80,
-            ),
+      // Scrolls rather than overflows: the streak-bonus row and the
+      // already-played note only show sometimes, and together with the
+      // badge they outgrow a short screen.
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const _TrophyBadge(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            Text(
-              l10n.dailyResultComplete,
-              textAlign: TextAlign.center,
-              style: context.heading(26),
-            ),
-
-            const SizedBox(height: 32),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(context.radii.md),
-                border: context.surfaces.borderOr(null),
-                boxShadow: context.surfaces.shadowsOr(null),
+              Text(
+                l10n.dailyResultComplete,
+                textAlign: TextAlign.center,
+                style: context.heading(26),
               ),
-              child: Column(
-                children: [
-                  _ResultRow(
-                    icon: Icons.check_circle_outline,
-                    accent: context.appColors.success,
-                    background: context.appColors.successBg,
-                    label: l10n.dailyResultCorrectAnswers,
-                    value: '${result.correct}',
-                  ),
-                  _ResultRow(
-                    icon: Icons.quiz_outlined,
-                    accent: Theme.of(context).colorScheme.primary,
-                    background:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                    label: l10n.dailyResultTotalAnswered,
-                    value: '${result.totalAnswered}',
-                  ),
-                  _ResultRow(
-                    icon: Icons.monetization_on_outlined,
-                    accent: context.appColors.reward,
-                    background: context.appColors.rewardBg,
-                    label: l10n.dailyResultCoinsEarned,
-                    value: '+${result.totalCoinsEarned}',
-                  ),
-                  _ResultRow(
-                    icon: Icons.local_fire_department_outlined,
-                    accent: context.appColors.reward,
-                    background: context.appColors.rewardBg,
-                    label: l10n.dailyResultStreakLabel,
-                    value: l10n.dailyResultDaysValue(result.streak),
-                  ),
-                  if (result.streakBonusCoins > 0)
+
+              const SizedBox(height: 32),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(context.radii.md),
+                  border: context.surfaces.borderOr(null),
+                  boxShadow: context.surfaces.shadowsOr(null),
+                ),
+                child: Column(
+                  children: [
                     _ResultRow(
-                      icon: Icons.bolt_outlined,
+                      icon: Icons.check_circle_outline,
+                      accent: context.appColors.success,
+                      background: context.appColors.successBg,
+                      label: l10n.dailyResultCorrectAnswers,
+                      value: result.correct,
+                    ),
+                    _ResultRow(
+                      icon: Icons.quiz_outlined,
+                      accent: Theme.of(context).colorScheme.primary,
+                      background: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      label: l10n.dailyResultTotalAnswered,
+                      value: result.totalAnswered,
+                    ),
+                    _ResultRow(
+                      icon: Icons.monetization_on_outlined,
                       accent: context.appColors.reward,
                       background: context.appColors.rewardBg,
-                      label: l10n.dailyResultStreakBonus,
-                      value: '+${result.streakBonusCoins}',
+                      label: l10n.dailyResultCoinsEarned,
+                      value: result.totalCoinsEarned,
+                      format: (coins) => '+$coins',
                     ),
-                ],
+                    _ResultRow(
+                      icon: Icons.local_fire_department_outlined,
+                      accent: context.appColors.reward,
+                      background: context.appColors.rewardBg,
+                      label: l10n.dailyResultStreakLabel,
+                      value: result.streak,
+                      format: l10n.dailyResultDaysValue,
+                    ),
+                    if (result.streakBonusCoins > 0)
+                      _ResultRow(
+                        icon: Icons.bolt_outlined,
+                        accent: context.appColors.reward,
+                        background: context.appColors.rewardBg,
+                        label: l10n.dailyResultStreakBonus,
+                        value: result.streakBonusCoins,
+                        format: (coins) => '+$coins',
+                      ),
+                  ],
+                ),
               ),
-            ),
 
-            if (result.alreadyPlayed) ...[
+              if (result.alreadyPlayed) ...[
+                const SizedBox(height: 16),
+                Text(
+                  l10n.dailyResultAlreadyPlayed,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const _ResetCountdown(),
+              ],
+
+              const SizedBox(height: 24),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DailyLeaderboardScreen(),
+                      ),
+                    );
+                  },
+                  child: Text(l10n.dailyResultViewLeaderboard),
+                ),
+              ),
+
               const SizedBox(height: 16),
-              Text(
-                l10n.dailyResultAlreadyPlayed,
-                textAlign: TextAlign.center,
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  },
+                  child: Text(l10n.dailyResultBackHome),
+                ),
               ),
-              const SizedBox(height: 8),
-              const _ResetCountdown(),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 24),
+/// The trophy in reward gold, popped in the way the solo result pops its
+/// stars — the one loud element on a screen that is otherwise a summary.
+class _TrophyBadge extends StatelessWidget {
+  const _TrophyBadge();
 
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DailyLeaderboardScreen(),
-                    ),
-                  );
-                },
-                child: Text(l10n.dailyResultViewLeaderboard),
-              ),
-            ),
+  @override
+  Widget build(BuildContext context) {
+    final reward = context.appColors.reward;
 
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                child: Text(l10n.dailyResultBackHome),
-              ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.6, end: 1),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: context.appColors.rewardBg,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: reward.withValues(alpha: 0.35),
+              blurRadius: 32,
+              spreadRadius: 4,
             ),
           ],
         ),
+        alignment: Alignment.center,
+        child: Icon(Icons.emoji_events, size: 68, color: reward),
       ),
     );
   }
@@ -199,7 +240,10 @@ class _ResultRow extends StatelessWidget {
   final Color accent;
   final Color background;
   final String label;
-  final String value;
+  final int value;
+
+  /// How [value] is written out; the bare number when omitted.
+  final String Function(int value)? format;
 
   const _ResultRow({
     required this.icon,
@@ -207,6 +251,7 @@ class _ResultRow extends StatelessWidget {
     required this.background,
     required this.label,
     required this.value,
+    this.format,
   });
 
   @override
@@ -232,12 +277,18 @@ class _ResultRow extends StatelessWidget {
               style: const TextStyle(fontSize: 16),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          // Counts up like the solo result's rewards, so the totals land
+          // rather than just sit there.
+          TweenAnimationBuilder<int>(
+            tween: IntTween(begin: 0, end: value),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedValue, _) {
+              return Text(
+                format?.call(animatedValue) ?? '$animatedValue',
+                style: context.heading(20),
+              );
+            },
           ),
         ],
       ),

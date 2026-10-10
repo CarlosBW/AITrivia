@@ -1726,9 +1726,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyResultTitle => 'Daily Challenge Result';
-
-  @override
   String get dailyResultComplete => 'Daily Challenge Complete!';
 
   @override

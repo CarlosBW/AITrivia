@@ -3074,12 +3074,6 @@ abstract class AppLocalizations {
   /// **'¡Reclamaste {count} recompensa(s) de temporada PvP: +{coins} monedas!'**
   String pvpSeasonClaimedRewards(int count, int coins);
 
-  /// No description provided for @dailyResultTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Resultado del Daily Challenge'**
-  String get dailyResultTitle;
-
   /// No description provided for @dailyResultComplete.
   ///
   /// In es, this message translates to:

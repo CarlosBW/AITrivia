@@ -5,6 +5,7 @@ import {
   AI_QUESTIONS_PER_SESSION,
   AI_QUESTION_BANK_CAP,
   bankHeadroom,
+  buildAnswerOptions,
   capAvoidList,
   interleaveByLevel,
   questionDedupeKey,
@@ -350,5 +351,71 @@ describe("questionDedupeKey", () => {
   test("is empty for blank text", () => {
     assert.equal(questionDedupeKey(""), "");
     assert.equal(questionDedupeKey("   "), "");
+  });
+});
+
+describe("buildAnswerOptions", () => {
+  const wrong = ["Polaris", "Sirio", "Betelgeuse"];
+
+  test("puts the correct answer where answerIndex says it is", () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const built = buildAnswerOptions("Próxima Centauri", wrong, seed);
+      assert.ok(built);
+      assert.equal(built.options[built.answerIndex], "Próxima Centauri");
+      assert.deepEqual(
+        [...built.options].sort(),
+        ["Próxima Centauri", ...wrong].sort()
+      );
+    }
+  });
+
+  test("is deterministic for a seed", () => {
+    assert.deepEqual(
+      buildAnswerOptions("Próxima Centauri", wrong, 7),
+      buildAnswerOptions("Próxima Centauri", wrong, 7)
+    );
+  });
+
+  // The model used to be asked to vary the position itself; now nothing
+  // else does, so a shuffle that favoured one slot would let players
+  // answer by position.
+  test("spreads the correct answer across all four positions", () => {
+    const counts = [0, 0, 0, 0];
+    for (let seed = 0; seed < 400; seed++) {
+      const built = buildAnswerOptions("Próxima Centauri", wrong, seed);
+      assert.ok(built);
+      counts[built.answerIndex]++;
+    }
+    for (const count of counts) {
+      assert.ok(count > 60, `positions were ${counts.join("/")}`);
+    }
+  });
+
+  test("rejects anything but exactly three wrong answers", () => {
+    assert.equal(buildAnswerOptions("a", ["b", "c"], 1), null);
+    assert.equal(buildAnswerOptions("a", ["b", "c", "d", "e"], 1), null);
+    assert.equal(buildAnswerOptions("a", "b, c, d", 1), null);
+    assert.equal(buildAnswerOptions("a", undefined, 1), null);
+  });
+
+  test("rejects blank or non-text answers", () => {
+    assert.equal(buildAnswerOptions("", wrong, 1), null);
+    assert.equal(buildAnswerOptions("   ", wrong, 1), null);
+    assert.equal(buildAnswerOptions(3, wrong, 1), null);
+    assert.equal(buildAnswerOptions("a", ["b", " ", "d"], 1), null);
+    assert.equal(buildAnswerOptions("a", ["b", 2, "d"], 1), null);
+  });
+
+  // Two options reading the same leave the player with two "right"
+  // answers and only one that scores.
+  test("rejects a wrong answer that repeats another option", () => {
+    assert.equal(
+      buildAnswerOptions("Júpiter", ["Marte", " júpiter ", "Venus"], 1),
+      null
+    );
+    assert.equal(
+      buildAnswerOptions("Júpiter", ["Marte", "Venus", "MARTE"], 1),
+      null
+    );
   });
 });

@@ -149,6 +149,47 @@ export function seededShuffleIndices(length: number, seed: number): number[] {
 }
 
 /**
+ * Turns "the right answer and three wrong ones" into the four shuffled
+ * options a question is stored with, and the index the right one landed
+ * on.
+ *
+ * The model used to return the options and that index itself, and got the
+ * index wrong while knowing the answer — its own explanation named the
+ * right option and `answerIndex` pointed at another. A player who answered
+ * correctly was marked wrong. Deriving the index here makes that
+ * impossible rather than merely unlikely.
+ * @param {unknown} correctAnswer The right answer, as the model wrote it.
+ * @param {unknown} wrongAnswers The three wrong answers.
+ * @param {number} seed Shuffle seed, so one question always lays out the
+ * same way.
+ * @return {object | null} Options and the correct index, or null when the
+ * answers can't make a fair question (see the checks below).
+ */
+export function buildAnswerOptions(
+  correctAnswer: unknown,
+  wrongAnswers: unknown,
+  seed: number
+): {options: string[]; answerIndex: number} | null {
+  if (!Array.isArray(wrongAnswers) || wrongAnswers.length !== 3) return null;
+
+  const answers: unknown[] = [correctAnswer, ...wrongAnswers];
+  if (answers.some((a) => typeof a !== "string" || a.trim() === "")) {
+    return null;
+  }
+
+  const texts = answers as string[];
+  const distinct = new Set(texts.map((a) => a.trim().toLowerCase()));
+  if (distinct.size !== texts.length) return null;
+
+  // The correct answer goes in as index 0, so wherever 0 ends up is it.
+  const order = seededShuffleIndices(texts.length, seed);
+  return {
+    options: order.map((i) => texts[i]),
+    answerIndex: order.indexOf(0),
+  };
+}
+
+/**
  * Orders and bounds the "don't repeat these" list for one generation call.
  *
  * The prompt truncates this list to a fixed budget, so *order decides what

@@ -39,6 +39,7 @@ import {
 import {
   AI_QUESTIONS_PER_SESSION,
   bankHeadroom,
+  buildAnswerOptions,
   capAvoidList,
   compareQuestionIds,
   fnv1a32,
@@ -5815,6 +5816,18 @@ interface GeneratedAiQuestion {
 }
 
 /**
+ * A question as the model returns it. It names the correct answer instead
+ * of giving its position — the position is ours to assign, see
+ * [buildAnswerOptions].
+ */
+interface ModelAiQuestion {
+  q: string;
+  correctAnswer: string;
+  wrongAnswers: string[];
+  explanation: string;
+}
+
+/**
  * Difficulty label for a given AI-topic level number (1-10, scaled easy
  * to hard), localized via the recipient's stored languageCode.
  * @param {number} levelNumber Level number (1-10).
@@ -5878,11 +5891,10 @@ async function requestAiQuestionsFromClaude(
     `trivia questions about "${title}", at ${difficulty} difficulty ` +
     `(this is level ${levelNumber} of ${AI_LEVELS_PER_TOPIC}; difficulty ` +
     "should scale up with the level number). Write every question, " +
-    `option, and explanation in ${outputLanguage}. Each question needs ` +
-    "exactly 4 answer options with exactly one correct answer. Vary the " +
-    "position of the correct answer across questions instead of always " +
-    "using the same index. Do not repeat questions or trivially reword " +
-    "the same fact twice." +
+    `answer, and explanation in ${outputLanguage}. Each question needs ` +
+    "one correct answer and exactly 3 wrong answers that are plausible " +
+    "but unambiguously incorrect, each different from the others. Do " +
+    "not repeat questions or trivially reword the same fact twice." +
     (avoidList ?
       "\n\nThese questions already exist for this topic. Do not repeat " +
       "any of them, and do not ask the same fact in different words — " +
@@ -5898,11 +5910,11 @@ async function requestAiQuestionsFromClaude(
           type: "object",
           properties: {
             q: {type: "string"},
-            options: {type: "array", items: {type: "string"}},
-            answerIndex: {type: "integer"},
+            correctAnswer: {type: "string"},
+            wrongAnswers: {type: "array", items: {type: "string"}},
             explanation: {type: "string"},
           },
-          required: ["q", "options", "answerIndex", "explanation"],
+          required: ["q", "correctAnswer", "wrongAnswers", "explanation"],
           additionalProperties: false,
         },
       },
@@ -5940,31 +5952,37 @@ async function requestAiQuestionsFromClaude(
       }
 
       const parsed = JSON.parse(block.text) as {
-        questions?: GeneratedAiQuestion[];
+        questions?: ModelAiQuestion[];
       };
-      const questions = parsed.questions || [];
+      const drafts = parsed.questions || [];
 
-      if (questions.length !== count) {
+      if (drafts.length !== count) {
         throw new Error(
           `Expected ${count} questions, got ` +
-          `${questions.length}.`
+          `${drafts.length}.`
         );
       }
 
-      for (const question of questions) {
-        if (
-          typeof question.q !== "string" || question.q.trim() === "" ||
-          !Array.isArray(question.options) ||
-          question.options.length !== 4 ||
-          question.options.some((o) => typeof o !== "string") ||
-          !Number.isInteger(question.answerIndex) ||
-          question.answerIndex < 0 || question.answerIndex > 3
-        ) {
+      return drafts.map((draft) => {
+        // Seeded by the question text so a question always lays out the
+        // same way, while different questions land on different slots.
+        const built = typeof draft.q === "string" && draft.q.trim() !== "" ?
+          buildAnswerOptions(
+            draft.correctAnswer, draft.wrongAnswers, fnv1a32(draft.q)
+          ) :
+          null;
+
+        if (!built) {
           throw new Error("Malformed question from Claude.");
         }
-      }
 
-      return questions;
+        return {
+          q: draft.q,
+          options: built.options,
+          answerIndex: built.answerIndex,
+          explanation: draft.explanation,
+        };
+      });
     } catch (error) {
       if (error instanceof HttpsError || error instanceof TopicBlockedError) {
         throw error;

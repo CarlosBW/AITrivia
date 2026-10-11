@@ -14,10 +14,12 @@ import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
 import '../../services/theme_service.dart';
 import '../../services/avatar_service.dart';
+import '../../services/account_link_service.dart';
 import '../achievements/achievements_screen.dart';
 import '../../widgets/buy_coins_button.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
+import '../../widgets/save_progress_sheet.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -1185,6 +1187,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               _RecentMatchHistory(uid: uid),
               const SizedBox(height: 24),
               Text(
+                l10n.profileAccountSectionTitle,
+                style: context.heading(20),
+              ),
+              const SizedBox(height: 10),
+              const _AccountSection(),
+              const SizedBox(height: 24),
+              Text(
                 l10n.profileLegalSectionTitle,
                 style: context.heading(20),
               ),
@@ -1573,6 +1582,98 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+/// Whether this game is saved under a sign-in, and the way to save it if
+/// not. A guest's game lives only on the device, which is the one thing on
+/// this screen a player can lose without doing anything wrong.
+class _AccountSection extends StatefulWidget {
+  const _AccountSection();
+
+  @override
+  State<_AccountSection> createState() => _AccountSectionState();
+}
+
+class _AccountSectionState extends State<_AccountSection> {
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final saved = await showSaveProgressSheet(context);
+    if (!saved || !mounted) return;
+
+    setState(() {});
+    messenger.showSnackBar(SnackBar(content: Text(l10n.saveProgressSaved)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final service = AccountLinkService.instance;
+    final provider = service.linkedProvider;
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(context.radii.md),
+    );
+
+    if (provider != null) {
+      final email = service.linkedEmail;
+
+      return Card(
+        shape: shape,
+        child: ListTile(
+          leading: Icon(
+            Icons.cloud_done_outlined,
+            color: context.appColors.success,
+          ),
+          title: Text(
+            provider == AccountProvider.apple
+                ? l10n.profileAccountSavedApple
+                : l10n.profileAccountSavedGoogle,
+          ),
+          subtitle: email == null ? null : Text(email),
+        ),
+      );
+    }
+
+    return Card(
+      shape: shape.copyWith(
+        side: BorderSide(color: context.appColors.reward),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.cloud_off_outlined,
+                  color: context.appColors.reward,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.profileAccountGuestTitle,
+                    style: context.heading(17),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(l10n.profileAccountGuestBody),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _save,
+                child: Text(l10n.profileAccountSaveAction),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _LegalLinkTile extends StatelessWidget {

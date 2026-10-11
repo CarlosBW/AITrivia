@@ -247,6 +247,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAchievements => 'Achievements';
 
   @override
+  String get saveProgressTitle => 'Save your progress';
+
+  @override
+  String get saveProgressBody =>
+      'Right now your game only exists on this device. Link it to your account to get it back if you switch phones or reinstall the app.';
+
+  @override
+  String get saveProgressRecoverTitle => 'Recover your game';
+
+  @override
+  String get saveProgressRecoverBody =>
+      'Sign in with the account your progress is saved under.';
+
+  @override
+  String get saveProgressWithGoogle => 'Continue with Google';
+
+  @override
+  String get saveProgressWithApple => 'Continue with Apple';
+
+  @override
+  String get saveProgressSaved => 'Done, your progress is saved.';
+
+  @override
+  String get saveProgressNoSavedGame =>
+      'That account had no saved game. The one you start now will be saved under it.';
+
+  @override
+  String get saveProgressError =>
+      'That didn\'t go through. Check your connection and try again.';
+
+  @override
+  String get saveProgressSwitchTitle => 'That account already has a game';
+
+  @override
+  String get saveProgressSwitchBody =>
+      'You can open that saved game, but the one on this device will be deleted and can\'t be recovered.';
+
+  @override
+  String get saveProgressSwitchConfirm => 'Open the saved game';
+
+  @override
+  String get saveProgressNotNow => 'Not now';
+
+  @override
+  String get saveProgressReminderBody =>
+      'Link your account so you don\'t lose your progress.';
+
+  @override
+  String get saveProgressReminderAction => 'Save';
+
+  @override
+  String get profileAccountSectionTitle => 'Account';
+
+  @override
+  String get profileAccountGuestTitle => 'Your progress isn\'t saved';
+
+  @override
+  String get profileAccountGuestBody =>
+      'It only exists on this device. Lose it or reinstall the app and it\'s gone.';
+
+  @override
+  String get profileAccountSaveAction => 'Save my progress';
+
+  @override
+  String get profileAccountSavedGoogle => 'Progress saved with Google';
+
+  @override
+  String get profileAccountSavedApple => 'Progress saved with Apple';
+
+  @override
+  String get usernamePickerHaveAccount => 'I already have an account';
+
+  @override
   String get profileLegalSectionTitle => 'Legal';
 
   @override

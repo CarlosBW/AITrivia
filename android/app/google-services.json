@@ -12,7 +12,12 @@
           "package_name": "com.example.trivia_ia_flutter"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1049545801330-d8v1k7dviccbc0ctc4cfunvtspkt9i70.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBQFi-tg_-glqSiX4Yomemsazs-E6CmwEU"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049545801330-d8v1k7dviccbc0ctc4cfunvtspkt9i70.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1049545801330-algchdel5q8rj2nlgia0oa9dej14hbro.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "pe.massivedynamics.triviaia"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,20 @@
           "package_name": "pe.massivedynamics.triviaia"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1049545801330-8kuqc7rhr3qr2s7rkhc2k96ko2kolmmn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pe.massivedynamics.triviaia",
+            "certificate_hash": "8f4fa6886a8d8ec91863d8478c13c30f2a332a9e"
+          }
+        },
+        {
+          "client_id": "1049545801330-d8v1k7dviccbc0ctc4cfunvtspkt9i70.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBQFi-tg_-glqSiX4Yomemsazs-E6CmwEU"
@@ -39,7 +69,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049545801330-d8v1k7dviccbc0ctc4cfunvtspkt9i70.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1049545801330-algchdel5q8rj2nlgia0oa9dej14hbro.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "pe.massivedynamics.triviaia"
+              }
+            }
+          ]
         }
       }
     }

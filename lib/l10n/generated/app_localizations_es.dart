@@ -246,6 +246,79 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileAchievements => 'Logros';
 
   @override
+  String get saveProgressTitle => 'Guarda tu progreso';
+
+  @override
+  String get saveProgressBody =>
+      'Hoy tu partida solo existe en este dispositivo. Vincúlala a tu cuenta para recuperarla si cambias de teléfono o reinstalas la app.';
+
+  @override
+  String get saveProgressRecoverTitle => 'Recupera tu partida';
+
+  @override
+  String get saveProgressRecoverBody =>
+      'Inicia sesión con la cuenta donde guardaste tu progreso.';
+
+  @override
+  String get saveProgressWithGoogle => 'Continuar con Google';
+
+  @override
+  String get saveProgressWithApple => 'Continuar con Apple';
+
+  @override
+  String get saveProgressSaved => 'Listo, tu progreso quedó guardado.';
+
+  @override
+  String get saveProgressNoSavedGame =>
+      'Esa cuenta no tenía una partida guardada. La que empieces ahora quedará guardada en ella.';
+
+  @override
+  String get saveProgressError =>
+      'No se pudo completar. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get saveProgressSwitchTitle => 'Esa cuenta ya tiene una partida';
+
+  @override
+  String get saveProgressSwitchBody =>
+      'Puedes entrar a esa partida guardada, pero la de este dispositivo se borrará y no se podrá recuperar.';
+
+  @override
+  String get saveProgressSwitchConfirm => 'Entrar a la partida guardada';
+
+  @override
+  String get saveProgressNotNow => 'Ahora no';
+
+  @override
+  String get saveProgressReminderBody =>
+      'Vincula tu cuenta para no perder tu avance.';
+
+  @override
+  String get saveProgressReminderAction => 'Guardar';
+
+  @override
+  String get profileAccountSectionTitle => 'Cuenta';
+
+  @override
+  String get profileAccountGuestTitle => 'Tu progreso no está guardado';
+
+  @override
+  String get profileAccountGuestBody =>
+      'Solo existe en este dispositivo. Si lo pierdes o reinstalas la app, se pierde.';
+
+  @override
+  String get profileAccountSaveAction => 'Guardar mi progreso';
+
+  @override
+  String get profileAccountSavedGoogle => 'Progreso guardado con Google';
+
+  @override
+  String get profileAccountSavedApple => 'Progreso guardado con Apple';
+
+  @override
+  String get usernamePickerHaveAccount => 'Ya tengo una cuenta';
+
+  @override
   String get profileLegalSectionTitle => 'Legal';
 
   @override

@@ -494,6 +494,138 @@ abstract class AppLocalizations {
   /// **'Logros'**
   String get profileAchievements;
 
+  /// No description provided for @saveProgressTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Guarda tu progreso'**
+  String get saveProgressTitle;
+
+  /// No description provided for @saveProgressBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Hoy tu partida solo existe en este dispositivo. Vincúlala a tu cuenta para recuperarla si cambias de teléfono o reinstalas la app.'**
+  String get saveProgressBody;
+
+  /// No description provided for @saveProgressRecoverTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Recupera tu partida'**
+  String get saveProgressRecoverTitle;
+
+  /// No description provided for @saveProgressRecoverBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicia sesión con la cuenta donde guardaste tu progreso.'**
+  String get saveProgressRecoverBody;
+
+  /// No description provided for @saveProgressWithGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Google'**
+  String get saveProgressWithGoogle;
+
+  /// No description provided for @saveProgressWithApple.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Apple'**
+  String get saveProgressWithApple;
+
+  /// No description provided for @saveProgressSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Listo, tu progreso quedó guardado.'**
+  String get saveProgressSaved;
+
+  /// No description provided for @saveProgressNoSavedGame.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa cuenta no tenía una partida guardada. La que empieces ahora quedará guardada en ella.'**
+  String get saveProgressNoSavedGame;
+
+  /// No description provided for @saveProgressError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo completar. Revisa tu conexión e inténtalo de nuevo.'**
+  String get saveProgressError;
+
+  /// No description provided for @saveProgressSwitchTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Esa cuenta ya tiene una partida'**
+  String get saveProgressSwitchTitle;
+
+  /// No description provided for @saveProgressSwitchBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes entrar a esa partida guardada, pero la de este dispositivo se borrará y no se podrá recuperar.'**
+  String get saveProgressSwitchBody;
+
+  /// No description provided for @saveProgressSwitchConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrar a la partida guardada'**
+  String get saveProgressSwitchConfirm;
+
+  /// No description provided for @saveProgressNotNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get saveProgressNotNow;
+
+  /// No description provided for @saveProgressReminderBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Vincula tu cuenta para no perder tu avance.'**
+  String get saveProgressReminderBody;
+
+  /// No description provided for @saveProgressReminderAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get saveProgressReminderAction;
+
+  /// No description provided for @profileAccountSectionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta'**
+  String get profileAccountSectionTitle;
+
+  /// No description provided for @profileAccountGuestTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu progreso no está guardado'**
+  String get profileAccountGuestTitle;
+
+  /// No description provided for @profileAccountGuestBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo existe en este dispositivo. Si lo pierdes o reinstalas la app, se pierde.'**
+  String get profileAccountGuestBody;
+
+  /// No description provided for @profileAccountSaveAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar mi progreso'**
+  String get profileAccountSaveAction;
+
+  /// No description provided for @profileAccountSavedGoogle.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso guardado con Google'**
+  String get profileAccountSavedGoogle;
+
+  /// No description provided for @profileAccountSavedApple.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso guardado con Apple'**
+  String get profileAccountSavedApple;
+
+  /// No description provided for @usernamePickerHaveAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tengo una cuenta'**
+  String get usernamePickerHaveAccount;
+
   /// No description provided for @profileLegalSectionTitle.
   ///
   /// In es, this message translates to:

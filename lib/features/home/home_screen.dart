@@ -22,6 +22,7 @@ import '../../widgets/life_hearts.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/buy_coins_button.dart';
+import '../../widgets/save_progress_reminder.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
@@ -390,6 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
+                const SaveProgressReminder(),
                 _AiTopicCta(
                   onTap: _isNavigating || _buyingLife
                       ? null

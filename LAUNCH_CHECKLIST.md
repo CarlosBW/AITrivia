@@ -62,7 +62,31 @@ El 2026-08-07 se completaron los pools de las 9 categorías fijas hasta 100 preg
 - Para corregir una pregunta ya publicada: `node tools/export_questions.js`, marcar la fila con `veredicto = fix` y aplicar con `node tools/apply_question_fixes.js --in=... --commit`. Corrige Firestore y `tools/fill_pools/<categoria>.js` en la misma pasada (el cargador es append-only y se niega a sobrescribir, por diseño).
 - El objetivo 30/40/30 no es arbitrario: sale de `FIXED_LEVEL_BANDS` en `functions/src/fixed_level_slicing.ts`. Cada banda necesita 10 preguntas por nivel para que los niveles que la comparten tengan tandas sin solapamiento. Si algún día cambias las bandas, ese objetivo cambia con ellas (hay un test que lo verifica).
 
-## 8. Cosas ya resueltas en este repo (para tu referencia)
+## 8. Guardar el progreso con Google o Apple
+
+Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar la app o cambiar de teléfono (así se perdió `UserMainTest`). El código para vincularla a Google o Apple ya está (`lib/services/account_link_service.dart`); lo que falta es configuración de consolas, y nada de esto se ha probado todavía contra un inicio de sesión real.
+
+**Android (Google)**
+
+- [ ] Habilitar **Google** en Firebase Console → Authentication → Sign-in method. Al hacerlo se crea el cliente OAuth web que la app necesita; hoy `google-services.json` no trae ninguno.
+- [ ] Volver a descargar `android/app/google-services.json` después de habilitarlo: `firebase apps:sdkconfig ANDROID 1:1049545801330:android:bb4b3946c9eefa6ad18ceb -o android/app/google-services.json`.
+- [x] Huellas SHA-1 y SHA-256 de la clave **debug** de la máquina de desarrollo registradas en la app Android de Firebase (2026-10-10).
+- [ ] Registrar también las huellas de la **clave de subida** (cuando exista el keystore del punto 4) y de la **clave de firma de Play** (Play Console → Integridad de la app). Sin ellas, el inicio de sesión funciona en debug y falla en la versión de la tienda.
+- [ ] Probar en un teléfono: vincular desde Perfil, reinstalar, y recuperar con "Ya tengo una cuenta".
+
+**iOS (Google y Apple)** — bloqueado por la membresía de Apple y por no tener Mac
+
+- [ ] Habilitar **Apple** en Firebase Console → Authentication → Sign-in method.
+- [ ] Agregar la capacidad *Sign in with Apple* al target Runner en Xcode.
+- [ ] Agregar a `Info.plist` el esquema de URL con el `REVERSED_CLIENT_ID` del `GoogleService-Info.plist` (que hay que volver a descargar tras habilitar Google).
+- En Android el botón de Apple no se muestra: requeriría un Service ID de Apple. Quien vincule con Apple en un iPhone no puede recuperar su partida en Android hasta que eso exista.
+
+**Publicación**
+
+- [ ] `firebase deploy --only hosting` — la política de privacidad y los términos ya mencionan el inicio de sesión opcional, pero la versión en vivo todavía dice que la cuenta es solo anónima.
+- [ ] En el formulario de Data safety de Play, declarar el correo electrónico y el identificador de cuenta como datos opcionales, usados para gestión de la cuenta.
+
+## 9. Cosas ya resueltas en este repo (para tu referencia)
 
 - Metadata cosmética (nombre "TriviaIA" en label/manifest, no el `applicationId` final).
 - Firma release por `key.properties` en vez de la debug key (ver punto 4 para lo que falta de tu lado).

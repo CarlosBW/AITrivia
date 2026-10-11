@@ -54,7 +54,7 @@ module.exports = {
     {q: "¿Qué diseñador creó \"SimCity\" y \"The Sims\"?", options: ["Richard Garriott", "Will Wright", "Peter Molyneux", "Sid Meier"], answerIndex: 1},
     {q: "¿Qué compañía japonesa desarrolló \"Chrono Trigger\" en 1995?", options: ["Namco", "Square", "Konami", "Enix"], answerIndex: 1},
     {q: "¿Qué juego de Nintendo 64 de 1998 es considerado uno de los mejores de la historia?", options: ["Ocarina of Time", "Banjo-Kazooie", "Perfect Dark", "GoldenEye 007"], answerIndex: 0},
-    {q: "¿Qué motor gráfico desarrolla Unity Technologies?", options: ["CryEngine", "Godot", "Source", "Unity"], answerIndex: 3},
+    {q: "¿Con qué motor gráfico se desarrollaron juegos como \"Hollow Knight\" y \"Cuphead\"?", options: ["CryEngine", "Godot", "Source", "Unity"], answerIndex: 3},
     {q: "¿Qué juego de id Software de 1993 popularizó el shooter en primera persona?", options: ["Quake", "Wolfenstein 3D", "Doom", "Duke Nukem 3D"], answerIndex: 2},
     {q: "¿Qué programador cofundó id Software y es célebre por sus motores 3D?", options: ["Gabe Newell", "John Carmack", "John Romero", "Tim Sweeney"], answerIndex: 1},
     {q: "¿Cuál fue la última consola doméstica fabricada por Sega?", options: ["Dreamcast", "Master System", "Mega Drive", "Saturn"], answerIndex: 0},

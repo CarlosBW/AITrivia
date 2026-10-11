@@ -5,7 +5,7 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 **Estado actual (2026-08-07):** todo lo que no depende de las cuentas de las tiendas está cerrado. Lo que falta se reduce a tres cosas:
 
 1. Los puntos **2 (parte final)** y **4**, bloqueados hasta que gestiones Play Console y App Store Connect.
-2. La **revisión legal** del punto 5 y la **revisión factual del banco de preguntas** (punto 7) — ambas de contenido, no de código.
+2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
 3. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
 ## 1. Deploy pendiente
@@ -58,8 +58,8 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 
 El 2026-08-07 se completaron los pools de las 9 categorías fijas hasta 100 preguntas cada una (30 fáciles / 40 medias / 30 difíciles = 900 en total). Las 540 nuevas están versionadas en `tools/fill_pools/*.js` y publicadas en Firestore.
 
-- [ ] **Revisar la exactitud de las 540 preguntas nuevas, empezando por las de dificultad 3.** Fueron generadas, no verificadas una por una, y en un juego un `answerIndex` equivocado castiga al jugador que respondió *bien* — es el peor tipo de error posible aquí. Las de dificultad 3 son las de mayor riesgo por ser las más especializadas.
-- Para corregir una pregunta ya publicada: edítala en `tools/fill_pools/<categoria>.js` **y** en Firestore (el cargador es append-only y se niega a sobrescribir, por diseño).
+- [x] **Revisar la exactitud del banco** (2026-10-10). Se leyeron las 900 preguntas tal como están en Firestore, no solo las 540 nuevas: ninguna tiene el `answerIndex` equivocado, todas tienen cuatro opciones distintas y no hay enunciados duplicados. Se reescribieron siete enunciados flojos sin tocar opciones ni respuesta — cinco que llevaban la respuesta escrita en la pregunta, uno impreciso (atribuía a los Curie el descubrimiento de la radiactividad) y uno discutible (el río más largo del mundo, con el Amazonas entre las opciones). La revisión la hizo Claude leyendo cada pregunta; no sustituye una segunda lectura humana si se quiere certeza total.
+- Para corregir una pregunta ya publicada: `node tools/export_questions.js`, marcar la fila con `veredicto = fix` y aplicar con `node tools/apply_question_fixes.js --in=... --commit`. Corrige Firestore y `tools/fill_pools/<categoria>.js` en la misma pasada (el cargador es append-only y se niega a sobrescribir, por diseño).
 - El objetivo 30/40/30 no es arbitrario: sale de `FIXED_LEVEL_BANDS` en `functions/src/fixed_level_slicing.ts`. Cada banda necesita 10 preguntas por nivel para que los niveles que la comparten tengan tandas sin solapamiento. Si algún día cambias las bandas, ese objetivo cambia con ellas (hay un test que lo verifica).
 
 ## 8. Cosas ya resueltas en este repo (para tu referencia)

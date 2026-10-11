@@ -1711,6 +1711,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String pvpSeasonPendingCoins(int coins) {
+    return '+$coins coins';
+  }
+
+  @override
   String get pvpSeasonClaiming => 'Claiming...';
 
   @override
@@ -1760,6 +1765,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyResultBackHome => 'Back to Home';
+
+  @override
+  String get dailyReminderTitle => '🔥 Daily Challenge ready!';
+
+  @override
+  String get dailyReminderBody => 'Play today and keep your streak alive.';
+
+  @override
+  String get soloPerfectBadge => 'PERFECT!';
 
   @override
   String dailyResultNextChallengeIn(String time) {

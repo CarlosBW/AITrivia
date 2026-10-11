@@ -911,6 +911,12 @@
       "count": {"type": "int"}
     }
   },
+  "pvpSeasonPendingCoins": "+{coins} coins",
+  "@pvpSeasonPendingCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
   "pvpSeasonClaiming": "Claiming...",
   "pvpSeasonClaimAllButton": "Claim All Rewards",
   "pvpSeasonNoPendingRewards": "No pending PvP season rewards available.",
@@ -936,6 +942,9 @@
   "dailyResultStreakBonus": "Streak bonus",
   "dailyResultAlreadyPlayed": "You already played today. Coins were not awarded again.",
   "dailyResultBackHome": "Back to Home",
+  "dailyReminderTitle": "🔥 Daily Challenge ready!",
+  "dailyReminderBody": "Play today and keep your streak alive.",
+  "soloPerfectBadge": "PERFECT!",
   "dailyResultNextChallengeIn": "Next challenge in {time}",
   "dailyResultViewLeaderboard": "View today's ranking",
 

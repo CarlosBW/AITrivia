@@ -3050,6 +3050,12 @@ abstract class AppLocalizations {
   /// **'+{count} temporada(s) pendiente(s) más'**
   String pvpSeasonMorePending(int count);
 
+  /// No description provided for @pvpSeasonPendingCoins.
+  ///
+  /// In es, this message translates to:
+  /// **'+{coins} monedas'**
+  String pvpSeasonPendingCoins(int coins);
+
   /// No description provided for @pvpSeasonClaiming.
   ///
   /// In es, this message translates to:
@@ -3127,6 +3133,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Volver al inicio'**
   String get dailyResultBackHome;
+
+  /// No description provided for @dailyReminderTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'🔥 ¡Daily Challenge listo!'**
+  String get dailyReminderTitle;
+
+  /// No description provided for @dailyReminderBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Juega hoy y mantén tu racha.'**
+  String get dailyReminderBody;
+
+  /// No description provided for @soloPerfectBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'¡PERFECTO!'**
+  String get soloPerfectBadge;
 
   /// No description provided for @dailyResultNextChallengeIn.
   ///

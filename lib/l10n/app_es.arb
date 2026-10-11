@@ -934,6 +934,12 @@
       "count": {"type": "int"}
     }
   },
+  "pvpSeasonPendingCoins": "+{coins} monedas",
+  "@pvpSeasonPendingCoins": {
+    "placeholders": {
+      "coins": {"type": "int"}
+    }
+  },
   "pvpSeasonClaiming": "Reclamando...",
   "pvpSeasonClaimAllButton": "Reclamar todas las recompensas",
   "pvpSeasonNoPendingRewards": "No hay recompensas de temporada PvP pendientes.",
@@ -959,6 +965,9 @@
   "dailyResultStreakBonus": "Bono de racha",
   "dailyResultAlreadyPlayed": "Ya jugaste hoy. No se otorgaron monedas nuevamente.",
   "dailyResultBackHome": "Volver al inicio",
+  "dailyReminderTitle": "🔥 ¡Daily Challenge listo!",
+  "dailyReminderBody": "Juega hoy y mantén tu racha.",
+  "soloPerfectBadge": "¡PERFECTO!",
   "dailyResultNextChallengeIn": "Próximo desafío en {time}",
   "@dailyResultNextChallengeIn": {
     "placeholders": {

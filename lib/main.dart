@@ -13,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'firebase_options.dart';
 import 'app/app.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
 import 'services/notification_service.dart';
@@ -93,11 +94,16 @@ tz.TZDateTime _nextDailyReminderTime({
 }
 
 Future<void> _scheduleDailyChallengeReminder() async {
+  // No BuildContext this early, so the strings are looked up for the
+  // player's locale directly. Scheduling under the same id replaces the
+  // previous reminder, which is how a language change takes effect.
+  final l10n = lookupAppLocalizations(LocaleController.instance.locale.value);
+
   try {
     await localNotifications.zonedSchedule(
       1001,
-      '🔥 Daily Challenge ready!',
-      'Play today and keep your streak alive.',
+      l10n.dailyReminderTitle,
+      l10n.dailyReminderBody,
       _nextDailyReminderTime(hour: 19, minute: 0),
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -201,6 +207,13 @@ Future<void> _setupNotifications() async {
   }
 
   await _scheduleDailyChallengeReminder();
+
+  // The reminder's text is fixed when it is scheduled, and it repeats
+  // daily — without this it would keep the language the app started in
+  // long after the player switched.
+  LocaleController.instance.locale.addListener(() {
+    unawaited(_scheduleDailyChallengeReminder());
+  });
 }
 
 // Play Integrity (Android) / App Attest (iOS) in release builds, debug

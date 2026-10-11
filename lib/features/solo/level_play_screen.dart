@@ -2537,7 +2537,7 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
                   ],
                 ),
                 child: Text(
-                  'PERFECT!',
+                  AppLocalizations.of(context).soloPerfectBadge,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w900,

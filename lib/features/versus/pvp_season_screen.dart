@@ -1170,7 +1170,7 @@ class _PendingRewardsCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '+$_totalCoins coins',
+                l10n.pvpSeasonPendingCoins(_totalCoins),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],

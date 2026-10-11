@@ -61,3 +61,7 @@ key.properties
 *.jks
 *.keystore
 *.p12
+
+# Caché del CLI de Firebase: guarda qué archivos subió el último deploy de
+# hosting desde esta máquina. Cambia en cada deploy y no le sirve a nadie más.
+.firebase/

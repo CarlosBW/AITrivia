@@ -6,6 +6,9 @@
     <!-- 🔥 Internet -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- 🔔 Reprogramar el recordatorio diario tras reiniciar el teléfono -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
     <application
         android:label="TriviaIA"
         android:name="${applicationName}"
@@ -36,6 +39,20 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- 🔔 Notificaciones programadas (el recordatorio del reto diario).
+             flutter_local_notifications dejó de declararlos por su cuenta en
+             la v16: sin ellos la alarma se programa pero nadie la recibe, y
+             el recordatorio nunca aparece. -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
 
         <!-- Flutter embedding -->
         <meta-data

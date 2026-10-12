@@ -18,7 +18,7 @@ import '../../services/avatar_service.dart';
 import '../../services/sfx_service.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
-import '../../widgets/life_hearts.dart';
+import '../../widgets/lives_card.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
 import '../../widgets/buy_coins_button.dart';
@@ -488,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ? const LinearProgressIndicator()
                                   : Column(
                                       children: [
-                                        _LivesCard(
+                                        LivesCard(
                                           lifeUnits:
                                               _lifeState!['lifeUnits'] as int,
                                           maxLifeUnits: _lifeState![
@@ -982,66 +982,6 @@ class _WeeklyCountdownLabelState extends State<_WeeklyCountdownLabel> {
           fontWeight: FontWeight.w600,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-      ),
-    );
-  }
-}
-
-// Vidas + tiempo de regeneración are one system, so they read as one card
-// instead of two separate stat chips.
-class _LivesCard extends StatelessWidget {
-  final int lifeUnits;
-  final int maxLifeUnits;
-  final bool isFull;
-  final String countdownText;
-
-  const _LivesCard({
-    required this.lifeUnits,
-    required this.maxLifeUnits,
-    required this.isFull,
-    required this.countdownText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    const iconColor = Color(0xFFFF6B5B);
-    const labelColor = Color(0xFFD9695B);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: context.appColors.dangerBg,
-        borderRadius: BorderRadius.circular(context.radii.sm),
-        border: context.surfaces.borderOr(null),
-        boxShadow: context.surfaces.shadowsOr(null),
-      ),
-      child: Row(
-        children: [
-          // Hearts instead of "8/10 lives": the number is information, the
-          // row is a game. The exact figure still reaches screen readers.
-          LifeHearts(
-            lifeUnits: lifeUnits,
-            maxLifeUnits: maxLifeUnits,
-            color: iconColor,
-          ),
-          const Spacer(),
-          Icon(
-            isFull ? Icons.check_circle_outline : Icons.timer_outlined,
-            size: 16,
-            color: labelColor,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            isFull ? l10n.homeLivesFull : countdownText,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: labelColor,
-            ),
-          ),
-        ],
       ),
     );
   }

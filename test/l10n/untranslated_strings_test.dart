@@ -25,5 +25,12 @@ void main() {
       expect(es.pvpSeasonPendingCoins(250), '+250 monedas');
       expect(en.pvpSeasonPendingCoins(250), '+250 coins');
     });
+
+    // The purchase service wrote "Purchase canceled." itself, with no
+    // context to translate it from, and the shop showed it as it came.
+    test('backing out of a coin purchase is said in each language', () {
+      expect(es.coinShopPurchaseCanceled, 'Compra cancelada.');
+      expect(en.coinShopPurchaseCanceled, 'Purchase canceled.');
+    });
   });
 }

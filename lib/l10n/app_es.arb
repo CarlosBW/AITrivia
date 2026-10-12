@@ -1447,6 +1447,7 @@
     }
   },
   "coinShopPurchaseFailed": "La compra no se completó.",
+  "coinShopPurchaseCanceled": "Compra cancelada.",
   "coinShopComingSoonTitle": "Próximamente",
   "coinShopComingSoonBody": "La compra de monedas todavía no está disponible en esta versión.",
   "coinShopCoinsAmount": "{coins} monedas",

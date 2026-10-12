@@ -78,7 +78,9 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
         content: Text(
           result.success
               ? l10n.coinShopPurchaseSuccess(result.grantedCoins)
-              : result.message ?? l10n.coinShopPurchaseFailed,
+              : result.canceled
+                  ? l10n.coinShopPurchaseCanceled
+                  : result.message ?? l10n.coinShopPurchaseFailed,
         ),
       ),
     );

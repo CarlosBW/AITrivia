@@ -7,6 +7,7 @@ import '../onboarding/username_picker_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
+import '../../services/purchase_service.dart';
 import '../../services/theme_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 
@@ -78,6 +79,14 @@ class _AuthGateState extends State<AuthGate> {
     // as soon as the first snapshot lands, which beats holding the whole
     // launch on a read that only decides how things look.
     ThemeService.instance.watch(uid);
+
+    // Listens for purchases from launch, not from the first visit to the
+    // shop. A paid purchase whose crediting failed is left pending so the
+    // store hands it back on the next launch — but it only hands it to
+    // someone listening, and a player who paid and got nothing is the one
+    // least likely to open the shop again. Here rather than in main():
+    // crediting is a callable, and that needs the signed-in user.
+    PurchaseService.instance.start();
 
     await MatchService().recoverMyRealtimeStateOnAppStart();
     await PresenceService.instance.setOnline();

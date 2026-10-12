@@ -1419,6 +1419,7 @@
     }
   },
   "coinShopPurchaseFailed": "The purchase didn't complete.",
+  "coinShopPurchaseCanceled": "Purchase canceled.",
   "coinShopComingSoonTitle": "Coming soon",
   "coinShopComingSoonBody": "Buying coins isn't available in this version yet.",
   "coinShopCoinsAmount": "{coins} coins",

@@ -4258,6 +4258,12 @@ abstract class AppLocalizations {
   /// **'La compra no se completó.'**
   String get coinShopPurchaseFailed;
 
+  /// No description provided for @coinShopPurchaseCanceled.
+  ///
+  /// In es, this message translates to:
+  /// **'Compra cancelada.'**
+  String get coinShopPurchaseCanceled;
+
   /// No description provided for @coinShopComingSoonTitle.
   ///
   /// In es, this message translates to:

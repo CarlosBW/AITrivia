@@ -2464,6 +2464,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coinShopPurchaseFailed => 'The purchase didn\'t complete.';
 
   @override
+  String get coinShopPurchaseCanceled => 'Purchase canceled.';
+
+  @override
   String get coinShopComingSoonTitle => 'Coming soon';
 
   @override

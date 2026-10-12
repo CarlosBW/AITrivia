@@ -104,9 +104,19 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.themeShopSectionTitle,
-              style: context.heading(20, color: colorScheme.onSurface),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.themeShopSectionTitle,
+                    style: context.heading(20, color: colorScheme.onSurface),
+                  ),
+                ),
+                // A price means nothing without the balance next to it.
+                // Not until the doc arrives: a 0 that turns into the real
+                // figure a moment later reads as having lost the coins.
+                if (data != null) _Balance(coins: coins, l10n: l10n),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -130,6 +140,51 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
           ],
         );
       },
+    );
+  }
+}
+
+/// What the player has to spend, in the same coin the home screen uses.
+class _Balance extends StatelessWidget {
+  const _Balance({required this.coins, required this.l10n});
+
+  final int coins;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Semantics(
+      label: l10n.coinShopCoinsAmount(coins),
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colors.rewardBg,
+          borderRadius: BorderRadius.circular(context.radii.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Darkened the way StatChip darkens the same amber on Home:
+            // as it comes, it is too pale to read on its own tint.
+            Icon(
+              Icons.monetization_on_outlined,
+              size: 18,
+              color: Color.lerp(colors.reward, Colors.black, 0.25),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '$coins',
+              style: context.heading(
+                15,
+                color: Color.lerp(colors.reward, Colors.black, 0.35)!,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

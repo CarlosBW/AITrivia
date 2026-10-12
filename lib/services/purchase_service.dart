@@ -95,12 +95,11 @@ class PurchaseService {
           break;
 
         case PurchaseStatus.error:
+          // No message: the store's own is a technical string in English,
+          // and this service has no context to translate one from. The
+          // screen says it in the player's language.
           _purchaseResultController.add(
-            PurchaseResult(
-              productId: purchase.productID,
-              success: false,
-              message: purchase.error?.message ?? 'Purchase failed.',
-            ),
+            PurchaseResult(productId: purchase.productID, success: false),
           );
           safeToComplete = true;
           break;
@@ -110,7 +109,7 @@ class PurchaseService {
             PurchaseResult(
               productId: purchase.productID,
               success: false,
-              message: 'Purchase canceled.',
+              canceled: true,
             ),
           );
           safeToComplete = true;
@@ -176,12 +175,19 @@ class PurchaseResult {
   final String productId;
   final bool success;
   final int grantedCoins;
+
+  /// The player backed out of the store's own sheet — not a failure.
+  final bool canceled;
+
+  /// Only set when the server said why it refused, already in the
+  /// player's language. Null means "say the generic thing".
   final String? message;
 
   PurchaseResult({
     required this.productId,
     required this.success,
     this.grantedCoins = 0,
+    this.canceled = false,
     this.message,
   });
 }

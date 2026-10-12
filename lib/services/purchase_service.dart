@@ -29,16 +29,32 @@ class PurchaseService {
 
   bool _started = false;
 
-  Future<bool> get isAvailable => _iap.isAvailable();
+  /// Whether there is a store to buy from.
+  ///
+  /// `in_app_purchase` only registers one on Android and Apple devices;
+  /// on web or desktop it throws rather than answering no. That has to
+  /// read as "no store", or the shop waits forever on this and never
+  /// shows the themes, which don't need a store at all.
+  Future<bool> get isAvailable async {
+    try {
+      return await _iap.isAvailable();
+    } catch (_) {
+      return false;
+    }
+  }
 
   void start() {
     if (_started) return;
-    _started = true;
 
-    _subscription = _iap.purchaseStream.listen(
-      _handlePurchaseUpdates,
-      onError: (_) {},
-    );
+    try {
+      _subscription = _iap.purchaseStream.listen(
+        _handlePurchaseUpdates,
+        onError: (_) {},
+      );
+      _started = true;
+    } catch (_) {
+      // No store on this platform — see [isAvailable]. Nothing to hear.
+    }
   }
 
   void dispose() {

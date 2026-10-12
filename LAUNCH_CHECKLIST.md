@@ -2,11 +2,12 @@
 
 Este documento cubre lo que **queda pendiente y no se puede resolver con código** — son acciones manuales en consolas/cuentas que solo tú puedes hacer. Todo lo demás (código, tests, CI, políticas legales, App Check, Crashlytics, eliminación de cuenta) ya está resuelto en este repo.
 
-**Estado actual (2026-08-07):** todo lo que no depende de las cuentas de las tiendas está cerrado. Lo que falta se reduce a tres cosas:
+**Estado actual (2026-10-12):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08. Lo que falta se reduce a cuatro cosas:
 
-1. Los puntos **2 (parte final)** y **4**, bloqueados hasta que gestiones Play Console y App Store Connect.
+1. Los puntos **2 (parte final)** y **4**: registrar App Check contra las apps nuevas, y lo que depende de Play Console y App Store Connect.
 2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
-3. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
+3. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
+4. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
 ## 1. Deploy pendiente
 
@@ -16,12 +17,12 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 
-El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta que lo registres**. Se divide en dos partes porque el registro depende del `applicationId`/bundle ID final:
+El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta que lo registres**. El registro dependía del `applicationId`/bundle ID final, que ya está definido (`pe.massivedynamics.triviaia`, 2026-10-08):
 
 - [x] Habilitar la **Play Integrity API** en Google Cloud Console (proyecto `trivia-ia-app`) — a nivel de proyecto, no depende del package name, ya se puede hacer.
 - [x] Habilitar la **Firebase App Check API** (2026-08-07). Es **distinta** de la Play Integrity API: aquella es el proveedor que atestigua el dispositivo, esta es el servicio que emite y valida los tokens. Estuvo deshabilitada mientras la otra ya estaba lista, así que App Check emitía un token placeholder en silencio en vez de fallar de forma visible. Se detectó por el `403 ... App Check API has not been used in project` en el log de la app.
-- [ ] Registrar el **token de depuración** del emulador (Firebase Console → App Check → app Android → ⋮ → Manage debug tokens). Opcional hasta activar *enforce*, y habrá que rehacerlo cuando cambie el `applicationId`; hasta entonces el log muestra `App attestation failed`, que es App Check validando correctamente contra una lista vacía.
-- [ ] **Junto con el punto 4** (cuando definamos el `applicationId`/bundle ID real): registrar la app Android con Play Integrity y la app iOS con App Attest en Firebase Console → App Check. Hacerlo ahora contra el placeholder `com.example.*` significaría rehacerlo después.
+- [ ] Registrar el **token de depuración** del emulador (Firebase Console → App Check → app Android → ⋮ → Manage debug tokens). Opcional hasta activar *enforce*. Va sobre la app Android nueva (`pe.massivedynamics.triviaia`), no sobre la del placeholder `com.example.*`, que sigue existiendo en el proyecto; hasta entonces el log muestra `App attestation failed`, que es App Check validando correctamente contra una lista vacía.
+- [ ] Registrar la app Android con Play Integrity y la app iOS con App Attest en Firebase Console → App Check, sobre las apps de `pe.massivedynamics.triviaia`. Ya no depende del punto 4: el identificador es el definitivo.
 - [ ] Una vez registrado y verificado que la app real está mandando tokens válidos, **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
 - [ ] Web no está cubierto todavía (necesita una site key de reCAPTCHA) — si vas a lanzar la versión web, avísame y lo agrego.
 
@@ -39,11 +40,13 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 
 ## 4. Cuentas de las tiendas (fuera de alcance por ahora, como acordamos)
 
-- [ ] Play Console: crear la app, definir `applicationId` real (hoy es `com.example.trivia_ia_flutter`), generar keystore de release.
+- [x] Definir el `applicationId`/bundle ID real (2026-10-08): `pe.massivedynamics.triviaia` en Android (`android/app/build.gradle.kts`) y en iOS (`ios/Runner.xcodeproj`). macOS sigue con el placeholder `com.example.triviaIaFlutter`; no es una plataforma de lanzamiento.
+- [ ] Play Console: crear la app con ese `applicationId` y generar el keystore de release.
   - El lado de código ya está listo: `android/app/build.gradle.kts` lee `android/key.properties` (claves `keyAlias`, `keyPassword`, `storeFile`, `storePassword`) y firma release con esa clave. Solo falta crear el keystore y ese archivo — **no lo commitees**, ya está en `.gitignore`. Mientras `key.properties` no exista, el build release cae a la debug key y Gradle lo avisa con un `WARNING`; ese AAB no es publicable en Play.
-- [ ] App Store Connect: crear la app, definir bundle ID real (hoy es `com.example.triviaIaFlutter`).
-- [ ] Una vez tengas los IDs reales, hay que regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure`.
-- [ ] **Junto con esto:** registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID que se define aquí.
+- [ ] App Store Connect: crear la app con ese bundle ID.
+- [x] Regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure` (2026-10-08). Creó una segunda app Android y una segunda app iOS en el proyecto `trivia-ia-app`, así que los appIds cambiaron junto con el identificador.
+- [ ] Agregar `ios/Runner/GoogleService-Info.plist` al target Runner en Xcode. El archivo está en el repo pero nada lo referencia: `flutterfire` no puede editar `project.pbxproj` desde Windows.
+- [ ] Registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID.
 - [ ] Formulario de "Data Safety" (Google Play) y "Privacy Nutrition Label" (Apple) — usa el contenido de `public/privacy.html` como base.
 
 ## 5. Revisión legal — guía entregada
@@ -68,8 +71,8 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 
 **Android (Google)**
 
-- [ ] Habilitar **Google** en Firebase Console → Authentication → Sign-in method. Al hacerlo se crea el cliente OAuth web que la app necesita; hoy `google-services.json` no trae ninguno.
-- [ ] Volver a descargar `android/app/google-services.json` después de habilitarlo: `firebase apps:sdkconfig ANDROID 1:1049545801330:android:bb4b3946c9eefa6ad18ceb -o android/app/google-services.json`.
+- [x] Habilitar **Google** en Firebase Console → Authentication → Sign-in method (2026-10-10). Al hacerlo se crea el cliente OAuth web que la app necesita.
+- [x] Volver a descargar `android/app/google-services.json` después de habilitarlo (2026-10-10); el archivo versionado ya trae los clientes OAuth. Para repetirlo: `firebase apps:sdkconfig ANDROID 1:1049545801330:android:bb4b3946c9eefa6ad18ceb -o android/app/google-services.json`.
 - [x] Huellas SHA-1 y SHA-256 de la clave **debug** de la máquina de desarrollo registradas en la app Android de Firebase (2026-10-10).
 - [ ] Registrar también las huellas de la **clave de subida** (cuando exista el keystore del punto 4) y de la **clave de firma de Play** (Play Console → Integridad de la app). Sin ellas, el inicio de sesión funciona en debug y falla en la versión de la tienda.
 - [ ] Probar en un teléfono: vincular desde Perfil, reinstalar, y recuperar con "Ya tengo una cuenta".

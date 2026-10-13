@@ -178,6 +178,15 @@ extension AppTintContext on BuildContext {
   /// opacity, which darkens with whatever it is laid over.
   Color tintOf(Color accent, Color light) =>
       _isDark ? accent.withValues(alpha: 0.18) : light;
+
+  /// [ink], a colour chosen to be read on a light card, made readable on a
+  /// dark one. A light theme gets it back untouched.
+  ///
+  /// For the fixed inks that aren't an accent on its own wash — a deep red
+  /// figure, a category colour — where [onTint] would also move them in
+  /// the light themes.
+  Color legibleOnDark(Color ink) =>
+      _isDark ? Color.lerp(ink, Colors.white, 0.45)! : ink;
 }
 
 /// How a raised surface is drawn — its outline and its shadow.

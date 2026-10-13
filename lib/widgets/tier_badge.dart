@@ -45,7 +45,9 @@ class TierBadge extends StatelessWidget {
             name,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: color,
+              // The league colours were picked on white; several of
+              // them are too deep to read as text on a dark card.
+              color: context.legibleOnDark(color),
               fontSize: compact ? 11.5 : 13,
             ),
           ),

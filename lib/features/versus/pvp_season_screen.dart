@@ -65,7 +65,9 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
 
     return Scaffold(
       appBar: AppBar(
-        actions: const [ProfileAvatarButton()],
+        // Avatar only: with the name beside it there is no room left for
+        // "Temporada PvP" on a phone, and the title was cut to "Temporada…".
+        actions: const [ProfileAvatarButton(showName: false)],
         title: Text(l10n.pvpSeasonTitle),
         bottom: TabBar(
           controller: _tabController,
@@ -912,7 +914,7 @@ class _RewardsTabState extends State<_RewardsTab> {
                     ),
                   ),
                   Text(
-                    '+${reward.coins} coins',
+                    l10n.pvpSeasonPendingCoins(reward.coins),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],

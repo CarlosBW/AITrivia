@@ -77,11 +77,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'match_result':
         return context.appColors.reward;
       case 'friend_request':
-        return const Color(0xFF185FA5);
+        return context.legibleOnDark(const Color(0xFF185FA5));
       case 'season_reward':
         return const Color(0xFFE5622C);
       case 'achievement_completed':
-        return const Color(0xFF993556);
+        return context.legibleOnDark(const Color(0xFF993556));
       case 'rematch_request':
         return Theme.of(context).colorScheme.primary;
       case 'streak_at_risk':
@@ -323,8 +323,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         title: Text(l10n.notificationsTitle),
         actions: [
-          TextButton.icon(
+          // An icon with its label as the tooltip, and the avatar without
+          // the name: written out, the two left a phone-width bar with
+          // room for "Notific…" and nothing more of the title.
+          IconButton(
             onPressed: _markingAll ? null : _markAllAsRead,
+            tooltip: l10n.notificationsReadAll,
             icon: _markingAll
                 ? const SizedBox(
                     width: 16,
@@ -332,9 +336,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.done_all),
-            label: Text(l10n.notificationsReadAll),
           ),
-          const ProfileAvatarButton(),
+          const ProfileAvatarButton(showName: false),
         ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(

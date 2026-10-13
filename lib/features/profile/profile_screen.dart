@@ -884,7 +884,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: Text(
                             '${frame.emoji} ${frame.name}',
                             style: TextStyle(
-                              color: Color(frame.colorValue),
+                              color: context.legibleOnDark(
+                                Color(frame.colorValue),
+                              ),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1093,7 +1095,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Text(
                                 l10n.profilePvpLeague(pvpLeague.name),
                                 style: TextStyle(
-                                  color: Color(pvpLeague.colorValue),
+                                  color: context.legibleOnDark(
+                                    Color(pvpLeague.colorValue),
+                                  ),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
                                 ),
@@ -1283,9 +1287,9 @@ class _AvatarCategoryBadge extends StatelessWidget {
   Color _color(BuildContext context) {
     switch (category) {
       case 'base':
-        return Colors.blueGrey;
+        return context.legibleOnDark(Colors.blueGrey);
       case 'pvp':
-        return Colors.deepPurple;
+        return context.legibleOnDark(Colors.deepPurple);
       case 'weekly':
         return Colors.amber.shade800;
       case 'achievement':

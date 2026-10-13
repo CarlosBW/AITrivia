@@ -129,6 +129,41 @@ void main() {
       expect(context.tintOf(accent, paleWash), paleWash);
     });
 
+    // Tintas oscuras escritas en las pantallas para fondos claros: el
+    // "Vidas: 9 / 10" de la partida, los iconos de notificaciones, las
+    // categorias de avatar. Vistas en Noche, se perdian contra la tarjeta.
+    const darkInks = [
+      Color(0xFFB23A2C),
+      Color(0xFF185FA5),
+      Color(0xFF993556),
+      Colors.deepPurple,
+      Colors.blueGrey,
+    ];
+
+    testWidgets('las tintas oscuras no cambian en el clasico', (tester) async {
+      final context = await pumpWith(
+        tester,
+        AppThemes.byId(AppThemes.defaultId),
+      );
+
+      for (final ink in darkInks) {
+        expect(context.legibleOnDark(ink), ink);
+      }
+    });
+
+    testWidgets('las tintas oscuras se leen sobre una tarjeta en noche',
+        (tester) async {
+      final context = await pumpWith(tester, night);
+
+      for (final ink in darkInks) {
+        expect(
+          contrast(context.legibleOnDark(ink), scheme.surface),
+          greaterThanOrEqualTo(4.5),
+          reason: '$ink',
+        );
+      }
+    });
+
     testWidgets('en noche el texto se aclara y el tinte se oscurece',
         (tester) async {
       final context = await pumpWith(tester, night);

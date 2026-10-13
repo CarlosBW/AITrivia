@@ -1131,7 +1131,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final isFull = _lifeUnits >= _maxLifeUnits;
 
     const iconColor = Color(0xFFFF6B5B);
-    const valueColor = Color(0xFFB23A2C);
+    final valueColor = context.legibleOnDark(const Color(0xFFB23A2C));
     const labelColor = Color(0xFFD9695B);
 
     return Container(

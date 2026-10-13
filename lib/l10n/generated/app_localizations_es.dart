@@ -2538,6 +2538,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.';
 
   @override
+  String get themeNameOcean => 'Océano';
+
+  @override
+  String get themeDescriptionOcean =>
+      'Turquesa y coral, sobre un fondo fresco.';
+
+  @override
+  String get themeNameSunset => 'Atardecer';
+
+  @override
+  String get themeDescriptionSunset => 'Rosa y naranja, sobre un fondo cálido.';
+
+  @override
+  String get themeNameForest => 'Bosque';
+
+  @override
+  String get themeDescriptionForest => 'Verde y dorado, sobre un fondo suave.';
+
+  @override
   String get themeNameNight => 'Noche';
 
   @override

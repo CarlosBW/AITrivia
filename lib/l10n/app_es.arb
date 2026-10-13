@@ -1480,6 +1480,12 @@
   "themeDescriptionDefault": "El aspecto original de TriviaIA.",
   "themeNamePlayful": "Juguetón",
   "themeDescriptionPlayful": "Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.",
+  "themeNameOcean": "Océano",
+  "themeDescriptionOcean": "Turquesa y coral, sobre un fondo fresco.",
+  "themeNameSunset": "Atardecer",
+  "themeDescriptionSunset": "Rosa y naranja, sobre un fondo cálido.",
+  "themeNameForest": "Bosque",
+  "themeDescriptionForest": "Verde y dorado, sobre un fondo suave.",
   "themeNameNight": "Noche",
   "themeDescriptionNight": "Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.",
 

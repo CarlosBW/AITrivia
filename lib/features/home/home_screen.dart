@@ -1032,10 +1032,13 @@ class _AiTopicCtaState extends State<_AiTopicCta>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(context.radii.md),
                 border: context.surfaces.borderOr(null),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
+                  colors: [
+                    context.appColors.heroGradientStart,
+                    context.appColors.heroGradientEnd,
+                  ],
                 ),
                 boxShadow: [
                   BoxShadow(

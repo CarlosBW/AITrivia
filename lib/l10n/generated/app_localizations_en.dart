@@ -2523,6 +2523,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bold outlines and solid shadows — everything feels like a game piece.';
 
   @override
+  String get themeNameOcean => 'Ocean';
+
+  @override
+  String get themeDescriptionOcean => 'Teal and coral on a cool background.';
+
+  @override
+  String get themeNameSunset => 'Sunset';
+
+  @override
+  String get themeDescriptionSunset => 'Rose and orange on a warm background.';
+
+  @override
+  String get themeNameForest => 'Forest';
+
+  @override
+  String get themeDescriptionForest => 'Green and gold on a soft background.';
+
+  @override
   String get themeNameNight => 'Night';
 
   @override

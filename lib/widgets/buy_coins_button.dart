@@ -25,10 +25,13 @@ class BuyCoinsButton extends StatelessWidget {
         },
         child: Ink(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
+              colors: [
+                context.appColors.brandGradientStart,
+                context.appColors.brandGradientEnd,
+              ],
             ),
             borderRadius: BorderRadius.circular(context.radii.md),
             border: context.surfaces.borderOr(null),

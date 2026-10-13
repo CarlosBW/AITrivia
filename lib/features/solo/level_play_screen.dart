@@ -2032,8 +2032,8 @@ class _BigStarsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const gradientStart = Color(0xFF8A6BFF);
-    const gradientEnd = Color(0xFFFF5C93);
+    final gradientStart = context.appColors.heroGradientStart;
+    final gradientEnd = context.appColors.heroGradientEnd;
     final unfilledColor = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
 
     return Wrap(

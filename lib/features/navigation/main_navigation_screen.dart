@@ -447,10 +447,13 @@ class _AppIconFab extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
+            colors: [
+              context.appColors.brandGradientStart,
+              context.appColors.brandGradientEnd,
+            ],
           ),
           border: Border.all(
             color: selected ? const Color(0xFFEF9F27) : Colors.transparent,

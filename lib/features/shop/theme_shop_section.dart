@@ -36,6 +36,12 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeNamePlayful;
       case AppThemes.nightId:
         return l10n.themeNameNight;
+      case AppThemes.oceanId:
+        return l10n.themeNameOcean;
+      case AppThemes.sunsetId:
+        return l10n.themeNameSunset;
+      case AppThemes.forestId:
+        return l10n.themeNameForest;
       default:
         return l10n.themeNameDefault;
     }
@@ -47,6 +53,12 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeDescriptionPlayful;
       case AppThemes.nightId:
         return l10n.themeDescriptionNight;
+      case AppThemes.oceanId:
+        return l10n.themeDescriptionOcean;
+      case AppThemes.sunsetId:
+        return l10n.themeDescriptionSunset;
+      case AppThemes.forestId:
+        return l10n.themeDescriptionForest;
       default:
         return l10n.themeDescriptionDefault;
     }

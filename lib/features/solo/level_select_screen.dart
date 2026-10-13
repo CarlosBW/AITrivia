@@ -714,8 +714,8 @@ class _StarsRow extends StatelessWidget {
     // Same gradient used by level_play_screen.dart's _BigStarsRow on the
     // level-complete result screen, so a level's star color here matches
     // what the player just saw when they earned it.
-    const gradientStart = Color(0xFF8A6BFF);
-    const gradientEnd = Color(0xFFFF5C93);
+    final gradientStart = context.appColors.heroGradientStart;
+    final gradientEnd = context.appColors.heroGradientEnd;
     final unfilledColor =
         Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
 

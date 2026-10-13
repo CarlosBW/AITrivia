@@ -255,16 +255,20 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
               // thing to press here.
               ? Container(
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF6C4FF2), Color(0xFF8A6BFF)],
+                      colors: [
+                        context.appColors.brandGradientStart,
+                        context.appColors.brandGradientEnd,
+                      ],
                     ),
                     borderRadius: BorderRadius.circular(context.radii.md),
                     border: context.surfaces.borderOr(null),
                     boxShadow: context.surfaces.shadowsOr([
                       BoxShadow(
-                        color: const Color(0xFF6C4FF2).withValues(alpha: 0.45),
+                        color: context.appColors.brandGradientStart
+                            .withValues(alpha: 0.45),
                         blurRadius: 18,
                         offset: const Offset(0, 6),
                       ),

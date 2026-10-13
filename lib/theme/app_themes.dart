@@ -175,7 +175,191 @@ class AppThemes {
     ],
   );
 
-  static const List<AppThemeSpec> all = [_default, _playful, _night];
+  /// The three below are the classic theme in another palette: surfaces and
+  /// shapes are untouched, which is why they cost less than the two above.
+  /// Each brand colour is dark enough for white text on it and for itself
+  /// as text on a white card — `color_themes_test.dart` holds them to it.
+  static const String oceanId = 'ocean';
+  static const String sunsetId = 'sunset';
+  static const String forestId = 'forest';
+
+  static const int _recolorPrice = 250;
+
+  static const Color _oceanPrimary = Color(0xFF0E7C9B);
+  static const Color _oceanPage = Color(0xFFF2FAFB);
+
+  static const AppThemeSpec _ocean = AppThemeSpec(
+    id: oceanId,
+    price: _recolorPrice,
+    colorScheme: ColorScheme(
+      brightness: Brightness.light,
+      primary: _oceanPrimary,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFD3EEF5),
+      onPrimaryContainer: Color(0xFF073B4A),
+      secondary: Color(0xFF8FCBDB),
+      onSecondary: Color(0xFF073B4A),
+      secondaryContainer: Color(0xFFE6F6FA),
+      onSecondaryContainer: Color(0xFF073B4A),
+      tertiary: Color(0xFFFF7A59),
+      onTertiary: Color(0xFF4A1505),
+      surface: Colors.white,
+      onSurface: Color(0xFF0E2A33),
+      surfaceContainerHighest: Color(0xFFE6F6FA),
+      onSurfaceVariant: Color(0xFF55707A),
+      outline: Color(0xFFD2E6EC),
+      outlineVariant: Color(0xFFE3F1F5),
+      error: Color(0xFFB3392C),
+      onError: Colors.white,
+      errorContainer: Color(0xFFFFEDE9),
+      onErrorContainer: Color(0xFF7A2A20),
+      inverseSurface: Color(0xFF12333D),
+      onInverseSurface: Colors.white,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: AppColors.reward,
+      rewardBg: AppColors.rewardBg,
+      success: AppColors.success,
+      successBg: AppColors.successBg,
+      danger: AppColors.danger,
+      dangerBg: AppColors.dangerBg,
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      brandGradientStart: _oceanPrimary,
+      brandGradientEnd: Color(0xFF1593B3),
+      // Open water into the shallows: teal to sea green.
+      heroGradientStart: _oceanPrimary,
+      heroGradientEnd: Color(0xFF1FA38F),
+    ),
+    shapes: AppShapes.standard,
+    surfaces: AppSurfaces.standard,
+    scaffoldBackground: _oceanPage,
+    preview: [_oceanPrimary, Color(0xFFFF7A59), _oceanPage],
+  );
+
+  static const Color _sunsetPrimary = Color(0xFFD6336C);
+  static const Color _sunsetPage = Color(0xFFFFF6F1);
+
+  static const AppThemeSpec _sunset = AppThemeSpec(
+    id: sunsetId,
+    price: _recolorPrice,
+    colorScheme: ColorScheme(
+      brightness: Brightness.light,
+      primary: _sunsetPrimary,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFFFD9E4),
+      onPrimaryContainer: Color(0xFF5C0F2B),
+      secondary: Color(0xFFF3A5BC),
+      onSecondary: Color(0xFF5C0F2B),
+      secondaryContainer: Color(0xFFFFEEF2),
+      onSecondaryContainer: Color(0xFF5C0F2B),
+      tertiary: Color(0xFFF28C28),
+      onTertiary: Color(0xFF4A2600),
+      surface: Colors.white,
+      onSurface: Color(0xFF3A1626),
+      surfaceContainerHighest: Color(0xFFFFEEF2),
+      onSurfaceVariant: Color(0xFF7D5A66),
+      outline: Color(0xFFF2D9E0),
+      outlineVariant: Color(0xFFF8E6EB),
+      error: Color(0xFFB3392C),
+      onError: Colors.white,
+      errorContainer: Color(0xFFFFEDE9),
+      onErrorContainer: Color(0xFF7A2A20),
+      inverseSurface: Color(0xFF3F1C2B),
+      onInverseSurface: Colors.white,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: AppColors.reward,
+      rewardBg: AppColors.rewardBg,
+      success: AppColors.success,
+      successBg: AppColors.successBg,
+      danger: AppColors.danger,
+      dangerBg: AppColors.dangerBg,
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      brandGradientStart: _sunsetPrimary,
+      brandGradientEnd: Color(0xFFE8527F),
+      // The sky itself: rose at the top, orange at the horizon.
+      heroGradientStart: _sunsetPrimary,
+      heroGradientEnd: Color(0xFFF0653F),
+    ),
+    shapes: AppShapes.standard,
+    surfaces: AppSurfaces.standard,
+    scaffoldBackground: _sunsetPage,
+    preview: [_sunsetPrimary, Color(0xFFF28C28), _sunsetPage],
+  );
+
+  static const Color _forestPrimary = Color(0xFF2B7A4B);
+  static const Color _forestPage = Color(0xFFF5FAF1);
+
+  static const AppThemeSpec _forest = AppThemeSpec(
+    id: forestId,
+    price: _recolorPrice,
+    colorScheme: ColorScheme(
+      brightness: Brightness.light,
+      primary: _forestPrimary,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFD5EEDD),
+      onPrimaryContainer: Color(0xFF0E3A21),
+      secondary: Color(0xFF9CCFAE),
+      onSecondary: Color(0xFF0E3A21),
+      secondaryContainer: Color(0xFFE8F5EC),
+      onSecondaryContainer: Color(0xFF0E3A21),
+      tertiary: Color(0xFFE0A526),
+      onTertiary: Color(0xFF4A3200),
+      surface: Colors.white,
+      onSurface: Color(0xFF16301F),
+      surfaceContainerHighest: Color(0xFFE8F5EC),
+      onSurfaceVariant: Color(0xFF587163),
+      outline: Color(0xFFD5E6DA),
+      outlineVariant: Color(0xFFE5F1E8),
+      error: Color(0xFFB3392C),
+      onError: Colors.white,
+      errorContainer: Color(0xFFFFEDE9),
+      onErrorContainer: Color(0xFF7A2A20),
+      inverseSurface: Color(0xFF1B3B26),
+      onInverseSurface: Colors.white,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: AppColors.reward,
+      rewardBg: AppColors.rewardBg,
+      success: AppColors.success,
+      successBg: AppColors.successBg,
+      danger: AppColors.danger,
+      dangerBg: AppColors.dangerBg,
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      brandGradientStart: _forestPrimary,
+      brandGradientEnd: Color(0xFF3E9A62),
+      // Deep shade into new leaves.
+      heroGradientStart: _forestPrimary,
+      heroGradientEnd: Color(0xFF5C9E2E),
+    ),
+    shapes: AppShapes.standard,
+    surfaces: AppSurfaces.standard,
+    scaffoldBackground: _forestPage,
+    preview: [_forestPrimary, Color(0xFFE0A526), _forestPage],
+  );
+
+  // Cheapest first after the free one, so the first thing a player sees
+  // for sale is the one they are closest to affording.
+  static const List<AppThemeSpec> all = [
+    _default,
+    _ocean,
+    _sunset,
+    _forest,
+    _playful,
+    _night,
+  ];
 
   /// The spec for [id], falling back to the default for an id this build
   /// doesn't know — a player who bought a theme on a newer version should

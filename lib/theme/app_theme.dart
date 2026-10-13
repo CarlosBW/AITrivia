@@ -26,6 +26,10 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     required this.onAccent,
     required this.onScrim,
     required this.onReward,
+    this.brandGradientStart = const Color(0xFF6C4FF2),
+    this.brandGradientEnd = const Color(0xFF8A6BFF),
+    this.heroGradientStart = const Color(0xFF8A6BFF),
+    this.heroGradientEnd = const Color(0xFFFF5C93),
   });
 
   final Color reward;
@@ -59,6 +63,21 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
   /// coloured surface" token would have to be wrong on one of the two.
   final Color onReward;
 
+  /// The two-stop gradient of the brand's own cards and buttons — buy
+  /// coins, create a topic, the centre tab.
+  ///
+  /// These were violet literals in each screen, which a theme with another
+  /// palette could not reach: a green theme kept violet buttons. They
+  /// default to those literals, so a theme that keeps the brand colour
+  /// doesn't have to restate them.
+  final Color brandGradientStart;
+  final Color brandGradientEnd;
+
+  /// The gradient of the cards meant to stand out from the brand ones —
+  /// the AI topic call to action, the question card, earned stars.
+  final Color heroGradientStart;
+  final Color heroGradientEnd;
+
   /// The palette the app ships with.
   static const AppSemanticColors standard = AppSemanticColors(
     reward: AppColors.reward,
@@ -83,6 +102,10 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     Color? onAccent,
     Color? onScrim,
     Color? onReward,
+    Color? brandGradientStart,
+    Color? brandGradientEnd,
+    Color? heroGradientStart,
+    Color? heroGradientEnd,
   }) {
     return AppSemanticColors(
       reward: reward ?? this.reward,
@@ -94,6 +117,10 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       onAccent: onAccent ?? this.onAccent,
       onScrim: onScrim ?? this.onScrim,
       onReward: onReward ?? this.onReward,
+      brandGradientStart: brandGradientStart ?? this.brandGradientStart,
+      brandGradientEnd: brandGradientEnd ?? this.brandGradientEnd,
+      heroGradientStart: heroGradientStart ?? this.heroGradientStart,
+      heroGradientEnd: heroGradientEnd ?? this.heroGradientEnd,
     );
   }
 
@@ -110,6 +137,17 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       onAccent: Color.lerp(onAccent, other.onAccent, t) ?? onAccent,
       onScrim: Color.lerp(onScrim, other.onScrim, t) ?? onScrim,
       onReward: Color.lerp(onReward, other.onReward, t) ?? onReward,
+      brandGradientStart:
+          Color.lerp(brandGradientStart, other.brandGradientStart, t) ??
+              brandGradientStart,
+      brandGradientEnd:
+          Color.lerp(brandGradientEnd, other.brandGradientEnd, t) ??
+              brandGradientEnd,
+      heroGradientStart:
+          Color.lerp(heroGradientStart, other.heroGradientStart, t) ??
+              heroGradientStart,
+      heroGradientEnd: Color.lerp(heroGradientEnd, other.heroGradientEnd, t) ??
+          heroGradientEnd,
     );
   }
 }

@@ -37,10 +37,13 @@ class QuestionAnswerCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF8A6BFF), Color(0xFFFF5C93)],
+              colors: [
+                context.appColors.heroGradientStart,
+                context.appColors.heroGradientEnd,
+              ],
             ),
             borderRadius: BorderRadius.circular(context.radii.md),
             border: context.surfaces.borderOr(null),

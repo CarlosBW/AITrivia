@@ -4360,6 +4360,42 @@ abstract class AppLocalizations {
   /// **'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.'**
   String get themeDescriptionPlayful;
 
+  /// No description provided for @themeNameOcean.
+  ///
+  /// In es, this message translates to:
+  /// **'Océano'**
+  String get themeNameOcean;
+
+  /// No description provided for @themeDescriptionOcean.
+  ///
+  /// In es, this message translates to:
+  /// **'Turquesa y coral, sobre un fondo fresco.'**
+  String get themeDescriptionOcean;
+
+  /// No description provided for @themeNameSunset.
+  ///
+  /// In es, this message translates to:
+  /// **'Atardecer'**
+  String get themeNameSunset;
+
+  /// No description provided for @themeDescriptionSunset.
+  ///
+  /// In es, this message translates to:
+  /// **'Rosa y naranja, sobre un fondo cálido.'**
+  String get themeDescriptionSunset;
+
+  /// No description provided for @themeNameForest.
+  ///
+  /// In es, this message translates to:
+  /// **'Bosque'**
+  String get themeNameForest;
+
+  /// No description provided for @themeDescriptionForest.
+  ///
+  /// In es, this message translates to:
+  /// **'Verde y dorado, sobre un fondo suave.'**
+  String get themeDescriptionForest;
+
   /// No description provided for @themeNameNight.
   ///
   /// In es, this message translates to:

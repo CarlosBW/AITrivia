@@ -121,6 +121,27 @@ extension AppSemanticColorsContext on BuildContext {
       AppSemanticColors.standard;
 }
 
+/// Accent colours that have to follow the theme's lightness.
+///
+/// Screens pair an accent with a wash of itself — coral icon on a pale
+/// coral card — and write on that wash in a darkened version of the
+/// accent. Both halves assume a light theme: the pale wash is a near-white
+/// card on a dark page, and the darkened ink disappears into a dark wash.
+extension AppTintContext on BuildContext {
+  bool get _isDark => Theme.of(this).brightness == Brightness.dark;
+
+  /// [accent] as ink for text and icons sitting on a wash of itself:
+  /// pushed toward black in a light theme, toward white in a dark one.
+  Color onTint(Color accent, double amount) =>
+      Color.lerp(accent, _isDark ? Colors.white : Colors.black, amount)!;
+
+  /// The wash behind [accent]. A light theme keeps [light], the pale colour
+  /// the screen was designed with; a dark one gets the accent itself at low
+  /// opacity, which darkens with whatever it is laid over.
+  Color tintOf(Color accent, Color light) =>
+      _isDark ? accent.withValues(alpha: 0.18) : light;
+}
+
 /// How a raised surface is drawn — its outline and its shadow.
 ///
 /// This is what separates a "card" from a "game piece". The default theme

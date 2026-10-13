@@ -12,6 +12,12 @@
       "runtimeExecutable": "C:\\Users\\cbalc\\flutter\\bin\\flutter.bat",
       "runtimeArgs": ["run", "-d", "web-server", "--web-port", "5000"],
       "port": 5000
+    },
+    {
+      "name": "flutter-web-home-night",
+      "runtimeExecutable": "C:\\Users\\cbalc\\flutter\\bin\\flutter.bat",
+      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "5000", "--dart-define=PREVIEW_THEME=night"],
+      "port": 5000
     }
   ]
 }

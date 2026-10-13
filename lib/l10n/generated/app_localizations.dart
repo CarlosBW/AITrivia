@@ -4360,6 +4360,18 @@ abstract class AppLocalizations {
   /// **'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.'**
   String get themeDescriptionPlayful;
 
+  /// No description provided for @themeNameNight.
+  ///
+  /// In es, this message translates to:
+  /// **'Noche'**
+  String get themeNameNight;
+
+  /// No description provided for @themeDescriptionNight.
+  ///
+  /// In es, this message translates to:
+  /// **'Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.'**
+  String get themeDescriptionNight;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

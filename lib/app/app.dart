@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/auth/auth_gate.dart';
@@ -7,6 +8,15 @@ import '../services/locale_controller.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_themes.dart';
+
+/// Paints the app in a theme the signed-in account doesn't own, for working
+/// on one: `flutter run --dart-define=PREVIEW_THEME=night`.
+///
+/// Debug builds only. It changes nothing but the paint — ownership and the
+/// equipped theme are still what the server says — but a release build
+/// that honoured it would be a way to wear a theme without buying it.
+const String _previewThemeId =
+    kDebugMode ? String.fromEnvironment('PREVIEW_THEME') : '';
 
 class TriviaIAApp extends StatelessWidget {
   const TriviaIAApp({super.key});
@@ -32,7 +42,9 @@ class TriviaIAApp extends StatelessWidget {
     return MaterialApp(
       title: 'TriviaIA',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(AppThemes.byId(themeId)),
+      theme: buildAppTheme(
+        AppThemes.byId(_previewThemeId.isEmpty ? themeId : _previewThemeId),
+      ),
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [

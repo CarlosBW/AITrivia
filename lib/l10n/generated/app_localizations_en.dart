@@ -2523,6 +2523,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Bold outlines and solid shadows — everything feels like a game piece.';
 
   @override
+  String get themeNameNight => 'Night';
+
+  @override
+  String get themeDescriptionNight =>
+      'A dark background with the usual colours, for playing at night without the glare.';
+
+  @override
   String get notificationsChallengeDeclined => 'Challenge declined';
 
   @override

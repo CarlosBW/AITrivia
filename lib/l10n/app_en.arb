@@ -1452,6 +1452,8 @@
   "themeDescriptionDefault": "TriviaIA's original look.",
   "themeNamePlayful": "Playful",
   "themeDescriptionPlayful": "Bold outlines and solid shadows — everything feels like a game piece.",
+  "themeNameNight": "Night",
+  "themeDescriptionNight": "A dark background with the usual colours, for playing at night without the glare.",
 
   "notificationsChallengeDeclined": "Challenge declined",
   "notificationsContinue": "Continue",

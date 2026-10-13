@@ -31,9 +31,9 @@ class StatChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = accent ?? Theme.of(context).colorScheme.primary;
     final bg = background ?? color.withValues(alpha: 0.18);
-    final iconColor = Color.lerp(color, Colors.black, 0.25)!;
-    final valueColor = Color.lerp(color, Colors.black, 0.35)!;
-    final labelColor = Color.lerp(color, Colors.black, 0.10)!;
+    final iconColor = context.onTint(color, 0.25);
+    final valueColor = context.onTint(color, 0.35);
+    final labelColor = context.onTint(color, 0.10);
 
     if (fullWidth) {
       return Container(

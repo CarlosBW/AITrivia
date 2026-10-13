@@ -34,6 +34,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
     switch (id) {
       case AppThemes.playfulId:
         return l10n.themeNamePlayful;
+      case AppThemes.nightId:
+        return l10n.themeNameNight;
       default:
         return l10n.themeNameDefault;
     }
@@ -43,6 +45,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
     switch (id) {
       case AppThemes.playfulId:
         return l10n.themeDescriptionPlayful;
+      case AppThemes.nightId:
+        return l10n.themeDescriptionNight;
       default:
         return l10n.themeDescriptionDefault;
     }
@@ -167,19 +171,19 @@ class _Balance extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Darkened the way StatChip darkens the same amber on Home:
+            // Deepened the way StatChip deepens the same amber on Home:
             // as it comes, it is too pale to read on its own tint.
             Icon(
               Icons.monetization_on_outlined,
               size: 18,
-              color: Color.lerp(colors.reward, Colors.black, 0.25),
+              color: context.onTint(colors.reward, 0.25),
             ),
             const SizedBox(width: 6),
             Text(
               '$coins',
               style: context.heading(
                 15,
-                color: Color.lerp(colors.reward, Colors.black, 0.35)!,
+                color: context.onTint(colors.reward, 0.35),
               ),
             ),
           ],

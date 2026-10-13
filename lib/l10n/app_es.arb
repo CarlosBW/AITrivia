@@ -1480,6 +1480,8 @@
   "themeDescriptionDefault": "El aspecto original de TriviaIA.",
   "themeNamePlayful": "Juguetón",
   "themeDescriptionPlayful": "Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.",
+  "themeNameNight": "Noche",
+  "themeDescriptionNight": "Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.",
 
   "notificationsChallengeDeclined": "Reto rechazado",
   "notificationsContinue": "Continuar",

@@ -658,14 +658,21 @@ class _CategoryCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: accent.background,
+                      color: context.tintOf(
+                        accent.progress,
+                        accent.background,
+                      ),
                       borderRadius: BorderRadius.circular(context.radii.sm),
                       border: context.surfaces.borderOr(null),
                       boxShadow: context.surfaces.shadowsOr(null),
                     ),
                     child: Icon(
                       _iconForCategory(item.categoryId, item.name),
-                      color: accent.foreground,
+                      // The dark inks of the light theme vanish into a dark
+                      // wash; the brighter progress colour is the same hue.
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? accent.progress
+                          : accent.foreground,
                       size: 20,
                     ),
                   ),

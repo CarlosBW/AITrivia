@@ -2538,6 +2538,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Contornos marcados y sombras sólidas: todo se siente como una ficha de juego.';
 
   @override
+  String get themeNameNight => 'Noche';
+
+  @override
+  String get themeDescriptionNight =>
+      'Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

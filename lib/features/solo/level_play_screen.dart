@@ -1661,11 +1661,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           child: _AnimatedRewardNumber(
                             value: _earnedXp,
                             prefix: '+',
-                            color: Color.lerp(
+                            color: context.onTint(
                               Theme.of(context).colorScheme.primary,
-                              Colors.black,
                               0.35,
-                            )!,
+                            ),
                           ),
                         ),
                       ),
@@ -1679,7 +1678,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           child: _AnimatedRewardNumber(
                             value: _earnedCoins,
                             prefix: '+',
-                            color: Color.lerp(context.appColors.reward, Colors.black, 0.35)!,
+                            color: context.onTint(context.appColors.reward, 0.35),
                           ),
                         ),
                       ),
@@ -1972,8 +1971,8 @@ class _RewardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = Color.lerp(accent, Colors.black, 0.25)!;
-    final labelColor = Color.lerp(accent, Colors.black, 0.10)!;
+    final iconColor = context.onTint(accent, 0.25);
+    final labelColor = context.onTint(accent, 0.10);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),

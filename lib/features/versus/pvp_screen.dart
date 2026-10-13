@@ -178,7 +178,9 @@ class _PvpCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = alert ? context.appColors.danger : accent;
-    final bg = alert ? context.appColors.dangerBg : accentBg;
+    final bg = alert
+        ? context.appColors.dangerBg
+        : context.tintOf(accent, accentBg);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

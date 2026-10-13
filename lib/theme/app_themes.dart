@@ -108,7 +108,74 @@ class AppThemes {
     ],
   );
 
-  static const List<AppThemeSpec> all = [_default, _playful];
+  /// The first theme to change the palette rather than how surfaces are
+  /// drawn, and the only dark one. The brand hues stay — violet, amber,
+  /// coral — on a near-black page with a violet cast, so it still reads as
+  /// TriviaIA and not as a generic dark mode.
+  static const String nightId = 'night';
+
+  static const Color _nightPage = Color(0xFF15111F);
+  static const Color _nightSurface = Color(0xFF211A33);
+
+  static const AppThemeSpec _night = AppThemeSpec(
+    id: nightId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      // A step lighter than the classic violet: that one is tuned to sit
+      // on white, and against a dark card it loses the contrast a link or
+      // a button outline needs. White still reads on it.
+      primary: Color(0xFF7F66FF),
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFF2E2552),
+      onPrimaryContainer: Color(0xFFDCD3FF),
+      secondary: Color(0xFFB4A8F5),
+      onSecondary: Color(0xFF1E1640),
+      secondaryContainer: Color(0xFF2A2342),
+      onSecondaryContainer: Color(0xFFDCD3FF),
+      tertiary: Color(0xFFF2A93B),
+      onTertiary: Color(0xFF4A3200),
+      surface: _nightSurface,
+      onSurface: Color(0xFFF3EFFF),
+      surfaceContainerHighest: Color(0xFF2D2545),
+      onSurfaceVariant: Color(0xFFA79DC4),
+      outline: Color(0xFF3A3158),
+      outlineVariant: Color(0xFF2D2545),
+      error: Color(0xFFFF8A7A),
+      onError: Color(0xFF3D0F09),
+      errorContainer: Color(0xFF3D1A16),
+      onErrorContainer: Color(0xFFFFDAD4),
+      inverseSurface: Color(0xFFF3EFFF),
+      onInverseSurface: _nightSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    // The classic semantic colours are dark inks on pale washes. Here the
+    // washes are dark, so each ink moves to the light end of its own hue.
+    semanticColors: AppSemanticColors(
+      reward: Color(0xFFF5C469),
+      rewardBg: Color(0xFF3A2E12),
+      success: Color(0xFF5DCAA5),
+      successBg: Color(0xFF0F3A2E),
+      danger: Color(0xFFFF8A7A),
+      dangerBg: Color(0xFF3D1A16),
+      // Still white: these sit on the saturated gradient cards, which keep
+      // their colours in every theme.
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+    ),
+    shapes: AppShapes.standard,
+    surfaces: AppSurfaces.standard,
+    scaffoldBackground: _nightPage,
+    preview: [
+      _nightPage,
+      Color(0xFF7F66FF),
+      Color(0xFFF5C469),
+    ],
+  );
+
+  static const List<AppThemeSpec> all = [_default, _playful, _night];
 
   /// The spec for [id], falling back to the default for an id this build
   /// doesn't know — a player who bought a theme on a newer version should

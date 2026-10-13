@@ -465,7 +465,7 @@ class _HistoryTile extends StatelessWidget {
           ),
           Text(
             '+$rewardCoins',
-            style: context.heading(17, color: Color.lerp(color, Colors.black, 0.35)),
+            style: context.heading(17, color: context.onTint(color, 0.35)),
           ),
         ],
       ),

@@ -321,7 +321,7 @@ class _AchievementCard extends StatelessWidget {
                 ),
                 child: Text(
                   l10n.achievementsCoinsPill(achievement.rewardCoins),
-                  style: context.heading(13, color: Color.lerp(context.appColors.reward, Colors.black, 0.35)),
+                  style: context.heading(13, color: context.onTint(context.appColors.reward, 0.35)),
                 ),
               ),
             ],

@@ -5517,6 +5517,7 @@ export const buyFullLife = onCall(async (request) => {
 
 const THEME_PRICES: Record<string, number> = {
   "playful": 400,
+  "night": 400,
 };
 
 export const purchaseTheme = onCall(async (request) => {

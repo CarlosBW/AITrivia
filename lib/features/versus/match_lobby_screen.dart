@@ -11,6 +11,7 @@ import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'match_play_screen.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class MatchLobbyScreen extends StatefulWidget {
@@ -191,7 +192,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: const [ProfileAvatarButton()],
-        title: Text(l10n.matchLobbyTitle),
+        title: AppBarTitle(l10n.matchLobbyTitle),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _matchDoc,

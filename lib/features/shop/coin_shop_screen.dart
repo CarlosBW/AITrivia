@@ -8,6 +8,7 @@ import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 /// Coin pack storefront. Until the packs are configured in the Google Play
@@ -107,7 +108,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: AppBarTitle(
           widget.embeddedInShell
               ? AppLocalizations.of(context).storeTabTitle
               : AppLocalizations.of(context).coinShopTitle,

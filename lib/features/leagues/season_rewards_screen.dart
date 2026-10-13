@@ -6,6 +6,7 @@ import '../../services/season_service.dart';
 import '../../services/league_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: const [ProfileAvatarButton()],
-        title: Text(l10n.weeklyRewardsTitle),
+        title: AppBarTitle(l10n.weeklyRewardsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

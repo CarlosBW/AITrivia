@@ -27,6 +27,11 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  /// Below this the header row drops the player's name and keeps the
+  /// avatar. The row needs about 270 px with the name, and the widest tab
+  /// title, "TriviaIA", about 130: together they need a 400-wide screen.
+  static const double _minWidthForPlayerName = 400;
+
   int _index = 0;
   bool _isOpeningNotifications = false;
 
@@ -304,7 +309,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       // Aquí y no en el AppBar de cada tab: esta fila se
                       // dibuja por encima del contenido, así que un avatar
                       // en el AppBar quedaba tapado por la campana.
-                      const ProfileAvatarButton(rightPadding: 0),
+                      //
+                      // Sin el nombre en un telefono estrecho: con el, esta
+                      // fila tapaba el final del titulo de la pestana —
+                      // "TriviaIA" quedaba en "TriviaI" bajo el selector de
+                      // idioma. El titulo no puede encogerse solo porque no
+                      // sabe que tiene esta fila encima.
+                      ProfileAvatarButton(
+                        rightPadding: 0,
+                        showName: MediaQuery.sizeOf(context).width >=
+                            _minWidthForPlayerName,
+                      ),
                     ],
                   ),
                 ),

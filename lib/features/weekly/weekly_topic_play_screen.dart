@@ -7,6 +7,7 @@ import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 /// A single round (fixed-size, freshly drawn from the category's pools —
@@ -240,7 +241,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     if (_errorMessage != null) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.categoryName),
+          title: AppBarTitle(widget.categoryName),
           actions: const [ProfileAvatarButton(openProfileOnTap: false)],
         ),
         body: Center(
@@ -258,7 +259,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.categoryName),
+        title: AppBarTitle(widget.categoryName),
         automaticallyImplyLeading: !_submitting,
         actions: const [ProfileAvatarButton(openProfileOnTap: false)],
       ),

@@ -939,6 +939,14 @@
       "coins": {"type": "int"}
     }
   },
+  "pvpSeasonPendingRewardLine": "{season} • {league} • best {rating} MMR",
+  "@pvpSeasonPendingRewardLine": {
+    "placeholders": {
+      "season": {"type": "String"},
+      "league": {"type": "String"},
+      "rating": {"type": "int"}
+    }
+  },
   "pvpSeasonClaiming": "Claiming...",
   "pvpSeasonClaimAllButton": "Claim All Rewards",
   "pvpSeasonNoPendingRewards": "No pending PvP season rewards available.",

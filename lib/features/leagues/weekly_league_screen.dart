@@ -13,6 +13,7 @@ import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class WeeklyLeagueScreen extends StatefulWidget {
@@ -148,7 +149,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
     return Scaffold(
       appBar: AppBar(
         actions: const [ProfileAvatarButton()],
-        title: Text(l10n.weeklyLeagueScreenTitle),
+        title: AppBarTitle(l10n.weeklyLeagueScreenTitle),
         bottom: TabBar(
           controller: _tabController,
           tabs: [

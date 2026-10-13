@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 
@@ -62,7 +63,7 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.joinMatchTitle),
+        title: AppBarTitle(l10n.joinMatchTitle),
         actions: const [ProfileAvatarButton()],
       ),
       body: Padding(

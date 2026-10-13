@@ -8,6 +8,7 @@ import '../../widgets/tier_badge.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
@@ -68,7 +69,7 @@ class _PvpSeasonScreenState extends State<PvpSeasonScreen>
         // Avatar only: with the name beside it there is no room left for
         // "Temporada PvP" on a phone, and the title was cut to "Temporada…".
         actions: const [ProfileAvatarButton(showName: false)],
-        title: Text(l10n.pvpSeasonTitle),
+        title: AppBarTitle(l10n.pvpSeasonTitle),
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -1188,7 +1189,11 @@ class _PendingRewardsCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${reward.seasonId} • ${reward.leagueName} • best ${reward.bestRating} MMR',
+                          l10n.pvpSeasonPendingRewardLine(
+                            reward.seasonId,
+                            reward.leagueName,
+                            reward.bestRating,
+                          ),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ),

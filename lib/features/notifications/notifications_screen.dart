@@ -15,6 +15,7 @@ import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -321,7 +322,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.notificationsTitle),
+        title: AppBarTitle(l10n.notificationsTitle),
         actions: [
           // An icon with its label as the tooltip, and the avatar without
           // the name: written out, the two left a phone-width bar with

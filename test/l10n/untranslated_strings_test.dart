@@ -32,5 +32,17 @@ void main() {
       expect(es.coinShopPurchaseCanceled, 'Compra cancelada.');
       expect(en.coinShopPurchaseCanceled, 'Purchase canceled.');
     });
+
+    // "best 1200 MMR" was written into the season screen as it stood.
+    test('a pending season reward says "best" in the player\'s language', () {
+      expect(
+        es.pvpSeasonPendingRewardLine('pvp_2026_10', 'Silver', 1200),
+        'pvp_2026_10 • Silver • mejor 1200 MMR',
+      );
+      expect(
+        en.pvpSeasonPendingRewardLine('pvp_2026_10', 'Silver', 1200),
+        'pvp_2026_10 • Silver • best 1200 MMR',
+      );
+    });
   });
 }

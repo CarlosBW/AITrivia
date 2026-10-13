@@ -6,6 +6,7 @@ import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 
@@ -141,7 +142,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.createMatchTitle),
+        title: AppBarTitle(l10n.createMatchTitle),
         actions: const [ProfileAvatarButton()],
       ),
       body: Padding(

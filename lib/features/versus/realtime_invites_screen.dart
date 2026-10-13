@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/realtime_invite_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 
@@ -129,7 +130,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
       child: Scaffold(
         appBar: AppBar(
           actions: const [ProfileAvatarButton()],
-          title: Text(l10n.pvpRealtimeInvitesTitle),
+          title: AppBarTitle(l10n.pvpRealtimeInvitesTitle),
           bottom: TabBar(
             tabs: [
               Tab(text: l10n.realtimeInvitesReceivedTab),

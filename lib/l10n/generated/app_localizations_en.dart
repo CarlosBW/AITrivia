@@ -1789,6 +1789,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String pvpSeasonPendingRewardLine(String season, String league, int rating) {
+    return '$season • $league • best $rating MMR';
+  }
+
+  @override
   String get pvpSeasonClaiming => 'Claiming...';
 
   @override

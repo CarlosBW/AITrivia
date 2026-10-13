@@ -3188,6 +3188,12 @@ abstract class AppLocalizations {
   /// **'+{coins} monedas'**
   String pvpSeasonPendingCoins(int coins);
 
+  /// No description provided for @pvpSeasonPendingRewardLine.
+  ///
+  /// In es, this message translates to:
+  /// **'{season} • {league} • mejor {rating} MMR'**
+  String pvpSeasonPendingRewardLine(String season, String league, int rating);
+
   /// No description provided for @pvpSeasonClaiming.
   ///
   /// In es, this message translates to:

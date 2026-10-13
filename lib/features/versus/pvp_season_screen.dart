@@ -1059,7 +1059,9 @@ class _PendingRewardsCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: 12),
-            Text(l10n.pvpSeasonCheckingRewards),
+            // Expanded so the sentence wraps: on a phone it is about 100 px
+            // wider than the card, and overflowed while this was showing.
+            Expanded(child: Text(l10n.pvpSeasonCheckingRewards)),
           ],
         ),
       );

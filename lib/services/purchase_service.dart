@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'economy_service.dart';
@@ -15,8 +16,19 @@ class PurchaseService {
   PurchaseService._();
   static final PurchaseService instance = PurchaseService._();
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  // Lazy, and never touched on web — see [_hasStorePlugin].
+  late final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
+
+  /// False on web, where there is no store and the plugin must not even be
+  /// created.
+  ///
+  /// The plugin picks its store by `defaultTargetPlatform`, which on the
+  /// web follows the *browser*: in a phone's browser it is Android, so it
+  /// builds the Play Billing client, and that client throws from inside
+  /// its own constructor, asynchronously, where nothing here can catch it.
+  /// The checks below guard desktop; only skipping the plugin guards this.
+  static const bool _hasStorePlugin = !kIsWeb;
 
   final _purchaseResultController =
       StreamController<PurchaseResult>.broadcast();
@@ -36,6 +48,8 @@ class PurchaseService {
   /// read as "no store", or the shop waits forever on this and never
   /// shows the themes, which don't need a store at all.
   Future<bool> get isAvailable async {
+    if (!_hasStorePlugin) return false;
+
     try {
       return await _iap.isAvailable();
     } catch (_) {
@@ -44,7 +58,7 @@ class PurchaseService {
   }
 
   void start() {
-    if (_started) return;
+    if (_started || !_hasStorePlugin) return;
 
     try {
       _subscription = _iap.purchaseStream.listen(

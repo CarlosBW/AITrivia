@@ -17,6 +17,28 @@ import '../../widgets/question_answer_card.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 
+/// What the result screen's primary button does.
+enum SoloResultAction { next, retry, back }
+
+/// Decides the result screen's primary action so it agrees with the level
+/// select screen and with `ensureSoloLevelSession`, which only opens level
+/// N+1 once N is in `passedLevels` (>= 40%). Offering the next level after a
+/// failed run sent the player into a "level locked" error with a retry that
+/// could never succeed.
+SoloResultAction soloResultAction({
+  required int correct,
+  required int total,
+  required bool alreadyPassed,
+  required int levelNumber,
+  required int? levelCount,
+}) {
+  final passed = total > 0 && correct / total >= 0.4;
+  if (!passed && !alreadyPassed) return SoloResultAction.retry;
+
+  final hasNext = levelCount != null && levelNumber + 1 <= levelCount;
+  return hasNext ? SoloResultAction.next : SoloResultAction.back;
+}
+
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
   final int levelNumber;
@@ -1598,7 +1620,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final pctText = '${(pct * 100).toStringAsFixed(0)}%';
 
     final nextLevel = widget.levelNumber + 1;
-    final hasNext = (_levelCount != null && nextLevel <= _levelCount!);
+    // `_entryFree` is the server saying this level was already in
+    // passedLevels when it was opened, so the next one stays unlocked even
+    // if this replay went badly.
+    final action = soloResultAction(
+      correct: _correct,
+      total: total,
+      alreadyPassed: _entryFree,
+      levelNumber: widget.levelNumber,
+      levelCount: _levelCount,
+    );
     final previousXp = (_userTotalXp - _earnedXp).clamp(0, _userTotalXp);
 
     return Center(
@@ -1744,7 +1775,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                if (!hasNext)
+                if (action != SoloResultAction.next)
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _isNavigating
@@ -1759,10 +1790,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       child: Text(l10n.livesGoBack),
                     ),
                   ),
-                if (hasNext) ...[
+                if (action != SoloResultAction.back) ...[
+                  if (action == SoloResultAction.retry)
+                    const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
-                      onPressed: _isNavigating
+                      // Not while the result is still being saved: until
+                      // then the server has neither recorded the pass that
+                      // unlocks the next level nor cleared this session.
+                      onPressed: _isNavigating || _saving
                           ? null
                           : () {
                               _safeNavigate(() async {
@@ -1774,7 +1810,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                   MaterialPageRoute(
                                     builder: (_) => LevelPlayScreen(
                                       categoryId: widget.categoryId,
-                                      levelNumber: nextLevel,
+                                      levelNumber:
+                                          action == SoloResultAction.next
+                                              ? nextLevel
+                                              : widget.levelNumber,
                                       isAiTopic: widget.isAiTopic,
                                       aiTopicId: widget.aiTopicId,
                                     ),
@@ -1782,7 +1821,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                 );
                               });
                             },
-                      child: Text(l10n.levelPlayContinueNextLevel(nextLevel)),
+                      child: Text(
+                        action == SoloResultAction.next
+                            ? l10n.levelPlayContinueNextLevel(nextLevel)
+                            : l10n.commonRetry,
+                      ),
                     ),
                   ),
                 ],

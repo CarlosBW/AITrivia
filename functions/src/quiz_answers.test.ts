@@ -5,6 +5,7 @@ import {
   TIMED_OUT_ANSWER,
   mergeRecordedAnswers,
   resumeIndexFromBanked,
+  sessionAfterSubmit,
 } from "./quiz_answers";
 
 describe("mergeRecordedAnswers", () => {
@@ -93,5 +94,67 @@ describe("resumeIndexFromBanked", () => {
 
   test("ignores malformed keys", () => {
     assert.equal(resumeIndexFromBanked({"x": 1, "2": 0}), 3);
+  });
+});
+
+describe("sessionAfterSubmit", () => {
+  const questions = [
+    {q: "a", options: ["x", "y"], answerIndex: 0},
+    {q: "b", options: ["x", "y"], answerIndex: 1},
+  ];
+
+  // Regression: a fixed-category session outlives its submission, and it
+  // used to keep every banked answer. Reopening the level resumed past the
+  // last question, so the client submitted the same run again without
+  // showing a single question — a fresh XP grant per reopen, and a failed
+  // level that could never be replayed.
+  test("a submitted session reopens at the first question", () => {
+    const session = {
+      categoryId: "cine",
+      levelNumber: 1,
+      questions,
+      answers: {"0": 1, "1": 1},
+    };
+    assert.equal(resumeIndexFromBanked(session.answers), 2);
+
+    const reopened = sessionAfterSubmit(session);
+
+    assert.equal(
+      resumeIndexFromBanked(
+        reopened.answers as Record<string, unknown> | undefined
+      ),
+      0
+    );
+  });
+
+  test("keeps the slate and everything else about the session", () => {
+    const reopened = sessionAfterSubmit({
+      categoryId: "cine",
+      levelNumber: 1,
+      seed: 42,
+      questions,
+      answers: {"0": 1},
+    });
+
+    assert.deepEqual(reopened, {
+      categoryId: "cine",
+      levelNumber: 1,
+      seed: 42,
+      questions,
+    });
+  });
+
+  test("leaves a session with nothing banked as it was", () => {
+    const session = {categoryId: "cine", questions};
+
+    assert.deepEqual(sessionAfterSubmit(session), session);
+  });
+
+  test("does not modify the session it was given", () => {
+    const session = {questions, answers: {"0": 1}};
+
+    sessionAfterSubmit(session);
+
+    assert.deepEqual(session.answers, {"0": 1});
   });
 });

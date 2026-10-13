@@ -64,6 +64,27 @@ export function mergeRecordedAnswers(
 }
 
 /**
+ * What a session that outlives its submission should hold afterwards: the
+ * same slate, with nothing banked.
+ *
+ * Banked answers belong to one run. A fixed-category session is kept after
+ * it is submitted (its slate is deterministic, so there is nothing to
+ * re-roll), and while it also kept the answers, reopening the level
+ * resumed past the last question: the client submitted the same run again
+ * without showing a question, which paid the replay XP on every reopen and
+ * left a failed level impossible to replay.
+ * @param {Record<string, unknown>} session The session doc as scored.
+ * @return {Record<string, unknown>} The doc to store, without `answers`.
+ */
+export function sessionAfterSubmit(
+  session: Record<string, unknown>
+): Record<string, unknown> {
+  const rest = {...session};
+  delete rest.answers;
+  return rest;
+}
+
+/**
  * Where a player should resume a session they left: the question after the
  * deepest one already banked.
  *

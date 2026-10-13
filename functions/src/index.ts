@@ -53,6 +53,7 @@ import {
 import {
   TIMED_OUT_ANSWER,
   mergeRecordedAnswers,
+  sessionAfterSubmit,
 } from "./quiz_answers";
 import {
   openTurn,
@@ -4586,9 +4587,12 @@ export const submitSoloLevelResult = onCall(async (request) => {
     // accumulated bank instead of handing back the same ten questions
     // forever. Fixed categories keep their session — their slate is a
     // deterministic seeded shuffle of a large static pool, so re-rolling
-    // would only churn reads for no new content.
+    // would only churn reads for no new content. What they can't keep is
+    // this run's banked answers — see `sessionAfterSubmit`.
     if (isAiTopic) {
       tx.delete(sessionRef);
+    } else if (sessionData) {
+      tx.set(sessionRef, sessionAfterSubmit(sessionData));
     }
 
     // gamesPlayed increments once per level attempt (pass or fail), same

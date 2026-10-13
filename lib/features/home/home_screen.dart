@@ -18,6 +18,7 @@ import '../../services/avatar_service.dart';
 import '../../services/sfx_service.dart';
 import '../ai_topics/ai_topics_screen.dart';
 import '../weekly/weekly_topic_screen.dart';
+import '../../widgets/guarded_navigation.dart';
 import '../../widgets/lives_card.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
@@ -199,21 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isNavigating = true);
 
     try {
-      await action().timeout(
-        const Duration(seconds: 12),
-        onTimeout: () {
-          throw TimeoutException(timeoutMessage);
-        },
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
+      await runGuardedNavigation(
+        context,
+        action,
+        timeoutMessage: timeoutMessage,
       );
     } finally {
       if (mounted) {

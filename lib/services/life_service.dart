@@ -135,6 +135,23 @@ class LifeService {
     };
   }
 
+  /// The life fields of a user doc as one comparable value.
+  ///
+  /// A screen that already listens to the user doc gets a snapshot for
+  /// every coin and every point of XP. This lets it tell the ones in which
+  /// the server moved the lives — a level entry, a wrong answer, a refill —
+  /// from the rest, and follow only those.
+  static String lifeFieldsSignature(Map<String, dynamic> data) {
+    final lastTick = data['lastLifeTickAt'];
+
+    return [
+      data['lifeUnits'],
+      data['maxLifeUnits'],
+      data['lifeRegenSeconds'],
+      lastTick is Timestamp ? lastTick.millisecondsSinceEpoch : null,
+    ].join('|');
+  }
+
   /// Calculates the life countdown in memory. No Firestore read/write —
   /// purely a local ticker for the UI between server refreshes, fed by a
   /// snapshot the server already vetted. Never authoritative for gating.

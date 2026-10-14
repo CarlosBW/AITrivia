@@ -55,6 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loadingLives = true;
   Timer? _lifeTimer;
 
+  /// The life fields of the last user-doc snapshot the card followed.
+  String? _lifeDocSignature;
+
   bool _isNavigating = false;
   final bool _buyingLife = false;
 
@@ -139,6 +142,30 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _lifeState = LifeService.instance.calculateLocalLifeState(_lifeState!);
       _loadingLives = false;
+    });
+  }
+
+  /// Follows the lives the server writes to the user doc.
+  ///
+  /// The card was loaded once and then only ticked regeneration locally,
+  /// which is fine for lives coming back and blind to lives being spent:
+  /// Home stays mounted behind the other tabs, so a level played from Solo
+  /// left it showing ten full hearts while the play screen said 5.5. The
+  /// doc is already being listened to for coins and XP, so this costs no
+  /// read — it only has to notice which snapshots moved the lives.
+  void _handleLifeChange(Map<String, dynamic> data) {
+    final signature = LifeService.lifeFieldsSignature(data);
+    if (signature == _lifeDocSignature) return;
+    _lifeDocSignature = signature;
+
+    // A doc that carries no life fields yet says nothing about them, and
+    // reading it would paint a full bar over whatever the server answered.
+    if (data['lifeUnits'] == null) return;
+
+    setState(() {
+      _lifeState = LifeService.instance.calculateLocalLifeState(data);
+      _loadingLives = false;
+      _livesFailed = false;
     });
   }
 
@@ -432,6 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       _handleStreakChange(streak);
                       _handleAvatarUnlockChange(data);
+                      _handleLifeChange(data);
 
                       if (loginCelebrationPending) {
                         _showLoginStreakCelebration(

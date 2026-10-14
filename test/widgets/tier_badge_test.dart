@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trivia_ia_flutter/services/league_service.dart';
 import 'package:trivia_ia_flutter/services/pvp_league_service.dart';
 import 'package:trivia_ia_flutter/theme/app_themes.dart';
 import 'package:trivia_ia_flutter/widgets/tier_badge.dart';
 
-/// El nombre de la liga se escribe en el color de la liga, y esos colores
-/// se eligieron sobre blanco. En Noche, "Liga Silver" quedaba en un gris
-/// azulado apagado y Diamond, un violeta oscuro, casi no se distinguia.
+/// El nombre de la liga se escribe en el color de la liga, sobre una
+/// pastilla tenida de ese color. En Noche, Diamond — un violeta oscuro —
+/// casi no se distinguia; en los temas claros pasaba lo contrario con
+/// Silver y Gold, demasiado palidos para leerse sobre su propio tinte.
 void main() {
   double contrast(Color a, Color b) {
     final la = a.computeLuminance();
@@ -16,53 +18,58 @@ void main() {
     return (hi + 0.05) / (lo + 0.05);
   }
 
+  // Las dos familias de ligas que pintan un TierBadge: PvP y semanal.
+  final tiers = <String, int>{
+    for (final league in PvpLeagueService.leagues)
+      'pvp ${league.id}': league.colorValue,
+    for (final league in LeagueService.leagues)
+      'semanal ${league.id}': league.colorValue,
+  };
+
   Future<Color> nameColor(
     WidgetTester tester,
     AppThemeSpec spec,
-    PvpLeagueInfo league,
+    int colorValue,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(colorScheme: spec.colorScheme),
         home: Scaffold(
-          body: TierBadge(
-            emoji: league.emoji,
-            name: league.name,
-            colorValue: league.colorValue,
-          ),
+          body: TierBadge(emoji: '🏅', name: 'Liga', colorValue: colorValue),
         ),
       ),
     );
 
-    return tester.widget<Text>(find.text(league.name)).style!.color!;
+    return tester.widget<Text>(find.text('Liga')).style!.color!;
   }
 
-  testWidgets('en el clasico el nombre lleva el color de su liga',
-      (tester) async {
-    final classic = AppThemes.byId(AppThemes.defaultId);
+  for (final spec in AppThemes.all) {
+    testWidgets('en ${spec.id} el nombre de cada liga se lee en su pastilla',
+        (tester) async {
+      for (final tier in tiers.entries) {
+        final chip = Color.alphaBlend(
+          Color(tier.value).withValues(alpha: 0.16),
+          spec.colorScheme.surface,
+        );
 
-    for (final league in PvpLeagueService.leagues) {
-      expect(
-        await nameColor(tester, classic, league),
-        Color(league.colorValue),
-        reason: league.id,
-      );
-    }
-  });
+        expect(
+          contrast(await nameColor(tester, spec, tier.value), chip),
+          greaterThanOrEqualTo(4.5),
+          reason: tier.key,
+        );
+      }
+    });
+  }
 
-  testWidgets('en noche el nombre de cada liga se lee sobre una tarjeta',
-      (tester) async {
-    final night = AppThemes.byId(AppThemes.nightId);
+  testWidgets('una liga que ya se lee conserva su color', (tester) async {
+    // Diamond, un violeta profundo, se lee sobre un tinte claro tal cual.
+    final diamond = PvpLeagueService.leagues
+        .firstWhere((league) => league.id == 'diamond')
+        .colorValue;
 
-    for (final league in PvpLeagueService.leagues) {
-      expect(
-        contrast(
-          await nameColor(tester, night, league),
-          night.colorScheme.surface,
-        ),
-        greaterThanOrEqualTo(4.5),
-        reason: league.id,
-      );
-    }
+    expect(
+      await nameColor(tester, AppThemes.byId(AppThemes.defaultId), diamond),
+      Color(diamond),
+    );
   });
 }

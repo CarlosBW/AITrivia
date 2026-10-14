@@ -150,7 +150,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
           Text(
             '${league.emoji} ${league.name} • $rating MMR',
             style: TextStyle(
-              color: Color(league.colorValue),
+              color: context.readableOnOwnTint(
+                Color(league.colorValue),
+                wash: 0.10,
+              ),
               fontWeight: FontWeight.bold,
               fontSize: 16,
             ),

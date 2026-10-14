@@ -187,6 +187,19 @@ extension AppTintContext on BuildContext {
   /// the light themes.
   Color legibleOnDark(Color ink) =>
       _isDark ? Color.lerp(ink, Colors.white, 0.45)! : ink;
+
+  /// [accent] as text on a card washed with [wash] of itself — the way a
+  /// league or a frame writes its own name in its own colour. See
+  /// [readableInk]: the hue stays, and a colour that already reads is
+  /// returned as it came. Pass a [wash] of zero for text sitting straight
+  /// on the card.
+  Color readableOnOwnTint(Color accent, {double wash = 0.12}) => readableInk(
+        accent,
+        Color.alphaBlend(
+          accent.withValues(alpha: wash),
+          Theme.of(this).colorScheme.surface,
+        ),
+      );
 }
 
 /// [ink] moved just far enough from [background] to be read as text on it.

@@ -110,7 +110,10 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               children: [
                 Text(
                   l10n.liveMenuLeagueTitle(league.name),
-                  style: context.heading(18, color: color),
+                  style: context.heading(
+                    18,
+                    color: context.readableOnOwnTint(color, wash: 0.10),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text('$rating MMR'),

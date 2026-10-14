@@ -292,7 +292,10 @@ class _PodiumPlayer extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: Color(league.colorValue),
+              color: context.readableOnOwnTint(
+                Color(league.colorValue),
+                wash: 0.14,
+              ),
               fontSize: large ? 12 : 11,
             ),
           ),
@@ -406,7 +409,12 @@ class _LeaderboardTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(league.colorValue),
+                    // The row is tinted when it is the player's own, so
+                    // the ink is checked against a wash, not bare card.
+                    color: context.readableOnOwnTint(
+                      Color(league.colorValue),
+                      wash: 0.14,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),

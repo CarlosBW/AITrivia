@@ -888,13 +888,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                               // it comes, silver on this chip was a pale
                               // grey on near-white, and gold, platinum and
                               // diamond were little better.
-                              color: readableInk(
+                              color: context.readableOnOwnTint(
                                 Color(frame.colorValue),
-                                Color.alphaBlend(
-                                  Color(frame.colorValue)
-                                      .withValues(alpha: 0.12),
-                                  Theme.of(context).colorScheme.surface,
-                                ),
                               ),
                               fontWeight: FontWeight.bold,
                             ),
@@ -1104,8 +1099,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Text(
                                 l10n.profilePvpLeague(pvpLeague.name),
                                 style: TextStyle(
-                                  color: context.legibleOnDark(
+                                  color: context.readableOnOwnTint(
                                     Color(pvpLeague.colorValue),
+                                    wash: 0.10,
                                   ),
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,

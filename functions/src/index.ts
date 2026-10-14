@@ -5646,7 +5646,7 @@ export const verifyCoinPurchase = onCall(async (request) => {
 // ============================================================
 // AI TOPICS ECONOMY
 //
-// Content generation is a real Claude Haiku 4.5 call, so it can fail —
+// Content generation is a real Claude call (AI_MODEL), so it can fail —
 // transiently, or because the topic's title turns out to be blocked
 // (blocked_ai_topics / AI_TOPIC_SYSTEM_PROMPT). `createAiTopic` still
 // only charges after generation succeeds, so a failure there is free.
@@ -5852,7 +5852,7 @@ function aiLevelDifficultyLabel(
 }
 
 /**
- * Calls Claude Haiku 4.5 to generate one level's worth of trivia questions
+ * Calls Claude (AI_MODEL) to generate one level's worth of trivia questions
  * for a user-created AI topic and validates the shape of the response.
  * Retries once on a malformed/incomplete response before giving up.
  * @param {string} title Topic title (e.g. "Dinosaurios").

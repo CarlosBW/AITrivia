@@ -18,6 +18,18 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 - [x] Funciones desplegadas el 2026-10-13, una por una con `firebase deploy --only functions:<nombre>` en vez de las ~40: `purchaseTheme` (precios de los temas nuevos) y `submitSoloLevelResult` (ver punto 9). No queda ningún cambio de `functions/` sin desplegar.
 - El hosting sí tiene un deploy pendiente: ver "Publicación" en el punto 8.
 
+## 1b. El proyecto en la organización de la empresa
+
+El 2026-10-11 `trivia-ia-app` pasó de no tener organización a colgar de `massivedynamics.pe` (ID `358422649310`), creada con Cloud Identity Free. El ID del proyecto, los datos y las funciones no cambiaron, y no hubo corte.
+
+- [x] Proyecto movido, con `apps@massivedynamics.pe` como administrador de la organización.
+- [x] **Excepción a *Domain restricted sharing* en el proyecto.** La organización nueva trae activa la política que solo permite dar permisos a cuentas `@massivedynamics.pe`. Cada callable necesita `allUsers -> roles/run.invoker` para que la app la llame, así que sin la excepción un deploy no puede volver a aplicar ese permiso. Está en IAM → Organization Policies del proyecto: *Override parent's policy*, *Replace*, *Allow All*. Si algún deploy falla con "do not belong to a permitted customer" o "Unable to set the invoker", lo primero es mirar que esa excepción siga ahí.
+- [x] Verificado tras el traslado: 40 de 40 callables invocables, y un deploy de `refreshUserLives` desde dentro de la organización terminó bien.
+- [ ] Darle a `apps@massivedynamics.pe` el rol **Owner** sobre el proyecto. Hoy tiene Editor, Project Mover y Project IAM Admin; el Owner quedó como invitación pendiente de cuando el proyecto no tenía organización.
+- [ ] Mover la cuenta de facturación `Massive Dynamics Peru S.A.C.` a la organización (Billing → Account management → *Change organization*). Sigue bajo `cbalcazarwong-org`; funciona igual, es solo dónde está archivada.
+- [ ] Cuando lo anterior esté probado, quitar `cbalcazarwong@gmail.com` del proyecto y de la facturación. El CLI de Firebase de la máquina de desarrollo está autenticado con esa cuenta, así que antes hay que iniciar sesión con una de la empresa.
+- Sin verificar: las organizaciones nuevas suelen traer activas otras políticas restrictivas, entre ellas la que impide crear claves nuevas de cuentas de servicio. Si aplica aquí, la de `tools/serviceAccountKey.json` sigue valiendo pero no se podría reemplazar sin otra excepción. Conviene revisarlo en IAM → Organization Policies antes de necesitarlo.
+
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 
 El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta que lo registres**. El registro dependía del `applicationId`/bundle ID final, que ya está definido (`pe.massivedynamics.triviaia`, 2026-10-08):

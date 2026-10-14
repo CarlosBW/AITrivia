@@ -31,8 +31,8 @@ El 2026-10-11 `trivia-ia-app` pasó de no tener organización a colgar de `massi
   - El Gmail no puede hacerlo: sería administrador del origen, pero la restricción de dominio de `massivedynamics.pe` impide darle permisos en el destino.
   - Se hizo con `apps@`, con permisos en los dos lados: *Billing Account Administrator* sobre la cuenta de facturación, más *Billing Account Administrator* y *Organization Viewer* sobre `cbalcazarwong-org`, otorgados desde el Gmail.
   - Los roles de IAM tardaron en aplicarse: hizo falta cerrar sesión y volver a entrar con `apps@` antes de que viera la organización.
-- [ ] Quitarle a `apps@` los dos roles que se le dieron en `cbalcazarwong-org` solo para la mudanza (IAM de esa organización, con el Gmail). El de *Billing Account Administrator* **sobre la cuenta de facturación** se queda: es el que le permite administrarla.
-- [ ] Comprobar en Facturación → Presupuestos y alertas que el presupuesto de S/25 siguió con la cuenta al cambiar de organización.
+- [x] Quitados a `apps@` los dos roles que se le dieron en `cbalcazarwong-org` solo para la mudanza (2026-10-14). El de *Billing Account Administrator* **sobre la cuenta de facturación** se quedó: es el que le permite administrarla.
+- [x] El presupuesto de S/25 siguió con la cuenta al cambiar de organización (verificado el 2026-10-14 en Facturación → Presupuestos y alertas).
 - [ ] Cuando lo anterior esté probado, quitar `cbalcazarwong@gmail.com` del proyecto y de la facturación. El CLI de Firebase de la máquina de desarrollo está autenticado con esa cuenta, así que antes hay que iniciar sesión con una de la empresa.
 - Sin verificar: las organizaciones nuevas suelen traer activas otras políticas restrictivas, entre ellas la que impide crear claves nuevas de cuentas de servicio. Si aplica aquí, la de `tools/serviceAccountKey.json` sigue valiendo pero no se podría reemplazar sin otra excepción. Conviene revisarlo en IAM → Organization Policies antes de necesitarlo.
 

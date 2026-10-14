@@ -884,8 +884,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: Text(
                             '${frame.emoji} ${frame.name}',
                             style: TextStyle(
-                              color: context.legibleOnDark(
+                              // The frame's own colour, but readable: as
+                              // it comes, silver on this chip was a pale
+                              // grey on near-white, and gold, platinum and
+                              // diamond were little better.
+                              color: readableInk(
                                 Color(frame.colorValue),
+                                Color.alphaBlend(
+                                  Color(frame.colorValue)
+                                      .withValues(alpha: 0.12),
+                                  Theme.of(context).colorScheme.surface,
+                                ),
                               ),
                               fontWeight: FontWeight.bold,
                             ),

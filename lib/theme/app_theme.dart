@@ -189,6 +189,39 @@ extension AppTintContext on BuildContext {
       _isDark ? Color.lerp(ink, Colors.white, 0.45)! : ink;
 }
 
+/// [ink] moved just far enough from [background] to be read as text on it.
+///
+/// For colours that name a thing — a frame, a tier — and are also used to
+/// write its name. The colour is right as a border or a swatch and may be
+/// far too close to the surface as text: silver on a pale silver chip is
+/// under 2:1. It is darkened on a light background and lightened on a dark
+/// one, in small steps, and only until it reaches [minContrast] — so a
+/// colour that already reads comes back untouched, and the hue never
+/// changes.
+Color readableInk(Color ink, Color background, {double minContrast = 4.5}) {
+  final backgroundLuminance = background.computeLuminance();
+
+  double contrastOf(Color color) {
+    final luminance = color.computeLuminance();
+    final lighter =
+        luminance > backgroundLuminance ? luminance : backgroundLuminance;
+    final darker =
+        luminance > backgroundLuminance ? backgroundLuminance : luminance;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  if (contrastOf(ink) >= minContrast) return ink;
+
+  final toward = backgroundLuminance > 0.5 ? Colors.black : Colors.white;
+
+  for (var step = 1; step <= 20; step++) {
+    final candidate = Color.lerp(ink, toward, step * 0.05)!;
+    if (contrastOf(candidate) >= minContrast) return candidate;
+  }
+
+  return toward;
+}
+
 /// How a raised surface is drawn — its outline and its shadow.
 ///
 /// This is what separates a "card" from a "game piece". The default theme

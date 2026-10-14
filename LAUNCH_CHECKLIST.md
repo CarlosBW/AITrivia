@@ -76,7 +76,7 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 **Limpieza antes de lanzar**
 
-- [ ] Borrar las dos cuentas de prueba creadas en producción para estas pruebas: `ClaudeShopTest` (inaccesible: era invitada y el navegador perdió la sesión) y `ClaudeShopTest2` (monedas puestas a mano desde la consola, casi todos los temas comprados). Ocupan sus nombres de usuario y pueden aparecer en clasificaciones. `ClaudeShopTest2` conviene borrarla desde la propia app (Perfil → Zona peligrosa → Eliminar cuenta) mientras su sesión siga viva en el navegador de pruebas, porque `deleteMyAccount` limpia todo lo suyo. `ClaudeShopTest` solo se puede borrar desde Firebase Console: el usuario en Authentication, su documento en `users/{uid}` y el de `usernames/claudeshoptest`.
+- [ ] Borrar las dos cuentas de prueba creadas en producción para estas pruebas: `ClaudeShopTest` y `ClaudeShopTest2` (esta con monedas puestas a mano desde la consola y casi todos los temas comprados). Las dos eran invitadas y el navegador de pruebas perdió sus sesiones, así que ya no se puede entrar a ninguna para borrarlas desde la app. Ocupan sus nombres de usuario y pueden aparecer en clasificaciones. Se borran desde Firebase Console: el usuario en Authentication, su documento en `users/{uid}` y el de `usernames/claudeshoptest` o `usernames/claudeshoptest2`. El `uid` de cada una está en ese documento de `usernames`.
 
 ## 7. Revisión factual del banco de preguntas
 
@@ -133,5 +133,4 @@ Del 2026-10-12 y 13, encontrado al revisar la tienda y recorrer la app con los t
 - Títulos de barra cortados con puntos suspensivos en teléfono: ahora se encogen para caber, y las pestañas principales muestran solo el avatar en pantallas de menos de 400 px de ancho.
 - Desbordes de layout en la tarjeta de vidas de Inicio y en la pestaña Recompensas de la temporada PvP.
 - Textos que salían en inglés con la app en español: compra cancelada o fallida, "+80 coins" y "best 1200 MMR" en la temporada PvP.
-
-Visto de paso y sin tocar: la etiqueta "Marco de Plata" del Perfil casi no se lee en los temas claros, incluido Clásico.
+- La etiqueta del marco equipado en el Perfil ("Marco de Plata") casi no se leía en los temas claros: iba en el color del marco sobre una pastilla de ese mismo color. Corregido para los seis marcos; comprobado por test de contraste, no en pantalla.

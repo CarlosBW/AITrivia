@@ -16,7 +16,7 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 - [x] `npm run deploy` en `functions/` — hecho, `deleteMyAccount` y el manejo de `refusal` ya están en producción.
 - [x] `firebase deploy --only firestore:indexes` (2026-08-07) — los 16 índices ya estaban en vivo, pero los dos `fieldOverrides` de collection-group (`sent_friend_requests.targetUid`, `friend_requests.requesterUid`) nunca se habían desplegado: `--only firestore:rules` no toca índices, y son deploys separados. Sin ellos, la limpieza de espejos de solicitudes de amistad en `deleteMyAccount` fallaba en silencio. Verificado que ambos terminaron de construirse ejecutando las queries reales contra producción.
 - [x] Funciones desplegadas el 2026-10-13, una por una con `firebase deploy --only functions:<nombre>` en vez de las ~40: `purchaseTheme` (precios de los temas nuevos) y `submitSoloLevelResult` (ver punto 9). No queda ningún cambio de `functions/` sin desplegar.
-- El hosting sí tiene un deploy pendiente: ver "Publicación" en el punto 8.
+- [x] `firebase deploy --only hosting` (2026-10-14): la política de privacidad y los términos en vivo ya describen el inicio de sesión opcional con Google o Apple (ver "Publicación" en el punto 8). No queda ningún deploy pendiente.
 
 ## 1b. El proyecto en la organización de la empresa
 
@@ -25,8 +25,14 @@ El 2026-10-11 `trivia-ia-app` pasó de no tener organización a colgar de `massi
 - [x] Proyecto movido, con `apps@massivedynamics.pe` como administrador de la organización.
 - [x] **Excepción a *Domain restricted sharing* en el proyecto.** La organización nueva trae activa la política que solo permite dar permisos a cuentas `@massivedynamics.pe`. Cada callable necesita `allUsers -> roles/run.invoker` para que la app la llame, así que sin la excepción un deploy no puede volver a aplicar ese permiso. Está en IAM → Organization Policies del proyecto: *Override parent's policy*, *Replace*, *Allow All*. Si algún deploy falla con "do not belong to a permitted customer" o "Unable to set the invoker", lo primero es mirar que esa excepción siga ahí.
 - [x] Verificado tras el traslado: 40 de 40 callables invocables, y un deploy de `refreshUserLives` desde dentro de la organización terminó bien.
-- [ ] Darle a `apps@massivedynamics.pe` el rol **Owner** sobre el proyecto. Hoy tiene Editor, Project Mover y Project IAM Admin; el Owner quedó como invitación pendiente de cuando el proyecto no tenía organización.
-- [ ] Mover la cuenta de facturación `Massive Dynamics Peru S.A.C.` a la organización (Billing → Account management → *Change organization*). Sigue bajo `cbalcazarwong-org`; funciona igual, es solo dónde está archivada.
+- [x] `apps@massivedynamics.pe` tiene el rol **Owner** sobre el proyecto: la invitación pendiente quedó aceptada (verificado el 2026-10-14).
+- [x] Cuenta de facturación `Massive Dynamics Peru S.A.C.` (`01E279-5EDCFD-649EF4`) movida de `cbalcazarwong-org` (ID `935552953470`) a `massivedynamics.pe` (2026-10-14), con *Change organization* desde la página de la cuenta. El proyecto siguió cobrándose a ella todo el tiempo. Cómo se logró, por si hay que repetir algo parecido:
+  - El botón aparece desactivado ("You don't have permission…") si la cuenta que mueve no puede ver la organización de **origen**; la pista es que la cuenta muestre "Unknown organization".
+  - El Gmail no puede hacerlo: sería administrador del origen, pero la restricción de dominio de `massivedynamics.pe` impide darle permisos en el destino.
+  - Se hizo con `apps@`, con permisos en los dos lados: *Billing Account Administrator* sobre la cuenta de facturación, más *Billing Account Administrator* y *Organization Viewer* sobre `cbalcazarwong-org`, otorgados desde el Gmail.
+  - Los roles de IAM tardaron en aplicarse: hizo falta cerrar sesión y volver a entrar con `apps@` antes de que viera la organización.
+- [ ] Quitarle a `apps@` los dos roles que se le dieron en `cbalcazarwong-org` solo para la mudanza (IAM de esa organización, con el Gmail). El de *Billing Account Administrator* **sobre la cuenta de facturación** se queda: es el que le permite administrarla.
+- [ ] Comprobar en Facturación → Presupuestos y alertas que el presupuesto de S/25 siguió con la cuenta al cambiar de organización.
 - [ ] Cuando lo anterior esté probado, quitar `cbalcazarwong@gmail.com` del proyecto y de la facturación. El CLI de Firebase de la máquina de desarrollo está autenticado con esa cuenta, así que antes hay que iniciar sesión con una de la empresa.
 - Sin verificar: las organizaciones nuevas suelen traer activas otras políticas restrictivas, entre ellas la que impide crear claves nuevas de cuentas de servicio. Si aplica aquí, la de `tools/serviceAccountKey.json` sigue valiendo pero no se podría reemplazar sin otra excepción. Conviene revisarlo en IAM → Organization Policies antes de necesitarlo.
 
@@ -122,7 +128,7 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 
 **Publicación**
 
-- [ ] `firebase deploy --only hosting` — la política de privacidad y los términos ya mencionan el inicio de sesión opcional, pero la versión en vivo todavía dice que la cuenta es solo anónima.
+- [x] `firebase deploy --only hosting` (2026-10-14). Verificado en https://trivia-ia-app.web.app/privacy.html: la versión en vivo ya explica que vincular la cuenta a Google o Apple es opcional.
 - [ ] En el formulario de Data safety de Play, declarar el correo electrónico y el identificador de cuenta como datos opcionales, usados para gestión de la cuenta.
 
 ## 9. Cosas ya resueltas en este repo (para tu referencia)

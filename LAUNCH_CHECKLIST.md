@@ -2,18 +2,21 @@
 
 Este documento cubre lo que **queda pendiente y no se puede resolver con código** — son acciones manuales en consolas/cuentas que solo tú puedes hacer. Todo lo demás (código, tests, CI, políticas legales, App Check, Crashlytics, eliminación de cuenta) ya está resuelto en este repo.
 
-**Estado actual (2026-10-12):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08. Lo que falta se reduce a cuatro cosas:
+**Estado actual (2026-10-13):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08, y la tienda ya vende temas visuales por monedas (punto 6). Lo que falta se reduce a cinco cosas:
 
 1. Los puntos **2 (parte final)** y **4**: registrar App Check contra las apps nuevas, y lo que depende de Play Console y App Store Connect.
 2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
-3. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
-4. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
+3. La **compra de monedas** con dinero real (punto 6): sigue en "Próximamente" hasta que existan los productos en las tiendas.
+4. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
+5. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
 ## 1. Deploy pendiente
 
 - [x] `firebase deploy --only hosting` — hecho, `public/privacy.html` y `public/terms.html` están en vivo con el nombre legal correcto (Massive Dynamics Peru S.A.C.).
 - [x] `npm run deploy` en `functions/` — hecho, `deleteMyAccount` y el manejo de `refusal` ya están en producción.
 - [x] `firebase deploy --only firestore:indexes` (2026-08-07) — los 16 índices ya estaban en vivo, pero los dos `fieldOverrides` de collection-group (`sent_friend_requests.targetUid`, `friend_requests.requesterUid`) nunca se habían desplegado: `--only firestore:rules` no toca índices, y son deploys separados. Sin ellos, la limpieza de espejos de solicitudes de amistad en `deleteMyAccount` fallaba en silencio. Verificado que ambos terminaron de construirse ejecutando las queries reales contra producción.
+- [x] Funciones desplegadas el 2026-10-13, una por una con `firebase deploy --only functions:<nombre>` en vez de las ~40: `purchaseTheme` (precios de los temas nuevos) y `submitSoloLevelResult` (ver punto 9). No queda ningún cambio de `functions/` sin desplegar.
+- El hosting sí tiene un deploy pendiente: ver "Publicación" en el punto 8.
 
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 
@@ -53,9 +56,27 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 
 - [x] `public/privacy.html` y `public/terms.html` son un borrador funcional basado en lo que la app realmente recolecta (cuenta anónima, progreso de juego, amigos, notificaciones push, títulos de temas de IA enviados a Anthropic), ya con el nombre legal correcto (Massive Dynamics Peru S.A.C.). **No reemplaza asesoría legal.** Puntos específicos a llevarle a un abogado: la sección de ley aplicable (hoy asume Perú), necesidad de lenguaje GDPR si vas a tener usuarios en la UE, la cláusula de privacidad de menores, y (más adelante) la de reembolsos cuando actives compras dentro de la app. Si tu empresa ya tiene abogado/notario de la constitución, es el candidato natural para esta revisión.
 
-## 6. Monetización (Coin Shop)
+## 6. Monetización (Tienda)
 
-- [ ] Sigue en "Coming soon" — el paquete `in_app_purchase` está instalado pero no hay productos configurados. Esto depende de tener las cuentas de Play Console/App Store Connect del punto 4, así que no se puede cerrar antes de eso. Cuando tengas las cuentas, dime y conectamos los productos reales.
+La tienda tiene dos mitades que dependen de cosas distintas: los temas se compran con monedas que el jugador ya tiene, y las monedas se comprarían con dinero real.
+
+**Temas visuales — funcionando (2026-10-13)**
+
+- [x] Seis temas en la tienda: Clásico (gratis), Océano, Atardecer y Bosque (250 monedas cada uno, solo cambian la paleta), Juguetón y Noche (400; cambian contornos y sombras, o pasan a fondo oscuro). El catálogo vive en `lib/theme/app_themes.dart` y el precio que de verdad se cobra en `THEME_PRICES` de `functions/src/index.ts`; un test impide que se desalineen.
+- [x] Compra probada de punta a punta contra producción con una cuenta de prueba: Noche, Océano, Atardecer y Bosque. El saldo baja, el tema se equipa al momento y cambiar entre temas ya comprados no vuelve a cobrar. Juguetón no se llegó a comprar.
+- [ ] **Verlos en un teléfono real.** Toda la revisión visual fue en web a tamaño de teléfono. Noche se recorrió casi entera y Atardecer a fondo; Océano y Bosque solo en Inicio, Tienda, PvP y una partida. Sin ver en ningún tema: listas de amigos y notificaciones con contenido, Weekly Topic y el resultado del Daily Challenge.
+- Los temas solo aparecen en builds nuevos: quien tenga una versión anterior sigue viendo Clásico y Juguetón hasta actualizar.
+- Para agregar un tema: el spec en `app_themes.dart`, su precio en `THEME_PRICES` (y desplegar `purchaseTheme`), nombre y descripción en los dos `.arb`, y el `case` en `lib/features/shop/theme_shop_section.dart`. Para verlo sin comprarlo, en debug: `flutter run --dart-define=PREVIEW_THEME=<id>`.
+
+**Compra de monedas — bloqueada por las tiendas**
+
+- [ ] Sigue en "Próximamente". El paquete `in_app_purchase` está instalado y el cliente ya escucha compras desde el inicio de sesión, pero no hay productos configurados y `verifyCoinPurchase` rechaza todas las llamadas a propósito. Faltan dos cosas, las dos dependientes de las cuentas del punto 4:
+  - Crear en Play Console (y App Store Connect) los cuatro productos consumibles con los ids de `EconomyService.coinPacks`: `coins_pack_small`, `coins_pack_ai_topic`, `coins_pack_medium`, `coins_pack_large`.
+  - Escribir en `verifyCoinPurchase` la verificación del recibo contra la tienda y el control de repetición, antes de acreditar nada. Eso sí es código, pero no se puede probar sin productos reales.
+
+**Limpieza antes de lanzar**
+
+- [ ] Borrar las dos cuentas de prueba creadas en producción para estas pruebas: `ClaudeShopTest` (inaccesible: era invitada y el navegador perdió la sesión) y `ClaudeShopTest2` (monedas puestas a mano desde la consola, casi todos los temas comprados). Ocupan sus nombres de usuario y pueden aparecer en clasificaciones. `ClaudeShopTest2` conviene borrarla desde la propia app (Perfil → Zona peligrosa → Eliminar cuenta) mientras su sesión siga viva en el navegador de pruebas, porque `deleteMyAccount` limpia todo lo suyo. `ClaudeShopTest` solo se puede borrar desde Firebase Console: el usuario en Authentication, su documento en `users/{uid}` y el de `usernames/claudeshoptest`.
 
 ## 7. Revisión factual del banco de preguntas
 
@@ -101,3 +122,16 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 - CI básico en GitHub Actions (`.github/workflows/ci.yml`): `flutter analyze` + `flutter test` + lint/build de `functions/`.
 - Tests iniciales para lógica crítica: `life_service` (regeneración de vidas, gracia para jugadores nuevos), `pvp_league_service` y `league_service` (umbrales de liga).
 - Manejo explícito de `stop_reason: "refusal"` en la generación de preguntas con IA (mensaje claro en vez del genérico).
+
+Del 2026-10-12 y 13, encontrado al revisar la tienda y recorrer la app con los temas nuevos:
+
+- La tienda ya carga donde no hay tienda de pagos (web, escritorio): antes se quedaba en un spinner y no mostraba ni los temas. Muestra además el saldo de monedas del jugador.
+- Aviso falso de "la acción tardó demasiado": salía a los 12 segundos de estar en cualquier pantalla abierta desde Inicio, aunque todo fuera bien.
+- Reabrir un nivel de Solo ya enviado reenviaba la misma partida sin mostrar preguntas, sumaba XP cada vez y dejaba un nivel reprobado imposible de repetir. Corregido en `submitSoloLevelResult`. Una sesión guardada antes del arreglo puede saltar al resultado una vez más y luego queda limpia.
+- Tras reprobar un nivel, la pantalla de resultados ofrecía "Continuar (Nivel 2)", que terminaba en "nivel bloqueado". Ahora ofrece reintentar.
+- Inicio no mostraba las vidas gastadas en un nivel jugado desde otra pestaña.
+- Títulos de barra cortados con puntos suspensivos en teléfono: ahora se encogen para caber, y las pestañas principales muestran solo el avatar en pantallas de menos de 400 px de ancho.
+- Desbordes de layout en la tarjeta de vidas de Inicio y en la pestaña Recompensas de la temporada PvP.
+- Textos que salían en inglés con la app en español: compra cancelada o fallida, "+80 coins" y "best 1200 MMR" en la temporada PvP.
+
+Visto de paso y sin tocar: la etiqueta "Marco de Plata" del Perfil casi no se lee en los temas claros, incluido Clásico.

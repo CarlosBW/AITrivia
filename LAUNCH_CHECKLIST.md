@@ -2,7 +2,7 @@
 
 Este documento cubre lo que **queda pendiente y no se puede resolver con código** — son acciones manuales en consolas/cuentas que solo tú puedes hacer. Todo lo demás (código, tests, CI, políticas legales, App Check, Crashlytics, eliminación de cuenta) ya está resuelto en este repo.
 
-**Estado actual (2026-10-13):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08, y la tienda ya vende temas visuales por monedas (punto 6). Lo que falta se reduce a cinco cosas:
+**Estado actual (2026-10-14):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08, y la tienda ya vende temas visuales por monedas (punto 6). Lo que falta se reduce a cinco cosas:
 
 1. Los puntos **2 (parte final)** y **4**: completar App Check, que espera la clave de firma de Play y el Team ID de Apple, y lo demás que depende de Play Console y App Store Connect.
 2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
@@ -78,7 +78,7 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 - [x] Seis temas en la tienda: Clásico (gratis), Océano, Atardecer y Bosque (250 monedas cada uno, solo cambian la paleta), Juguetón y Noche (400; cambian contornos y sombras, o pasan a fondo oscuro). El catálogo vive en `lib/theme/app_themes.dart` y el precio que de verdad se cobra en `THEME_PRICES` de `functions/src/index.ts`; un test impide que se desalineen.
 - [x] Compra probada de punta a punta contra producción con una cuenta de prueba: Noche, Océano, Atardecer y Bosque. El saldo baja, el tema se equipa al momento y cambiar entre temas ya comprados no vuelve a cobrar. Juguetón no se llegó a comprar.
-- [ ] **Verlos en un teléfono real.** Toda la revisión visual fue en web a tamaño de teléfono. Noche se recorrió casi entera y Atardecer a fondo; Océano y Bosque solo en Inicio, Tienda, PvP y una partida. Sin ver en ningún tema: listas de amigos y notificaciones con contenido, Weekly Topic y el resultado del Daily Challenge.
+- [ ] **Verlos en un teléfono real.** Toda la revisión visual fue en web a tamaño de teléfono. Noche se recorrió casi entera y Atardecer a fondo; Océano y Bosque solo en Inicio, Tienda, PvP y una partida. Sin ver en ningún tema: listas de amigos y notificaciones con contenido, Weekly Topic y el resultado del Daily Challenge. Tampoco se vieron los colores corregidos de la etiqueta del marco y de los nombres de liga (punto 9): quedaron respaldados solo por tests.
 - Los temas solo aparecen en builds nuevos: quien tenga una versión anterior sigue viendo Clásico y Juguetón hasta actualizar.
 - Para agregar un tema: el spec en `app_themes.dart`, su precio en `THEME_PRICES` (y desplegar `purchaseTheme`), nombre y descripción en los dos `.arb`, y el `case` en `lib/features/shop/theme_shop_section.dart`. Para verlo sin comprarlo, en debug: `flutter run --dart-define=PREVIEW_THEME=<id>`.
 
@@ -138,7 +138,7 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 - Tests iniciales para lógica crítica: `life_service` (regeneración de vidas, gracia para jugadores nuevos), `pvp_league_service` y `league_service` (umbrales de liga).
 - Manejo explícito de `stop_reason: "refusal"` en la generación de preguntas con IA (mensaje claro en vez del genérico).
 
-Del 2026-10-12 y 13, encontrado al revisar la tienda y recorrer la app con los temas nuevos:
+Del 2026-10-12 al 14, encontrado al revisar la tienda y recorrer la app con los temas nuevos:
 
 - La tienda ya carga donde no hay tienda de pagos (web, escritorio): antes se quedaba en un spinner y no mostraba ni los temas. Muestra además el saldo de monedas del jugador.
 - Aviso falso de "la acción tardó demasiado": salía a los 12 segundos de estar en cualquier pantalla abierta desde Inicio, aunque todo fuera bien.
@@ -149,3 +149,4 @@ Del 2026-10-12 y 13, encontrado al revisar la tienda y recorrer la app con los t
 - Desbordes de layout en la tarjeta de vidas de Inicio y en la pestaña Recompensas de la temporada PvP.
 - Textos que salían en inglés con la app en español: compra cancelada o fallida, "+80 coins" y "best 1200 MMR" en la temporada PvP.
 - La etiqueta del marco equipado en el Perfil ("Marco de Plata") casi no se leía en los temas claros: iba en el color del marco sobre una pastilla de ese mismo color. Corregido para los seis marcos; comprobado por test de contraste, no en pantalla.
+- Los nombres de liga tenían el mismo problema: en los temas claros, Silver y Gold quedaban demasiado pálidos sobre su propio tinte (hasta 3.8:1, con 4.5 como mínimo), y en Noche los violetas oscuros apenas se distinguían. Corregido el 2026-10-14 en todos los sitios donde se escribe un nombre de liga: la insignia (Temporada PvP, Weekly Challenge), la tarjeta de liga del Perfil, el menú de partidas en vivo, la búsqueda de rival y la clasificación del Daily Challenge. El texto conserva el tono de la liga y solo se oscurece o aclara lo necesario; un test exige 4.5:1 a cada liga, PvP y semanal, en los seis temas. Tampoco se vio en pantalla.

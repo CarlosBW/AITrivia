@@ -4,7 +4,7 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 
 **Estado actual (2026-10-13):** el `applicationId`/bundle ID real (`pe.massivedynamics.triviaia`) ya está adoptado en Android e iOS desde el 2026-10-08, y la tienda ya vende temas visuales por monedas (punto 6). Lo que falta se reduce a cinco cosas:
 
-1. Los puntos **2 (parte final)** y **4**: registrar App Check contra las apps nuevas, y lo que depende de Play Console y App Store Connect.
+1. Los puntos **2 (parte final)** y **4**: completar App Check, que espera la clave de firma de Play y el Team ID de Apple, y lo demás que depende de Play Console y App Store Connect.
 2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
 3. La **compra de monedas** con dinero real (punto 6): sigue en "Próximamente" hasta que existan los productos en las tiendas.
 4. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
@@ -36,8 +36,10 @@ El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta 
 
 - [x] Habilitar la **Play Integrity API** en Google Cloud Console (proyecto `trivia-ia-app`) — a nivel de proyecto, no depende del package name, ya se puede hacer.
 - [x] Habilitar la **Firebase App Check API** (2026-08-07). Es **distinta** de la Play Integrity API: aquella es el proveedor que atestigua el dispositivo, esta es el servicio que emite y valida los tokens. Estuvo deshabilitada mientras la otra ya estaba lista, así que App Check emitía un token placeholder en silencio en vez de fallar de forma visible. Se detectó por el `403 ... App Check API has not been used in project` en el log de la app.
-- [ ] Registrar el **token de depuración** del emulador (Firebase Console → App Check → app Android → ⋮ → Manage debug tokens). Opcional hasta activar *enforce*. Va sobre la app Android nueva (`pe.massivedynamics.triviaia`), no sobre la del placeholder `com.example.*`, que sigue existiendo en el proyecto; hasta entonces el log muestra `App attestation failed`, que es App Check validando correctamente contra una lista vacía.
-- [ ] Registrar la app Android con Play Integrity y la app iOS con App Attest en Firebase Console → App Check, sobre las apps de `pe.massivedynamics.triviaia`. Ya no depende del punto 4: el identificador es el definitivo.
+- [x] Registrar la app Android `pe.massivedynamics.triviaia` con **Play Integrity** (2026-10-14), con la huella SHA-256 de la clave debug de la PC de escritorio (`C1:13:7D:…:10:BA`) y tokens de 1 hora. Solo las apps `pe.massivedynamics.triviaia`; las de `com.example.*`, web y Windows quedan sin registrar a propósito.
+- [x] **Token de depuración** del emulador `Medium_Phone_API_36.1` de la PC de escritorio registrado (2026-10-14, Firebase Console → App Check → app Android → ⋮ → Administrar tokens de depuración). Verificado: la app guardó un token de App Check real y llegó a leer Firestore sin errores. El token es por instalación: desinstalar la app o borrar sus datos genera otro, y la laptop o un teléfono físico necesitan el suyo. Lo imprime el log al arrancar en debug ("Enter this debug secret into the allow list…"). No va al repo.
+- [ ] Agregar en la app Android de Firebase la huella SHA-256 de la **clave de firma de Play** (Play Console → Integridad de la app), y la de la clave de subida. La de debug registrada no sirve para los usuarios reales, que instalan desde la tienda: Play Integrity sí depende del punto 4.
+- [ ] Registrar la app iOS `pe.massivedynamics.triviaia` con **App Attest**. Pide el Team ID, que solo existe con la membresía de Apple Developer.
 - [ ] Una vez registrado y verificado que la app real está mandando tokens válidos, **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
 - [ ] Web no está cubierto todavía (necesita una site key de reCAPTCHA) — si vas a lanzar la versión web, avísame y lo agrego.
 
@@ -89,6 +91,7 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 **Limpieza antes de lanzar**
 
 - [ ] Borrar las dos cuentas de prueba creadas en producción para estas pruebas: `ClaudeShopTest` y `ClaudeShopTest2` (esta con monedas puestas a mano desde la consola y casi todos los temas comprados). Las dos eran invitadas y el navegador de pruebas perdió sus sesiones, así que ya no se puede entrar a ninguna para borrarlas desde la app. Ocupan sus nombres de usuario y pueden aparecer en clasificaciones. Se borran desde Firebase Console: el usuario en Authentication, su documento en `users/{uid}` y el de `usernames/claudeshoptest` o `usernames/claudeshoptest2`. El `uid` de cada una está en ese documento de `usernames`.
+- [ ] Borrar también el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador al verificar App Check. No eligió nombre de usuario, así que no tiene documento en `usernames`: basta con Authentication y `users/C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, si existe.
 
 ## 7. Revisión factual del banco de preguntas
 

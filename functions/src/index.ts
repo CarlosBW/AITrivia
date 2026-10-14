@@ -56,6 +56,12 @@ import {
   sessionAfterSubmit,
 } from "./quiz_answers";
 import {
+  decideCoinCredit,
+  judgePlayProductPurchase,
+  playProductPurchaseUrl,
+  purchaseLedgerId,
+} from "./coin_purchases";
+import {
   openTurn,
   resolveAnswer,
 } from "./async_pvp_turns";
@@ -5585,16 +5591,122 @@ export const purchaseTheme = onCall(async (request) => {
 // ============================================================
 // COIN PURCHASES (IAP)
 //
-// Structure only — Google Play Console / App Store Connect aren't set up
-// yet, so there is no real receipt to verify against. This function must
-// stay fail-closed (reject every call) until that's wired up; it must
-// NEVER credit coins based on the client's say-so alone, the same way no
-// other economy path in this file trusts a client-reported amount.
+// Coins for real money are credited only after the store itself confirms
+// the payment — never on the client's say-so, the same way no other
+// economy path in this file trusts a client-reported amount.
+//
+// Google Play: the purchase token is checked with the Play Developer API
+// (purchases.products.get) and recorded in `coin_purchases/{hash}`, so
+// one token credits one account once. The client consumes the purchase
+// only after this returns, so a failure here leaves it pending and the
+// store hands it back on the next launch.
+//
+// App Store: still fail-closed. Verifying needs the App Store Server
+// API's key, issued with the Apple Developer membership.
 //
 // Mirrors economy_service.dart's `EconomyService.coinPacks` exactly —
 // keep both in sync. Ids must match the products configured in each
 // store once those accounts exist.
 // ============================================================
+
+const PLAY_PACKAGE_NAME = "pe.massivedynamics.triviaia";
+
+/**
+ * An access token for the Play Developer API, from this function's own
+ * service account.
+ *
+ * Taken from the metadata server with the androidpublisher scope rather
+ * than through a client library, so verifying a purchase adds no
+ * dependency. The service account still has to be granted access in Play
+ * Console → Users and permissions, or Play answers 401/403.
+ * @return {Promise<string>} Bearer token.
+ */
+async function playDeveloperAccessToken(): Promise<string> {
+  const response = await fetch(
+    "http://metadata.google.internal/computeMetadata/v1/instance/" +
+      "service-accounts/default/token" +
+      "?scopes=https://www.googleapis.com/auth/androidpublisher",
+    {headers: {"Metadata-Flavor": "Google"}}
+  );
+
+  if (!response.ok) {
+    throw new Error(`Metadata token request failed: ${response.status}`);
+  }
+
+  const body = await response.json() as {access_token?: unknown};
+  if (typeof body.access_token !== "string") {
+    throw new Error("Metadata token response had no access_token.");
+  }
+  return body.access_token;
+}
+
+/**
+ * Asks Play about one product purchase.
+ *
+ * The error codes are chosen for what the client does with them: every
+ * failure keeps the purchase pending, so a passing outage or a missing
+ * Play Console permission costs the player a delay, not their money.
+ * @param {string} uid Caller, for the localized message.
+ * @param {string} productId In-app product id.
+ * @param {string} purchaseToken Token from the purchase.
+ * @return {Promise<unknown>} Play's ProductPurchase JSON.
+ */
+async function fetchPlayProductPurchase(
+  uid: string,
+  productId: string,
+  purchaseToken: string
+): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetch(
+      playProductPurchaseUrl(PLAY_PACKAGE_NAME, productId, purchaseToken),
+      {headers: {Authorization: `Bearer ${await playDeveloperAccessToken()}`}}
+    );
+  } catch (error) {
+    console.error("Play purchase lookup could not be made", error);
+    throw await localizedErrorFor(
+      uid, "unavailable",
+      "No se pudo verificar la compra. Se reintentará.",
+      "Couldn't verify the purchase. It will be retried."
+    );
+  }
+
+  if (response.ok) return response.json();
+
+  // 401/403: this service account isn't allowed to read purchases in
+  // Play Console. A setup problem, not the player's — keep it pending.
+  if (response.status === 401 || response.status === 403) {
+    console.error(
+      "Play refused the purchase lookup; check that the functions " +
+        "service account has access in Play Console.",
+      response.status, await response.text()
+    );
+    throw await localizedErrorFor(
+      uid, "unavailable",
+      "No se pudo verificar la compra. Se reintentará.",
+      "Couldn't verify the purchase. It will be retried."
+    );
+  }
+
+  // 400/404/410: Play doesn't know this token for this product.
+  if (response.status >= 400 && response.status < 500) {
+    console.warn(
+      "Play rejected a purchase token", productId, response.status
+    );
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "La tienda no reconoce esta compra.",
+      "The store doesn't recognize this purchase."
+    );
+  }
+
+  console.error("Play purchase lookup failed", response.status);
+  throw await localizedErrorFor(
+    uid, "unavailable",
+    "No se pudo verificar la compra. Se reintentará.",
+    "Couldn't verify the purchase. It will be retried."
+  );
+}
 
 const COIN_PACKS: Record<string, number> = {
   "coins_pack_small": 100,
@@ -5621,26 +5733,100 @@ export const verifyCoinPurchase = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing verification data.");
   }
 
-  // TODO(store-setup): once both store accounts exist and the packs
-  // above are configured as real products, verify `verificationData`
-  // against the actual store before granting `coins`:
-  //  - source === "google_play": call the Google Play Developer API's
-  //    purchases.products.get with a service-account credential,
-  //    confirm purchaseState is "purchased", and acknowledge/consume the
-  //    token so it can't be replayed.
-  //  - source === "app_store": call the App Store Server API (or the
-  //    legacy verifyReceipt endpoint) with the app's shared secret,
-  //    confirm the transaction is valid, and track its transaction id in
-  //    Firestore so the same receipt can't be replayed for a second
-  //    payout.
-  // Only after that check passes should this run a transaction crediting
-  // `coins` to the user doc — exactly like every other reward path in
-  // this file, never trust a client-supplied amount directly.
-  throw await localizedErrorFor(
-    uid, "failed-precondition",
-    "Las compras de monedas todavía no están habilitadas.",
-    "Coin purchases aren't enabled yet."
+  if (source !== "google_play") {
+    // App Store verification needs the App Store Server API key, which
+    // only exists with the Apple Developer membership. Until then iOS
+    // purchases stay pending rather than being trusted.
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Las compras de monedas todavía no están habilitadas en este " +
+        "dispositivo.",
+      "Coin purchases aren't enabled on this device yet."
+    );
+  }
+
+  // On Android, serverVerificationData is the purchase token.
+  const purchaseToken = verificationData;
+  const verdict = judgePlayProductPurchase(
+    await fetchPlayProductPurchase(uid, productId, purchaseToken)
   );
+
+  if (!verdict.ok) {
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      verdict.reason === "pending" ?
+        "El pago todavía está pendiente. Las monedas llegarán cuando se " +
+          "confirme." :
+        "Esta compra no se completó.",
+      verdict.reason === "pending" ?
+        "The payment is still pending. The coins will arrive once it " +
+          "clears." :
+        "This purchase wasn't completed."
+    );
+  }
+
+  const ledgerRef = db.collection("coin_purchases")
+    .doc(purchaseLedgerId(purchaseToken));
+  const userRef = db.collection("users").doc(uid);
+
+  const outcome = await db.runTransaction(async (tx) => {
+    const ledgerSnap = await tx.get(ledgerRef);
+    const userSnap = await tx.get(userRef);
+
+    const ledgerUid = ledgerSnap.exists ?
+      String(ledgerSnap.data()?.uid || "") : null;
+    const decision = decideCoinCredit(ledgerUid, uid, verdict.consumed);
+    const balance = safeInt(userSnap.data()?.coins, 0);
+
+    if (decision !== "credit") {
+      return {decision, coins: balance};
+    }
+
+    const newCoins = balance + coins;
+
+    tx.set(ledgerRef, {
+      uid,
+      productId,
+      coins,
+      source,
+      orderId: verdict.orderId,
+      purchaseTimeMillis: verdict.purchaseTimeMillis,
+      test: verdict.test,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    tx.set(
+      userRef,
+      {
+        coins: newCoins,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      {merge: true}
+    );
+
+    return {decision, coins: newCoins};
+  });
+
+  if (
+    outcome.decision === "claimed-by-another-account" ||
+    outcome.decision === "consumed-elsewhere"
+  ) {
+    console.warn(
+      "Refused a coin purchase replay", outcome.decision, productId, uid
+    );
+    throw await localizedErrorFor(
+      uid, "permission-denied",
+      "Esta compra ya fue usada.",
+      "This purchase has already been used."
+    );
+  }
+
+  // "already-credited" answers like a fresh credit on purpose: the client
+  // finishes the purchase with the store only when it hears success.
+  return {
+    grantedCoins: coins,
+    coins: outcome.coins,
+    alreadyCredited: outcome.decision === "already-credited",
+  };
 });
 
 // ============================================================

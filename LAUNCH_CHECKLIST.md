@@ -16,7 +16,7 @@ Lo que se puede hacer sin esperar a Google ni a Apple, en este orden:
 
 1. ~~**Ponerse al día.**~~ — hecho el 2026-10-15: `git pull`, y el CLI de Firebase ya usa `apps@` (ver punto 1b).
 2. ~~**Política de claves de cuentas de servicio**~~ — hecho el 2026-10-15: activa y heredada por el proyecto; ver el último ítem del punto 1b.
-3. **Borrar las tres cuentas de prueba** de producción (punto 6, "Limpieza antes de lanzar"): `ClaudeShopTest`, `ClaudeShopTest2` y el anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`. **Pospuesto (2026-10-15)** hasta terminar de agregar temas nuevos, porque se seguirán haciendo pruebas; se borran justo antes de lanzar, junto con las cuentas que esas pruebas creen.
+3. **Cuentas de prueba** de producción (punto 6, "Limpieza antes de lanzar"): `ClaudeShopTest` y `ClaudeShopTest2`, borradas el 2026-10-15. El anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3` queda **pospuesto** hasta terminar de agregar temas nuevos, porque sirve para probarlos; se borra justo antes de lanzar, junto con las cuentas que creen las pruebas que vengan.
 4. **Keystore de release** (punto 4), en la PC que vaya a compilar las versiones para la tienda. Los pasos:
    - Crear el `.jks` con `keytool -genkeypair … -alias upload`, fuera del repo.
    - Crear `android/key.properties` con `storePassword`, `keyPassword`, `keyAlias=upload` y la ruta absoluta del `.jks` en `storeFile`.
@@ -124,8 +124,8 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 **Limpieza antes de lanzar**
 
-- [ ] Borrar las dos cuentas de prueba creadas en producción para estas pruebas: `ClaudeShopTest` y `ClaudeShopTest2` (esta con monedas puestas a mano desde la consola y casi todos los temas comprados). Las dos eran invitadas y el navegador de pruebas perdió sus sesiones, así que ya no se puede entrar a ninguna para borrarlas desde la app. Ocupan sus nombres de usuario y pueden aparecer en clasificaciones. Se borran desde Firebase Console: el usuario en Authentication, su documento en `users/{uid}` y el de `usernames/claudeshoptest` o `usernames/claudeshoptest2`. El `uid` de cada una está en ese documento de `usernames`.
-- [ ] Borrar también el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador al verificar App Check. No eligió nombre de usuario, así que no tiene documento en `usernames`: basta con Authentication y `users/C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, si existe.
+- [x] Borradas el 2026-10-15 las dos cuentas de prueba de la tienda, cuyas sesiones se habían perdido: `ClaudeShopTest` (`n2qlwmewl4ZjwmglTCCAQC1gB0r2`) y `ClaudeShopTest2` (`9D2tNE2CiReUKCmSZk47ASjPRS32`). Se borró lo mismo que borra `deleteMyAccount`: `users/{uid}` con sus subcolecciones, `usernames/…` y el usuario de Authentication. Ninguna tenía entradas en clasificaciones, `live_search` ni solicitudes de amistad. Comprobado después: no queda nada de ninguna.
+- [ ] Borrar el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador de la PC de escritorio al verificar App Check, y las cuentas que creen las pruebas que vengan. **Pospuesto** hasta terminar de agregar temas nuevos: es la sesión del emulador y sirve para probarlos. Hoy no tiene documento en `users` ni nombre de usuario; si se le elige uno, también hay que borrar su `usernames/…`.
 
 ## 7. Revisión factual del banco de preguntas
 

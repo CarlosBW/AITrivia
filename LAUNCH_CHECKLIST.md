@@ -39,8 +39,8 @@ En espera de Google y Apple: crear las apps en las consolas, los productos de mo
 - [x] `firebase deploy --only hosting` (2026-10-14): la política de privacidad y los términos en vivo ya describen el inicio de sesión opcional con Google o Apple (ver "Publicación" en el punto 8). No queda ningún otro deploy pendiente.
 - [x] `purchaseTheme` desplegada con el precio del tema Espacio (2026-10-15). Comprobado contra producción con la cuenta de prueba sin monedas: pedir `space` responde "No tienes suficientes monedas" (el servidor conoce el tema), y un id inventado sigue respondiendo `invalid-argument`. No se cobró nada. Las 40 callables siguen invocables.
 - [x] `purchaseTheme` desplegada con el precio del tema Vintage (2026-10-15), tras renovar la sesión del CLI con `firebase login --reauth`. Sin comprobar contra producción: pedir `vintage` con la cuenta del emulador debería responder "No tienes suficientes monedas", como pasó con `space`.
-- [ ] Desplegar `purchaseTheme` con el precio del tema Cyberpunk (`firebase deploy --only functions:purchaseTheme`). Hasta entonces la tienda lo muestra, pero el servidor rechaza la compra con `invalid-argument`.
 - [x] `purchaseTheme` desplegada con el precio del tema Apocalipsis (2026-10-15). Sin comprobar contra producción: pedir `apocalypse` con la cuenta del emulador debería responder "No tienes suficientes monedas", como pasó con `space`.
+- [x] `purchaseTheme` desplegada con el precio del tema Cyberpunk (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
 
 ## 1b. El proyecto en la organización de la empresa
 

@@ -918,7 +918,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               const SizedBox(height: 18),
-              Material(
+              // Shadow outside the Material, not on the Ink, which would
+              // clip it to a square-cornered box — see BuyCoinsButton.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(context.radii.md),
+                  boxShadow: context.surfaces.shadowsOr(null),
+                ),
+                child: Material(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(context.radii.md),
                 child: InkWell(
@@ -940,7 +947,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                       borderRadius: BorderRadius.circular(context.radii.md),
                       border: context.surfaces.borderOr(null),
-                      boxShadow: context.surfaces.shadowsOr(null),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -986,6 +992,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                 ),
+              ),
               ),
               const SizedBox(height: 18),
               Row(

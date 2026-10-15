@@ -12,64 +12,72 @@ class BuyCoinsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(context.radii.md),
-      child: InkWell(
+    // The shadow sits on a box around the Material rather than on the Ink:
+    // Ink paints onto the Material, which clips it to its own rectangle, so
+    // a theme's glow came out with square corners.
+    return DecoratedBox(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(context.radii.md),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CoinShopScreen()),
-          );
-        },
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                context.appColors.brandGradientStart,
-                context.appColors.brandGradientEnd,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(context.radii.md),
-            border: context.surfaces.borderOr(null),
-            boxShadow: context.surfaces.shadowsOr(null),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: context.appColors.onAccent.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.monetization_on_outlined,
-                  color: context.appColors.reward,
-                  size: 18,
-                ),
+        boxShadow: context.surfaces.shadowsOr(null),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(context.radii.md),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CoinShopScreen()),
+            );
+          },
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  context.appColors.brandGradientStart,
+                  context.appColors.brandGradientEnd,
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context).buyCoinsButtonLabel,
-                  style: TextStyle(
-                    color: context.appColors.onAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+              borderRadius: BorderRadius.circular(context.radii.md),
+              border: context.surfaces.borderOr(null),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: context.appColors.onAccent.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.monetization_on_outlined,
+                    color: context.appColors.reward,
+                    size: 18,
                   ),
                 ),
-              ),
-              Icon(
-                Icons.add_circle_outline,
-                color: context.appColors.reward,
-                size: 20,
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(context).buyCoinsButtonLabel,
+                    style: TextStyle(
+                      color: context.appColors.onAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.add_circle_outline,
+                  color: context.appColors.reward,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),

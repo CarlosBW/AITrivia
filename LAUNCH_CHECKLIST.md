@@ -10,6 +10,26 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 4. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
 5. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
+### Para retomar (anotado el 2026-10-14, para seguir desde la PC de escritorio)
+
+Lo que se puede hacer sin esperar a Google ni a Apple, en este orden:
+
+1. **Ponerse al día.** `git pull`. Después, `firebase login:list` tiene que decir `apps@massivedynamics.pe`. Si dice el Gmail, `firebase logout` y `firebase login` con `apps@`: el Gmail ya no tiene acceso al proyecto, así que sus deploys fallarían.
+2. **Política de claves de cuentas de servicio** (último ítem del punto 1b). Con `apps@`, en la organización `massivedynamics.pe` → IAM y administración → Políticas de la organización, buscar *Disable service account key creation* y anotar si está activa. Conviene hacerlo en esa PC, que es donde está `tools/serviceAccountKey.json`.
+3. **Borrar las tres cuentas de prueba** de producción (punto 6, "Limpieza antes de lanzar"): `ClaudeShopTest`, `ClaudeShopTest2` y el anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`.
+4. **Keystore de release** (punto 4), en la PC que vaya a compilar las versiones para la tienda. Los pasos:
+   - Crear el `.jks` con `keytool -genkeypair … -alias upload`, fuera del repo.
+   - Crear `android/key.properties` con `storePassword`, `keyPassword`, `keyAlias=upload` y la ruta absoluta del `.jks` en `storeFile`.
+   - Comprobar con `flutter build appbundle --release` que ya no sale el aviso de "key.properties no existe".
+   - Agregar sus huellas SHA-1 y SHA-256 a la app Android en Firebase y volver a descargar `google-services.json`.
+   - Guardar copia del `.jks` y su contraseña fuera de la PC.
+5. **Pruebas en el emulador** `Medium_Phone_API_36.1` de esa PC, que ya tiene registrado su token de depuración de App Check:
+   - Guardar el progreso con Google (punto 8): vincular desde Perfil, reinstalar y recuperar con "Ya tengo una cuenta".
+   - Recorrer los temas (punto 6), sobre todo lo que nunca se vio en pantalla: notificaciones y amigos con contenido, Weekly Topic, resultado del Daily Challenge, y los colores del marco y de las ligas.
+6. **Revisión legal** (punto 5): llevar `public/privacy.html` y `public/terms.html` a un abogado.
+
+En espera de Google y Apple: crear las apps en las consolas, los productos de monedas y el permiso de la cuenta de servicio en Play Console (punto 6), la huella de firma de Play, el Team ID para App Attest, todo lo de iOS, los formularios de Data Safety y el *Enforce* de App Check. La verificación de recibos de Google Play ya está escrita; falta desplegarla cuando existan los productos.
+
 ## 1. Deploy pendiente
 
 - [x] `firebase deploy --only hosting` — hecho, `public/privacy.html` y `public/terms.html` están en vivo con el nombre legal correcto (Massive Dynamics Peru S.A.C.).

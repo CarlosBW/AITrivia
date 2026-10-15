@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 import 'app_theme.dart';
 import 'paper_backdrop.dart';
+import 'wasteland_backdrop.dart';
 
-/// Page transitions that put the theme's backdrop — a [StarfieldBackdrop]
-/// or a [PaperBackdrop] — under every route.
+/// Page transitions that put the theme's backdrop — a [StarfieldBackdrop],
+/// a [PaperBackdrop] or a [WastelandBackdrop] — under every route.
 ///
 /// The backdrop goes on each route rather than once behind the whole app on
 /// purpose. Behind the app, every scaffold would be transparent over the
@@ -48,6 +49,7 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
     final page = switch (context.decor.backdrop) {
       AppBackdrop.starfield => StarfieldBackdrop(child: child),
       AppBackdrop.paper => PaperBackdrop(child: child),
+      AppBackdrop.wasteland => WastelandBackdrop(child: child),
       AppBackdrop.plain => child,
     };
 

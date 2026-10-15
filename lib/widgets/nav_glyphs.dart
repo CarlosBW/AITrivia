@@ -33,6 +33,13 @@ List<CustomPainter> navGlyphPainters(AppNavIcons icons, Color color) {
         _HattedPairPainter(color),
         _ShopSignPainter(color),
       ];
+    case AppNavIcons.apocalypse:
+      return [
+        _BunkerPainter(color),
+        _WrenchAndCrowbarPainter(color),
+        _SurvivorsPainter(color),
+        _SupplyCratePainter(color),
+      ];
   }
 }
 
@@ -657,5 +664,193 @@ class _ShopSignPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ShopSignPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Home, in the Apocalypse theme: a half-buried bunker with a hatch and a
+/// bent vent pipe.
+class _BunkerPainter extends CustomPainter {
+  final Color color;
+
+  _BunkerPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+
+    const groundY = 0.84;
+    const domeR = 0.38;
+
+    canvas.drawLine(
+      Offset(s * 0.04, s * groundY),
+      Offset(s * 0.96, s * groundY),
+      paint,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(s * 0.5, s * groundY), radius: s * domeR),
+      math.pi,
+      math.pi,
+      false,
+      paint,
+    );
+
+    // The pipe leaves the dome where the dome is, so the two meet cleanly.
+    const pipeX = 0.70;
+    final pipeBase = groundY - math.sqrt(domeR * domeR - 0.2 * 0.2);
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * pipeX, s * pipeBase)
+        ..lineTo(s * pipeX, s * 0.20)
+        ..lineTo(s * 0.84, s * 0.20),
+      paint,
+    );
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.40, s * groundY)
+        ..lineTo(s * 0.40, s * 0.68)
+        ..arcToPoint(
+          Offset(s * 0.60, s * 0.68),
+          radius: Radius.circular(s * 0.10),
+        )
+        ..lineTo(s * 0.60, s * groundY),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BunkerPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Versus, in the Apocalypse theme: a wrench and a crowbar crossed — what
+/// there is to fight with.
+class _WrenchAndCrowbarPainter extends CustomPainter {
+  final Color color;
+
+  _WrenchAndCrowbarPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.085);
+
+    // Each drawn upright, then laid down on its diagonal.
+    void upright(double angle, void Function() draw) {
+      canvas.save();
+      canvas.translate(s * 0.5, s * 0.5);
+      canvas.rotate(angle);
+      canvas.translate(-s * 0.5, -s * 0.5);
+      draw();
+      canvas.restore();
+    }
+
+    upright(math.pi / 4, () {
+      canvas.drawLine(
+          Offset(s * 0.5, s * 0.30), Offset(s * 0.5, s * 0.94), paint);
+      // Open-ended jaw: a ring with a gap facing the tip.
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(s * 0.5, s * 0.18), radius: s * 0.13),
+        -math.pi / 2 + 0.75,
+        2 * math.pi - 1.5,
+        false,
+        paint,
+      );
+    });
+
+    upright(-math.pi / 4, () {
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * 0.5, s * 0.94)
+          ..lineTo(s * 0.5, s * 0.24)
+          ..quadraticBezierTo(s * 0.5, s * 0.06, s * 0.33, s * 0.10),
+        paint,
+      );
+    });
+  }
+
+  @override
+  bool shouldRepaint(covariant _WrenchAndCrowbarPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Friends, in the Apocalypse theme: two survivors in goggles, side by side.
+class _SurvivorsPainter extends CustomPainter {
+  final Color color;
+
+  _SurvivorsPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.075);
+    final fill = Paint()..color = color;
+
+    const headY = 0.40;
+    const headR = 0.13;
+
+    void survivor(double cx) {
+      canvas.drawCircle(Offset(s * cx, s * headY), s * headR, paint);
+      // Goggles: two solid lenses, so they still read at bar size.
+      for (final dx in [-0.055, 0.055]) {
+        canvas.drawCircle(Offset(s * (cx + dx), s * headY), s * 0.045, fill);
+      }
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * (cx - 0.19), s * 0.92)
+          ..quadraticBezierTo(s * (cx - 0.19), s * 0.64, s * cx, s * 0.64)
+          ..quadraticBezierTo(
+              s * (cx + 0.19), s * 0.64, s * (cx + 0.19), s * 0.92),
+        paint,
+      );
+    }
+
+    survivor(0.27);
+    survivor(0.73);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SurvivorsPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Store, in the Apocalypse theme: a wooden supply crate, braced.
+class _SupplyCratePainter extends CustomPainter {
+  final Color color;
+
+  _SupplyCratePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final thin = _stroke(color, s, 0.06);
+
+    canvas.drawRRect(
+      RRect.fromLTRBR(
+        s * 0.12,
+        s * 0.16,
+        s * 0.88,
+        s * 0.86,
+        Radius.circular(s * 0.04),
+      ),
+      paint,
+    );
+    // The inner frame and one brace across it: a crate, not a box.
+    const inner = (l: 0.25, t: 0.29, r: 0.75, b: 0.73);
+    canvas.drawRect(
+      Rect.fromLTRB(s * inner.l, s * inner.t, s * inner.r, s * inner.b),
+      thin,
+    );
+    canvas.drawLine(
+      Offset(s * inner.l, s * inner.b),
+      Offset(s * inner.r, s * inner.t),
+      thin,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SupplyCratePainter oldDelegate) =>
       oldDelegate.color != color;
 }

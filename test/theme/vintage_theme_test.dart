@@ -126,10 +126,11 @@ void main() {
   });
 
   // La letra es nueva en el sistema de temas: ningun tema que ya estaba a
-  // la venta debe cambiarla sin que nadie lo haya pedido.
+  // la venta debe cambiarla sin que nadie lo haya pedido. Apocalipsis trae
+  // la suya; apocalypse_theme_test.dart la revisa.
   test('los demas temas conservan los titulares redondeados', () {
     for (final spec in AppThemes.all.where(
-      (s) => s.id != AppThemes.vintageId,
+      (s) => s.id != AppThemes.vintageId && s.id != AppThemes.apocalypseId,
     )) {
       expect(spec.headingFace, AppHeadingFace.rounded, reason: spec.id);
     }

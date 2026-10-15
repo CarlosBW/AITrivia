@@ -117,18 +117,19 @@ void main() {
   group('los demas temas siguen como estaban', () {
     for (final spec in AppThemes.all.where((s) => s.id != AppThemes.spaceId)) {
       test(spec.id, () {
-        // Vintage sells its own backdrop and icons, paper and vintage;
-        // vintage_theme_test.dart checks them. Nobody but Space gets the
-        // stars or the space icons.
-        final isVintage = spec.id == AppThemes.vintageId;
-        expect(
-          spec.decor.backdrop,
-          isVintage ? AppBackdrop.paper : AppBackdrop.plain,
-        );
-        expect(
-          spec.decor.navIcons,
-          isVintage ? AppNavIcons.vintage : AppNavIcons.classic,
-        );
+        // Vintage and Apocalypse sell their own backdrop and icons; their
+        // own tests check them. Nobody but Space gets the stars or the
+        // space icons.
+        final (backdrop, icons) = switch (spec.id) {
+          AppThemes.vintageId => (AppBackdrop.paper, AppNavIcons.vintage),
+          AppThemes.apocalypseId => (
+              AppBackdrop.wasteland,
+              AppNavIcons.apocalypse,
+            ),
+          _ => (AppBackdrop.plain, AppNavIcons.classic),
+        };
+        expect(spec.decor.backdrop, backdrop);
+        expect(spec.decor.navIcons, icons);
         expect(spec.decor.pageColor, spec.scaffoldBackground);
       });
     }

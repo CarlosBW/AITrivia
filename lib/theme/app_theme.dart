@@ -516,6 +516,10 @@ enum AppBackdrop {
   /// Aged paper: grain, fibres and a few age spots — see
   /// `paper_backdrop.dart`.
   paper,
+
+  /// Cracked, dusty concrete with rust stains — see
+  /// `wasteland_backdrop.dart`.
+  wasteland,
 }
 
 /// The face headings, scores and app bar titles are set in.
@@ -530,6 +534,9 @@ enum AppHeadingFace {
 
   /// Playfair Display: high-contrast, old-press headlines.
   serif,
+
+  /// Black Ops One: military stencil, as sprayed on a crate.
+  stencil,
 }
 
 /// [face] at [fontWeight], the way `google_fonts` builds it: the weight is
@@ -554,11 +561,18 @@ TextStyle headingStyle(
         fontSize: fontSize,
         color: color,
       );
+    case AppHeadingFace.stencil:
+      // The face comes in one weight. Asking for a heavier one would only
+      // get it smeared into a fake bold, so [fontWeight] is ignored.
+      return GoogleFonts.blackOpsOne(
+        fontSize: fontSize,
+        color: color,
+      );
   }
 }
 
 /// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
-enum AppNavIcons { classic, space, vintage }
+enum AppNavIcons { classic, space, vintage, apocalypse }
 
 /// The parts of a theme that are drawn rather than coloured: the backdrop
 /// behind the screens and the bar's icons.
@@ -832,9 +846,15 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
   final lip = buttonLipBuilders(surfaces, shapes.pill);
 
   final bodyFont = GoogleFonts.manropeTextTheme(base.textTheme);
-  final headingFont = theme.headingFace == AppHeadingFace.serif
-      ? GoogleFonts.playfairDisplayTextTheme(base.textTheme)
-      : GoogleFonts.baloo2TextTheme(base.textTheme);
+  final headingFont = switch (theme.headingFace) {
+    AppHeadingFace.rounded => GoogleFonts.baloo2TextTheme(base.textTheme),
+    AppHeadingFace.serif =>
+      GoogleFonts.playfairDisplayTextTheme(base.textTheme),
+    AppHeadingFace.stencil => GoogleFonts.blackOpsOneTextTheme(base.textTheme),
+  };
+  // The stencil has a single weight; see [headingStyle].
+  final titleWeight =
+      theme.headingFace == AppHeadingFace.stencil ? null : FontWeight.w700;
 
   final textTheme = bodyFont.copyWith(
     displayLarge: headingFont.displayLarge,
@@ -843,8 +863,8 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
     headlineLarge: headingFont.headlineLarge,
     headlineMedium: headingFont.headlineMedium,
     headlineSmall: headingFont.headlineSmall,
-    titleLarge: headingFont.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-    titleMedium: headingFont.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    titleLarge: headingFont.titleLarge?.copyWith(fontWeight: titleWeight),
+    titleMedium: headingFont.titleMedium?.copyWith(fontWeight: titleWeight),
   );
 
   return base.copyWith(

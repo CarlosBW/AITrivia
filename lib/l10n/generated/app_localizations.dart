@@ -4438,6 +4438,18 @@ abstract class AppLocalizations {
   /// **'Papel envejecido, tinta sepia y titulares de imprenta antigua.'**
   String get themeDescriptionVintage;
 
+  /// No description provided for @themeNameApocalypse.
+  ///
+  /// In es, this message translates to:
+  /// **'Apocalipsis'**
+  String get themeNameApocalypse;
+
+  /// No description provided for @themeDescriptionApocalypse.
+  ///
+  /// In es, this message translates to:
+  /// **'Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.'**
+  String get themeDescriptionApocalypse;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

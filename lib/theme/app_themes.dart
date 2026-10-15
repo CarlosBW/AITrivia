@@ -533,6 +533,90 @@ class AppThemes {
     preview: [_vintagePrimary, _vintageGold, _vintagePage],
   );
 
+  /// After the end of the world: soot-dark cracked concrete, rust for the
+  /// brand colour, hazard yellow for rewards and a radioactive green for
+  /// right answers. Headings are sprayed in a military stencil, cards are
+  /// bolted-on metal plates with a hard shadow, and the bar has survivor
+  /// icons.
+  ///
+  /// Dark, like Night and Space, so everything that already follows a dark
+  /// theme's lightness follows this one too. Warmer and browner than both,
+  /// so the three don't read as one theme.
+  static const String apocalypseId = 'apocalypse';
+
+  static const Color _apocalypsePage = Color(0xFF1A1714);
+  static const Color _apocalypseSurface = Color(0xFF26221D);
+  static const Color _apocalypseInk = Color(0xFFEDE3D1);
+  static const Color _apocalypseRust = Color(0xFFE07A35);
+  static const Color _apocalypseHazard = Color(0xFFF2C230);
+
+  static const AppThemeSpec _apocalypse = AppThemeSpec(
+    id: apocalypseId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _apocalypseRust,
+      onPrimary: Color(0xFF1A0C02),
+      primaryContainer: Color(0xFF4A2A14),
+      onPrimaryContainer: Color(0xFFFFD9BF),
+      secondary: Color(0xFFC9B48A),
+      onSecondary: Color(0xFF2A2010),
+      secondaryContainer: Color(0xFF3A3226),
+      onSecondaryContainer: _apocalypseInk,
+      tertiary: Color(0xFF9BD645),
+      onTertiary: Color(0xFF1A2A05),
+      surface: _apocalypseSurface,
+      onSurface: _apocalypseInk,
+      surfaceContainerHighest: Color(0xFF332D26),
+      onSurfaceVariant: Color(0xFFB8AB95),
+      outline: Color(0xFF4A4036),
+      outlineVariant: Color(0xFF332D26),
+      error: Color(0xFFFF7F66),
+      onError: Color(0xFF3A0E05),
+      errorContainer: Color(0xFF40201A),
+      onErrorContainer: Color(0xFFFFDAD2),
+      inverseSurface: _apocalypseInk,
+      onInverseSurface: _apocalypseSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: _apocalypseHazard,
+      rewardBg: Color(0xFF3A3012),
+      success: Color(0xFF9BD645),
+      successBg: Color(0xFF223015),
+      danger: Color(0xFFFF7F66),
+      dangerBg: Color(0xFF40201A),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Rust into dried rust for the brand cards; army olive into rust for
+      // the ones meant to stand out.
+      brandGradientStart: Color(0xFF9A3F12),
+      brandGradientEnd: Color(0xFF6E2E10),
+      heroGradientStart: Color(0xFF3F4A2A),
+      heroGradientEnd: Color(0xFF7A4A1A),
+    ),
+    // Nearly square: cut sheet metal, not a chip. Pills stay pills.
+    shapes: AppShapes(xs: 2, sm: 3, md: 4, lg: 6, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      borderWidth: 1.5,
+      borderColor: Color(0xFF5A4A38),
+      // A hard drop straight down, like a plate bolted a little proud of
+      // the wall.
+      shadowColor: Color(0x99000000),
+      shadowBlur: 0,
+      shadowOffset: Offset(0, 3),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _apocalypsePage,
+    backdrop: AppBackdrop.wasteland,
+    navIcons: AppNavIcons.apocalypse,
+    headingFace: AppHeadingFace.stencil,
+    preview: [_apocalypseRust, _apocalypseHazard, _apocalypsePage],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -544,6 +628,7 @@ class AppThemes {
     _night,
     _space,
     _vintage,
+    _apocalypse,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

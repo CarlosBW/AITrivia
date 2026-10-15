@@ -2583,6 +2583,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Papel envejecido, tinta sepia y titulares de imprenta antigua.';
 
   @override
+  String get themeNameApocalypse => 'Apocalipsis';
+
+  @override
+  String get themeDescriptionApocalypse =>
+      'Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

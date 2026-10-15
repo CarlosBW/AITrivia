@@ -617,6 +617,90 @@ class AppThemes {
     preview: [_apocalypseRust, _apocalypseHazard, _apocalypsePage],
   );
 
+  /// Neon over a city at night: magenta for the brand colour, cyan for the
+  /// edges, electric yellow for rewards. Headings are set in a squared-off
+  /// technical face, cards are outlined in cyan with a hard magenta shadow
+  /// knocked sideways, like a frame with a glitch in the signal, and the
+  /// bar has its own icons.
+  ///
+  /// Dark, like Night, Space and Apocalypse. Bluer and more violet than
+  /// Apocalypse and more saturated than Space, so none of them read as
+  /// another.
+  static const String cyberpunkId = 'cyberpunk';
+
+  static const Color _cyberpunkPage = Color(0xFF0D0A1A);
+  static const Color _cyberpunkSurface = Color(0xFF17122B);
+  static const Color _cyberpunkInk = Color(0xFFF0EAFF);
+  static const Color _cyberpunkMagenta = Color(0xFFFF2E97);
+  static const Color _cyberpunkCyan = Color(0xFF00F0FF);
+
+  static const AppThemeSpec _cyberpunk = AppThemeSpec(
+    id: cyberpunkId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _cyberpunkMagenta,
+      onPrimary: Color(0xFF2A0016),
+      primaryContainer: Color(0xFF4A1238),
+      onPrimaryContainer: Color(0xFFFFD6EC),
+      secondary: Color(0xFF9F8CFF),
+      onSecondary: Color(0xFF1A1040),
+      secondaryContainer: Color(0xFF261C4A),
+      onSecondaryContainer: _cyberpunkInk,
+      tertiary: _cyberpunkCyan,
+      onTertiary: Color(0xFF00363A),
+      surface: _cyberpunkSurface,
+      onSurface: _cyberpunkInk,
+      surfaceContainerHighest: Color(0xFF221A3D),
+      onSurfaceVariant: Color(0xFFB3A8D9),
+      outline: Color(0xFF3A2E66),
+      outlineVariant: Color(0xFF221A3D),
+      error: Color(0xFFFF6B4A),
+      onError: Color(0xFF3A0E05),
+      errorContainer: Color(0xFF401A1A),
+      onErrorContainer: Color(0xFFFFDAD2),
+      inverseSurface: _cyberpunkInk,
+      onInverseSurface: _cyberpunkSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: Color(0xFFF5E733),
+      rewardBg: Color(0xFF3A3510),
+      success: Color(0xFF39FF88),
+      successBg: Color(0xFF0E3A26),
+      danger: Color(0xFFFF6B4A),
+      dangerBg: Color(0xFF401A1A),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Deep magenta into violet for the brand cards; indigo into deep
+      // teal for the ones meant to stand out.
+      brandGradientStart: Color(0xFF8A1A6B),
+      brandGradientEnd: Color(0xFF4A1FA8),
+      heroGradientStart: Color(0xFF2A1F8A),
+      heroGradientEnd: Color(0xFF0B5E7A),
+    ),
+    // Nearly square, like a HUD panel. Pills stay pills.
+    shapes: AppShapes(xs: 0, sm: 2, md: 3, lg: 4, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      borderWidth: 1,
+      borderColor: Color(0xCC00F0FF),
+      // A hard magenta copy knocked down and sideways: the colour split of
+      // a frame with a glitch in the signal.
+      shadowColor: Color(0x99FF2E97),
+      shadowBlur: 0,
+      shadowOffset: Offset(3, 3),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _cyberpunkPage,
+    backdrop: AppBackdrop.neonCity,
+    navIcons: AppNavIcons.cyberpunk,
+    headingFace: AppHeadingFace.tech,
+    preview: [_cyberpunkMagenta, _cyberpunkCyan, _cyberpunkPage],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -629,6 +713,7 @@ class AppThemes {
     _space,
     _vintage,
     _apocalypse,
+    _cyberpunk,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

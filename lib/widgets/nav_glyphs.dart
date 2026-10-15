@@ -40,6 +40,13 @@ List<CustomPainter> navGlyphPainters(AppNavIcons icons, Color color) {
         _SurvivorsPainter(color),
         _SupplyCratePainter(color),
       ];
+    case AppNavIcons.cyberpunk:
+      return [
+        _MegablockPainter(color),
+        _LightningPainter(color),
+        _VisorPairPainter(color),
+        _MicrochipPainter(color),
+      ];
   }
 }
 
@@ -852,5 +859,172 @@ class _SupplyCratePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SupplyCratePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Home, in the Cyberpunk theme: a tower block with an antenna and lit
+/// windows, a lower block beside it.
+class _MegablockPainter extends CustomPainter {
+  final Color color;
+
+  _MegablockPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final fill = Paint()..color = color;
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.20, s * 0.92)
+        ..lineTo(s * 0.20, s * 0.22)
+        ..lineTo(s * 0.56, s * 0.22)
+        ..lineTo(s * 0.56, s * 0.92)
+        ..moveTo(s * 0.56, s * 0.48)
+        ..lineTo(s * 0.84, s * 0.48)
+        ..lineTo(s * 0.84, s * 0.92)
+        ..moveTo(s * 0.10, s * 0.92)
+        ..lineTo(s * 0.92, s * 0.92)
+        ..moveTo(s * 0.38, s * 0.22)
+        ..lineTo(s * 0.38, s * 0.06),
+      paint,
+    );
+
+    for (final x in [0.30, 0.46]) {
+      for (final y in [0.36, 0.52, 0.68]) {
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset(s * x, s * y),
+            width: s * 0.07,
+            height: s * 0.07,
+          ),
+          fill,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MegablockPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Versus, in the Cyberpunk theme: a bolt of current.
+class _LightningPainter extends CustomPainter {
+  final Color color;
+
+  _LightningPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+
+    const points = [
+      Offset(0.62, 0.06),
+      Offset(0.24, 0.54),
+      Offset(0.48, 0.54),
+      Offset(0.38, 0.94),
+      Offset(0.78, 0.42),
+      Offset(0.54, 0.42),
+    ];
+    canvas.drawPath(
+      Path()..addPolygon([for (final p in points) p * s], true),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LightningPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Friends, in the Cyberpunk theme: two people in visor shades, side by
+/// side.
+class _VisorPairPainter extends CustomPainter {
+  final Color color;
+
+  _VisorPairPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.075);
+    final fill = Paint()..color = color;
+
+    const headY = 0.40;
+    const headR = 0.13;
+
+    void person(double cx) {
+      canvas.drawCircle(Offset(s * cx, s * headY), s * headR, paint);
+      // One solid band across the eyes, a little wider than the head.
+      canvas.drawRect(
+        Rect.fromLTRB(
+          s * (cx - 0.17),
+          s * (headY - 0.05),
+          s * (cx + 0.17),
+          s * (headY + 0.04),
+        ),
+        fill,
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * (cx - 0.19), s * 0.92)
+          ..quadraticBezierTo(s * (cx - 0.19), s * 0.64, s * cx, s * 0.64)
+          ..quadraticBezierTo(
+              s * (cx + 0.19), s * 0.64, s * (cx + 0.19), s * 0.92),
+        paint,
+      );
+    }
+
+    person(0.27);
+    person(0.73);
+  }
+
+  @override
+  bool shouldRepaint(covariant _VisorPairPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Store, in the Cyberpunk theme: a microchip — credits on a chip.
+class _MicrochipPainter extends CustomPainter {
+  final Color color;
+
+  _MicrochipPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final pin = _stroke(color, s, 0.07);
+    final fill = Paint()..color = color;
+
+    canvas.drawRRect(
+      RRect.fromLTRBR(
+        s * 0.24,
+        s * 0.24,
+        s * 0.76,
+        s * 0.76,
+        Radius.circular(s * 0.04),
+      ),
+      paint,
+    );
+    canvas.drawRect(
+      Rect.fromLTRB(s * 0.41, s * 0.41, s * 0.59, s * 0.59),
+      fill,
+    );
+
+    // Three pins on each side.
+    for (final t in [0.36, 0.50, 0.64]) {
+      canvas.drawLine(Offset(s * t, s * 0.24), Offset(s * t, s * 0.10), pin);
+      canvas.drawLine(Offset(s * t, s * 0.76), Offset(s * t, s * 0.90), pin);
+      canvas.drawLine(Offset(s * 0.24, s * t), Offset(s * 0.10, s * t), pin);
+      canvas.drawLine(Offset(s * 0.76, s * t), Offset(s * 0.90, s * t), pin);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MicrochipPainter oldDelegate) =>
       oldDelegate.color != color;
 }

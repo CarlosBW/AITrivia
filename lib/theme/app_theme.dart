@@ -520,6 +520,10 @@ enum AppBackdrop {
   /// Cracked, dusty concrete with rust stains — see
   /// `wasteland_backdrop.dart`.
   wasteland,
+
+  /// A night skyline with lit windows and neon glow — see
+  /// `neon_city_backdrop.dart`.
+  neonCity,
 }
 
 /// The face headings, scores and app bar titles are set in.
@@ -537,6 +541,9 @@ enum AppHeadingFace {
 
   /// Black Ops One: military stencil, as sprayed on a crate.
   stencil,
+
+  /// Chakra Petch: squared-off, technical, like a HUD readout.
+  tech,
 }
 
 /// [face] at [fontWeight], the way `google_fonts` builds it: the weight is
@@ -568,11 +575,22 @@ TextStyle headingStyle(
         fontSize: fontSize,
         color: color,
       );
+    case AppHeadingFace.tech:
+      return GoogleFonts.chakraPetch(
+        fontWeight: techHeadingWeight(fontWeight),
+        fontSize: fontSize,
+        color: color,
+      );
   }
 }
 
+/// The weight [AppHeadingFace.tech] is set in when [weight] is asked for.
+/// The face stops at 700, and anything heavier would be a fake bold.
+FontWeight techHeadingWeight(FontWeight weight) =>
+    weight.value > FontWeight.w700.value ? FontWeight.w700 : weight;
+
 /// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
-enum AppNavIcons { classic, space, vintage, apocalypse }
+enum AppNavIcons { classic, space, vintage, apocalypse, cyberpunk }
 
 /// The parts of a theme that are drawn rather than coloured: the backdrop
 /// behind the screens and the bar's icons.
@@ -851,6 +869,7 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
     AppHeadingFace.serif =>
       GoogleFonts.playfairDisplayTextTheme(base.textTheme),
     AppHeadingFace.stencil => GoogleFonts.blackOpsOneTextTheme(base.textTheme),
+    AppHeadingFace.tech => GoogleFonts.chakraPetchTextTheme(base.textTheme),
   };
   // The stencil has a single weight; see [headingStyle].
   final titleWeight =

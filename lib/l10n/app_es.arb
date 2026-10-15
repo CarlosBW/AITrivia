@@ -1502,6 +1502,8 @@
   "themeDescriptionVintage": "Papel envejecido, tinta sepia y titulares de imprenta antigua.",
   "themeNameApocalypse": "Apocalipsis",
   "themeDescriptionApocalypse": "Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.",
+  "themeNameCyberpunk": "Cyberpunk",
+  "themeDescriptionCyberpunk": "Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.",
 
   "notificationsChallengeDeclined": "Reto rechazado",
   "notificationsContinue": "Continuar",

@@ -126,12 +126,15 @@ void main() {
   });
 
   // La letra es nueva en el sistema de temas: ningun tema que ya estaba a
-  // la venta debe cambiarla sin que nadie lo haya pedido. Apocalipsis trae
-  // la suya; apocalypse_theme_test.dart la revisa.
+  // la venta debe cambiarla sin que nadie lo haya pedido. Apocalipsis y
+  // Cyberpunk traen la suya; sus propios tests la revisan.
   test('los demas temas conservan los titulares redondeados', () {
-    for (final spec in AppThemes.all.where(
-      (s) => s.id != AppThemes.vintageId && s.id != AppThemes.apocalypseId,
-    )) {
+    const ownFace = {
+      AppThemes.vintageId,
+      AppThemes.apocalypseId,
+      AppThemes.cyberpunkId,
+    };
+    for (final spec in AppThemes.all.where((s) => !ownFace.contains(s.id))) {
       expect(spec.headingFace, AppHeadingFace.rounded, reason: spec.id);
     }
   });

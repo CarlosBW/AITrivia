@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'app_theme.dart';
+import 'neon_city_backdrop.dart';
 import 'paper_backdrop.dart';
 import 'wasteland_backdrop.dart';
 
 /// Page transitions that put the theme's backdrop — a [StarfieldBackdrop],
-/// a [PaperBackdrop] or a [WastelandBackdrop] — under every route.
+/// a [PaperBackdrop], a [WastelandBackdrop] or a [NeonCityBackdrop] — under
+/// every route.
 ///
 /// The backdrop goes on each route rather than once behind the whole app on
 /// purpose. Behind the app, every scaffold would be transparent over the
@@ -50,6 +52,7 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
       AppBackdrop.starfield => StarfieldBackdrop(child: child),
       AppBackdrop.paper => PaperBackdrop(child: child),
       AppBackdrop.wasteland => WastelandBackdrop(child: child),
+      AppBackdrop.neonCity => NeonCityBackdrop(child: child),
       AppBackdrop.plain => child,
     };
 

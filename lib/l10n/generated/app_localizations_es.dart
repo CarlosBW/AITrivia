@@ -2590,6 +2590,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.';
 
   @override
+  String get themeNameCyberpunk => 'Cyberpunk';
+
+  @override
+  String get themeDescriptionCyberpunk =>
+      'Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

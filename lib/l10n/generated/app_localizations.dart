@@ -4450,6 +4450,18 @@ abstract class AppLocalizations {
   /// **'Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.'**
   String get themeDescriptionApocalypse;
 
+  /// No description provided for @themeNameCyberpunk.
+  ///
+  /// In es, this message translates to:
+  /// **'Cyberpunk'**
+  String get themeNameCyberpunk;
+
+  /// No description provided for @themeDescriptionCyberpunk.
+  ///
+  /// In es, this message translates to:
+  /// **'Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.'**
+  String get themeDescriptionCyberpunk;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

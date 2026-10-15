@@ -2597,6 +2597,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.';
 
   @override
+  String get themeNameSteampunk => 'Steampunk';
+
+  @override
+  String get themeDescriptionSteampunk =>
+      'Latón, cobre y engranajes, con placas remachadas y letras grabadas de taller victoriano.';
+
+  @override
+  String get themeNameChristmas => 'Navidad';
+
+  @override
+  String get themeDescriptionChristmas =>
+      'Nieve cayendo sobre una noche de pinos, en rojo, dorado y verde, con íconos navideños.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

@@ -701,6 +701,164 @@ class AppThemes {
     preview: [_cyberpunkMagenta, _cyberpunkCyan, _cyberpunkPage],
   );
 
+  /// A Victorian workshop: brass, copper and verdigris on dark leather,
+  /// faint gears behind every screen, headings in engraved capitals, and
+  /// cards framed like brass plates with a thick rim.
+  ///
+  /// Dark, like the other drawn themes. Brown and gold where Apocalypse is
+  /// soot and rust, so the two don't read as one.
+  static const String steampunkId = 'steampunk';
+
+  static const Color _steampunkPage = Color(0xFF1C140E);
+  static const Color _steampunkSurface = Color(0xFF2A1F16);
+  static const Color _steampunkInk = Color(0xFFF2E3C8);
+  static const Color _steampunkBrass = Color(0xFFD4A04A);
+  static const Color _steampunkVerdigris = Color(0xFF5FB3A0);
+
+  static const AppThemeSpec _steampunk = AppThemeSpec(
+    id: steampunkId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _steampunkBrass,
+      onPrimary: Color(0xFF2A1A06),
+      primaryContainer: Color(0xFF4A3618),
+      onPrimaryContainer: Color(0xFFFFE6B8),
+      secondary: Color(0xFFC8743C),
+      onSecondary: Color(0xFF2A1406),
+      secondaryContainer: Color(0xFF3D2A1C),
+      onSecondaryContainer: _steampunkInk,
+      tertiary: _steampunkVerdigris,
+      onTertiary: Color(0xFF0E2A24),
+      surface: _steampunkSurface,
+      onSurface: _steampunkInk,
+      surfaceContainerHighest: Color(0xFF36291D),
+      onSurfaceVariant: Color(0xFFC4AE8A),
+      outline: Color(0xFF5A4630),
+      outlineVariant: Color(0xFF36291D),
+      error: Color(0xFFFF7A5C),
+      onError: Color(0xFF3A0E05),
+      errorContainer: Color(0xFF40201A),
+      onErrorContainer: Color(0xFFFFDAD2),
+      inverseSurface: _steampunkInk,
+      onInverseSurface: _steampunkSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: Color(0xFFF2C14E),
+      rewardBg: Color(0xFF3A2E12),
+      success: Color(0xFF6FCFA8),
+      successBg: Color(0xFF16342A),
+      danger: Color(0xFFFF7A5C),
+      dangerBg: Color(0xFF40201A),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Copper into dark copper for the brand cards; verdigris into
+      // tarnished brass for the ones meant to stand out.
+      brandGradientStart: Color(0xFF8A4A1E),
+      brandGradientEnd: Color(0xFF5E3414),
+      heroGradientStart: Color(0xFF2F5A50),
+      heroGradientEnd: Color(0xFF6B4A1E),
+    ),
+    shapes: AppShapes(xs: 4, sm: 6, md: 10, lg: 14, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      // The thickest rim of any theme: a brass frame round each plate.
+      borderWidth: 2,
+      borderColor: Color(0xFFA67C3A),
+      shadowColor: Color(0x80000000),
+      shadowBlur: 6,
+      shadowOffset: Offset(0, 3),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _steampunkPage,
+    backdrop: AppBackdrop.gears,
+    navIcons: AppNavIcons.steampunk,
+    headingFace: AppHeadingFace.engraved,
+    preview: [_steampunkBrass, _steampunkVerdigris, _steampunkPage],
+  );
+
+  /// A snowy night among the pines: snow falling behind every screen, red,
+  /// gold and green, festive hand-drawn headings, and soft round cards with
+  /// a gold thread.
+  ///
+  /// Dark so the snow shows. Red text on dark green is the hard part, so
+  /// the brand red is a bright one and buttons carry dark text on it.
+  static const String christmasId = 'christmas';
+
+  static const Color _christmasPage = Color(0xFF0E2A20);
+  static const Color _christmasSurface = Color(0xFF16382B);
+  static const Color _christmasSnow = Color(0xFFF7F3EA);
+  static const Color _christmasRed = Color(0xFFFF6B6B);
+  static const Color _christmasGold = Color(0xFFF2C14E);
+
+  static const AppThemeSpec _christmas = AppThemeSpec(
+    id: christmasId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _christmasRed,
+      onPrimary: Color(0xFF3A0808),
+      primaryContainer: Color(0xFF5A1A1E),
+      onPrimaryContainer: Color(0xFFFFDAD8),
+      secondary: _christmasGold,
+      onSecondary: Color(0xFF2A2006),
+      secondaryContainer: Color(0xFF2A3A20),
+      onSecondaryContainer: _christmasSnow,
+      tertiary: Color(0xFF8FD6A8),
+      onTertiary: Color(0xFF0A2A18),
+      surface: _christmasSurface,
+      onSurface: _christmasSnow,
+      surfaceContainerHighest: Color(0xFF1E4535),
+      onSurfaceVariant: Color(0xFFBCD3C6),
+      outline: Color(0xFF2E5A46),
+      outlineVariant: Color(0xFF1E4535),
+      error: Color(0xFFFF8F5C),
+      onError: Color(0xFF3A1205),
+      errorContainer: Color(0xFF43211A),
+      onErrorContainer: Color(0xFFFFDACC),
+      inverseSurface: _christmasSnow,
+      onInverseSurface: _christmasSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: _christmasGold,
+      rewardBg: Color(0xFF3A3012),
+      success: Color(0xFF7EE0A0),
+      successBg: Color(0xFF123A26),
+      danger: Color(0xFFFF8F5C),
+      dangerBg: Color(0xFF43211A),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Holly red into deep red for the brand cards; pine into deep pine
+      // for the ones meant to stand out.
+      brandGradientStart: Color(0xFFA8202A),
+      brandGradientEnd: Color(0xFF6E1420),
+      heroGradientStart: Color(0xFF1E6B43),
+      heroGradientEnd: Color(0xFF0E4A3A),
+    ),
+    // Rounder than the classic theme: soft, like something wrapped.
+    shapes: AppShapes(xs: 10, sm: 14, md: 22, lg: 28, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      borderWidth: 1.5,
+      borderColor: Color(0x99F2C14E),
+      shadowColor: Color(0x66000000),
+      shadowBlur: 10,
+      shadowOffset: Offset(0, 4),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _christmasPage,
+    backdrop: AppBackdrop.snowfall,
+    navIcons: AppNavIcons.christmas,
+    headingFace: AppHeadingFace.festive,
+    preview: [_christmasRed, _christmasGold, _christmasPage],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -714,6 +872,8 @@ class AppThemes {
     _vintage,
     _apocalypse,
     _cyberpunk,
+    _steampunk,
+    _christmas,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

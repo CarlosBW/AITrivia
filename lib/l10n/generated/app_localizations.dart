@@ -4462,6 +4462,30 @@ abstract class AppLocalizations {
   /// **'Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.'**
   String get themeDescriptionCyberpunk;
 
+  /// No description provided for @themeNameSteampunk.
+  ///
+  /// In es, this message translates to:
+  /// **'Steampunk'**
+  String get themeNameSteampunk;
+
+  /// No description provided for @themeDescriptionSteampunk.
+  ///
+  /// In es, this message translates to:
+  /// **'Latón, cobre y engranajes, con placas remachadas y letras grabadas de taller victoriano.'**
+  String get themeDescriptionSteampunk;
+
+  /// No description provided for @themeNameChristmas.
+  ///
+  /// In es, this message translates to:
+  /// **'Navidad'**
+  String get themeNameChristmas;
+
+  /// No description provided for @themeDescriptionChristmas.
+  ///
+  /// In es, this message translates to:
+  /// **'Nieve cayendo sobre una noche de pinos, en rojo, dorado y verde, con íconos navideños.'**
+  String get themeDescriptionChristmas;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

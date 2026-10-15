@@ -50,6 +50,10 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeNameApocalypse;
       case AppThemes.cyberpunkId:
         return l10n.themeNameCyberpunk;
+      case AppThemes.steampunkId:
+        return l10n.themeNameSteampunk;
+      case AppThemes.christmasId:
+        return l10n.themeNameChristmas;
       default:
         return l10n.themeNameDefault;
     }
@@ -75,6 +79,10 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeDescriptionApocalypse;
       case AppThemes.cyberpunkId:
         return l10n.themeDescriptionCyberpunk;
+      case AppThemes.steampunkId:
+        return l10n.themeDescriptionSteampunk;
+      case AppThemes.christmasId:
+        return l10n.themeDescriptionChristmas;
       default:
         return l10n.themeDescriptionDefault;
     }

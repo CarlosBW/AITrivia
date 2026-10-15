@@ -147,9 +147,11 @@ void main() {
   test('la letra tecnica nunca pide mas peso del que tiene', () {
     // Sin pasar por google_fonts, que en los tests intenta bajar la letra.
     for (final weight in [FontWeight.w700, FontWeight.w800, FontWeight.w900]) {
-      expect(techHeadingWeight(weight), FontWeight.w700, reason: '$weight');
+      expect(headingWeight(AppHeadingFace.tech, weight), FontWeight.w700,
+          reason: '$weight');
     }
-    expect(techHeadingWeight(FontWeight.w500), FontWeight.w500);
+    expect(
+        headingWeight(AppHeadingFace.tech, FontWeight.w500), FontWeight.w500);
   });
 
   group('el fondo de ciudad', () {

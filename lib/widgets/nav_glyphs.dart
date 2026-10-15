@@ -47,6 +47,20 @@ List<CustomPainter> navGlyphPainters(AppNavIcons icons, Color color) {
         _VisorPairPainter(color),
         _MicrochipPainter(color),
       ];
+    case AppNavIcons.steampunk:
+      return [
+        _GearHousePainter(color),
+        _MeshingGearsPainter(color),
+        _AviatorPairPainter(color),
+        _CashRegisterPainter(color),
+      ];
+    case AppNavIcons.christmas:
+      return [
+        _SnowyHousePainter(color),
+        _CandyCanesPainter(color),
+        _SnowmenPainter(color),
+        _GiftPainter(color),
+      ];
   }
 }
 
@@ -1026,5 +1040,378 @@ class _MicrochipPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MicrochipPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// A gear's outline round [center]: [teeth] squared teeth between [inner]
+/// and [outer], starting at [turn] radians.
+Path _gearOutline(
+  Offset center,
+  double outer,
+  double inner,
+  int teeth, [
+  double turn = 0,
+]) {
+  final step = 2 * math.pi / teeth;
+  final path = Path();
+  for (var i = 0; i < teeth; i++) {
+    final a = turn + i * step;
+    final corners = [
+      (inner, a),
+      (outer, a + step * 0.15),
+      (outer, a + step * 0.45),
+      (inner, a + step * 0.60),
+    ];
+    for (var j = 0; j < corners.length; j++) {
+      final (r, angle) = corners[j];
+      final p = center + Offset(math.cos(angle) * r, math.sin(angle) * r);
+      if (i == 0 && j == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
+    }
+  }
+  return path..close();
+}
+
+/// Home, in the Steampunk theme: a house with a gear set in its wall and
+/// a chimney letting off a puff of steam.
+class _GearHousePainter extends CustomPainter {
+  final Color color;
+
+  _GearHousePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final thin = _stroke(color, s, 0.06);
+
+    // Roof, walls, and a chimney that starts and ends on the roof slope.
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.10, s * 0.50)
+        ..lineTo(s * 0.50, s * 0.16)
+        ..lineTo(s * 0.68, s * 0.313)
+        ..lineTo(s * 0.68, s * 0.18)
+        ..lineTo(s * 0.78, s * 0.18)
+        ..lineTo(s * 0.78, s * 0.398)
+        ..lineTo(s * 0.90, s * 0.50)
+        ..moveTo(s * 0.20, s * 0.42)
+        ..lineTo(s * 0.20, s * 0.88)
+        ..lineTo(s * 0.80, s * 0.88)
+        ..lineTo(s * 0.80, s * 0.42),
+      paint,
+    );
+    canvas.drawCircle(Offset(s * 0.80, s * 0.07), s * 0.045, thin);
+
+    final hub = Offset(s * 0.5, s * 0.64);
+    canvas.drawPath(_gearOutline(hub, s * 0.17, s * 0.12, 8), thin);
+    canvas.drawCircle(hub, s * 0.04, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GearHousePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Versus, in the Steampunk theme: two gears in mesh, teeth against teeth.
+class _MeshingGearsPainter extends CustomPainter {
+  final Color color;
+
+  _MeshingGearsPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.07);
+    final fill = Paint()..color = color;
+
+    final big = Offset(s * 0.38, s * 0.60);
+    final small = Offset(s * 0.75, s * 0.27);
+    canvas.drawPath(_gearOutline(big, s * 0.30, s * 0.22, 10), paint);
+    // Turned half a tooth so its teeth fall between those of the big one.
+    canvas.drawPath(
+      _gearOutline(small, s * 0.20, s * 0.14, 7, math.pi / 7),
+      paint,
+    );
+    canvas.drawCircle(big, s * 0.07, fill);
+    canvas.drawCircle(small, s * 0.05, fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MeshingGearsPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Friends, in the Steampunk theme: two people in top hats and aviator
+/// goggles.
+class _AviatorPairPainter extends CustomPainter {
+  final Color color;
+
+  _AviatorPairPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.075);
+    final thin = _stroke(color, s, 0.055);
+    final fill = Paint()..color = color;
+
+    const headY = 0.52;
+    const headR = 0.12;
+    const brimY = headY - headR;
+
+    void person(double cx) {
+      canvas.drawCircle(Offset(s * cx, s * headY), s * headR, paint);
+      // Goggles: solid lenses, and a strap running out past the head.
+      canvas.drawLine(
+        Offset(s * (cx - 0.17), s * headY),
+        Offset(s * (cx + 0.17), s * headY),
+        thin,
+      );
+      for (final dx in [-0.055, 0.055]) {
+        canvas.drawCircle(Offset(s * (cx + dx), s * headY), s * 0.045, fill);
+      }
+      canvas.drawLine(
+        Offset(s * (cx - 0.14), s * brimY),
+        Offset(s * (cx + 0.14), s * brimY),
+        paint,
+      );
+      canvas.drawRect(
+        Rect.fromLTRB(s * (cx - 0.08), s * 0.20, s * (cx + 0.08), s * brimY),
+        fill,
+      );
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * (cx - 0.19), s * 0.96)
+          ..quadraticBezierTo(s * (cx - 0.19), s * 0.72, s * cx, s * 0.72)
+          ..quadraticBezierTo(
+              s * (cx + 0.19), s * 0.72, s * (cx + 0.19), s * 0.96),
+        paint,
+      );
+    }
+
+    person(0.27);
+    person(0.73);
+  }
+
+  @override
+  bool shouldRepaint(covariant _AviatorPairPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Store, in the Steampunk theme: a brass cash register with its crank.
+class _CashRegisterPainter extends CustomPainter {
+  final Color color;
+
+  _CashRegisterPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final thin = _stroke(color, s, 0.06);
+    final fill = Paint()..color = color;
+
+    // The sign on top, on its stem.
+    canvas.drawRect(
+      Rect.fromLTRB(s * 0.34, s * 0.14, s * 0.66, s * 0.32),
+      paint,
+    );
+    canvas.drawLine(Offset(s * 0.5, s * 0.32), Offset(s * 0.5, s * 0.46), thin);
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.18, s * 0.46)
+        ..lineTo(s * 0.82, s * 0.46)
+        ..lineTo(s * 0.88, s * 0.90)
+        ..lineTo(s * 0.12, s * 0.90)
+        ..close(),
+      paint,
+    );
+    canvas.drawLine(
+        Offset(s * 0.14, s * 0.76), Offset(s * 0.86, s * 0.76), thin);
+
+    for (final x in [0.34, 0.50, 0.66]) {
+      canvas.drawCircle(Offset(s * x, s * 0.60), s * 0.045, fill);
+    }
+
+    // The crank on the side.
+    canvas.drawLine(
+        Offset(s * 0.85, s * 0.62), Offset(s * 0.97, s * 0.62), thin);
+    canvas.drawLine(
+        Offset(s * 0.97, s * 0.62), Offset(s * 0.97, s * 0.50), thin);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CashRegisterPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Home, in the Christmas theme: a house with snow heaped on the roof.
+class _SnowyHousePainter extends CustomPainter {
+  final Color color;
+
+  _SnowyHousePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final fill = Paint()..color = color;
+
+    // The roof is a solid cap of snow, with a drip at each eave.
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.06, s * 0.50)
+        ..lineTo(s * 0.50, s * 0.10)
+        ..lineTo(s * 0.94, s * 0.50)
+        ..lineTo(s * 0.86, s * 0.54)
+        ..lineTo(s * 0.50, s * 0.24)
+        ..lineTo(s * 0.14, s * 0.54)
+        ..close(),
+      fill,
+    );
+    for (final x in [0.12, 0.88]) {
+      canvas.drawCircle(Offset(s * x, s * 0.58), s * 0.04, fill);
+    }
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.22, s * 0.50)
+        ..lineTo(s * 0.22, s * 0.88)
+        ..lineTo(s * 0.78, s * 0.88)
+        ..lineTo(s * 0.78, s * 0.50)
+        ..moveTo(s * 0.42, s * 0.88)
+        ..lineTo(s * 0.42, s * 0.66)
+        ..lineTo(s * 0.58, s * 0.66)
+        ..lineTo(s * 0.58, s * 0.88),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SnowyHousePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Versus, in the Christmas theme: two candy canes crossed, hooks out.
+class _CandyCanesPainter extends CustomPainter {
+  final Color color;
+
+  _CandyCanesPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.09);
+
+    // One cane drawn upright with its hook to the left, then tilted; the
+    // other is its mirror image.
+    for (final mirror in [false, true]) {
+      canvas.save();
+      canvas.translate(s * 0.5, s * 0.5);
+      if (mirror) canvas.scale(-1, 1);
+      canvas.rotate(-0.45);
+      canvas.translate(-s * 0.5, -s * 0.5);
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * 0.5, s * 0.96)
+          ..lineTo(s * 0.5, s * 0.26)
+          ..arcToPoint(
+            Offset(s * 0.28, s * 0.26),
+            radius: Radius.circular(s * 0.11),
+            clockwise: false,
+          )
+          ..lineTo(s * 0.28, s * 0.34),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CandyCanesPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Friends, in the Christmas theme: two snowmen in top hats.
+class _SnowmenPainter extends CustomPainter {
+  final Color color;
+
+  _SnowmenPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.07);
+    final fill = Paint()..color = color;
+
+    void snowman(double cx) {
+      canvas.drawCircle(Offset(s * cx, s * 0.76), s * 0.16, paint);
+      canvas.drawCircle(Offset(s * cx, s * 0.48), s * 0.11, paint);
+      canvas.drawLine(
+        Offset(s * (cx - 0.13), s * 0.37),
+        Offset(s * (cx + 0.13), s * 0.37),
+        paint,
+      );
+      canvas.drawRect(
+        Rect.fromLTRB(s * (cx - 0.07), s * 0.22, s * (cx + 0.07), s * 0.37),
+        fill,
+      );
+    }
+
+    snowman(0.27);
+    snowman(0.73);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SnowmenPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Store, in the Christmas theme: a wrapped present with a bow.
+class _GiftPainter extends CustomPainter {
+  final Color color;
+
+  _GiftPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+    final thin = _stroke(color, s, 0.065);
+
+    canvas.drawRect(
+      Rect.fromLTRB(s * 0.10, s * 0.32, s * 0.90, s * 0.48),
+      paint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(s * 0.18, s * 0.48)
+        ..lineTo(s * 0.18, s * 0.90)
+        ..lineTo(s * 0.82, s * 0.90)
+        ..lineTo(s * 0.82, s * 0.48),
+      paint,
+    );
+    canvas.drawLine(Offset(s * 0.5, s * 0.32), Offset(s * 0.5, s * 0.90), thin);
+
+    // The bow: two loops meeting over the ribbon.
+    for (final dx in [-0.12, 0.12]) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(s * (0.5 + dx), s * 0.21),
+          width: s * 0.22,
+          height: s * 0.15,
+        ),
+        thin,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GiftPainter oldDelegate) =>
       oldDelegate.color != color;
 }

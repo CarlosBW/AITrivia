@@ -117,8 +117,8 @@ void main() {
   group('los demas temas siguen como estaban', () {
     for (final spec in AppThemes.all.where((s) => s.id != AppThemes.spaceId)) {
       test(spec.id, () {
-        // Vintage, Apocalypse and Cyberpunk sell their own backdrop and
-        // icons; their own tests check them. Nobody but Space gets the
+        // Vintage and the themes after it sell their own backdrop
+        // and icons; their own tests check them. Nobody but Space gets the
         // stars or the space icons.
         final (backdrop, icons) = switch (spec.id) {
           AppThemes.vintageId => (AppBackdrop.paper, AppNavIcons.vintage),
@@ -129,6 +129,11 @@ void main() {
           AppThemes.cyberpunkId => (
               AppBackdrop.neonCity,
               AppNavIcons.cyberpunk,
+            ),
+          AppThemes.steampunkId => (AppBackdrop.gears, AppNavIcons.steampunk),
+          AppThemes.christmasId => (
+              AppBackdrop.snowfall,
+              AppNavIcons.christmas,
             ),
           _ => (AppBackdrop.plain, AppNavIcons.classic),
         };

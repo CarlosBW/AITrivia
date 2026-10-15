@@ -126,13 +126,15 @@ void main() {
   });
 
   // La letra es nueva en el sistema de temas: ningun tema que ya estaba a
-  // la venta debe cambiarla sin que nadie lo haya pedido. Apocalipsis y
-  // Cyberpunk traen la suya; sus propios tests la revisan.
+  // la venta debe cambiarla sin que nadie lo haya pedido. Los temas que
+  // vinieron despues traen la suya; sus propios tests la revisan.
   test('los demas temas conservan los titulares redondeados', () {
     const ownFace = {
       AppThemes.vintageId,
       AppThemes.apocalypseId,
       AppThemes.cyberpunkId,
+      AppThemes.steampunkId,
+      AppThemes.christmasId,
     };
     for (final spec in AppThemes.all.where((s) => !ownFace.contains(s.id))) {
       expect(spec.headingFace, AppHeadingFace.rounded, reason: spec.id);

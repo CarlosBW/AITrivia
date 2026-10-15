@@ -524,6 +524,12 @@ enum AppBackdrop {
   /// A night skyline with lit windows and neon glow — see
   /// `neon_city_backdrop.dart`.
   neonCity,
+
+  /// Brass gears turning in the dark — see `gears_backdrop.dart`.
+  gears,
+
+  /// Falling snow over drifts — see `snowfall_backdrop.dart`.
+  snowfall,
 }
 
 /// The face headings, scores and app bar titles are set in.
@@ -544,6 +550,12 @@ enum AppHeadingFace {
 
   /// Chakra Petch: squared-off, technical, like a HUD readout.
   tech,
+
+  /// Cinzel: engraved capitals, like a brass maker's plate.
+  engraved,
+
+  /// Mountains of Christmas: hand-drawn and festive.
+  festive,
 }
 
 /// [face] at [fontWeight], the way `google_fonts` builds it: the weight is
@@ -577,20 +589,53 @@ TextStyle headingStyle(
       );
     case AppHeadingFace.tech:
       return GoogleFonts.chakraPetch(
-        fontWeight: techHeadingWeight(fontWeight),
+        fontWeight: headingWeight(face, fontWeight),
+        fontSize: fontSize,
+        color: color,
+      );
+    case AppHeadingFace.engraved:
+      return GoogleFonts.cinzel(
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        color: color,
+      );
+    case AppHeadingFace.festive:
+      return GoogleFonts.mountainsOfChristmas(
+        fontWeight: headingWeight(face, fontWeight),
         fontSize: fontSize,
         color: color,
       );
   }
 }
 
-/// The weight [AppHeadingFace.tech] is set in when [weight] is asked for.
-/// The face stops at 700, and anything heavier would be a fake bold.
-FontWeight techHeadingWeight(FontWeight weight) =>
-    weight.value > FontWeight.w700.value ? FontWeight.w700 : weight;
+/// The weight [face] is set in when [weight] is asked for.
+///
+/// Chakra Petch and Mountains of Christmas stop at 700, and anything
+/// heavier would be a fake bold, so it is capped there. The other faces
+/// either have every weight or, like the stencil, ignore it.
+FontWeight headingWeight(AppHeadingFace face, FontWeight weight) {
+  switch (face) {
+    case AppHeadingFace.tech:
+    case AppHeadingFace.festive:
+      return weight.value > FontWeight.w700.value ? FontWeight.w700 : weight;
+    case AppHeadingFace.rounded:
+    case AppHeadingFace.serif:
+    case AppHeadingFace.stencil:
+    case AppHeadingFace.engraved:
+      return weight;
+  }
+}
 
 /// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
-enum AppNavIcons { classic, space, vintage, apocalypse, cyberpunk }
+enum AppNavIcons {
+  classic,
+  space,
+  vintage,
+  apocalypse,
+  cyberpunk,
+  steampunk,
+  christmas,
+}
 
 /// The parts of a theme that are drawn rather than coloured: the backdrop
 /// behind the screens and the bar's icons.
@@ -870,6 +915,9 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
       GoogleFonts.playfairDisplayTextTheme(base.textTheme),
     AppHeadingFace.stencil => GoogleFonts.blackOpsOneTextTheme(base.textTheme),
     AppHeadingFace.tech => GoogleFonts.chakraPetchTextTheme(base.textTheme),
+    AppHeadingFace.engraved => GoogleFonts.cinzelTextTheme(base.textTheme),
+    AppHeadingFace.festive =>
+      GoogleFonts.mountainsOfChristmasTextTheme(base.textTheme),
   };
   // The stencil has a single weight; see [headingStyle].
   final titleWeight =

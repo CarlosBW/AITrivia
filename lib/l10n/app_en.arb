@@ -1476,6 +1476,10 @@
   "themeDescriptionApocalypse": "Cracked concrete, rust and stencilled lettering. Icons for surviving the end of the world.",
   "themeNameCyberpunk": "Cyberpunk",
   "themeDescriptionCyberpunk": "Neon over a city at night, glitching panels and a futuristic display face.",
+  "themeNameSteampunk": "Steampunk",
+  "themeDescriptionSteampunk": "Brass, copper and gears, with riveted plates and the engraved lettering of a Victorian workshop.",
+  "themeNameChristmas": "Christmas",
+  "themeDescriptionChristmas": "Snow falling on a night among the pines, in red, gold and green, with Christmas icons.",
 
   "notificationsChallengeDeclined": "Challenge declined",
   "notificationsContinue": "Continue",

@@ -1504,6 +1504,10 @@
   "themeDescriptionApocalypse": "Concreto agrietado, óxido y letras de esténcil. Íconos para sobrevivir al fin del mundo.",
   "themeNameCyberpunk": "Cyberpunk",
   "themeDescriptionCyberpunk": "Neón sobre una ciudad de noche, paneles con fallo de señal y letra de pantalla futurista.",
+  "themeNameSteampunk": "Steampunk",
+  "themeDescriptionSteampunk": "Latón, cobre y engranajes, con placas remachadas y letras grabadas de taller victoriano.",
+  "themeNameChristmas": "Navidad",
+  "themeDescriptionChristmas": "Nieve cayendo sobre una noche de pinos, en rojo, dorado y verde, con íconos navideños.",
 
   "notificationsChallengeDeclined": "Reto rechazado",
   "notificationsContinue": "Continuar",

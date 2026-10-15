@@ -512,6 +512,49 @@ enum AppBackdrop {
 
   /// Fixed stars and a faint nebula — see `starfield_backdrop.dart`.
   starfield,
+
+  /// Aged paper: grain, fibres and a few age spots — see
+  /// `paper_backdrop.dart`.
+  paper,
+}
+
+/// The face headings, scores and app bar titles are set in.
+///
+/// Every theme before Vintage used the rounded Baloo 2, which reads as a
+/// game. A theme can trade it for a serif when the look it sells is print
+/// rather than play. Body text stays in Manrope either way, so long
+/// passages read the same in every theme.
+enum AppHeadingFace {
+  /// Baloo 2, the face the app was designed with.
+  rounded,
+
+  /// Playfair Display: high-contrast, old-press headlines.
+  serif,
+}
+
+/// [face] at [fontWeight], the way `google_fonts` builds it: the weight is
+/// part of the family name, so it has to be chosen here rather than copied
+/// onto a finished style (see [AppTypography]).
+TextStyle headingStyle(
+  AppHeadingFace face, {
+  FontWeight fontWeight = FontWeight.w800,
+  double? fontSize,
+  Color? color,
+}) {
+  switch (face) {
+    case AppHeadingFace.rounded:
+      return GoogleFonts.baloo2(
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        color: color,
+      );
+    case AppHeadingFace.serif:
+      return GoogleFonts.playfairDisplay(
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        color: color,
+      );
+  }
 }
 
 /// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
@@ -789,7 +832,9 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
   final lip = buttonLipBuilders(surfaces, shapes.pill);
 
   final bodyFont = GoogleFonts.manropeTextTheme(base.textTheme);
-  final headingFont = GoogleFonts.baloo2TextTheme(base.textTheme);
+  final headingFont = theme.headingFace == AppHeadingFace.serif
+      ? GoogleFonts.playfairDisplayTextTheme(base.textTheme)
+      : GoogleFonts.baloo2TextTheme(base.textTheme);
 
   final textTheme = bodyFont.copyWith(
     displayLarge: headingFont.displayLarge,
@@ -812,9 +857,7 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
     // Resolved once here so the family lives on the theme instead of at 98
     // call sites. Built at w800 on purpose — see [AppTypography].
     extensions: <ThemeExtension<dynamic>>[
-      AppTypography(
-        heading: GoogleFonts.baloo2(fontWeight: FontWeight.w800),
-      ),
+      AppTypography(heading: headingStyle(theme.headingFace)),
       theme.semanticColors,
       shapes,
       surfaces,
@@ -831,9 +874,9 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
       // silently resolve to null and drop this styling entirely) so the
       // AppBar title is reliably large/bold regardless of text theme merge
       // order.
-      titleTextStyle: GoogleFonts.baloo2(
+      titleTextStyle: headingStyle(
+        theme.headingFace,
         fontSize: 26,
-        fontWeight: FontWeight.w800,
         color: colorScheme.onSurface,
       ),
       iconTheme: IconThemeData(color: colorScheme.onSurface),

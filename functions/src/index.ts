@@ -5532,6 +5532,7 @@ const THEME_PRICES: Record<string, number> = {
   "sunset": 250,
   "forest": 250,
   "space": 400,
+  "vintage": 400,
 };
 
 export const purchaseTheme = onCall(async (request) => {

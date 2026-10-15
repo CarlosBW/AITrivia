@@ -26,6 +26,7 @@ class AppThemeSpec {
     required this.preview,
     this.backdrop = AppBackdrop.plain,
     this.navIcons = AppNavIcons.classic,
+    this.headingFace = AppHeadingFace.rounded,
   });
 
   /// Stored in Firestore, so it must stay stable once shipped.
@@ -49,6 +50,9 @@ class AppThemeSpec {
 
   /// The bottom bar's glyphs. Classic unless a theme sells its own.
   final AppNavIcons navIcons;
+
+  /// The face of headings and scores. Rounded unless a theme sells another.
+  final AppHeadingFace headingFace;
 
   /// The drawn parts of the theme, as the screens read them.
   AppDecor get decor => AppDecor(
@@ -444,6 +448,90 @@ class AppThemes {
     preview: [_spacePage, _spacePrimary, _spaceGlow],
   );
 
+  /// Old print: titles set in a high-contrast serif, sepia ink on aged
+  /// paper, cards ruled with a fine ink line and pressed onto the page with
+  /// a hard offset shadow, and squarer corners, the way a printed card was
+  /// cut.
+  ///
+  /// Light, like the classic theme, so everything already tuned for a
+  /// light theme applies. The page is a warm cream rather than white, and
+  /// the brand colour is an oxblood red, dark enough to sit under white
+  /// text and to read as text on the paper itself.
+  static const String vintageId = 'vintage';
+
+  static const Color _vintagePage = Color(0xFFF2E6CC);
+  static const Color _vintageSurface = Color(0xFFFAF3E3);
+  static const Color _vintageInk = Color(0xFF3A2A1C);
+  static const Color _vintagePrimary = Color(0xFF8B2E2A);
+  static const Color _vintageGold = Color(0xFFC08A1E);
+
+  static const AppThemeSpec _vintage = AppThemeSpec(
+    id: vintageId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.light,
+      primary: _vintagePrimary,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFEBCFC2),
+      onPrimaryContainer: Color(0xFF4A1A16),
+      secondary: Color(0xFFB38B4D),
+      onSecondary: Color(0xFF2E1F0E),
+      secondaryContainer: Color(0xFFEFE2C6),
+      onSecondaryContainer: _vintageInk,
+      tertiary: Color(0xFF3E6B5C),
+      onTertiary: Colors.white,
+      surface: _vintageSurface,
+      onSurface: _vintageInk,
+      surfaceContainerHighest: Color(0xFFEADBBF),
+      onSurfaceVariant: Color(0xFF6B5640),
+      outline: Color(0xFFCDB892),
+      outlineVariant: Color(0xFFE3D3B0),
+      error: Color(0xFF9E2B25),
+      onError: Colors.white,
+      errorContainer: Color(0xFFF3D9CF),
+      onErrorContainer: Color(0xFF5A1410),
+      inverseSurface: _vintageInk,
+      onInverseSurface: _vintageSurface,
+      shadow: Color(0xFF2A1A0A),
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: _vintageGold,
+      rewardBg: Color(0xFFF3E2B8),
+      success: Color(0xFF3D6B35),
+      successBg: Color(0xFFDDE8CF),
+      danger: Color(0xFF9E2B25),
+      dangerBg: Color(0xFFF3D9CF),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Oxblood into rust for the brand cards; walnut into tobacco for the
+      // ones meant to stand out.
+      brandGradientStart: _vintagePrimary,
+      brandGradientEnd: Color(0xFFA6472E),
+      heroGradientStart: Color(0xFF5B3A24),
+      heroGradientEnd: Color(0xFF8B5A2B),
+    ),
+    // Squarer than the classic 8/12/18/24: a printed card, not a chip.
+    // Pills stay pills.
+    shapes: AppShapes(xs: 3, sm: 5, md: 8, lg: 10, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      borderWidth: 1.2,
+      borderColor: Color(0xFF9C8462),
+      // A hard offset shadow, like a card pressed onto the page, rather
+      // than a soft one floating above it.
+      shadowColor: Color(0x332A1A0A),
+      shadowBlur: 0,
+      shadowOffset: Offset(2, 3),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _vintagePage,
+    backdrop: AppBackdrop.paper,
+    headingFace: AppHeadingFace.serif,
+    preview: [_vintagePrimary, _vintageGold, _vintagePage],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -454,6 +542,7 @@ class AppThemes {
     _playful,
     _night,
     _space,
+    _vintage,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

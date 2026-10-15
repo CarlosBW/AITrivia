@@ -2560,6 +2560,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'A starry sky behind every screen, space icons and panels with a neon glow.';
 
   @override
+  String get themeNameVintage => 'Vintage';
+
+  @override
+  String get themeDescriptionVintage =>
+      'Aged paper, sepia ink and old-press headlines.';
+
+  @override
   String get notificationsChallengeDeclined => 'Challenge declined';
 
   @override

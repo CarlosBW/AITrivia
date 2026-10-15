@@ -1498,6 +1498,8 @@
   "themeDescriptionNight": "Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.",
   "themeNameSpace": "Espacio",
   "themeDescriptionSpace": "Un cielo estrellado detrás de cada pantalla, íconos espaciales y paneles con brillo de neón.",
+  "themeNameVintage": "Vintage",
+  "themeDescriptionVintage": "Papel envejecido, tinta sepia y titulares de imprenta antigua.",
 
   "notificationsChallengeDeclined": "Reto rechazado",
   "notificationsContinue": "Continuar",

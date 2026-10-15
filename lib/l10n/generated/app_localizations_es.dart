@@ -2576,6 +2576,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Un cielo estrellado detrás de cada pantalla, íconos espaciales y paneles con brillo de neón.';
 
   @override
+  String get themeNameVintage => 'Vintage';
+
+  @override
+  String get themeDescriptionVintage =>
+      'Papel envejecido, tinta sepia y titulares de imprenta antigua.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

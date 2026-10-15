@@ -117,7 +117,14 @@ void main() {
   group('los demas temas siguen como estaban', () {
     for (final spec in AppThemes.all.where((s) => s.id != AppThemes.spaceId)) {
       test(spec.id, () {
-        expect(spec.decor.backdrop, AppBackdrop.plain);
+        // Vintage sells its own backdrop, paper; vintage_theme_test.dart
+        // checks it. Nobody but Space gets the stars or the space icons.
+        expect(
+          spec.decor.backdrop,
+          spec.id == AppThemes.vintageId
+              ? AppBackdrop.paper
+              : AppBackdrop.plain,
+        );
         expect(spec.decor.navIcons, AppNavIcons.classic);
         expect(spec.decor.pageColor, spec.scaffoldBackground);
       });

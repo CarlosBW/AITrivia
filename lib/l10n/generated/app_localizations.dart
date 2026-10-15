@@ -4426,6 +4426,18 @@ abstract class AppLocalizations {
   /// **'Un cielo estrellado detrás de cada pantalla, íconos espaciales y paneles con brillo de neón.'**
   String get themeDescriptionSpace;
 
+  /// No description provided for @themeNameVintage.
+  ///
+  /// In es, this message translates to:
+  /// **'Vintage'**
+  String get themeNameVintage;
+
+  /// No description provided for @themeDescriptionVintage.
+  ///
+  /// In es, this message translates to:
+  /// **'Papel envejecido, tinta sepia y titulares de imprenta antigua.'**
+  String get themeDescriptionVintage;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

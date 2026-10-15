@@ -44,6 +44,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeNameForest;
       case AppThemes.spaceId:
         return l10n.themeNameSpace;
+      case AppThemes.vintageId:
+        return l10n.themeNameVintage;
       default:
         return l10n.themeNameDefault;
     }
@@ -63,6 +65,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeDescriptionForest;
       case AppThemes.spaceId:
         return l10n.themeDescriptionSpace;
+      case AppThemes.vintageId:
+        return l10n.themeDescriptionVintage;
       default:
         return l10n.themeDescriptionDefault;
     }

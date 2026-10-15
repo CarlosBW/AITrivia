@@ -558,7 +558,7 @@ TextStyle headingStyle(
 }
 
 /// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
-enum AppNavIcons { classic, space }
+enum AppNavIcons { classic, space, vintage }
 
 /// The parts of a theme that are drawn rather than coloured: the backdrop
 /// behind the screens and the bar's icons.

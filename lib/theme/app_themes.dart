@@ -528,6 +528,7 @@ class AppThemes {
     ),
     scaffoldBackground: _vintagePage,
     backdrop: AppBackdrop.paper,
+    navIcons: AppNavIcons.vintage,
     headingFace: AppHeadingFace.serif,
     preview: [_vintagePrimary, _vintageGold, _vintagePage],
   );

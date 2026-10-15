@@ -117,15 +117,18 @@ void main() {
   group('los demas temas siguen como estaban', () {
     for (final spec in AppThemes.all.where((s) => s.id != AppThemes.spaceId)) {
       test(spec.id, () {
-        // Vintage sells its own backdrop, paper; vintage_theme_test.dart
-        // checks it. Nobody but Space gets the stars or the space icons.
+        // Vintage sells its own backdrop and icons, paper and vintage;
+        // vintage_theme_test.dart checks them. Nobody but Space gets the
+        // stars or the space icons.
+        final isVintage = spec.id == AppThemes.vintageId;
         expect(
           spec.decor.backdrop,
-          spec.id == AppThemes.vintageId
-              ? AppBackdrop.paper
-              : AppBackdrop.plain,
+          isVintage ? AppBackdrop.paper : AppBackdrop.plain,
         );
-        expect(spec.decor.navIcons, AppNavIcons.classic);
+        expect(
+          spec.decor.navIcons,
+          isVintage ? AppNavIcons.vintage : AppNavIcons.classic,
+        );
         expect(spec.decor.pageColor, spec.scaffoldBackground);
       });
     }
@@ -237,6 +240,16 @@ void main() {
           .map((p) => p.runtimeType);
 
       expect(classic.toSet().intersection(space.toSet()), isEmpty);
+    });
+
+    test('cada juego tiene sus propios dibujos', () {
+      final seen = <Type>{};
+      for (final icons in AppNavIcons.values) {
+        for (final painter in navGlyphPainters(icons, Colors.white)) {
+          expect(seen.add(painter.runtimeType), isTrue,
+              reason: '${icons.name}: ${painter.runtimeType}');
+        }
+      }
     });
   });
 }

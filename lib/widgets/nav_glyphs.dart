@@ -26,6 +26,13 @@ List<CustomPainter> navGlyphPainters(AppNavIcons icons, Color color) {
         _ConstellationPainter(color),
         _CrystalPainter(color),
       ];
+    case AppNavIcons.vintage:
+      return [
+        _TownhousePainter(color),
+        _FoilsPainter(color),
+        _HattedPairPainter(color),
+        _ShopSignPainter(color),
+      ];
   }
 }
 
@@ -462,5 +469,193 @@ class _CrystalPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CrystalPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Home, in the Vintage theme: a townhouse with a chimney, an arched door
+/// and a round window in the gable.
+class _TownhousePainter extends CustomPainter {
+  final Color color;
+
+  _TownhousePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.08);
+
+    // The chimney starts and ends on the roof's slope, so the two meet
+    // without a gap or an overhang.
+    final house = Path()
+      ..moveTo(s * 0.10, s * 0.48)
+      ..lineTo(s * 0.50, s * 0.14)
+      ..lineTo(s * 0.68, s * 0.293)
+      ..lineTo(s * 0.68, s * 0.12)
+      ..lineTo(s * 0.78, s * 0.12)
+      ..lineTo(s * 0.78, s * 0.378)
+      ..lineTo(s * 0.90, s * 0.48)
+      ..moveTo(s * 0.20, s * 0.40)
+      ..lineTo(s * 0.20, s * 0.88)
+      ..lineTo(s * 0.80, s * 0.88)
+      ..lineTo(s * 0.80, s * 0.40);
+    canvas.drawPath(house, paint);
+
+    final door = Path()
+      ..moveTo(s * 0.42, s * 0.88)
+      ..lineTo(s * 0.42, s * 0.68)
+      ..arcToPoint(Offset(s * 0.58, s * 0.68),
+          radius: Radius.circular(s * 0.08))
+      ..lineTo(s * 0.58, s * 0.88);
+    canvas.drawPath(door, paint);
+
+    canvas.drawCircle(
+        Offset(s * 0.5, s * 0.42), s * 0.06, _stroke(color, s, 0.06));
+  }
+
+  @override
+  bool shouldRepaint(covariant _TownhousePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Versus, in the Vintage theme: two fencing foils crossed, bell guards
+/// down — a duel by the rules.
+class _FoilsPainter extends CustomPainter {
+  final Color color;
+
+  _FoilsPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.065);
+    final fill = Paint()..color = color;
+
+    // One foil drawn upright, then laid down at each diagonal.
+    for (final angle in [math.pi / 4, -math.pi / 4]) {
+      canvas.save();
+      canvas.translate(s * 0.5, s * 0.5);
+      canvas.rotate(angle);
+      canvas.translate(-s * 0.5, -s * 0.5);
+
+      canvas.drawLine(
+          Offset(s * 0.5, s * 0.06), Offset(s * 0.5, s * 0.94), paint);
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(s * 0.5, s * 0.74), radius: s * 0.15),
+        math.pi,
+        math.pi,
+        true,
+        fill,
+      );
+      // The button on the tip that makes it a foil and not a sword.
+      canvas.drawCircle(Offset(s * 0.5, s * 0.06), s * 0.05, fill);
+
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FoilsPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Friends, in the Vintage theme: two gentlemen side by side, one in a top
+/// hat and one in a bowler.
+class _HattedPairPainter extends CustomPainter {
+  final Color color;
+
+  _HattedPairPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.075);
+    final fill = Paint()..color = color;
+
+    const headY = 0.55;
+    const headR = 0.10;
+    const brimY = headY - headR;
+
+    void bust(double cx) {
+      canvas.drawCircle(Offset(s * cx, s * headY), s * headR, paint);
+      canvas.drawPath(
+        Path()
+          ..moveTo(s * (cx - 0.17), s * 0.92)
+          ..quadraticBezierTo(s * (cx - 0.17), s * 0.70, s * cx, s * 0.70)
+          ..quadraticBezierTo(
+              s * (cx + 0.17), s * 0.70, s * (cx + 0.17), s * 0.92),
+        paint,
+      );
+      canvas.drawLine(
+        Offset(s * (cx - 0.15), s * brimY),
+        Offset(s * (cx + 0.15), s * brimY),
+        paint,
+      );
+    }
+
+    // Top hat: a tall crown, filled so it still reads at bar size.
+    bust(0.30);
+    canvas.drawRect(
+      Rect.fromLTRB(s * 0.21, s * 0.18, s * 0.39, s * brimY),
+      fill,
+    );
+
+    // Bowler: a low dome.
+    bust(0.70);
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(s * 0.70, s * brimY), radius: s * 0.10),
+      math.pi,
+      math.pi,
+      true,
+      fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HattedPairPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Store, in the Vintage theme: a shop sign hanging from a wall bracket,
+/// with a coin painted on the board.
+class _ShopSignPainter extends CustomPainter {
+  final Color color;
+
+  _ShopSignPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final paint = _stroke(color, s, 0.075);
+    final thin = _stroke(color, s, 0.055);
+
+    final bracket = Path()
+      ..moveTo(s * 0.12, s * 0.92)
+      ..lineTo(s * 0.12, s * 0.08)
+      ..moveTo(s * 0.12, s * 0.16)
+      ..lineTo(s * 0.90, s * 0.16)
+      ..moveTo(s * 0.12, s * 0.38)
+      ..lineTo(s * 0.36, s * 0.16);
+    canvas.drawPath(bracket, paint);
+
+    canvas.drawLine(
+        Offset(s * 0.38, s * 0.16), Offset(s * 0.38, s * 0.40), thin);
+    canvas.drawLine(
+        Offset(s * 0.78, s * 0.16), Offset(s * 0.78, s * 0.40), thin);
+
+    canvas.drawRRect(
+      RRect.fromLTRBR(
+        s * 0.28,
+        s * 0.40,
+        s * 0.88,
+        s * 0.80,
+        Radius.circular(s * 0.06),
+      ),
+      paint,
+    );
+    canvas.drawCircle(Offset(s * 0.58, s * 0.60), s * 0.09, thin);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShopSignPainter oldDelegate) =>
       oldDelegate.color != color;
 }

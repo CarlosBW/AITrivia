@@ -98,8 +98,8 @@ void main() {
       expect(vintage.headingFace, AppHeadingFace.serif);
       expect(vintage.decor.backdrop, AppBackdrop.paper);
       expect(vintage.decor.pageColor, vintage.scaffoldBackground);
-      // Los iconos de la barra son los de siempre.
-      expect(vintage.decor.navIcons, AppNavIcons.classic);
+      // Y su propio juego de iconos en la barra.
+      expect(vintage.decor.navIcons, AppNavIcons.vintage);
     });
 
     test('dibuja un filete de tinta, sin labio, y esquinas mas rectas', () {

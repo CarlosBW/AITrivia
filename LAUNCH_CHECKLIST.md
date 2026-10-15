@@ -14,9 +14,9 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 
 Lo que se puede hacer sin esperar a Google ni a Apple, en este orden:
 
-1. **Ponerse al día.** `git pull`. Después, `firebase login:list` tiene que decir `apps@massivedynamics.pe`. Si dice el Gmail, `firebase logout` y `firebase login` con `apps@`: el Gmail ya no tiene acceso al proyecto, así que sus deploys fallarían.
-2. **Política de claves de cuentas de servicio** (último ítem del punto 1b). Con `apps@`, en la organización `massivedynamics.pe` → IAM y administración → Políticas de la organización, buscar *Disable service account key creation* y anotar si está activa. Conviene hacerlo en esa PC, que es donde está `tools/serviceAccountKey.json`.
-3. **Borrar las tres cuentas de prueba** de producción (punto 6, "Limpieza antes de lanzar"): `ClaudeShopTest`, `ClaudeShopTest2` y el anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`.
+1. ~~**Ponerse al día.**~~ — hecho el 2026-10-15: `git pull`, y el CLI de Firebase ya usa `apps@` (ver punto 1b).
+2. ~~**Política de claves de cuentas de servicio**~~ — hecho el 2026-10-15: activa y heredada por el proyecto; ver el último ítem del punto 1b.
+3. **Borrar las tres cuentas de prueba** de producción (punto 6, "Limpieza antes de lanzar"): `ClaudeShopTest`, `ClaudeShopTest2` y el anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`. **Pospuesto (2026-10-15)** hasta terminar de agregar temas nuevos, porque se seguirán haciendo pruebas; se borran justo antes de lanzar, junto con las cuentas que esas pruebas creen.
 4. **Keystore de release** (punto 4), en la PC que vaya a compilar las versiones para la tienda. Los pasos:
    - Crear el `.jks` con `keytool -genkeypair … -alias upload`, fuera del repo.
    - Crear `android/key.properties` con `storePassword`, `keyPassword`, `keyAlias=upload` y la ruta absoluta del `.jks` en `storeFile`.
@@ -54,8 +54,8 @@ El 2026-10-11 `trivia-ia-app` pasó de no tener organización a colgar de `massi
 - [x] Quitados a `apps@` los dos roles que se le dieron en `cbalcazarwong-org` solo para la mudanza (2026-10-14). El de *Billing Account Administrator* **sobre la cuenta de facturación** se quedó: es el que le permite administrarla.
 - [x] El presupuesto de S/25 siguió con la cuenta al cambiar de organización (verificado el 2026-10-14 en Facturación → Presupuestos y alertas).
 - [x] `cbalcazarwong@gmail.com` quitada del proyecto y de la cuenta de facturación (2026-10-14), después de pasar el CLI de Firebase a `apps@massivedynamics.pe` y de comprobar que un deploy de hosting funcionaba con esa cuenta. `cbalcazarwong-org` se quedó como estaba: ya no contiene nada del proyecto.
-- [ ] Confirmar que el CLI de Firebase de **la otra PC** también usa `apps@` (`firebase login:list`). En la laptop está comprobado. Si allí sigue la cuenta de Gmail, sus deploys fallan desde que esa cuenta salió del proyecto: `firebase logout` y `firebase login` con `apps@`.
-- Sin verificar: las organizaciones nuevas suelen traer activas otras políticas restrictivas, entre ellas la que impide crear claves nuevas de cuentas de servicio. Si aplica aquí, la de `tools/serviceAccountKey.json` sigue valiendo pero no se podría reemplazar sin otra excepción. Conviene revisarlo en IAM → Organization Policies antes de necesitarlo.
+- [x] El CLI de Firebase usa `apps@` en las dos máquinas: la laptop, y la PC de escritorio desde el 2026-10-15, cuando dejó el Gmail con `firebase logout` y `firebase login`. Comprobado con `firebase login:list`, y `firebase projects:list` ve `trivia-ia-app`.
+- [x] **Política de claves de cuentas de servicio** (revisada el 2026-10-15). `iam.managed.disableServiceAccountKeyCreation` está **activa** en la organización, y `trivia-ia-app` la hereda sin excepción; la versión legacy, `iam.disableServiceAccountKeyCreation`, está inactiva, pero basta con una. Se deja así a propósito. La clave de `tools/serviceAccountKey.json` sigue valiendo, porque la política solo impide crear claves nuevas. Si algún día hay que reemplazarla, por ejemplo porque se filtró, primero hay que crear en el proyecto una excepción a esa política, igual que la de *Domain restricted sharing*, y quitarla después.
 
 ## 2. Firebase App Check (protección contra bots/clientes modificados)
 

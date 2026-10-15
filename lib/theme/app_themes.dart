@@ -24,6 +24,8 @@ class AppThemeSpec {
     required this.surfaces,
     required this.scaffoldBackground,
     required this.preview,
+    this.backdrop = AppBackdrop.plain,
+    this.navIcons = AppNavIcons.classic,
   });
 
   /// Stored in Firestore, so it must stay stable once shipped.
@@ -41,6 +43,19 @@ class AppThemeSpec {
   /// The swatches the store card shows. Three colours, most prominent
   /// first — enough to tell two themes apart without rendering either.
   final List<Color> preview;
+
+  /// What is painted behind the screens. Plain unless a theme sells one.
+  final AppBackdrop backdrop;
+
+  /// The bottom bar's glyphs. Classic unless a theme sells its own.
+  final AppNavIcons navIcons;
+
+  /// The drawn parts of the theme, as the screens read them.
+  AppDecor get decor => AppDecor(
+        pageColor: scaffoldBackground,
+        backdrop: backdrop,
+        navIcons: navIcons,
+      );
 
   bool get isFree => price == 0;
 }
@@ -350,6 +365,85 @@ class AppThemes {
     preview: [_forestPrimary, Color(0xFFE0A526), _forestPage],
   );
 
+  /// The first theme that draws as well as colours: a night sky behind
+  /// every screen, space glyphs in the bottom bar, and surfaces lit by a
+  /// thin glowing edge instead of a shadow, like panels on a ship.
+  ///
+  /// Dark, like Night, so everything that already follows a dark theme's
+  /// lightness — tints, inks, league colours — follows this one too. It is
+  /// cooler and bluer than Night so the two don't read as one theme.
+  static const String spaceId = 'space';
+
+  static const Color _spacePage = Color(0xFF0B1026);
+  static const Color _spaceSurface = Color(0xFF161B3A);
+  static const Color _spacePrimary = Color(0xFF6E7BFF);
+  static const Color _spaceGlow = Color(0xFF47D7F0);
+
+  static const AppThemeSpec _space = AppThemeSpec(
+    id: spaceId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _spacePrimary,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFF262E66),
+      onPrimaryContainer: Color(0xFFDDE1FF),
+      secondary: Color(0xFF9FB4FF),
+      onSecondary: Color(0xFF111A4A),
+      secondaryContainer: Color(0xFF1E2550),
+      onSecondaryContainer: Color(0xFFDDE1FF),
+      tertiary: _spaceGlow,
+      onTertiary: Color(0xFF00313A),
+      surface: _spaceSurface,
+      onSurface: Color(0xFFEEF1FF),
+      surfaceContainerHighest: Color(0xFF20264A),
+      onSurfaceVariant: Color(0xFFA9B0D6),
+      outline: Color(0xFF2E3566),
+      outlineVariant: Color(0xFF20264A),
+      error: Color(0xFFFF8A7A),
+      onError: Color(0xFF3D0F09),
+      errorContainer: Color(0xFF3D1A20),
+      onErrorContainer: Color(0xFFFFDAD4),
+      inverseSurface: Color(0xFFEEF1FF),
+      onInverseSurface: _spaceSurface,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: Color(0xFFFFD166),
+      rewardBg: Color(0xFF3A3112),
+      success: Color(0xFF5DE0B5),
+      successBg: Color(0xFF0E3A30),
+      danger: Color(0xFFFF8A7A),
+      dangerBg: Color(0xFF3D1A20),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.black,
+      // Nebula colours: deep violet into magenta for the brand cards, deep
+      // blue into magenta for the ones meant to stand out.
+      brandGradientStart: Color(0xFF4B36C9),
+      brandGradientEnd: Color(0xFF8A2FB8),
+      heroGradientStart: Color(0xFF2F47C2),
+      heroGradientEnd: Color(0xFFB02C7E),
+    ),
+    shapes: AppShapes.standard,
+    surfaces: AppSurfaces(
+      borderWidth: 1,
+      borderColor: Color(0x8047D7F0),
+      // A glow, not a shadow: centred under the surface, so it lights all
+      // four edges instead of dropping below one.
+      shadowColor: Color(0x4047D7F0),
+      shadowBlur: 14,
+      shadowOffset: Offset.zero,
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _spacePage,
+    backdrop: AppBackdrop.starfield,
+    navIcons: AppNavIcons.space,
+    preview: [_spacePage, _spacePrimary, _spaceGlow],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -359,6 +453,7 @@ class AppThemes {
     _forest,
     _playful,
     _night,
+    _space,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

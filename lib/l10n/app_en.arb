@@ -1468,6 +1468,8 @@
   "themeDescriptionForest": "Green and gold on a soft background.",
   "themeNameNight": "Night",
   "themeDescriptionNight": "A dark background with the usual colours, for playing at night without the glare.",
+  "themeNameSpace": "Space",
+  "themeDescriptionSpace": "A starry sky behind every screen, space icons and panels with a neon glow.",
 
   "notificationsChallengeDeclined": "Challenge declined",
   "notificationsContinue": "Continue",

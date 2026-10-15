@@ -36,7 +36,8 @@ En espera de Google y Apple: crear las apps en las consolas, los productos de mo
 - [x] `npm run deploy` en `functions/` — hecho, `deleteMyAccount` y el manejo de `refusal` ya están en producción.
 - [x] `firebase deploy --only firestore:indexes` (2026-08-07) — los 16 índices ya estaban en vivo, pero los dos `fieldOverrides` de collection-group (`sent_friend_requests.targetUid`, `friend_requests.requesterUid`) nunca se habían desplegado: `--only firestore:rules` no toca índices, y son deploys separados. Sin ellos, la limpieza de espejos de solicitudes de amistad en `deleteMyAccount` fallaba en silencio. Verificado que ambos terminaron de construirse ejecutando las queries reales contra producción.
 - [x] Funciones desplegadas el 2026-10-13, una por una con `firebase deploy --only functions:<nombre>` en vez de las ~40: `purchaseTheme` (precios de los temas nuevos) y `submitSoloLevelResult` (ver punto 9). No queda ningún cambio de `functions/` sin desplegar.
-- [x] `firebase deploy --only hosting` (2026-10-14): la política de privacidad y los términos en vivo ya describen el inicio de sesión opcional con Google o Apple (ver "Publicación" en el punto 8). No queda ningún deploy pendiente.
+- [x] `firebase deploy --only hosting` (2026-10-14): la política de privacidad y los términos en vivo ya describen el inicio de sesión opcional con Google o Apple (ver "Publicación" en el punto 8). No queda ningún otro deploy pendiente.
+- [ ] Desplegar `purchaseTheme` por el tema Espacio (`"space": 400` en `THEME_PRICES`, 2026-10-15): `firebase deploy --only functions:purchaseTheme`. Tiene que estar en vivo antes de publicar un build que muestre el tema, o comprarlo falla con `invalid-argument`.
 
 ## 1b. El proyecto en la organización de la empresa
 
@@ -103,10 +104,11 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 **Temas visuales — funcionando (2026-10-13)**
 
-- [x] Seis temas en la tienda: Clásico (gratis), Océano, Atardecer y Bosque (250 monedas cada uno, solo cambian la paleta), Juguetón y Noche (400; cambian contornos y sombras, o pasan a fondo oscuro). El catálogo vive en `lib/theme/app_themes.dart` y el precio que de verdad se cobra en `THEME_PRICES` de `functions/src/index.ts`; un test impide que se desalineen.
+- [x] Siete temas en la tienda: Clásico (gratis), Océano, Atardecer y Bosque (250 monedas cada uno, solo cambian la paleta), Juguetón, Noche y Espacio (400; cambian contornos y sombras, pasan a fondo oscuro, o las dos cosas y algo más). El catálogo vive en `lib/theme/app_themes.dart` y el precio que de verdad se cobra en `THEME_PRICES` de `functions/src/index.ts`; un test impide que se desalineen.
 - [x] Compra probada de punta a punta contra producción con una cuenta de prueba: Noche, Océano, Atardecer y Bosque. El saldo baja, el tema se equipa al momento y cambiar entre temas ya comprados no vuelve a cobrar. Juguetón no se llegó a comprar.
 - [ ] **Verlos en un teléfono real.** Toda la revisión visual fue en web a tamaño de teléfono. Noche se recorrió casi entera y Atardecer a fondo; Océano y Bosque solo en Inicio, Tienda, PvP y una partida. Sin ver en ningún tema: listas de amigos y notificaciones con contenido, Weekly Topic y el resultado del Daily Challenge. Tampoco se vieron los colores corregidos de la etiqueta del marco y de los nombres de liga (punto 9): quedaron respaldados solo por tests.
 - Los temas solo aparecen en builds nuevos: quien tenga una versión anterior sigue viendo Clásico y Juguetón hasta actualizar.
+- [x] **Espacio** (2026-10-15): el primer tema que dibuja además de colorear. Trae un cielo de estrellas fijas con una nebulosa detrás de cada pantalla, íconos espaciales en la barra (planeta, cohete, constelación, cristal) y tarjetas con un borde fino luminoso y un resplandor en lugar de sombra. El fondo lo pone el tema al abrir cada pantalla (`lib/theme/starfield_backdrop.dart`), así que ninguna pantalla sabe que existe; los íconos están en `lib/widgets/nav_glyphs.dart`. Visto en el emulador con `PREVIEW_THEME=space`: registro de usuario, bienvenida, Inicio, Tienda y PvP. Sin ver: la compra real (falta desplegar `purchaseTheme`, punto 1), partidas, perfil, amigos y el resto de pantallas. Las tarjetas con lavado semitransparente dejan ver las estrellas a través, como en Noche dejan ver la página.
 - Para agregar un tema: el spec en `app_themes.dart`, su precio en `THEME_PRICES` (y desplegar `purchaseTheme`), nombre y descripción en los dos `.arb`, y el `case` en `lib/features/shop/theme_shop_section.dart`. Para verlo sin comprarlo, en debug: `flutter run --dart-define=PREVIEW_THEME=<id>`.
 
 **Compra de monedas — bloqueada por las tiendas**
@@ -125,7 +127,7 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 **Limpieza antes de lanzar**
 
 - [x] Borradas el 2026-10-15 las dos cuentas de prueba de la tienda, cuyas sesiones se habían perdido: `ClaudeShopTest` (`n2qlwmewl4ZjwmglTCCAQC1gB0r2`) y `ClaudeShopTest2` (`9D2tNE2CiReUKCmSZk47ASjPRS32`). Se borró lo mismo que borra `deleteMyAccount`: `users/{uid}` con sus subcolecciones, `usernames/…` y el usuario de Authentication. Ninguna tenía entradas en clasificaciones, `live_search` ni solicitudes de amistad. Comprobado después: no queda nada de ninguna.
-- [ ] Borrar el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador de la PC de escritorio al verificar App Check, y las cuentas que creen las pruebas que vengan. **Pospuesto** hasta terminar de agregar temas nuevos: es la sesión del emulador y sirve para probarlos. Hoy no tiene documento en `users` ni nombre de usuario; si se le elige uno, también hay que borrar su `usernames/…`.
+- [ ] Borrar el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador de la PC de escritorio al verificar App Check, y las cuentas que creen las pruebas que vengan. **Pospuesto** hasta terminar de agregar temas nuevos: es la sesión del emulador y sirve para probarlos. Desde el 2026-10-15 se llama `ClaudeThemeTest`, para recorrer el tema Espacio: hay que borrar también `usernames/claudethemetest` y su documento en `users`.
 
 ## 7. Revisión factual del banco de preguntas
 

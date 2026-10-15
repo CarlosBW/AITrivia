@@ -129,7 +129,7 @@ class _NotificationBellButtonState
                     color: context.appColors.danger,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+                      color: context.decor.pageColor,
                       width: 1.4,
                     ),
                   ),

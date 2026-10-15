@@ -2553,6 +2553,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'A dark background with the usual colours, for playing at night without the glare.';
 
   @override
+  String get themeNameSpace => 'Space';
+
+  @override
+  String get themeDescriptionSpace =>
+      'A starry sky behind every screen, space icons and panels with a neon glow.';
+
+  @override
   String get notificationsChallengeDeclined => 'Challenge declined';
 
   @override

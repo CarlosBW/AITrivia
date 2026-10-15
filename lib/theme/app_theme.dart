@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_themes.dart';
+import 'starfield_backdrop.dart';
 
 /// The semantic palette — reward, success, danger — carried on the theme
 /// so it can be swapped.
@@ -504,6 +505,74 @@ extension AppTypographyContext on BuildContext {
   }
 }
 
+/// What a theme paints behind every screen.
+enum AppBackdrop {
+  /// A flat page in [AppDecor.pageColor], which is all the app had before.
+  plain,
+
+  /// Fixed stars and a faint nebula — see `starfield_backdrop.dart`.
+  starfield,
+}
+
+/// Which glyphs the bottom navigation bar draws — see `nav_glyphs.dart`.
+enum AppNavIcons { classic, space }
+
+/// The parts of a theme that are drawn rather than coloured: the backdrop
+/// behind the screens and the bar's icons.
+///
+/// [pageColor] is here because a theme with a backdrop has to make the
+/// scaffold itself transparent, or it would paint over its own stars. The
+/// few places that borrowed `scaffoldBackgroundColor` as a solid fill — a
+/// ring around a badge, a dialog card — read this instead, and get the
+/// colour the page actually is.
+@immutable
+class AppDecor extends ThemeExtension<AppDecor> {
+  const AppDecor({
+    required this.pageColor,
+    this.backdrop = AppBackdrop.plain,
+    this.navIcons = AppNavIcons.classic,
+  });
+
+  /// What every theme before Space was: a flat page and the classic icons.
+  const AppDecor.plainOf(Color pageColor) : this(pageColor: pageColor);
+
+  final Color pageColor;
+  final AppBackdrop backdrop;
+  final AppNavIcons navIcons;
+
+  @override
+  AppDecor copyWith({
+    Color? pageColor,
+    AppBackdrop? backdrop,
+    AppNavIcons? navIcons,
+  }) {
+    return AppDecor(
+      pageColor: pageColor ?? this.pageColor,
+      backdrop: backdrop ?? this.backdrop,
+      navIcons: navIcons ?? this.navIcons,
+    );
+  }
+
+  @override
+  AppDecor lerp(ThemeExtension<AppDecor>? other, double t) {
+    if (other is! AppDecor) return this;
+    // A backdrop or an icon set can't be half one and half the other.
+    final end = t < 0.5 ? this : other;
+    return AppDecor(
+      pageColor: Color.lerp(pageColor, other.pageColor, t) ?? pageColor,
+      backdrop: end.backdrop,
+      navIcons: end.navIcons,
+    );
+  }
+}
+
+extension AppDecorContext on BuildContext {
+  /// The drawn parts of the active theme.
+  AppDecor get decor =>
+      Theme.of(this).extension<AppDecor>() ??
+      AppDecor.plainOf(Theme.of(this).scaffoldBackgroundColor);
+}
+
 /// Shared corner-radius scale, replacing the ~11 ad hoc values used
 /// across the app before this design system existed.
 class AppRadius {
@@ -715,6 +784,7 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
   final shapes = theme.shapes;
 
   final base = ThemeData(useMaterial3: true, colorScheme: colorScheme);
+  final hasBackdrop = theme.decor.backdrop != AppBackdrop.plain;
 
   final lip = buttonLipBuilders(surfaces, shapes.pill);
 
@@ -733,7 +803,12 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
   );
 
   return base.copyWith(
-    scaffoldBackgroundColor: theme.scaffoldBackground,
+    // Transparent under a backdrop, which each route paints for itself —
+    // see `backdropPageTransitionsTheme`. A solid scaffold would cover it.
+    scaffoldBackgroundColor:
+        hasBackdrop ? Colors.transparent : theme.scaffoldBackground,
+    pageTransitionsTheme:
+        hasBackdrop ? backdropPageTransitionsTheme : base.pageTransitionsTheme,
     // Resolved once here so the family lives on the theme instead of at 98
     // call sites. Built at w800 on purpose — see [AppTypography].
     extensions: <ThemeExtension<dynamic>>[
@@ -743,6 +818,7 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
       theme.semanticColors,
       shapes,
       surfaces,
+      theme.decor,
     ],
     textTheme: textTheme,
     appBarTheme: AppBarTheme(

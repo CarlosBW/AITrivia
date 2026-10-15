@@ -4414,6 +4414,18 @@ abstract class AppLocalizations {
   /// **'Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.'**
   String get themeDescriptionNight;
 
+  /// No description provided for @themeNameSpace.
+  ///
+  /// In es, this message translates to:
+  /// **'Espacio'**
+  String get themeNameSpace;
+
+  /// No description provided for @themeDescriptionSpace.
+  ///
+  /// In es, this message translates to:
+  /// **'Un cielo estrellado detrás de cada pantalla, íconos espaciales y paneles con brillo de neón.'**
+  String get themeDescriptionSpace;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

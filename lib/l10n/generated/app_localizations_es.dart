@@ -2569,6 +2569,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Fondo oscuro con los colores de siempre, para jugar de noche sin deslumbrarte.';
 
   @override
+  String get themeNameSpace => 'Espacio';
+
+  @override
+  String get themeDescriptionSpace =>
+      'Un cielo estrellado detrás de cada pantalla, íconos espaciales y paneles con brillo de neón.';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

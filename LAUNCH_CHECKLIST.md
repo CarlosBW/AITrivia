@@ -41,7 +41,7 @@ En espera de Google y Apple: crear las apps en las consolas, los productos de mo
 - [x] `purchaseTheme` desplegada con el precio del tema Vintage (2026-10-15), tras renovar la sesión del CLI con `firebase login --reauth`. Sin comprobar contra producción: pedir `vintage` con la cuenta del emulador debería responder "No tienes suficientes monedas", como pasó con `space`.
 - [x] `purchaseTheme` desplegada con el precio del tema Apocalipsis (2026-10-15). Sin comprobar contra producción: pedir `apocalypse` con la cuenta del emulador debería responder "No tienes suficientes monedas", como pasó con `space`.
 - [x] `purchaseTheme` desplegada con el precio del tema Cyberpunk (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
-- [ ] Desplegar `purchaseTheme` con los precios de Steampunk y Navidad (`firebase deploy --only functions:purchaseTheme`). Hasta entonces la tienda los muestra, pero el servidor rechaza la compra con `invalid-argument`.
+- [x] `purchaseTheme` desplegada con los precios de Steampunk y Navidad (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
 
 ## 1b. El proyecto en la organización de la empresa
 

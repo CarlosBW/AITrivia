@@ -45,17 +45,24 @@ service cloud.firestore {
     match /usernames/{usernameLower} {
       allow read: if request.auth != null;
 
+      // Only the name the account is taking in the same write: without the
+      // getAfter, one account could reserve any number of names.
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.usernameLower == usernameLower;
+        && request.resource.data.usernameLower == usernameLower
+        && usernameLower.size() >= 3 && usernameLower.size() <= 20
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.usernameLower == usernameLower;
 
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.usernameLower == usernameLower;
 
-      allow delete: if request.auth != null
-        && resource.data.uid == request.auth.uid;
+      // Names are permanent, and the account keeps showing it: released,
+      // it could be reserved by someone else and two players would share
+      // it. deleteMyAccount frees it with the Admin SDK.
+      allow delete: if false;
     }
 
     // Economy fields (coins/xp/rating/streaks/season/daily-challenge
@@ -94,7 +101,10 @@ service cloud.firestore {
         'pvpCoinsToday', 'pvpCoinsDate',
         'unlockedAvatars', 'dynamicAvatars', 'ownedThemes',
         'categoriesExploredCount', 'weeklyTopicsCompletedCount',
-        'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt'
+        'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt',
+        // Spent by createAiTopic on a real Claude generation: a client that
+        // could write it created topics for free.
+        'freeTopicPasses'
       ];
     }
 
@@ -188,6 +198,37 @@ service cloud.firestore {
     // derived text (league name/emoji/color) isn't worth hand-validating
     // here — getting one of those numbers wrong risks breaking real
     // sign-ups, and faking them grants no actual advantage.
+    // The default name every account starts with, derived from its own uid
+    // (user_bootstrap.dart's `defaultUsername`). It needs no reservation:
+    // nobody else can have it.
+    function isOwnDefaultUsernameLower(lower) {
+      return lower == ('player' + request.auth.uid[0:8]).lower();
+    }
+
+    // A user doc's name has to be one the account is entitled to: its own
+    // default, or one reserved to it in /usernames. displayName is shown
+    // next to it everywhere, so it has to be the same name. Before this,
+    // these fields were free text and anyone could appear in search and in
+    // other players' notifications under someone else's name.
+    function usernameFieldsValid() {
+      let d = request.resource.data;
+      return (!('usernameLower' in d) || (
+          ('username' in d) && d.username.lower() == d.usernameLower
+          && (isOwnDefaultUsernameLower(d.usernameLower)
+              || (existsAfter(/databases/$(database)/documents/usernames/$(d.usernameLower))
+                  && getAfter(/databases/$(database)/documents/usernames/$(d.usernameLower)).data.uid == request.auth.uid))))
+        && (!('displayName' in d) || !('username' in d)
+            || d.displayName == d.username);
+    }
+
+    // A name chosen in the picker is permanent ("No podrás cambiarlo
+    // después"); only the uid-derived default may be replaced.
+    function usernameChangeAllowed() {
+      return !('usernameLower' in resource.data)
+        || isOwnDefaultUsernameLower(resource.data.usernameLower)
+        || request.resource.data.usernameLower == resource.data.usernameLower;
+    }
+
     function newUserEconomyFieldsValid() {
       return (!('pvpRating' in request.resource.data) || request.resource.data.pvpRating == 1000)
         && (!('pvpLeagueId' in request.resource.data) || request.resource.data.pvpLeagueId == 'silver')
@@ -205,6 +246,7 @@ service cloud.firestore {
         && (!('lifeUnits' in request.resource.data) || request.resource.data.lifeUnits == 20)
         && (!('maxLifeUnits' in request.resource.data) || request.resource.data.maxLifeUnits == 20)
         && (!('lifeRegenSeconds' in request.resource.data) || request.resource.data.lifeRegenSeconds == 90)
+        && (!('freeTopicPasses' in request.resource.data) || request.resource.data.freeTopicPasses == 1)
         && (!('loginStreak' in request.resource.data) || request.resource.data.loginStreak == 1)
         && (!('gamesPlayed' in request.resource.data) || request.resource.data.gamesPlayed == 0)
         && (!('correctAnswers' in request.resource.data) || request.resource.data.correctAnswers == 0)
@@ -257,7 +299,8 @@ service cloud.firestore {
         && request.auth.uid == userId
         && request.resource.data.coins == 0
         && request.resource.data.xp == 0
-        && newUserEconomyFieldsValid();
+        && newUserEconomyFieldsValid()
+        && usernameFieldsValid();
 
       allow update: if request.auth != null
         && request.auth.uid == userId
@@ -265,7 +308,10 @@ service cloud.firestore {
             .hasAny(economyProtectedFields())
         && avatarIdFieldValid()
         && equippedFrameFieldValid()
-        && equippedThemeFieldValid();
+        && equippedThemeFieldValid()
+        && (!request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['username', 'usernameLower', 'displayName'])
+            || (usernameFieldsValid() && usernameChangeAllowed()));
 
       // Per-user data nobody else may read, in contrast to the user doc
       // above. Today that means the FCM push token: it lived on the user
@@ -537,11 +583,30 @@ service cloud.firestore {
     match /weekly_leagues/{weekId}/{leagueId}/{playerId} {
       allow read: if request.auth != null;
       allow create: if false;
+      // Only to mirror what the profile already wears: these used to be
+      // free, so a frame or avatar the player never unlocked could be shown
+      // on the board. Each changed field has to match the user doc, where
+      // the unlocks are enforced.
       allow update: if request.auth != null
         && request.auth.uid == playerId
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['username', 'displayName', 'avatarId', 'equippedFrame', 'updatedAt']);
+            .hasOnly(['username', 'displayName', 'avatarId', 'equippedFrame', 'updatedAt'])
+        && mirrorsProfile(['username', 'displayName', 'avatarId', 'equippedFrame']);
       allow delete: if false;
+    }
+
+    // Every field in [keys] this write changes equals the writer's own
+    // user doc.
+    function mirrorsProfile(keys) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return keys.toSet().intersection(changed).size() == 0
+        || (
+          (!changed.hasAny(['username']) || request.resource.data.username == profile.username)
+          && (!changed.hasAny(['displayName']) || request.resource.data.displayName == profile.displayName)
+          && (!changed.hasAny(['avatarId']) || request.resource.data.avatarId == profile.avatarId)
+          && (!changed.hasAny(['equippedFrame']) || request.resource.data.equippedFrame == profile.equippedFrame)
+        );
     }
 
     // Matches are 1v1 — only the two players in a match may read or write

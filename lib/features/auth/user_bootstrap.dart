@@ -185,8 +185,8 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   // first time any life-gated screen is opened.
   await ref.set(
     {
-      'freeTopicPasses': data['freeTopicPasses'] ?? 1,
-
+      // No `freeTopicPasses` backfill: it is server-owned now, and
+      // createAiTopic already treats a missing one as the first free pass.
       'username': username,
       'usernameLower': usernameLower,
       'displayName': displayName,

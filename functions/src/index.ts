@@ -33,7 +33,10 @@ import {
   calculateDailyStreakBonusCoins,
 } from "./rewards";
 import {
+  dateIdInTimeZone,
   isPlausibleDateId,
+  isStreakAtRisk,
+  loginStreakStep,
   weekIdForDateId,
 } from "./daily_challenge_dates";
 import {
@@ -52,7 +55,10 @@ import {
 } from "./ai_question_bank";
 import {
   TIMED_OUT_ANSWER,
+  isSoloRunSubmittable,
+  maxAnswersForElapsed,
   mergeRecordedAnswers,
+  scoreNewAnswers,
   sessionAfterSubmit,
 } from "./quiz_answers";
 import {
@@ -2084,6 +2090,8 @@ function clampToRange(
  * request, for the same reason `sendUserNotification` reads the sender's:
  * they are shown to the other player.
  */
+const MAX_WAITING_ASYNC_CHALLENGES = 10;
+
 export const createAsyncPvpMatch = onCall({
   // Selecting questions reads a whole category pool, which is slower than
   // a plain write — the client gives up well before this.
@@ -2127,6 +2135,33 @@ export const createAsyncPvpMatch = onCall({
 
   if (!challengedSnap.exists) {
     throw new HttpsError("not-found", "That player no longer exists.");
+  }
+
+  // Each challenge pushes a notification to the challenged player, and an
+  // unanswered one can be won by forfeit a week later. Unbounded, that was
+  // a way to spam anyone and to farm forfeit wins against inactive
+  // players, so a player may have only so many waiting at once, and one
+  // per opponent.
+  const waiting = db.collection("async_matches")
+    .where("challengerUid", "==", uid)
+    .where("status", "==", "waiting_challenged");
+  const [waitingCount, waitingForThisPlayer] = await Promise.all([
+    waiting.count().get(),
+    waiting.where("challengedUid", "==", challengedUid).limit(1).get(),
+  ]);
+  if (!waitingForThisPlayer.empty) {
+    throw await localizedErrorFor(
+      uid, "already-exists",
+      "Ya tienes un reto pendiente con este jugador",
+      "You already have a pending challenge with this player"
+    );
+  }
+  if (waitingCount.data().count >= MAX_WAITING_ASYNC_CHALLENGES) {
+    throw await localizedErrorFor(
+      uid, "resource-exhausted",
+      "Tienes demasiados retos sin responder. Espera a que los jueguen.",
+      "You have too many unanswered challenges. Wait for them to be played."
+    );
   }
 
   if (categoryId !== "random") {
@@ -2550,7 +2585,6 @@ async function forfeitStaleAsyncMatch(
 
     if (!data) return;
     if (data.rewarded === true) return;
-    if (data.status === "declined") return;
 
     const challengerFinished = data.challengerStatus === "finished";
     const challengedFinished = data.challengedStatus === "finished";
@@ -2558,7 +2592,17 @@ async function forfeitStaleAsyncMatch(
     // Only forfeit the one-sided case — if neither side ever played,
     // there's nothing to award; if both finished, finalizeAsyncPvpMatch's
     // own trigger already handled it and rewarded would be true by now.
-    if (challengerFinished === challengedFinished) return;
+    // A declined or never-played match is still closed off as settled:
+    // left `rewarded: false`, it matched the sweep's query forever, and
+    // once a hundred of them piled up the oldest-first page held nothing
+    // else and real forfeits were never reached.
+    if (
+      data.status === "declined" ||
+      challengerFinished === challengedFinished
+    ) {
+      tx.update(matchRef, {rewarded: true});
+      return;
+    }
 
     const winnerUid = String(
       challengerFinished ? data.challengerUid : data.challengedUid
@@ -2640,12 +2684,13 @@ async function forfeitStaleAsyncMatch(
       challengerFinished ?
         data.challengedDisplayName : data.challengerDisplayName
     ) || "Player";
-    const winnerScore = safeInt(
-      challengerFinished ? data.challengerScore : data.challengedScore, 0
-    );
-    const loserScore = safeInt(
-      challengerFinished ? data.challengedScore : data.challengerScore, 0
-    );
+    // Scores live under each side's map (`challenger.score`), which is
+    // what finishAsyncPvpMatch writes; the flat names never existed, so a
+    // forfeit always went into the history as 0–0.
+    const challengerScore = safeInt(data.challenger?.score, 0);
+    const challengedScore = safeInt(data.challenged?.score, 0);
+    const winnerScore = challengerFinished ? challengerScore : challengedScore;
+    const loserScore = challengerFinished ? challengedScore : challengerScore;
 
     tx.set(
       winnerRef.collection("match_history").doc(matchId),
@@ -3106,8 +3151,17 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       );
     }
 
+    // No more answers than the time since the server started the round
+    // allows — see maxAnswersForElapsed.
+    const startedAt = dailySnap.data()?.startedAt as
+      admin.firestore.Timestamp | undefined;
+    const answerCap = startedAt ? maxAnswersForElapsed(
+      Date.now() - startedAt.toMillis(), DAILY_QUESTION_LIMIT
+    ) : DAILY_QUESTION_LIMIT;
+
     const {correct, totalAnswered} = computeVerifiedQuizResult(
-      dailySnap.data()?.questions, answers, DAILY_QUESTION_LIMIT
+      dailySnap.data()?.questions, answers.slice(0, answerCap),
+      DAILY_QUESTION_LIMIT
     );
     const coinsEarned = calculateDailyCoinsEarned(correct);
 
@@ -3820,7 +3874,9 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
   const participationSnap = await userRef
     .collection("weekly_participation")
     .orderBy("weekId", "desc")
-    .limit(8)
+    // Half a year: a player who comes back after a long break still gets
+    // the weeks they earned. It used to be 8, and older weeks went unpaid.
+    .limit(26)
     .get();
 
   const historySnap = await userRef.collection("season_history").get();
@@ -3878,40 +3934,50 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
     return {claimedCount: 0, totalCoins: 0};
   }
 
-  const batch = db.batch();
-  let totalCoins = 0;
-
-  for (const reward of pending) {
-    const historyRef = userRef.collection("season_history").doc(
-      reward.seasonId
+  // Claimed in a transaction that re-reads each week's history doc: the
+  // reads above happen outside one, so two calls at once both saw a week
+  // as unclaimed and both paid it.
+  return db.runTransaction(async (tx) => {
+    const historyRefs = pending.map((reward) =>
+      userRef.collection("season_history").doc(reward.seasonId)
+    );
+    const historyNow = await tx.getAll(...historyRefs);
+    const unclaimed = pending.filter(
+      (_, i) => historyNow[i].data()?.claimed !== true
     );
 
-    batch.set(historyRef, {
-      seasonId: reward.seasonId,
-      leagueId: reward.leagueId,
-      leagueName: reward.leagueName,
-      rank: reward.rank,
-      weeklyScore: reward.weeklyScore,
-      rewardCoins: reward.rewardCoins,
-      rewardMessage: reward.rewardMessage,
-      claimed: true,
-      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, {merge: true});
+    let totalCoins = 0;
 
-    totalCoins += reward.rewardCoins;
-  }
+    for (const reward of unclaimed) {
+      const historyRef = userRef.collection("season_history").doc(
+        reward.seasonId
+      );
 
-  if (totalCoins > 0) {
-    batch.set(userRef, {
-      coins: admin.firestore.FieldValue.increment(totalCoins),
-      lastSeasonRewardClaimed: pending[pending.length - 1].seasonId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, {merge: true});
-  }
+      tx.set(historyRef, {
+        seasonId: reward.seasonId,
+        leagueId: reward.leagueId,
+        leagueName: reward.leagueName,
+        rank: reward.rank,
+        weeklyScore: reward.weeklyScore,
+        rewardCoins: reward.rewardCoins,
+        rewardMessage: reward.rewardMessage,
+        claimed: true,
+        claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
 
-  await batch.commit();
+      totalCoins += reward.rewardCoins;
+    }
 
-  return {claimedCount: pending.length, totalCoins};
+    if (totalCoins > 0) {
+      tx.set(userRef, {
+        coins: admin.firestore.FieldValue.increment(totalCoins),
+        lastSeasonRewardClaimed: unclaimed[unclaimed.length - 1].seasonId,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
+
+    return {claimedCount: unclaimed.length, totalCoins};
+  });
 });
 
 /**
@@ -4068,29 +4134,44 @@ export const sendUserNotification = onCall(async (request) => {
   );
 
   const senderData = senderSnap.data() || {};
+  // The reserved username, not `displayName`: that one is free text the
+  // client writes, and it went straight into another player's push.
   const senderName = String(
-    senderData.displayName || senderData.username || "?"
-  );
+    senderData.username || senderData.displayName || "?"
+  ).slice(0, 20);
 
   const {title, body} = crossUserNotificationText(
     type, targetSnap.data()?.languageCode, senderName
   );
 
-  await db.collection("users").doc(targetUid)
-    .collection("notifications").add({
-      type,
-      title,
-      body,
-      // Only the ids the app routes on — anything else the caller sent is
-      // dropped rather than echoed into the recipient's document.
-      data: {
-        ...(data.matchId ? {matchId: String(data.matchId)} : {}),
-        ...(data.inviteId ? {inviteId: String(data.inviteId)} : {}),
-        ...(data.fromUid ? {fromUid: String(data.fromUid)} : {}),
-      },
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  // One notification per sender, type and match or invite, ever. With an
+  // auto-id, the same friend request could be re-announced on every call:
+  // an unlimited stream of pushes to anyone a request had been sent to.
+  const notificationId = [
+    type, uid, String(data.matchId || data.inviteId || ""),
+  ].join("__");
+
+  try {
+    await db.collection("users").doc(targetUid)
+      .collection("notifications").doc(notificationId).create({
+        type,
+        title,
+        body,
+        // Only the ids the app routes on — anything else the caller sent is
+        // dropped rather than echoed into the recipient's document.
+        data: {
+          ...(data.matchId ? {matchId: String(data.matchId)} : {}),
+          ...(data.inviteId ? {inviteId: String(data.inviteId)} : {}),
+          ...(data.fromUid ? {fromUid: String(data.fromUid)} : {}),
+        },
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+  } catch (error) {
+    // Already sent once: not an error for the caller, just nothing new.
+    if ((error as {code?: number}).code === 6) return {sent: false};
+    throw error;
+  }
 
   return {sent: true};
 });
@@ -4152,10 +4233,9 @@ const STREAK_NOTIFY_PAGE_SIZE = 400;
 export const notifyStreakAtRisk = onSchedule(
   {schedule: "0 19 * * *", timeZone: "America/Lima"},
   async () => {
-    const now = new Date();
-    const dateId = `${now.getFullYear()}-${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // The date in the zone the job is scheduled in, not UTC — see
+    // dateIdInTimeZone.
+    const dateId = dateIdInTimeZone(Date.now(), "America/Lima");
 
     // Paged rather than one unbounded read: every player with a live streak
     // matches this query, so a single `.get()` grows with the whole active
@@ -4182,7 +4262,7 @@ export const notifyStreakAtRisk = onSchedule(
 
       for (const doc of snap.docs) {
         const data = doc.data();
-        if (data.lastDailyPlayed === dateId) continue;
+        if (!isStreakAtRisk(data.lastDailyPlayed, dateId)) continue;
 
         const streak = safeInt(data.dailyStreak, 0);
 
@@ -4250,7 +4330,7 @@ export const claimLoginStreakBonus = onCall(async (request) => {
   }
 
   const todayDateId = String(request.data?.todayDateId || "");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(todayDateId)) {
+  if (!isPlausibleDateId(todayDateId, serverDateId())) {
     throw new HttpsError("invalid-argument", "Invalid todayDateId.");
   }
 
@@ -4264,7 +4344,13 @@ export const claimLoginStreakBonus = onCall(async (request) => {
       String(data.lastLoginDate) : null;
     const previousStreak = safeInt(data.loginStreak, 0);
 
-    if (lastLoginDate === todayDateId) {
+    const step = loginStreakStep(
+      lastLoginDate, previousStreak, todayDateId, serverDateId()
+    );
+    if (step.status === "invalid") {
+      throw new HttpsError("invalid-argument", "Invalid todayDateId.");
+    }
+    if (step.status === "already") {
       return {
         streak: previousStreak,
         coinsEarned: 0,
@@ -4272,8 +4358,7 @@ export const claimLoginStreakBonus = onCall(async (request) => {
       };
     }
 
-    const newStreak = lastLoginDate && isYesterday(lastLoginDate, todayDateId) ?
-      previousStreak + 1 : 1;
+    const newStreak = step.streak;
 
     const coinsEarned = loginStreakBonusCoins(newStreak);
 
@@ -4426,6 +4511,14 @@ export const submitSoloLevelResult = onCall(async (request) => {
     const sessionQuestions = sessionData?.questions;
     const total = Array.isArray(sessionQuestions) ?
       sessionQuestions.length : 0;
+
+    if (!isSoloRunSubmittable(
+      sessionData?.answers as Record<string, unknown> | undefined,
+      sessionData?.runStartedAtMs as number | undefined,
+      Date.now()
+    )) {
+      throw new HttpsError("failed-precondition", "No run to submit.");
+    }
 
     // Answers banked by `recordSoloLevelAnswer` as the player went beat
     // whatever the client reports now — that is what stops a player from
@@ -5010,7 +5103,12 @@ export const recordSoloLevelAnswer = onCall(async (request) => {
       throw new HttpsError("invalid-argument", "Question out of range.");
     }
 
-    tx.set(sessionRef, {answers: {[key]: selectedIndex}}, {merge: true});
+    // The first answer of a run starts its clock — see isSoloRunSubmittable.
+    const startsRun = Object.keys(banked).length === 0;
+    tx.set(sessionRef, {
+      answers: {[key]: selectedIndex},
+      ...(startsRun ? {runStartedAtMs: Date.now()} : {}),
+    }, {merge: true});
 
     return {answers: {...banked, [key]: selectedIndex}};
   });
@@ -5427,40 +5525,6 @@ export const consumeWrongAnswerLife = onCall(async (request) => {
     return {lifeLost: true, ...lifeStateResponse(stateAfterSpend(state,
       spend.newUnits, newTickMs))};
   });
-});
-
-/**
- * Refunds a level-entry charge (see consumeLevelEntryLife) when session
- * creation fails after the life was already spent, so the player isn't
- * left with nothing to show for it — mirrors life_service.dart's
- * `refundLevelEntry`.
- */
-export const refundLevelEntryLife = onCall(async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Sign-in required.");
-  }
-
-  const userRef = db.collection("users").doc(uid);
-
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(userRef);
-    const data = snap.data() || {};
-    const state = computeLifeState(data, Date.now());
-
-    const newUnits = Math.min(
-      state.lifeUnits + LEVEL_ENTRY_COST_UNITS, state.maxLifeUnits
-    );
-
-    tx.set(userRef, {
-      lifeUnits: newUnits,
-      maxLifeUnits: state.maxLifeUnits,
-      lifeRegenSeconds: state.lifeRegenSeconds,
-      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(state.lastTickMs),
-    }, {merge: true});
-  });
-
-  return {ok: true};
 });
 
 export const buyFullLife = onCall(async (request) => {
@@ -6956,6 +7020,9 @@ async function describeSuggestedTitles(
  * `createAiTopic` still does the real (transactional) reuse-or-generate
  * decision once the user actually picks a title.
  */
+// The same 60 the create screen's text field allows and createAiTopic checks.
+const AI_TOPIC_TITLE_MAX_LENGTH = 60;
+
 export const findSimilarAiTopics = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -6965,9 +7032,10 @@ export const findSimilarAiTopics = onCall(async (request) => {
   await assertAiTopicCapAvailable(uid);
 
   const cleanTitle = String(request.data?.title || "").trim();
-  if (cleanTitle.length < 3) {
-    // Too short to search meaningfully — this is a search, not a hard
-    // submit, so return no matches rather than erroring.
+  if (cleanTitle.length < 3 || cleanTitle.length > AI_TOPIC_TITLE_MAX_LENGTH) {
+    // Too short to search meaningfully, or longer than any title the app
+    // lets a player type — this is a search, not a hard submit, so return
+    // no matches rather than erroring.
     return {blocked: false, matches: []};
   }
 
@@ -7068,6 +7136,11 @@ export const suggestAiTopicTitles = onCall({
       "Escribe un tema más específico.",
       "Write a more specific topic."
     );
+  }
+  // The meter counts calls, not tokens: an unbounded title made each
+  // metered call as large a paid prompt as the caller liked.
+  if (cleanTitle.length > AI_TOPIC_TITLE_MAX_LENGTH) {
+    throw new HttpsError("invalid-argument", "Title too long.");
   }
 
   const moderationKey = normalizeForModeration(cleanTitle);
@@ -8097,6 +8170,10 @@ export const ensureAiTopicLevelsGenerated = onCall({
  * actually generated fine can't be refunded — only Cloud Functions may
  * write `status`, so that check is authoritative.
  */
+// "blocked": a later level was refused after the topic was paid for.
+// "failed"/"invalid": left over from the old client-side generation flow.
+const REFUNDABLE_AI_TOPIC_STATUSES = new Set(["blocked", "failed", "invalid"]);
+
 export const refundAiTopicCost = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -8116,10 +8193,14 @@ export const refundAiTopicCost = onCall(async (request) => {
     const topicSnap = await tx.get(topicRef);
     const topicData = topicSnap.data();
 
+    // Only the statuses the server itself sets when a paid topic stops
+    // working. `"deleted"` is the one status a client may write, and the
+    // guard used to be "anything but ready": marking a topic that worked
+    // fine as deleted, then calling this, refunded a topic already played.
     if (
       !topicData ||
       topicData.costRefunded === true ||
-      topicData.status === "ready"
+      !REFUNDABLE_AI_TOPIC_STATUSES.has(String(topicData.status))
     ) {
       return {refunded: false};
     }
@@ -8497,19 +8578,18 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
       .collection("questions").doc(a.questionId).get()
   ));
 
-  let correct = 0;
-  const answeredQuestionIds: string[] = [];
+  const judged: {questionId: string; correct: boolean}[] = [];
 
   answers.forEach((a, i) => {
     const data = questionSnaps[i].data();
     if (!data) return;
 
-    answeredQuestionIds.push(a.questionId);
     const correctIndex = safeInt(data.answerIndex ?? data.correctIndex, -1);
-    if (a.selectedIndex === correctIndex) correct++;
+    judged.push({
+      questionId: a.questionId,
+      correct: a.selectedIndex === correctIndex,
+    });
   });
-
-  const totalAnswered = answeredQuestionIds.length;
 
   const userRef = db.collection("users").doc(uid);
   const participationRef = userRef
@@ -8519,13 +8599,18 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
     const snap = await tx.get(participationRef);
     const data = snap.data() || {};
 
-    const newCorrectAnswers = safeInt(data.correctAnswers, 0) + correct;
-    const newTotalAnswered = safeInt(data.totalAnswered, 0) + totalAnswered;
-
     const usedQuestionIds = new Set<string>(
       ((data.usedQuestionIds as unknown[]) || []).map((e) => String(e))
     );
-    answeredQuestionIds.forEach((id) => usedQuestionIds.add(id));
+    // Each question counts once per week — see scoreNewAnswers.
+    const round = scoreNewAnswers(judged, usedQuestionIds);
+    const correct = round.correct;
+    const totalAnswered = round.answered;
+
+    const newCorrectAnswers = safeInt(data.correctAnswers, 0) + correct;
+    const newTotalAnswered = safeInt(data.totalAnswered, 0) + totalAnswered;
+
+    round.questionIds.forEach((id) => usedQuestionIds.add(id));
 
     tx.set(
       participationRef,

@@ -75,3 +75,80 @@ export function weekIdForDateId(dateId: string): string {
   date.setUTCDate(date.getUTCDate() - (isoWeekday - 1));
   return date.toISOString().slice(0, 10);
 }
+
+/** What a login-streak claim should do — see [loginStreakStep]. */
+export type LoginStreakStep =
+  | {status: "invalid"}
+  | {status: "already"}
+  | {status: "advance"; streak: number};
+
+/**
+ * Decides a daily login-streak claim.
+ *
+ * The client sends its own calendar date, and that date is what the
+ * streak is keyed on. It used to be checked for shape only, so a script
+ * could claim tomorrow, then the day after, and collect a streak bonus on
+ * every call. It now has to sit within [MAX_CLIENT_DATE_SKEW_DAYS] of the
+ * server's date, and a claim never moves the streak backwards — a device
+ * a day ahead that already claimed tomorrow gets nothing new today.
+ * @param {string|null} lastLoginDate The last claimed date, if any.
+ * @param {number} previousStreak The streak as stored.
+ * @param {string} todayDateId Client-supplied date id.
+ * @param {string} serverToday The server's own `YYYY-MM-DD` date.
+ * @return {LoginStreakStep} What to do with the claim.
+ */
+export function loginStreakStep(
+  lastLoginDate: string | null,
+  previousStreak: number,
+  todayDateId: string,
+  serverToday: string
+): LoginStreakStep {
+  if (!isPlausibleDateId(todayDateId, serverToday)) {
+    return {status: "invalid"};
+  }
+
+  const last = lastLoginDate ? parseDateId(lastLoginDate) : NaN;
+  if (Number.isNaN(last)) return {status: "advance", streak: 1};
+
+  const days = Math.round((parseDateId(todayDateId) - last) / 86400000);
+  if (days <= 0) return {status: "already"};
+  return {status: "advance", streak: days === 1 ? previousStreak + 1 : 1};
+}
+
+/**
+ * The `YYYY-MM-DD` calendar date at [epochMs] in [timeZone].
+ *
+ * Functions run in UTC, so `new Date().getDate()` is the UTC date. A job
+ * scheduled for 19:00 in Lima runs at midnight UTC, when that is already
+ * tomorrow.
+ * @param {number} epochMs The instant.
+ * @param {string} timeZone An IANA zone, e.g. "America/Lima".
+ * @return {string} The date id in that zone.
+ */
+export function dateIdInTimeZone(epochMs: number, timeZone: string): string {
+  // en-CA formats dates as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(epochMs));
+}
+
+/**
+ * Whether a player whose last daily play was [lastDailyPlayed] still has a
+ * streak to lose today: they played yesterday and not yet today.
+ * @param {string|undefined} lastDailyPlayed Stored last play date.
+ * @param {string} today Today's date id.
+ * @return {boolean} True if a reminder makes sense.
+ */
+export function isStreakAtRisk(
+  lastDailyPlayed: string | undefined,
+  today: string
+): boolean {
+  if (!lastDailyPlayed) return false;
+  const last = parseDateId(lastDailyPlayed);
+  const now = parseDateId(today);
+  if (Number.isNaN(last) || Number.isNaN(now)) return false;
+  return Math.round((now - last) / 86400000) === 1;
+}

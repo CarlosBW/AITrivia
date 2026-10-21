@@ -81,7 +81,47 @@ export function sessionAfterSubmit(
 ): Record<string, unknown> {
   const rest = {...session};
   delete rest.answers;
+  delete rest.runStartedAtMs;
   return rest;
+}
+
+/**
+ * The fastest a run's answers may be banked: about one per second.
+ *
+ * Nobody reads a question and four options in less, and it is far below
+ * any real player, so it only ever stops a script.
+ */
+export const MIN_MS_BETWEEN_BANKED_ANSWERS = 800;
+
+/**
+ * Whether a Solo session holds a run that may be submitted: at least one
+ * answer banked since the last submission, and banked no faster than
+ * [MIN_MS_BETWEEN_BANKED_ANSWERS] apart on average.
+ *
+ * A fixed-category session outlives its submission, so without this a
+ * script could submit the same level in a loop — the answer key is
+ * readable — and collect XP and question stats on every call. Now each
+ * submission needs a new run, and a run takes real time to bank.
+ * @param {Record<string, unknown>|undefined} banked The session's banked
+ * `answers` map.
+ * @param {number|undefined} runStartedAtMs When the run's first answer was
+ * banked.
+ * @param {number} nowMs The submission time.
+ * @return {boolean} True if the run may be scored.
+ */
+export function isSoloRunSubmittable(
+  banked: Record<string, unknown> | undefined,
+  runStartedAtMs: number | undefined,
+  nowMs: number
+): boolean {
+  const count = banked ? Object.keys(banked).length : 0;
+  if (count === 0) return false;
+  if (count === 1) return true;
+  // Only the server stamps it, on a run's first banked answer: a missing
+  // one is a session from before the clock existed, not a forged run.
+  if (typeof runStartedAtMs !== "number") return true;
+  return nowMs - runStartedAtMs >=
+    (count - 1) * MIN_MS_BETWEEN_BANKED_ANSWERS;
 }
 
 /**
@@ -109,4 +149,53 @@ export function resumeIndexFromBanked(
   }
 
   return deepest + 1;
+}
+
+/** One judged answer of a round, by question. */
+export type JudgedAnswer = {questionId: string; correct: boolean};
+
+/**
+ * Scores a Weekly Topic round, counting each question once per week.
+ *
+ * Questions already in [used] — answered in an earlier round this week —
+ * and repeats within the same round are skipped. Without that, one known
+ * question submitted over and over reached the weekly completion reward.
+ * @param {JudgedAnswer[]} judged The round's answers, already judged.
+ * @param {Set<string>} used Question ids already counted this week.
+ * @return {{correct: number, answered: number, questionIds: string[]}}
+ * What the round adds.
+ */
+export function scoreNewAnswers(
+  judged: JudgedAnswer[],
+  used: Set<string>
+): {correct: number; answered: number; questionIds: string[]} {
+  const seen = new Set(used);
+  const questionIds: string[] = [];
+  let correct = 0;
+
+  for (const answer of judged) {
+    if (seen.has(answer.questionId)) continue;
+    seen.add(answer.questionId);
+    questionIds.push(answer.questionId);
+    if (answer.correct) correct++;
+  }
+
+  return {correct, answered: questionIds.length, questionIds};
+}
+
+/**
+ * How many answers a timed round started [elapsedMs] ago can honestly
+ * hold: one per [MIN_MS_BETWEEN_BANKED_ANSWERS], at most [limit].
+ *
+ * The Daily Challenge clock runs on the device and its answer key is
+ * readable, so without a server-side bound a script submitted every
+ * question correct the moment the round opened.
+ * @param {number} elapsedMs Time since the round's server start.
+ * @param {number} limit The round's question count.
+ * @return {number} The most answers to score.
+ */
+export function maxAnswersForElapsed(elapsedMs: number, limit: number): number {
+  const byTime = Math.floor(Math.max(0, elapsedMs) /
+    MIN_MS_BETWEEN_BANKED_ANSWERS) + 1;
+  return Math.min(limit, byTime);
 }

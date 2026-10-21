@@ -824,15 +824,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           );
                           _kickAiBuffer();
                         } catch (e) {
-                          // Only if it was really taken. The entry cost is
-                          // now charged on the first answer, so session
-                          // creation normally fails before any life moved —
-                          // refunding unconditionally here would have handed
-                          // the player a life they never paid.
-                          if (_entryCharged) {
-                            await LifeService.instance.refundLevelEntry(uid);
-                            _entryCharged = false;
-                          }
+                          // No life to give back: the entry cost is charged
+                          // on the first answer, and there is no answer
+                          // without a session.
                           // Just the message: `e.toString()` on a
                           // FirebaseFunctionsException drags the whole
                           // async stack trace onto the screen, which the

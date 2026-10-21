@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import {
   MAX_CLIENT_DATE_SKEW_DAYS,
+  dateIdInTimeZone,
   isPlausibleDateId,
+  isStreakAtRisk,
+  loginStreakStep,
   parseDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
@@ -113,5 +116,90 @@ describe("weekIdForDateId", () => {
 
   test("is stable across a month boundary", () => {
     assert.equal(weekIdForDateId("2026-08-01"), "2026-07-27");
+  });
+});
+
+describe("loginStreakStep", () => {
+  const server = "2026-10-21";
+
+  test("advances the streak on the day after the last login", () => {
+    assert.deepEqual(
+      loginStreakStep("2026-10-20", 4, "2026-10-21", server),
+      {status: "advance", streak: 5}
+    );
+  });
+
+  test("restarts at 1 after a missed day or on a first login", () => {
+    assert.deepEqual(
+      loginStreakStep("2026-10-18", 4, "2026-10-21", server),
+      {status: "advance", streak: 1}
+    );
+    assert.deepEqual(
+      loginStreakStep(null, 0, "2026-10-21", server),
+      {status: "advance", streak: 1}
+    );
+  });
+
+  test("does nothing twice on the same day", () => {
+    assert.deepEqual(
+      loginStreakStep("2026-10-21", 4, "2026-10-21", server),
+      {status: "already"}
+    );
+  });
+
+  // The hole: the date came from the client and was only shape-checked, so
+  // a script could claim tomorrow, the day after, and so on, collecting a
+  // streak bonus per call.
+  test("refuses a date far from the server's own", () => {
+    for (const forged of ["2026-10-23", "2027-01-01", "2026-10-19"]) {
+      assert.deepEqual(
+        loginStreakStep("2026-10-20", 4, forged, server),
+        {status: "invalid"},
+        forged
+      );
+    }
+  });
+
+  test("never moves backwards", () => {
+    // A device a day ahead claimed tomorrow already; today is not new.
+    assert.deepEqual(
+      loginStreakStep("2026-10-22", 5, "2026-10-21", server),
+      {status: "already"}
+    );
+  });
+
+  test("refuses malformed dates", () => {
+    assert.deepEqual(
+      loginStreakStep(null, 0, "2026-02-30", server),
+      {status: "invalid"}
+    );
+  });
+});
+
+describe("dateIdInTimeZone", () => {
+  // 19:00 in Lima is already midnight in UTC: the reminder job runs then,
+  // and reading the date in UTC put it a day ahead of the players it was for.
+  test("reads the calendar date in the given zone, not UTC", () => {
+    const limaSevenPm = Date.parse("2026-10-22T00:00:00Z");
+    assert.equal(dateIdInTimeZone(limaSevenPm, "America/Lima"), "2026-10-21");
+    assert.equal(dateIdInTimeZone(limaSevenPm, "UTC"), "2026-10-22");
+  });
+});
+
+describe("isStreakAtRisk", () => {
+  const today = "2026-10-21";
+
+  test("only when the last play was yesterday", () => {
+    assert.equal(isStreakAtRisk("2026-10-20", today), true);
+  });
+
+  test("not when the player already played today", () => {
+    assert.equal(isStreakAtRisk("2026-10-21", today), false);
+  });
+
+  // Two days back the streak is already gone: there is nothing to save.
+  test("not when the streak is already lost", () => {
+    assert.equal(isStreakAtRisk("2026-10-18", today), false);
+    assert.equal(isStreakAtRisk(undefined, today), false);
   });
 });

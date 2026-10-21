@@ -259,18 +259,6 @@ class LifeService {
     );
   }
 
-  /// Refunds a level-entry charge (see [tryConsumeLevelEntry]) when session
-  /// creation fails after the life was already spent, so the player isn't
-  /// left with nothing to show for it.
-  Future<void> refundLevelEntry(String uid) async {
-    await FirebaseFunctions.instance
-        .httpsCallable(
-          'refundLevelEntryLife',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-        )
-        .call();
-  }
-
   /// `uid`/`cost` are kept for call-site compatibility but ignored — the
   /// exchange now happens server-side (Cloud Function `buyFullLife`) since
   /// `coins` is a protected field the client can no longer write directly.

@@ -112,20 +112,48 @@ test("rankings", async (t) => {
     );
   });
 
-  await t.test("sí puede actualizar su nombre en el ranking", async () => {
-    await sembrar(["weekly_leagues", "2026-09-01", "bronze", YO], {
-      weeklyScore: 10,
-      username: "Yo",
+  await t.test("sí puede poner en el ranking lo que lleva su perfil",
+    async () => {
+      await sembrar(["users", YO], {
+        username: "Nuevo", displayName: "Nuevo",
+        avatarId: "avatar_2", equippedFrame: "silver",
+      });
+      await sembrar(["weekly_leagues", "2026-09-01", "bronze", YO], {
+        weeklyScore: 10,
+        username: "Yo",
+      });
+
+      await assertSucceeds(
+        setDoc(
+          doc(como(YO), "weekly_leagues", "2026-09-01", "bronze", YO),
+          {
+            username: "Nuevo", displayName: "Nuevo",
+            avatarId: "avatar_2", equippedFrame: "silver",
+          },
+          {merge: true}
+        )
+      );
     });
 
-    await assertSucceeds(
-      setDoc(
-        doc(como(YO), "weekly_leagues", "2026-09-01", "bronze", YO),
-        {username: "Nuevo", displayName: "Nuevo"},
-        {merge: true}
-      )
-    );
-  });
+  // Antes aceptaba cualquier cosa: un marco o avatar no desbloqueado se
+  // lucía en el ranking.
+  await t.test("no puede lucir en el ranking lo que su perfil no lleva",
+    async () => {
+      await sembrar(["users", YO], {
+        username: "Yo", displayName: "Yo",
+        avatarId: "avatar_2", equippedFrame: "silver",
+      });
+      await sembrar(["weekly_leagues", "2026-09-01", "bronze", YO], {
+        weeklyScore: 10, username: "Yo",
+      });
+      const fila = doc(como(YO), "weekly_leagues", "2026-09-01", "bronze", YO);
+
+      await assertFails(setDoc(fila, {equippedFrame: "master"}, {merge: true}));
+      await assertFails(
+        setDoc(fila, {avatarId: "avatar_pvp_master"}, {merge: true})
+      );
+      await assertFails(setDoc(fila, {username: "Otro"}, {merge: true}));
+    });
 
   await t.test("no puede tocar la fila de otro jugador", async () => {
     await sembrar(["weekly_leagues", "2026-09-01", "bronze", RIVAL], {

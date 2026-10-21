@@ -19,10 +19,15 @@ const {
   assertSucceeds,
   assertFails,
 } = require("@firebase/rules-unit-testing");
-const {doc, getDoc, setDoc} = require("firebase/firestore");
+const {
+  doc, getDoc, setDoc, deleteDoc, runTransaction,
+} = require("firebase/firestore");
 
-const UID = "jugador";
+// Ocho caracteres o más, como un uid real: el nombre por defecto de una
+// cuenta sale de los ocho primeros (`Player` + uid, en user_bootstrap.dart).
+const UID = "jugador_0001";
 const OTRO = "otro_jugador";
+const NOMBRE_POR_DEFECTO = `Player${UID.slice(0, 8)}`;
 
 let env;
 
@@ -30,8 +35,10 @@ let env;
 function nuevoUsuario(extra = {}) {
   return {
     uid: UID,
-    username: "Jugador",
-    usernameLower: "jugador",
+    username: NOMBRE_POR_DEFECTO,
+    usernameLower: NOMBRE_POR_DEFECTO.toLowerCase(),
+    displayName: NOMBRE_POR_DEFECTO,
+    freeTopicPasses: 1,
     coins: 0,
     xp: 0,
     pvpRating: 1000,
@@ -121,6 +128,15 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  await t.test("no puede empezar con más de un pase gratis", async () => {
+    await assertFails(
+      setDoc(
+        doc(comoJugador(), "users", UID),
+        nuevoUsuario({freeTopicPasses: 50})
+      )
+    );
+  });
+
   await t.test("no puede desbloquear temas al crearse", async () => {
     await assertFails(
       setDoc(
@@ -161,12 +177,14 @@ test("la economía es solo del servidor", async (t) => {
     });
   }
 
-  await t.test("sí puede cambiar su nombre", async () => {
+  // Los pases gratis de tema IA se gastan en una generación real de Claude.
+  // Antes no estaban protegidos: un cliente se ponía 9999.
+  await t.test("no puede darse pases gratis de tema IA", async () => {
     await sembrar(nuevoUsuario());
-    await assertSucceeds(
+    await assertFails(
       setDoc(
         doc(comoJugador(), "users", UID),
-        {username: "Nuevo", usernameLower: "nuevo"},
+        {freeTopicPasses: 9999},
         {merge: true}
       )
     );
@@ -325,5 +343,92 @@ test("la subcolección privada", async (t) => {
         )
       )
     );
+  });
+});
+
+// El nombre de usuario era texto libre: cualquiera podía aparecer en la
+// búsqueda y en las notificaciones de otros con el nombre de otro, y una
+// cuenta podía reservar todos los nombres que quisiera.
+test("nombre de usuario", async (t) => {
+  const elegido = (nombre) => ({
+    username: nombre, usernameLower: nombre.toLowerCase(), displayName: nombre,
+  });
+  const reservar = async (nombre, uid) => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "usernames", nombre.toLowerCase()),
+        {uid, username: nombre, usernameLower: nombre.toLowerCase()});
+    });
+  };
+
+  await t.test("elige un nombre reservándolo en la misma escritura", async () => {
+    const db = comoJugador();
+    await assertSucceeds(runTransaction(db, async (tx) => {
+      tx.set(doc(db, "users", UID), nuevoUsuario(elegido("Alicia")));
+      tx.set(doc(db, "usernames", "alicia"),
+        {uid: UID, username: "Alicia", usernameLower: "alicia"});
+    }));
+  });
+
+  await t.test("no puede usar un nombre sin reservarlo", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID), nuevoUsuario(elegido("Carla")))
+    );
+  });
+
+  await t.test("no puede usar un nombre que reservó otro", async () => {
+    await reservar("Alicia", OTRO);
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID), nuevoUsuario(elegido("Alicia")))
+    );
+  });
+
+  await t.test("no puede hacerse pasar por el nombre por defecto de otro",
+    async () => {
+      await assertFails(
+        setDoc(doc(comoJugador(), "users", UID),
+          nuevoUsuario(elegido(`Player${OTRO.slice(0, 8)}`)))
+      );
+    });
+
+  await t.test("el nombre visible es el nombre de usuario", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({displayName: "Soporte oficial TriviaIA"}))
+    );
+  });
+
+  await t.test("no puede reservar nombres que no usa", async () => {
+    await sembrar(nuevoUsuario());
+    await assertFails(
+      setDoc(doc(comoJugador(), "usernames", "admin"),
+        {uid: UID, username: "admin", usernameLower: "admin"})
+    );
+  });
+
+  await t.test("cambia el nombre por defecto por uno que reserva", async () => {
+    await sembrar(nuevoUsuario());
+    const db = comoJugador();
+    await assertSucceeds(runTransaction(db, async (tx) => {
+      tx.set(doc(db, "users", UID), elegido("Nuevo"), {merge: true});
+      tx.set(doc(db, "usernames", "nuevo"),
+        {uid: UID, username: "Nuevo", usernameLower: "nuevo"});
+    }));
+  });
+
+  // "No podrás cambiarlo después", dice el selector de nombre.
+  await t.test("no puede cambiar un nombre ya elegido", async () => {
+    await sembrar(nuevoUsuario(elegido("Alicia")));
+    await reservar("Alicia", UID);
+    const db = comoJugador();
+    await assertFails(runTransaction(db, async (tx) => {
+      tx.set(doc(db, "users", UID), elegido("Zoe"), {merge: true});
+      tx.set(doc(db, "usernames", "zoe"),
+        {uid: UID, username: "Zoe", usernameLower: "zoe"});
+    }));
+  });
+
+  await t.test("no puede liberar su reserva para otro", async () => {
+    await reservar("Alicia", UID);
+    await assertFails(deleteDoc(doc(comoJugador(), "usernames", "alicia")));
   });
 });

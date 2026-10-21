@@ -40,6 +40,9 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
 
   String? _leaderboardKey;
 
+  /// See [WeeklyLeagueService.weekLeagueId].
+  String? _weekLeagueId;
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +65,12 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
 
     _hasPendingRewardsFuture =
         _seasonService.hasPendingSeasonRewards(uid: uid);
+
+    _weeklyService
+        .weekLeagueId(uid: uid, weekId: _weeklyService.currentWeekId())
+        .then((id) {
+      if (mounted && id != null) setState(() => _weekLeagueId = id);
+    }).catchError((_) {});
   }
 
   void _updateTimeLeft() {
@@ -187,8 +196,12 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
           final leagueScore =
               ((userData['leagueScore'] ?? 0) as num).toInt();
 
-          final league =
+          final scoreLeague =
               LeagueService.instance.getLeagueFromScore(leagueScore);
+          final league = LeagueService.leagues.firstWhere(
+            (l) => l.id == _weekLeagueId,
+            orElse: () => scoreLeague,
+          );
 
           final weekId = _weeklyService.currentWeekId();
 

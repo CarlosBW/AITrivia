@@ -43,6 +43,23 @@ class WeeklyLeagueService {
         .doc(uid);
   }
 
+  /// The league [uid] is playing [weekId] in, or null before their first
+  /// game of the week. Fixed for the whole week: a promotion takes effect
+  /// from the next one, so the board to show is this one, not the league
+  /// the player's total score now reaches.
+  Future<String?> weekLeagueId({
+    required String uid,
+    required String weekId,
+  }) async {
+    final snap = await _db
+        .collection('users')
+        .doc(uid)
+        .collection('weekly_participation')
+        .doc(weekId)
+        .get();
+    return snap.data()?['leagueId'] as String?;
+  }
+
   Query<Map<String, dynamic>> weeklyLeaderboardQuery({
     required String weekId,
     required String leagueId,

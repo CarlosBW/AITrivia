@@ -3114,6 +3114,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     const dailyStreakAchievementSnap = await tx.get(dailyStreakAchievementRef);
     const dailyStreak21AchievementSnap =
       await tx.get(dailyStreak21AchievementRef);
+    const weeklyParticipationSnap = await tx.get(weeklyParticipationRef);
 
     const alreadyPlayed = dailySnap.data()?.played === true;
 
@@ -3213,9 +3214,17 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     const totalLeagueScore = safeInt(userData.leagueScore, 0) + score;
     const league = getLeagueFromScore(totalLeagueScore);
 
+    // A week is played in one league: the one the player was in when the
+    // week began. Promotion takes effect from next week. Writing to the
+    // current league instead split a promoted player's score across two
+    // boards and left a stale row on the old one, while the reward claim
+    // ranked their whole week against the new board's partial scores.
+    const weekLeagueId = weeklyParticipationSnap.data()?.leagueId;
+    const weekLeague = LEAGUES.find((l) => l.id === weekLeagueId) ?? league;
+
     const weeklyRef = db
       .collection("weekly_leagues").doc(weekId)
-      .collection(league.id).doc(uid);
+      .collection(weekLeague.id).doc(uid);
 
     const wrongAnswers = Math.max(totalAnswered - correct, 0);
     const totalQuestionsAnswered = safeInt(userData.correctAnswers, 0) +
@@ -3305,8 +3314,8 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       equippedFrame: frameId,
       bestLeagueId,
       weekId,
-      leagueId: league.id,
-      leagueName: league.name,
+      leagueId: weekLeague.id,
+      leagueName: weekLeague.name,
       weeklyScore: admin.firestore.FieldValue.increment(score),
       level: newLevel,
       streak: newStreak,
@@ -3315,8 +3324,8 @@ export const submitDailyChallengeResult = onCall(async (request) => {
 
     tx.set(weeklyParticipationRef, {
       weekId,
-      leagueId: league.id,
-      leagueName: league.name,
+      leagueId: weekLeague.id,
+      leagueName: weekLeague.name,
       weeklyScore: admin.firestore.FieldValue.increment(score),
       lastDailyScore: score,
       level: newLevel,

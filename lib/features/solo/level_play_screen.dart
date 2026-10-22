@@ -11,6 +11,8 @@ import '../../services/player_level_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
+import '../../services/question_report_service.dart';
+import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
@@ -127,6 +129,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _levelFinished = false;
   int _finishedTotal = 0;
 
+  /// The finished level's questions, kept for the end-of-level review: an
+  /// AI level's session is deleted once the result is saved.
+  List<dynamic> _finishedQuestions = const [];
+
   int _lifeUnits = LifeService.defaultMaxLifeUnits;
   int _maxLifeUnits = LifeService.defaultMaxLifeUnits;
   int _lifeRegenSeconds = LifeService.defaultRegenSeconds;
@@ -189,8 +195,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   static const int _buyLifeCost = EconomyService.buyFullLifeCost;
   static const Duration _revealDelay = Duration(seconds: 1);
   static const Duration _switchDuration = Duration(milliseconds: 250);
-
-  bool _reportingQuestion = false;
 
   @override
   void initState() {
@@ -992,6 +996,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         // the session is consulted at all.
                         _levelFinished = true;
                         _finishedTotal = questions.length;
+                        _finishedQuestions = questions;
 
                         if (!_saved && !_saving) {
                           Future.microtask(
@@ -1003,7 +1008,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
                       final qMap = questions[_index] as Map<String, dynamic>;
                       final qText = (qMap['q'] ?? '').toString();
-                      final questionId = (qMap['questionId'] ?? '').toString();
 
                       List<String> options;
                       int answerIndex;
@@ -1077,7 +1081,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         child: _buildQuestionView(
                           key: ValueKey('q_$_index'),
                           qText: qText,
-                          questionId: questionId,
                           options: options,
                           answerIndex: answerIndex,
                           total: questions.length,
@@ -1229,145 +1232,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     );
   }
 
-  static const List<String> _reportReasonKeys = [
-    'wrong_answer',
-    'confusing',
-    'inappropriate',
-    'other',
-  ];
-
-  String _reportReasonLabel(AppLocalizations l10n, String key) {
-    switch (key) {
-      case 'wrong_answer':
-        return l10n.aiReportReasonWrongAnswer;
-      case 'confusing':
-        return l10n.aiReportReasonConfusing;
-      case 'inappropriate':
-        return l10n.aiReportReasonInappropriate;
-      default:
-        return l10n.aiReportReasonOther;
-    }
-  }
-
-  Future<void> _showReportQuestionDialog({
-    required String questionId,
-    required String questionText,
-  }) async {
-    final l10n = AppLocalizations.of(context);
-    String selectedReason = _reportReasonKeys.first;
-    final detailsController = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(l10n.aiReportDialogTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RadioGroup<String>(
-                groupValue: selectedReason,
-                onChanged: (value) {
-                  if (value == null) return;
-                  setDialogState(() => selectedReason = value);
-                },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _reportReasonKeys
-                      .map(
-                        (key) => RadioListTile<String>(
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          value: key,
-                          title: Text(_reportReasonLabel(l10n, key)),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: detailsController,
-                maxLength: 200,
-                decoration: InputDecoration(
-                  hintText: l10n.aiReportDialogDetailsHint,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(l10n.aiReportDialogCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(l10n.aiReportDialogSubmit),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    await _reportQuestion(
-      questionId: questionId,
-      questionText: questionText,
-      reason: selectedReason,
-      details: detailsController.text,
-    );
-  }
-
-  Future<void> _reportQuestion({
-    required String questionId,
-    required String questionText,
-    required String reason,
-    required String details,
-  }) async {
-    if (_reportingQuestion) return;
-    setState(() => _reportingQuestion = true);
-
-    try {
-      await FirebaseFunctions.instance
-          .httpsCallable(
-            'reportAiQuestion',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
-          .call({
-        'topicId': widget.aiTopicId,
-        'levelNumber': widget.levelNumber,
-        'questionId': questionId,
-        'questionText': questionText,
-        'reason': reason,
-        if (details.trim().isNotEmpty) 'details': details.trim(),
-      });
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).aiReportSent)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(userFacingError(AppLocalizations.of(context), e)),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _reportingQuestion = false);
-    }
-  }
-
   Widget _buildQuestionView({
     required Key key,
     required String qText,
-    required String questionId,
     required List<String> options,
     required int answerIndex,
     required int total,
@@ -1456,19 +1323,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                     ],
                   ),
                 ),
-                if (widget.isAiTopic && _locked && questionId.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: l10n.aiReportQuestionTooltip,
-                    onPressed: _reportingQuestion
-                        ? null
-                        : () => _showReportQuestionDialog(
-                              questionId: questionId,
-                              questionText: qText,
-                            ),
-                    icon: const Icon(Icons.flag_outlined),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 22),
@@ -1863,8 +1717,42 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                 ],
               ],
             ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _isNavigating ? null : _openReview,
+              icon: const Icon(Icons.flag_outlined),
+              label: Text(l10n.questionReviewButton),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _openReview() {
+    final review = reviewedQuestions(
+      questions: _finishedQuestions,
+      answers: _answers,
+      targetFor: (index, q) => widget.isAiTopic
+          ? {
+              'mode': 'ai',
+              'topicId': widget.aiTopicId,
+              'levelNumber': widget.levelNumber,
+              'questionId': (q['questionId'] ?? '').toString(),
+              'questionText': (q['q'] ?? '').toString(),
+            }
+          : {
+              'mode': 'solo',
+              'categoryId': widget.categoryId,
+              'levelNumber': widget.levelNumber,
+              'questionIndex': index,
+            },
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuestionReviewScreen(questions: review),
       ),
     );
   }

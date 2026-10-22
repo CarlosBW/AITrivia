@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../services/daily_challenge_service.dart';
+import '../../services/question_report_service.dart';
+import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import 'daily_leaderboard_screen.dart';
@@ -10,9 +12,13 @@ import '../../widgets/profile_avatar_button.dart';
 class DailyChallengeResultScreen extends StatelessWidget {
   final DailyChallengeSaveResult result;
 
+  /// The questions answered in this run, for "Review questions".
+  final List<ReviewedQuestion> reviewQuestions;
+
   const DailyChallengeResultScreen({
     super.key,
     required this.result,
+    this.reviewQuestions = const [],
   });
 
   @override
@@ -138,6 +144,24 @@ class DailyChallengeResultScreen extends StatelessWidget {
                   child: Text(l10n.dailyResultBackHome),
                 ),
               ),
+
+              if (reviewQuestions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => QuestionReviewScreen(
+                          questions: reviewQuestions,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.flag_outlined),
+                  label: Text(l10n.questionReviewButton),
+                ),
+              ],
             ],
           ),
         ),

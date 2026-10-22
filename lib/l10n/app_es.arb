@@ -347,7 +347,7 @@
   "soloStatusInProgress": "En curso",
   "soloStatusNew": "Nuevo",
   "soloStartButton": "Empezar",
-  "soloContinueLevel": "Continuar nivel {level}",
+  "soloContinueLevel": "Nivel {level}",
   "@soloContinueLevel": {
     "placeholders": {
       "level": {"type": "int"}
@@ -400,16 +400,6 @@
   "levelPlayWrongNoLives": "❌ Incorrecto - te quedaste sin vidas",
   "levelPlayWrongLostHalfLife": "❌ Incorrecto - perdiste media vida",
   "levelPlayWrongNoLifeLoss": "❌ Incorrecto - no perdiste vida",
-  "aiReportQuestionTooltip": "Reportar esta pregunta",
-  "aiReportDialogTitle": "¿Qué pasa con esta pregunta?",
-  "aiReportDialogDetailsHint": "Detalles adicionales (opcional)",
-  "aiReportDialogCancel": "Cancelar",
-  "aiReportDialogSubmit": "Enviar reporte",
-  "aiReportReasonWrongAnswer": "La respuesta marcada está mal",
-  "aiReportReasonConfusing": "Pregunta confusa o ambigua",
-  "aiReportReasonInappropriate": "Contenido inapropiado",
-  "aiReportReasonOther": "Otro motivo",
-  "aiReportSent": "Gracias, reportamos la pregunta.",
   "levelPlayNeedFullLife": "Necesitas 1 vida completa para entrar a este nivel.",
   "levelPlayLifeCheckError": "Error verificando vidas: {error}",
   "@levelPlayLifeCheckError": {
@@ -420,6 +410,30 @@
   "levelPlaySessionCreateError": "No se pudo preparar el nivel. Intenta de nuevo.",
   "levelPlaySessionCreateErrorTitle": "Error creando sesión",
   "levelPlayPreparingLevel": "Preparando el nivel...",
+  "questionReviewButton": "Revisar preguntas",
+  "questionReviewHint": "¿Alguna pregunta estaba mal? Repórtala y la revisaremos.",
+  "questionReviewNumber": "Pregunta {number}",
+  "@questionReviewNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "questionReviewCorrect": "Correcta",
+  "questionReviewYourAnswer": "Tu respuesta",
+  "questionReviewUnanswered": "No respondiste esta pregunta.",
+  "questionReviewReport": "Reportar",
+  "questionReviewReported": "Reportada",
+  "questionReviewEmpty": "No respondiste ninguna pregunta.",
+  "questionReportDialogTitle": "¿Qué pasa con esta pregunta?",
+  "questionReportDetailsHint": "Detalles (opcional)",
+  "questionReportSubmit": "Enviar reporte",
+  "questionReportReasonWrongAnswer": "La respuesta marcada está mal",
+  "questionReportReasonConfusing": "Pregunta confusa o ambigua",
+  "questionReportReasonTypo": "Error de ortografía o traducción",
+  "questionReportReasonInappropriate": "Contenido inapropiado",
+  "questionReportReasonOther": "Otro motivo",
+  "questionReportSent": "Gracias, revisaremos la pregunta.",
+  "questionReportFailed": "No pudimos enviar el reporte.",
   "levelPlayGeneratingQuestions": "Generando preguntas del nivel...",
   "levelPlaySessionNotFound": "Sesión no encontrada.",
   "levelPlaySessionNoQuestions": "Esta sesión no tiene preguntas.",

@@ -43,6 +43,7 @@ En espera de Google y Apple: crear las apps en las consolas, los productos de mo
 - [x] `purchaseTheme` desplegada con el precio del tema Cyberpunk (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
 - [x] `purchaseTheme` desplegada con los precios de Steampunk y Navidad (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
 - [ ] `npm run deploy` en `functions/` (bloque 4, 2026-10-21). Toca muchas funciones a la vez, así que va el deploy completo y no una por una: `localizedError` marca ahora sus mensajes como traducidos (la app solo muestra esos y, para el resto, su propio texto), varios errores que el jugador sí puede provocar pasaron a español/inglés (código de sala, retos pendientes, tema de la semana terminado, límite de temas IA, título largo, jugador que ya no existe), y `rotateWeeklyTopic` escribe `title_es`/`title_en`. Después, rellenar esos dos campos en `weekly_topics/current` para no esperar al lunes: hoy dice "Science Week" también en español.
+- [ ] `firebase deploy --only functions:reportQuestion,functions:reportAiQuestion` (bloque 5, 2026-10-22): el botón "Revisar preguntas" al final de Solo, Reto diario y Tema de la semana. Mientras no esté desplegada, reportar responde "No pudimos enviar el reporte.". Después, revisar los reportes de vez en cuando con `node tools/export_question_reports.js` → `apply_question_fixes.js` → `export_question_reports.js --cerrar --commit`; nada se corrige ni se esconde solo.
 
 ## 1b. El proyecto en la organización de la empresa
 

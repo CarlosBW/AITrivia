@@ -73,6 +73,15 @@ import {
 } from "./async_pvp_turns";
 import {resolveWrongAnswerSpend} from "./life_costs";
 import {
+  MAX_QUESTION_REPORTS_PER_DAY,
+  QUESTION_REPORT_REASONS,
+  ReportedQuestion,
+  cleanReportDetails,
+  fixedReportDocId,
+  questionAt,
+  reportQuotaAfter,
+} from "./question_reports";
+import {
   isOpponentUnresponsive,
   mergeAnswerKey,
   splitAnswerKey,
@@ -9081,13 +9090,6 @@ export const refundAiTopicCost = onCall(async (request) => {
 // reportAiQuestion below.
 const AI_QUESTION_REPORT_THRESHOLD = 3;
 
-const AI_QUESTION_REPORT_REASONS = new Set([
-  "wrong_answer",
-  "confusing",
-  "inappropriate",
-  "other",
-]);
-
 /**
  * Logs a player's report of a bad AI-generated question (wrong answer
  * marked correct, confusing, inappropriate, etc.) to a global collection
@@ -9112,11 +9114,31 @@ export const reportAiQuestion = onCall(async (request) => {
 
   if (
     !topicId || levelNumber < 1 || !questionId ||
-    !AI_QUESTION_REPORT_REASONS.has(reason)
+    !QUESTION_REPORT_REASONS.has(reason)
   ) {
     throw new HttpsError("invalid-argument", "Invalid report.");
   }
 
+  return recordAiQuestionReport(uid, {
+    topicId, levelNumber, questionId, questionText, reason, details,
+  });
+});
+
+/**
+ * The body of [reportAiQuestion], shared with [reportQuestion]'s AI mode.
+ * @param {string} uid Reporter.
+ * @param {object} report The validated report.
+ * @return {Promise<object>} The question's report count and whether it is
+ *     now excluded from its level.
+ */
+async function recordAiQuestionReport(uid: string, report: {
+  topicId: string; levelNumber: number; questionId: string;
+  questionText: string; reason: string; details: string;
+}): Promise<{reportCount: number; excluded: boolean;
+  alreadyReported: boolean}> {
+  const {
+    topicId, levelNumber, questionId, questionText, reason, details,
+  } = report;
   const userRef = db.collection("users").doc(uid);
   const topicRef = userRef.collection("ai_topics").doc(topicId);
   const sessionRef = userRef.collection("sessions_ai")
@@ -9213,7 +9235,173 @@ export const reportAiQuestion = onCall(async (request) => {
 
     return {reportCount: newCount, excluded, alreadyReported: false};
   });
+}
+
+/**
+ * Files a player's report of a bad question from the end-of-level review.
+ *
+ * The question is read from where the server put it — the player's own
+ * Solo session or Daily Challenge doc, or the pool itself for a Weekly
+ * Topic round — never taken from the client, so a report always names a
+ * real question and says what it read. Fixed-bank reports are only
+ * collected, for tools/export_question_reports.js to put in front of a
+ * person; unlike AI questions, nothing is hidden automatically, since one
+ * player could otherwise bury any question in the shared bank. AI-topic
+ * questions go through the same path as [reportAiQuestion].
+ */
+export const reportQuestion = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const data = request.data || {};
+  const mode = String(data.mode || "");
+  const reason = String(data.reason || "");
+  const details = cleanReportDetails(data.details);
+
+  if (!QUESTION_REPORT_REASONS.has(reason)) {
+    throw new HttpsError("invalid-argument", "Invalid report.");
+  }
+
+  if (mode === "ai") {
+    const topicId = String(data.topicId || "");
+    const levelNumber = safeInt(data.levelNumber, -1);
+    const questionId = String(data.questionId || "");
+    if (!topicId || levelNumber < 1 || !questionId) {
+      throw new HttpsError("invalid-argument", "Invalid report.");
+    }
+    return recordAiQuestionReport(uid, {
+      topicId, levelNumber, questionId, reason, details,
+      questionText: String(data.questionText || "").slice(0, 500),
+    });
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  let question: ReportedQuestion | null = null;
+  let categoryId = "";
+  let difficulty = 0;
+  let docId = "";
+
+  if (mode === "solo") {
+    categoryId = String(data.categoryId || "");
+    const levelNumber = safeInt(data.levelNumber, -1);
+    if (!categoryId || levelNumber < 1) {
+      throw new HttpsError("invalid-argument", "Invalid report.");
+    }
+    const snap = await userRef.collection("sessions_fixed")
+      .doc(`${categoryId}_${levelNumber}`).get();
+    question = questionAt(
+      snap.data()?.questions, safeInt(data.questionIndex, -1)
+    );
+    difficulty = safeInt(snap.data()?.difficulty, 0);
+  } else if (mode === "daily") {
+    const dateId = String(data.dateId || "");
+    assertPlausibleDateId(dateId);
+    const snap = await userRef.collection("daily_challenges")
+      .doc(dateId).get();
+    question = questionAt(
+      snap.data()?.questions, safeInt(data.questionIndex, -1)
+    );
+    categoryId = String(question?.raw.sourceCategoryId || "");
+    difficulty = safeInt(question?.raw.sourceDifficulty, 0);
+    docId = String(question?.raw.sourceQuestionId || "");
+  } else if (mode === "weekly") {
+    categoryId = String(data.categoryId || "");
+    difficulty = safeInt(data.difficulty, 0);
+    docId = String(data.questionId || "");
+    if (!categoryId || difficulty < 1 || !docId) {
+      throw new HttpsError("invalid-argument", "Invalid report.");
+    }
+    const snap = await fixedPoolQuestions(categoryId, difficulty)
+      .doc(docId).get();
+    question = questionAt([snap.data()], 0);
+  } else {
+    throw new HttpsError("invalid-argument", "Invalid report.");
+  }
+
+  if (!question || !categoryId || difficulty < 1) {
+    throw new HttpsError("not-found", "Question not found.");
+  }
+
+  // Solo sessions keep each question's content but not its id in the
+  // pool; its text finds it. One edited since then is still reported, by
+  // what the player saw, just without a doc to point at.
+  if (!docId) {
+    const match = await fixedPoolQuestions(categoryId, difficulty)
+      .where("q", "==", question.q).limit(1).get();
+    docId = match.empty ? "" : match.docs[0].id;
+  }
+
+  const reportRef = db.collection("question_reports").doc(fixedReportDocId(
+    uid, categoryId, difficulty, docId || `text_${fnv1a32(question.q)}`
+  ));
+  const quotaRef = db.collection("question_report_quotas").doc(uid);
+  const reported = question;
+
+  const alreadyReported = await db.runTransaction(async (tx) => {
+    const [existing, quotaSnap] = await Promise.all([
+      tx.get(reportRef),
+      tx.get(quotaRef),
+    ]);
+
+    // A second report on the same question updates the first: the player
+    // may have picked a better reason, and it costs no allowance.
+    if (existing.exists) {
+      tx.set(reportRef, {
+        reason,
+        details,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return true;
+    }
+
+    const quota = reportQuotaAfter(
+      quotaSnap.data(), serverDateId(), MAX_QUESTION_REPORTS_PER_DAY
+    );
+    if (!quota.allowed) {
+      throw await localizedErrorFor(
+        uid, "resource-exhausted",
+        "Ya enviaste muchos reportes hoy. Gracias; puedes seguir mañana.",
+        "You've sent a lot of reports today. Thanks — you can send more " +
+          "tomorrow."
+      );
+    }
+
+    tx.set(quotaRef, quota.next);
+    tx.set(reportRef, {
+      uid,
+      mode,
+      reason,
+      details,
+      status: "open",
+      categoryId,
+      difficulty,
+      docId: docId || null,
+      question: {
+        q: reported.q,
+        options: reported.options,
+        answerIndex: reported.answerIndex,
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return false;
+  });
+
+  return {alreadyReported};
 });
+
+/**
+ * A fixed pool's questions for one category and difficulty.
+ * @param {string} categoryId Pool category.
+ * @param {number} difficulty Pool difficulty.
+ * @return {FirebaseFirestore.CollectionReference} The questions.
+ */
+function fixedPoolQuestions(categoryId: string, difficulty: number) {
+  return db.collection("fixed_pools").doc(categoryId)
+    .collection(`difficulty_${difficulty}`).doc("pool")
+    .collection("questions");
+}
 
 // ============================================================
 // WEEKLY TOPIC

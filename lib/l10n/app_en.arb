@@ -324,7 +324,7 @@
   "soloStatusInProgress": "In progress",
   "soloStatusNew": "New",
   "soloStartButton": "Start",
-  "soloContinueLevel": "Continue L{level}",
+  "soloContinueLevel": "Level {level}",
   "@soloContinueLevel": {
     "placeholders": {
       "level": {"type": "int"}
@@ -377,16 +377,6 @@
   "levelPlayWrongNoLives": "❌ Wrong - you ran out of lives",
   "levelPlayWrongLostHalfLife": "❌ Wrong - you lost half a life",
   "levelPlayWrongNoLifeLoss": "❌ Wrong - you didn't lose any life",
-  "aiReportQuestionTooltip": "Report this question",
-  "aiReportDialogTitle": "What's wrong with this question?",
-  "aiReportDialogDetailsHint": "Additional details (optional)",
-  "aiReportDialogCancel": "Cancel",
-  "aiReportDialogSubmit": "Send report",
-  "aiReportReasonWrongAnswer": "The marked answer is wrong",
-  "aiReportReasonConfusing": "Confusing or ambiguous question",
-  "aiReportReasonInappropriate": "Inappropriate content",
-  "aiReportReasonOther": "Other reason",
-  "aiReportSent": "Thanks, we reported the question.",
   "levelPlayNeedFullLife": "You need 1 full life to enter this level.",
   "levelPlayLifeCheckError": "Error checking lives: {error}",
   "@levelPlayLifeCheckError": {
@@ -397,6 +387,30 @@
   "levelPlaySessionCreateError": "This level could not be prepared. Please try again.",
   "levelPlaySessionCreateErrorTitle": "Error creating session",
   "levelPlayPreparingLevel": "Getting the level ready...",
+  "questionReviewButton": "Review questions",
+  "questionReviewHint": "Was a question wrong? Report it and we'll check it.",
+  "questionReviewNumber": "Question {number}",
+  "@questionReviewNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "questionReviewCorrect": "Correct",
+  "questionReviewYourAnswer": "Your answer",
+  "questionReviewUnanswered": "You didn't answer this question.",
+  "questionReviewReport": "Report",
+  "questionReviewReported": "Reported",
+  "questionReviewEmpty": "You didn't answer any questions.",
+  "questionReportDialogTitle": "What's wrong with this question?",
+  "questionReportDetailsHint": "Details (optional)",
+  "questionReportSubmit": "Send report",
+  "questionReportReasonWrongAnswer": "The marked answer is wrong",
+  "questionReportReasonConfusing": "Confusing or ambiguous question",
+  "questionReportReasonTypo": "Spelling or translation mistake",
+  "questionReportReasonInappropriate": "Inappropriate content",
+  "questionReportReasonOther": "Other reason",
+  "questionReportSent": "Thanks, we'll check the question.",
+  "questionReportFailed": "We couldn't send the report.",
   "levelPlayGeneratingQuestions": "Generating level questions...",
   "levelPlaySessionNotFound": "Session not found.",
   "levelPlaySessionNoQuestions": "This session has no questions.",

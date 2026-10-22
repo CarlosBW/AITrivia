@@ -725,7 +725,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String soloContinueLevel(int level) {
-    return 'Continuar nivel $level';
+    return 'Nivel $level';
   }
 
   @override
@@ -812,36 +812,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelPlayWrongNoLifeLoss => '❌ Incorrecto - no perdiste vida';
 
   @override
-  String get aiReportQuestionTooltip => 'Reportar esta pregunta';
-
-  @override
-  String get aiReportDialogTitle => '¿Qué pasa con esta pregunta?';
-
-  @override
-  String get aiReportDialogDetailsHint => 'Detalles adicionales (opcional)';
-
-  @override
-  String get aiReportDialogCancel => 'Cancelar';
-
-  @override
-  String get aiReportDialogSubmit => 'Enviar reporte';
-
-  @override
-  String get aiReportReasonWrongAnswer => 'La respuesta marcada está mal';
-
-  @override
-  String get aiReportReasonConfusing => 'Pregunta confusa o ambigua';
-
-  @override
-  String get aiReportReasonInappropriate => 'Contenido inapropiado';
-
-  @override
-  String get aiReportReasonOther => 'Otro motivo';
-
-  @override
-  String get aiReportSent => 'Gracias, reportamos la pregunta.';
-
-  @override
   String get levelPlayNeedFullLife =>
       'Necesitas 1 vida completa para entrar a este nivel.';
 
@@ -859,6 +829,66 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get levelPlayPreparingLevel => 'Preparando el nivel...';
+
+  @override
+  String get questionReviewButton => 'Revisar preguntas';
+
+  @override
+  String get questionReviewHint =>
+      '¿Alguna pregunta estaba mal? Repórtala y la revisaremos.';
+
+  @override
+  String questionReviewNumber(int number) {
+    return 'Pregunta $number';
+  }
+
+  @override
+  String get questionReviewCorrect => 'Correcta';
+
+  @override
+  String get questionReviewYourAnswer => 'Tu respuesta';
+
+  @override
+  String get questionReviewUnanswered => 'No respondiste esta pregunta.';
+
+  @override
+  String get questionReviewReport => 'Reportar';
+
+  @override
+  String get questionReviewReported => 'Reportada';
+
+  @override
+  String get questionReviewEmpty => 'No respondiste ninguna pregunta.';
+
+  @override
+  String get questionReportDialogTitle => '¿Qué pasa con esta pregunta?';
+
+  @override
+  String get questionReportDetailsHint => 'Detalles (opcional)';
+
+  @override
+  String get questionReportSubmit => 'Enviar reporte';
+
+  @override
+  String get questionReportReasonWrongAnswer => 'La respuesta marcada está mal';
+
+  @override
+  String get questionReportReasonConfusing => 'Pregunta confusa o ambigua';
+
+  @override
+  String get questionReportReasonTypo => 'Error de ortografía o traducción';
+
+  @override
+  String get questionReportReasonInappropriate => 'Contenido inapropiado';
+
+  @override
+  String get questionReportReasonOther => 'Otro motivo';
+
+  @override
+  String get questionReportSent => 'Gracias, revisaremos la pregunta.';
+
+  @override
+  String get questionReportFailed => 'No pudimos enviar el reporte.';
 
   @override
   String get levelPlayGeneratingQuestions => 'Generando preguntas del nivel...';

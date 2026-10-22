@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/daily_challenge_service.dart';
+import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -243,7 +244,21 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => DailyChallengeResultScreen(result: result),
+          builder: (_) => DailyChallengeResultScreen(
+            result: result,
+            // Only the questions this run reached: the day's set is larger
+            // than what fits in the clock.
+            reviewQuestions: reviewedQuestions(
+              questions: _questions,
+              answers: _answers,
+              onlyAnswered: true,
+              targetFor: (index, _) => {
+                'mode': 'daily',
+                'dateId': _dateId,
+                'questionIndex': index,
+              },
+            ),
+          ),
         ),
       );
     } catch (_) {

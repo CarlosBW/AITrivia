@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/life_service.dart';
+import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../review/question_review_screen.dart';
 
 /// A single round (fixed-size, freshly drawn from the category's pools —
 /// see WeeklyTopicService.loadRandomRound) of Weekly Topic questions. This
@@ -197,6 +199,22 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       final correct = (result['correct'] ?? 0) as int;
       final total = _answers.length;
 
+      // Answers go in question order, so each one's position is its index.
+      final review = reviewedQuestions(
+        questions: _questions,
+        answers: [
+          for (var i = 0; i < _answers.length; i++)
+            {'questionIndex': i, 'selectedIndex': _answers[i]['selectedIndex']},
+        ],
+        onlyAnswered: true,
+        targetFor: (_, q) => {
+          'mode': 'weekly',
+          'categoryId': widget.categoryId,
+          'difficulty': q['sourceDifficulty'],
+          'questionId': q['sourceQuestionId'],
+        },
+      );
+
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -204,6 +222,16 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
           title: Text(l10n.weeklyTopicRoundResultTitle),
           content: Text(l10n.weeklyTopicRoundResultBody(correct, total)),
           actions: [
+            if (review.isNotEmpty)
+              TextButton(
+                onPressed: () => Navigator.push(
+                  dialogContext,
+                  MaterialPageRoute(
+                    builder: (_) => QuestionReviewScreen(questions: review),
+                  ),
+                ),
+                child: Text(l10n.questionReviewButton),
+              ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: Text(l10n.weeklyTopicRoundResultButton),

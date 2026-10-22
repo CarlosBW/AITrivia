@@ -1385,7 +1385,7 @@ abstract class AppLocalizations {
   /// No description provided for @soloContinueLevel.
   ///
   /// In es, this message translates to:
-  /// **'Continuar nivel {level}'**
+  /// **'Nivel {level}'**
   String soloContinueLevel(int level);
 
   /// No description provided for @levelSelectNoLevelsYet.
@@ -1526,66 +1526,6 @@ abstract class AppLocalizations {
   /// **'❌ Incorrecto - no perdiste vida'**
   String get levelPlayWrongNoLifeLoss;
 
-  /// No description provided for @aiReportQuestionTooltip.
-  ///
-  /// In es, this message translates to:
-  /// **'Reportar esta pregunta'**
-  String get aiReportQuestionTooltip;
-
-  /// No description provided for @aiReportDialogTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'¿Qué pasa con esta pregunta?'**
-  String get aiReportDialogTitle;
-
-  /// No description provided for @aiReportDialogDetailsHint.
-  ///
-  /// In es, this message translates to:
-  /// **'Detalles adicionales (opcional)'**
-  String get aiReportDialogDetailsHint;
-
-  /// No description provided for @aiReportDialogCancel.
-  ///
-  /// In es, this message translates to:
-  /// **'Cancelar'**
-  String get aiReportDialogCancel;
-
-  /// No description provided for @aiReportDialogSubmit.
-  ///
-  /// In es, this message translates to:
-  /// **'Enviar reporte'**
-  String get aiReportDialogSubmit;
-
-  /// No description provided for @aiReportReasonWrongAnswer.
-  ///
-  /// In es, this message translates to:
-  /// **'La respuesta marcada está mal'**
-  String get aiReportReasonWrongAnswer;
-
-  /// No description provided for @aiReportReasonConfusing.
-  ///
-  /// In es, this message translates to:
-  /// **'Pregunta confusa o ambigua'**
-  String get aiReportReasonConfusing;
-
-  /// No description provided for @aiReportReasonInappropriate.
-  ///
-  /// In es, this message translates to:
-  /// **'Contenido inapropiado'**
-  String get aiReportReasonInappropriate;
-
-  /// No description provided for @aiReportReasonOther.
-  ///
-  /// In es, this message translates to:
-  /// **'Otro motivo'**
-  String get aiReportReasonOther;
-
-  /// No description provided for @aiReportSent.
-  ///
-  /// In es, this message translates to:
-  /// **'Gracias, reportamos la pregunta.'**
-  String get aiReportSent;
-
   /// No description provided for @levelPlayNeedFullLife.
   ///
   /// In es, this message translates to:
@@ -1615,6 +1555,120 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Preparando el nivel...'**
   String get levelPlayPreparingLevel;
+
+  /// No description provided for @questionReviewButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisar preguntas'**
+  String get questionReviewButton;
+
+  /// No description provided for @questionReviewHint.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Alguna pregunta estaba mal? Repórtala y la revisaremos.'**
+  String get questionReviewHint;
+
+  /// No description provided for @questionReviewNumber.
+  ///
+  /// In es, this message translates to:
+  /// **'Pregunta {number}'**
+  String questionReviewNumber(int number);
+
+  /// No description provided for @questionReviewCorrect.
+  ///
+  /// In es, this message translates to:
+  /// **'Correcta'**
+  String get questionReviewCorrect;
+
+  /// No description provided for @questionReviewYourAnswer.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu respuesta'**
+  String get questionReviewYourAnswer;
+
+  /// No description provided for @questionReviewUnanswered.
+  ///
+  /// In es, this message translates to:
+  /// **'No respondiste esta pregunta.'**
+  String get questionReviewUnanswered;
+
+  /// No description provided for @questionReviewReport.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar'**
+  String get questionReviewReport;
+
+  /// No description provided for @questionReviewReported.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportada'**
+  String get questionReviewReported;
+
+  /// No description provided for @questionReviewEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No respondiste ninguna pregunta.'**
+  String get questionReviewEmpty;
+
+  /// No description provided for @questionReportDialogTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué pasa con esta pregunta?'**
+  String get questionReportDialogTitle;
+
+  /// No description provided for @questionReportDetailsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Detalles (opcional)'**
+  String get questionReportDetailsHint;
+
+  /// No description provided for @questionReportSubmit.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar reporte'**
+  String get questionReportSubmit;
+
+  /// No description provided for @questionReportReasonWrongAnswer.
+  ///
+  /// In es, this message translates to:
+  /// **'La respuesta marcada está mal'**
+  String get questionReportReasonWrongAnswer;
+
+  /// No description provided for @questionReportReasonConfusing.
+  ///
+  /// In es, this message translates to:
+  /// **'Pregunta confusa o ambigua'**
+  String get questionReportReasonConfusing;
+
+  /// No description provided for @questionReportReasonTypo.
+  ///
+  /// In es, this message translates to:
+  /// **'Error de ortografía o traducción'**
+  String get questionReportReasonTypo;
+
+  /// No description provided for @questionReportReasonInappropriate.
+  ///
+  /// In es, this message translates to:
+  /// **'Contenido inapropiado'**
+  String get questionReportReasonInappropriate;
+
+  /// No description provided for @questionReportReasonOther.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro motivo'**
+  String get questionReportReasonOther;
+
+  /// No description provided for @questionReportSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Gracias, revisaremos la pregunta.'**
+  String get questionReportSent;
+
+  /// No description provided for @questionReportFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos enviar el reporte.'**
+  String get questionReportFailed;
 
   /// No description provided for @levelPlayGeneratingQuestions.
   ///

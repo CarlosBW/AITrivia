@@ -42,6 +42,7 @@ En espera de Google y Apple: crear las apps en las consolas, los productos de mo
 - [x] `purchaseTheme` desplegada con el precio del tema Apocalipsis (2026-10-15). Sin comprobar contra producción: pedir `apocalypse` con la cuenta del emulador debería responder "No tienes suficientes monedas", como pasó con `space`.
 - [x] `purchaseTheme` desplegada con el precio del tema Cyberpunk (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
 - [x] `purchaseTheme` desplegada con los precios de Steampunk y Navidad (2026-10-15). Sin comprobar contra producción, igual que Apocalipsis.
+- [ ] `npm run deploy` en `functions/` (bloque 4, 2026-10-21). Toca muchas funciones a la vez, así que va el deploy completo y no una por una: `localizedError` marca ahora sus mensajes como traducidos (la app solo muestra esos y, para el resto, su propio texto), varios errores que el jugador sí puede provocar pasaron a español/inglés (código de sala, retos pendientes, tema de la semana terminado, límite de temas IA, título largo, jugador que ya no existe), y `rotateWeeklyTopic` escribe `title_es`/`title_en`. Después, rellenar esos dos campos en `weekly_topics/current` para no esperar al lunes: hoy dice "Science Week" también en español.
 
 ## 1b. El proyecto en la organización de la empresa
 
@@ -95,6 +96,7 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 - [ ] App Store Connect: crear la app con ese bundle ID.
 - [x] Regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure` (2026-10-08). Creó una segunda app Android y una segunda app iOS en el proyecto `trivia-ia-app`, así que los appIds cambiaron junto con el identificador.
 - [ ] Agregar `ios/Runner/GoogleService-Info.plist` al target Runner en Xcode. El archivo está en el repo pero nada lo referencia: `flutterfire` no puede editar `project.pbxproj` desde Windows.
+- [ ] Notificaciones push en iOS. El código ya está (2026-10-21): `ios/Runner/Runner.entitlements` con `aps-environment`, enlazado en `project.pbxproj`, y el `AppDelegate` como delegado de notificaciones. Falta, en consolas: activar la capacidad **Push Notifications** en el App ID `pe.massivedynamics.triviaia` (Apple Developer → Identifiers) y subir una **APNs Authentication Key** (.p8) en Firebase Console → Configuración del proyecto → Cloud Messaging → app iOS. Sin la clave, FCM no puede entregar nada a iPhone.
 - [ ] Registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID.
 - [ ] Formulario de "Data Safety" (Google Play) y "Privacy Nutrition Label" (Apple) — usa el contenido de `public/privacy.html` como base.
 

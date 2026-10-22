@@ -156,7 +156,7 @@ Future<void> _setupNotifications() async {
   }
 
   try {
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidInit = AndroidInitializationSettings('ic_stat_triviaia');
     const iosInit = DarwinInitializationSettings();
 
     const settings = InitializationSettings(

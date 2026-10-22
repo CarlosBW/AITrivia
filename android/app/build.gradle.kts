@@ -25,7 +25,7 @@ val keystoreProperties = Properties().apply {
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
-    namespace = "com.example.trivia_ia_flutter"
+    namespace = "pe.massivedynamics.triviaia"
 
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion

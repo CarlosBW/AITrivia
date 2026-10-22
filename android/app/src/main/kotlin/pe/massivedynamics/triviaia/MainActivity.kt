@@ -1,4 +1,4 @@
-package com.example.trivia_ia_flutter
+package pe.massivedynamics.triviaia
 
 import io.flutter.embedding.android.FlutterActivity
 

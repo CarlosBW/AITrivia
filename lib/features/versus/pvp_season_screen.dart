@@ -315,6 +315,9 @@ class _GlobalLeaderboardTab extends StatelessWidget {
         children: [
           TabBar(
             isScrollable: true,
+            // Without it a scrollable bar starts 52px in, out of line with
+            // the rest of the page.
+            tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: l10n.pvpSeasonAllTab),
               ...PvpLeagueService.leagues.map(

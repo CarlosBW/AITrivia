@@ -1221,6 +1221,12 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                 l10n.homeWeeklyTopicDefaultDescription)
             .toString();
         final rewardCoins = ((data['rewardCoins'] ?? 0) as num).toInt();
+        // White text on the light end of the gradient was barely legible;
+        // darkened until it reads against the lightest color.
+        final ink = readableInk(
+          context.appColors.onAccent,
+          const Color(0xFFFFC94D),
+        );
 
         return Container(
           width: double.infinity,
@@ -1249,7 +1255,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                     ),
                     child: Icon(
                       Icons.star_rounded,
-                      color: context.appColors.onAccent,
+                      color: ink,
                       size: 18,
                     ),
                   ),
@@ -1257,7 +1263,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                   Expanded(
                     child: Text(
                       title,
-                      style: context.heading(16, color: context.appColors.onAccent),
+                      style: context.heading(16, color: ink),
                     ),
                   ),
                   if (rewardCoins > 0)
@@ -1273,7 +1279,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                       child: Text(
                         l10n.homeWeeklyTopicRewardCoins(rewardCoins),
                         style: TextStyle(
-                          color: context.appColors.onAccent,
+                          color: ink,
                           fontWeight: FontWeight.bold,
                           fontSize: 11,
                         ),
@@ -1285,7 +1291,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
               Text(
                 description,
                 style: TextStyle(
-                  color: context.appColors.onAccent,
+                  color: ink,
                   fontSize: 12,
                 ),
               ),

@@ -5,6 +5,7 @@ import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
@@ -96,7 +97,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = userFacingError(AppLocalizations.of(context), e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -127,127 +128,132 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         title: AppBarTitle(l10n.createMatchTitle),
         actions: const [ProfileAvatarButton()],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            if (_error != null) ...[
-              Text(_error!, style: TextStyle(color: context.appColors.danger)),
-              const SizedBox(height: 12),
-            ],
+      // SafeArea keeps the buttons off the gesture bar; stretch gives them
+      // one width instead of each sizing to its own label.
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_error != null) ...[
+                Text(_error!, style: TextStyle(color: context.appColors.danger)),
+                const SizedBox(height: 12),
+              ],
 
-            FutureBuilder<List<_CategoryOption>>(
-              future: _categoriesFuture,
-              builder: (context, snap) {
-                final options = [
-                  _CategoryOption(
-                    id: 'random',
-                    name: l10n.friendChallengeCategoryRandom,
-                  ),
-                  ...?snap.data,
-                ];
+              FutureBuilder<List<_CategoryOption>>(
+                future: _categoriesFuture,
+                builder: (context, snap) {
+                  final options = [
+                    _CategoryOption(
+                      id: 'random',
+                      name: l10n.friendChallengeCategoryRandom,
+                    ),
+                    ...?snap.data,
+                  ];
 
-                return DropdownButtonFormField<String>(
-                  // Re-keying once the real default (options.first.id) loads
-                  // forces this FormField to re-read `initialValue` — it's
-                  // otherwise only consulted on the field's first build.
-                  key: ValueKey(_categoryId),
-                  initialValue: _categoryId,
-                  items: options
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Text(c.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: _loading || !snap.hasData
-                      ? null
-                      : (v) => setState(() => _categoryId = v),
-                  decoration: InputDecoration(
-                    labelText: l10n.createMatchCategory,
-                    border: const OutlineInputBorder(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _difficulty,
-                    items: [
-                      DropdownMenuItem(value: 1, child: Text(l10n.createMatchDiffEasy)),
-                      DropdownMenuItem(value: 2, child: Text(l10n.createMatchDiffMedium)),
-                      DropdownMenuItem(value: 3, child: Text(l10n.createMatchDiffHard)),
-                    ],
-                    onChanged: _loading ? null : (v) => setState(() => _difficulty = v ?? 1),
+                  return DropdownButtonFormField<String>(
+                    // Re-keying once the real default (options.first.id) loads
+                    // forces this FormField to re-read `initialValue` — it's
+                    // otherwise only consulted on the field's first build.
+                    key: ValueKey(_categoryId),
+                    initialValue: _categoryId,
+                    items: options
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _loading || !snap.hasData
+                        ? null
+                        : (v) => setState(() => _categoryId = v),
                     decoration: InputDecoration(
-                      labelText: l10n.createMatchDifficulty,
+                      labelText: l10n.createMatchCategory,
                       border: const OutlineInputBorder(),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _timePerQuestionSec,
-                    items: const [
-                      DropdownMenuItem(value: 8, child: Text('8s')),
-                      DropdownMenuItem(value: 10, child: Text('10s')),
-                      DropdownMenuItem(value: 12, child: Text('12s')),
-                      DropdownMenuItem(value: 15, child: Text('15s')),
-                    ],
-                    onChanged: _loading ? null : (v) => setState(() => _timePerQuestionSec = v ?? 15),
-                    decoration: InputDecoration(
-                      labelText: l10n.createMatchTimePerQuestion,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            DropdownButtonFormField<int>(
-              initialValue: _totalQuestions,
-              items: const [
-                DropdownMenuItem(value: 5, child: Text('5')),
-                DropdownMenuItem(value: 10, child: Text('10')),
-                DropdownMenuItem(value: 15, child: Text('15')),
-              ],
-              onChanged: _loading ? null : (v) => setState(() => _totalQuestions = v ?? 10),
-              decoration: InputDecoration(
-                labelText: l10n.createMatchQuestions,
-                border: const OutlineInputBorder(),
+                  );
+                },
               ),
-            ),
+              const SizedBox(height: 12),
 
-            const Spacer(),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _difficulty,
+                      items: [
+                        DropdownMenuItem(value: 1, child: Text(l10n.createMatchDiffEasy)),
+                        DropdownMenuItem(value: 2, child: Text(l10n.createMatchDiffMedium)),
+                        DropdownMenuItem(value: 3, child: Text(l10n.createMatchDiffHard)),
+                      ],
+                      onChanged: _loading ? null : (v) => setState(() => _difficulty = v ?? 1),
+                      decoration: InputDecoration(
+                        labelText: l10n.createMatchDifficulty,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _timePerQuestionSec,
+                      items: const [
+                        DropdownMenuItem(value: 8, child: Text('8s')),
+                        DropdownMenuItem(value: 10, child: Text('10s')),
+                        DropdownMenuItem(value: 12, child: Text('12s')),
+                        DropdownMenuItem(value: 15, child: Text('15s')),
+                      ],
+                      onChanged: _loading ? null : (v) => setState(() => _timePerQuestionSec = v ?? 15),
+                      decoration: InputDecoration(
+                        labelText: l10n.createMatchTimePerQuestion,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
 
-            // ✅ Matchmaking (auto)
-            FilledButton(
-              onPressed:
-                  _loading || _categoryId == null ? null : _goToMatchmaking,
-              child: Text(l10n.createMatchAutoSearch),
-            ),
-            const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                initialValue: _totalQuestions,
+                items: const [
+                  DropdownMenuItem(value: 5, child: Text('5')),
+                  DropdownMenuItem(value: 10, child: Text('10')),
+                  DropdownMenuItem(value: 15, child: Text('15')),
+                ],
+                onChanged: _loading ? null : (v) => setState(() => _totalQuestions = v ?? 10),
+                decoration: InputDecoration(
+                  labelText: l10n.createMatchQuestions,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
 
-            // ✅ Crear sala manual
-            FilledButton.tonal(
-              onPressed:
-                  _loading || _categoryId == null ? null : _createRoom,
-              child: _loading
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(l10n.createMatchCreateRoom),
-            ),
-          ],
+              const Spacer(),
+
+              // ✅ Matchmaking (auto)
+              FilledButton(
+                onPressed:
+                    _loading || _categoryId == null ? null : _goToMatchmaking,
+                child: Text(l10n.createMatchAutoSearch),
+              ),
+              const SizedBox(height: 12),
+
+              // ✅ Crear sala manual
+              FilledButton.tonal(
+                onPressed:
+                    _loading || _categoryId == null ? null : _createRoom,
+                child: _loading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.createMatchCreateRoom),
+              ),
+            ],
+          ),
         ),
       ),
     );

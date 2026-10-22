@@ -281,6 +281,9 @@ class _FriendsScreenState extends State<FriendsScreen> {
           title: Text(l10n.friendsTitle),
           bottom: TabBar(
             isScrollable: true,
+            // Without it a scrollable bar starts 52px in, out of line with
+            // the rest of the page.
+            tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: l10n.friendsSearchTab),
               Tab(text: l10n.friendsFriendsTab),

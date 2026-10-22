@@ -73,6 +73,11 @@ import {
 } from "./async_pvp_turns";
 import {resolveWrongAnswerSpend} from "./life_costs";
 import {
+  isOpponentUnresponsive,
+  mergeAnswerKey,
+  splitAnswerKey,
+} from "./pvp_answer_key";
+import {
   DailyPoolEntry,
   orderByAscendingDifficulty,
   selectDailyEntries,
@@ -225,15 +230,62 @@ function clampWinReward(value: number): number {
 }
 
 /**
- * Recomputes a live-PvP player's real score from their actual submitted
- * answers, ignoring the `score` field a client wrote during play (which
- * was only ever an unverified, optimistic live-display value — see
- * match_service.dart's submitAnswer). `questions` lives on the match doc
- * itself (the same data the client already reads to render the quiz), so
- * this needs no extra fetch: a question counts only if the player's
- * recorded answers map picked the exact stored answerIndex for it.
- * @param {unknown} questions The match doc's `questions` array.
- * @param {unknown} answers The player's `players.{uid}.answers` map.
+ * Where a PvP match keeps its answer key: a doc the rules never let a
+ * client read. See pvp_answer_key.ts for why it left the match doc.
+ * @param {FirebaseFirestore.DocumentReference} matchRef A `matches` or
+ * `async_matches` doc.
+ * @return {FirebaseFirestore.DocumentReference} Its key doc.
+ */
+function answerKeyRef(
+  matchRef: FirebaseFirestore.DocumentReference
+): FirebaseFirestore.DocumentReference {
+  return matchRef.collection("secret").doc("answers");
+}
+
+/**
+ * A match's questions with their answers back on, for scoring. Matches
+ * created before the key moved out still carry it inline and are read as
+ * they are. Pass the transaction when inside one: its reads have to come
+ * before any of its writes.
+ * @param {FirebaseFirestore.DocumentReference} matchRef The match.
+ * @param {FirebaseFirestore.DocumentData} data The match doc.
+ * @param {FirebaseFirestore.Transaction} [tx] The running transaction.
+ * @return {Promise<Record<string, unknown>[]>} Questions with answerIndex.
+ */
+async function keyedQuestions(
+  matchRef: FirebaseFirestore.DocumentReference,
+  data: FirebaseFirestore.DocumentData,
+  tx?: FirebaseFirestore.Transaction
+): Promise<Record<string, unknown>[]> {
+  const questions = data.questions;
+  const inline = Array.isArray(questions) && questions.some(
+    (q) => typeof (q as Record<string, unknown>)?.answerIndex === "number"
+  );
+  if (inline) return mergeAnswerKey(questions, undefined);
+
+  const keyRef = answerKeyRef(matchRef);
+  const keySnap = tx ? await tx.get(keyRef) : await keyRef.get();
+  return mergeAnswerKey(questions, keySnap.data()?.answerIndices);
+}
+
+/**
+ * The answer key of already-keyed questions, as published on a finished
+ * match so the players can review it.
+ * @param {Record<string, unknown>[]} questions Output of keyedQuestions.
+ * @return {number[]} Each question's answer index.
+ */
+function answerIndicesOf(questions: Record<string, unknown>[]): number[] {
+  return questions.map((q) => safeInt(q.answerIndex, -1));
+}
+
+/**
+ * Recomputes a PvP player's real score from their banked answers against
+ * the match's questions with the key put back on (see keyedQuestions):
+ * a question counts only if the banked option is its answerIndex. The
+ * `score` a player sees during play is written by the server from this
+ * same function.
+ * @param {unknown} questions Questions carrying `answerIndex`.
+ * @param {unknown} answers The player's banked answers map.
  * @return {number} The verified number of correct answers.
  */
 function computeVerifiedPvpScore(questions: unknown, answers: unknown): number {
@@ -725,14 +777,14 @@ export const finalizePvpMatch = onDocumentUpdated(
 
       const isDisconnect = fresh.finishReason === "opponent_disconnected";
 
+      const scoredQuestions = await keyedQuestions(matchRef, fresh, tx);
       const hostScore = computeVerifiedPvpScore(
-        fresh.questions, freshHost.answers
+        scoredQuestions, freshHost.answers
       );
       const guestScore = computeVerifiedPvpScore(
-        fresh.questions, freshGuest.answers
+        scoredQuestions, freshGuest.answers
       );
-      const matchQuestionCount = Array.isArray(fresh.questions) ?
-        fresh.questions.length : 0;
+      const matchQuestionCount = scoredQuestions.length;
       const hostWrongCount = Math.max(matchQuestionCount - hostScore, 0);
       const guestWrongCount = Math.max(matchQuestionCount - guestScore, 0);
 
@@ -1137,6 +1189,10 @@ export const finalizePvpMatch = onDocumentUpdated(
         winnerUid,
         rewarded: true,
         ratingResults,
+        [`players.${hostUid}.score`]: hostScore,
+        [`players.${guestUid}.score`]: guestScore,
+        // Published once nothing can be answered any more, for the review.
+        answerKey: answerIndicesOf(scoredQuestions),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
@@ -1205,33 +1261,36 @@ export const claimOpponentDisconnected = onCall(async (request) => {
       );
     }
 
-    const opponentSnap = await tx.get(
-      db.collection("users").doc(opponentUid)
-    );
-    const presence = (opponentSnap.data() || {}).presence || {};
-
-    const presenceStatus = String(presence.status || "offline");
-    const inMatch = presence.inMatch === true;
-    const updatedAt = presence.updatedAt;
-
-    const isFresh = updatedAt instanceof admin.firestore.Timestamp &&
-      (Date.now() - updatedAt.toMillis()) <= PRESENCE_ONLINE_MAX_AGE_MS;
-
-    const opponentLooksActive =
-      isFresh && presenceStatus === "in_match" && inMatch;
-
-    if (opponentLooksActive) {
-      throw await localizedErrorFor(
-        uid, "failed-precondition",
-        "Tu rival todavía parece activo. Inténtalo en un momento.",
-        "Your opponent still looks active. Try again in a moment."
-      );
-    }
-
     const players = matchData.players || {};
     if (!players[uid]) {
       throw new HttpsError(
         "failed-precondition", "You're not seated in this match."
+      );
+    }
+
+    // From the deadlines the server stamped on the opponent's questions,
+    // not from their presence heartbeat: that one the opponent's own client
+    // writes, so a script could keep it fresh and never be claimable, and a
+    // flaky connection could cost a player who was still answering.
+    const opponent = players[opponentUid] || {};
+    const startAt = matchData.startAt;
+    const unresponsive = isOpponentUnresponsive({
+      answers: opponent.answers,
+      deadlines: opponent.deadlines,
+      finished: opponent.finished === true,
+      questionCount: Array.isArray(matchData.questions) ?
+        matchData.questions.length : 0,
+      timePerQuestionSec: safeInt(matchData.timePerQuestionSec, 15),
+      startAtMs: startAt instanceof admin.firestore.Timestamp ?
+        startAt.toMillis() : null,
+      nowMs: Date.now(),
+    });
+
+    if (!unresponsive) {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Tu rival todavía parece activo. Inténtalo en un momento.",
+        "Your opponent still looks active. Try again in a moment."
       );
     }
 
@@ -1268,8 +1327,11 @@ export const joinMatchByCode = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing code.");
   }
 
+  // Only rooms still open: codes are short, and an old finished match
+  // could share one with the room the player is looking for.
   const matchesQuery = await db.collection("matches")
     .where("matchCode", "==", code)
+    .where("status", "==", "waiting")
     .limit(1)
     .get();
 
@@ -1282,12 +1344,7 @@ export const joinMatchByCode = onCall(async (request) => {
   const userSnap = await db.collection("users").doc(uid).get();
   const userData = userSnap.data() || {};
 
-  const displayName = String(
-    userData.displayName || userData.username || "Guest"
-  );
-  const avatarId = String(userData.avatarId || "avatar_1");
-  const frameId = String(userData.equippedFrame || "");
-  const bestLeagueId = String(userData.bestLeagueId || "");
+  const seat = liveSeatFor(userData);
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
@@ -1329,15 +1386,7 @@ export const joinMatchByCode = onCall(async (request) => {
 
     tx.update(matchRef, {
       guestUid: uid,
-      [`players.${uid}`]: {
-        displayName,
-        avatarId,
-        equippedFrame: frameId,
-        bestLeagueId,
-        score: 0,
-        ready: false,
-        finished: false,
-      },
+      [`players.${uid}`]: seat,
     });
   });
 
@@ -1563,22 +1612,30 @@ export const tryFindLiveOpponent = onCall(async (request) => {
     return {matchId: null};
   }
 
-  const categoryId = String(meData?.categoryId || "");
-  const difficulty = safeInt(meData?.difficulty, 1);
+  // The queue doc is the caller's own to write, so every parameter is
+  // clamped to what the app offers: unclamped, a huge `totalQuestions` on a
+  // "random" category read a whole pool per question.
+  const params = clampLiveMatchParams(meData);
   const ranked = meData?.ranked === true;
-  const totalQuestions = safeInt(meData?.totalQuestions, 10);
-  const timePerQuestionSec = safeInt(meData?.timePerQuestionSec, 15);
-  const winReward = clampWinReward(safeInt(meData?.winReward, 2));
 
   const candidatesSnap = await db.collection("live_search")
     .where("status", "==", "searching")
-    .where("categoryId", "==", categoryId)
-    .where("difficulty", "==", difficulty)
+    .where("categoryId", "==", params.categoryId)
+    .where("difficulty", "==", params.difficulty)
     .where("ranked", "==", ranked)
     .limit(20)
     .get();
 
   const candidates = candidatesSnap.docs.filter((d) => d.id !== uid);
+  if (candidates.length === 0) return {matchId: null};
+
+  // Picked before claiming anyone: when this used to come after the claim,
+  // an empty pool left both players `matched` to a match that was never
+  // written, stuck until the queue expired.
+  const questions = await selectFixedMatchQuestions(
+    params.categoryId, params.difficulty, params.totalQuestions
+  );
+  if (questions.length === 0) return {matchId: null};
 
   for (const oppDoc of candidates) {
     const oppUid = oppDoc.id;
@@ -1596,8 +1653,8 @@ export const tryFindLiveOpponent = onCall(async (request) => {
 
       const meTx = meTxSnap.data();
       const oppTx = oppTxSnap.data();
-      const meUser = meUserSnap.data();
-      const oppUser = oppUserSnap.data();
+      const meUser = meUserSnap.data() || {};
+      const oppUser = oppUserSnap.data() || {};
 
       if (!isLiveQueueEntryValid(meTx)) return false;
       if (!isLiveQueueEntryValid(oppTx)) return false;
@@ -1605,7 +1662,14 @@ export const tryFindLiveOpponent = onCall(async (request) => {
       if (!isAvailableForLiveMatch(oppUser)) return false;
       if ((meTx?.ranked === true) !== ranked) return false;
       if ((oppTx?.ranked === true) !== ranked) return false;
-      if (ranked && !ratingsAreCompatible(meTx, oppTx)) return false;
+
+      // Ratings from the user docs, which only the server writes; the
+      // queue docs carry a copy the client wrote and could inflate.
+      const myRating = safeInt(meUser.pvpRating, DEFAULT_RATING);
+      const oppRating = safeInt(oppUser.pvpRating, DEFAULT_RATING);
+      if (ranked && !ratingsAreCompatible(
+        {...meTx, pvpRating: myRating}, {...oppTx, pvpRating: oppRating}
+      )) return false;
 
       const now = admin.firestore.FieldValue.serverTimestamp();
 
@@ -1618,96 +1682,812 @@ export const tryFindLiveOpponent = onCall(async (request) => {
         updatedAt: now,
       });
 
-      tx.set(meUserRef, {
-        presence: {
-          status: "in_match", inMatch: true, lastSeenAt: now, updatedAt: now,
-        },
-        updatedAt: now,
-      }, {merge: true});
+      for (const ref of [meUserRef, oppUserRef]) {
+        tx.set(ref, {
+          presence: {
+            status: "in_match", inMatch: true, lastSeenAt: now, updatedAt: now,
+          },
+          updatedAt: now,
+        }, {merge: true});
+      }
 
-      tx.set(oppUserRef, {
-        presence: {
-          status: "in_match", inMatch: true, lastSeenAt: now, updatedAt: now,
+      const myLeague = leagueForRating(myRating);
+      const oppLeague = leagueForRating(oppRating);
+
+      // Written in the same transaction as the claim, so a pairing and its
+      // match exist together or not at all.
+      writeLiveMatch(tx, matchRef, {
+        hostUid: uid,
+        guestUid: oppUid,
+        hostSeat: liveSeatFor(meUser),
+        guestSeat: liveSeatFor(oppUser),
+        params,
+        ranked,
+        questions,
+        status: "waiting",
+        extra: {
+          matchmakingType: ranked ? "ranked_flexible_mmr" : "casual_public",
+          hostInitialPvpRating: myRating,
+          guestInitialPvpRating: oppRating,
+          matchmakingRatingGap: Math.abs(myRating - oppRating),
+          hostPvpLeagueId: myLeague.id,
+          guestPvpLeagueId: oppLeague.id,
+          hostPvpLeagueName: myLeague.name,
+          guestPvpLeagueName: oppLeague.name,
+          matchmakingWaitSec: Math.max(
+            searchAgeSeconds(meTx), searchAgeSeconds(oppTx)
+          ),
         },
-        updatedAt: now,
-      }, {merge: true});
+      });
 
       return true;
     });
 
-    if (!claimed) continue;
-
-    const oppData = oppDoc.data();
-
-    const myRating = safeInt(meData?.pvpRating, DEFAULT_RATING);
-    const oppRating = safeInt(oppData.pvpRating, DEFAULT_RATING);
-    const myLeague = leagueForRating(myRating);
-    const oppLeague = leagueForRating(oppRating);
-
-    const questions = await selectFixedMatchQuestions(
-      categoryId, difficulty, totalQuestions
-    );
-
-    const myName = String(meData?.displayName || "Player").trim() ||
-      "Player";
-    const oppName = String(oppData.displayName || "Player").trim() ||
-      "Player";
-
-    await matchRef.set({
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: "waiting",
-      mode: "fixed",
-      matchmakingType: ranked ? "ranked_flexible_mmr" : "casual_public",
-      ranked,
-      affectsPvpRating: ranked,
-      hostInitialPvpRating: myRating,
-      guestInitialPvpRating: oppRating,
-      matchmakingRatingGap: Math.abs(myRating - oppRating),
-      hostPvpLeagueId: myLeague.id,
-      guestPvpLeagueId: oppLeague.id,
-      hostPvpLeagueName: myLeague.name,
-      guestPvpLeagueName: oppLeague.name,
-      matchmakingWaitSec: Math.max(
-        searchAgeSeconds(meData), searchAgeSeconds(oppData)
-      ),
-      categoryId,
-      difficulty,
-      aiTopic: null,
-      entryFee: 0,
-      winReward,
-      loseReward: 0,
-      totalQuestions,
-      timePerQuestionSec,
-      questions,
-      hostUid: uid,
-      guestUid: oppUid,
-      players: {
-        [uid]: {
-          displayName: myName,
-          avatarId: String(meData?.avatarId || "avatar_1"),
-          equippedFrame: String(meData?.equippedFrame || ""),
-          bestLeagueId: String(meData?.bestLeagueId || ""),
-          score: 0, ready: false, finished: false,
-        },
-        [oppUid]: {
-          displayName: oppName,
-          avatarId: String(oppData.avatarId || "avatar_1"),
-          equippedFrame: String(oppData.equippedFrame || ""),
-          bestLeagueId: String(oppData.bestLeagueId || ""),
-          score: 0, ready: false, finished: false,
-        },
-      },
-      startAt: null,
-      endedAt: null,
-      winnerUid: null,
-      rewarded: false,
-      matchCode: randomMatchCode(5),
-    });
-
-    return {matchId: matchRef.id};
+    if (claimed) return {matchId: matchRef.id};
   }
 
   return {matchId: null};
+});
+
+// ============================================================
+// LIVE PVP
+//
+// Live matches used to be written by the clients themselves: the host
+// created the doc with its own questions, each player wrote their own
+// answers and score, and status, readiness and rematches were plain client
+// writes. firestore.rules could check the shape but not the contents, so a
+// player could create a ranked match against anyone with questions they
+// already knew, flip a casual match to ranked once winning, and read every
+// answer off the match doc.
+//
+// Now the clients only read `matches`. Everything below is how a live match
+// is created, readied, played and closed, mirroring the async calls: the
+// server stamps each question's deadline and judges every answer against
+// it (async_pvp_turns.ts), and the answer key lives in a doc no client can
+// read until the match is over (pvp_answer_key.ts).
+// ============================================================
+
+type LiveMatchParams = {
+  categoryId: string;
+  difficulty: number;
+  totalQuestions: number;
+  timePerQuestionSec: number;
+};
+
+/**
+ * A live match's parameters, clamped to what the app offers. Shares the
+ * async ranges: both create screens offer the same choices.
+ * @param {Record<string, unknown>|undefined} raw Client-supplied values.
+ * @return {LiveMatchParams} Safe parameters.
+ */
+function clampLiveMatchParams(
+  raw: Record<string, unknown> | undefined
+): LiveMatchParams {
+  const categoryId = String(raw?.categoryId || "random").slice(0, 64);
+  return {
+    categoryId,
+    difficulty: clampToRange(
+      safeInt(raw?.difficulty, 1), ASYNC_DIFFICULTY_RANGE
+    ),
+    totalQuestions: clampToRange(
+      safeInt(raw?.totalQuestions, 10), ASYNC_QUESTION_COUNT_RANGE
+    ),
+    timePerQuestionSec: clampToRange(
+      safeInt(raw?.timePerQuestionSec, 15), ASYNC_SECONDS_PER_QUESTION_RANGE
+    ),
+  };
+}
+
+/**
+ * Rejects a category that isn't an active one.
+ * @param {string} categoryId Category id, or "random".
+ */
+async function assertActiveCategory(categoryId: string): Promise<void> {
+  if (categoryId === "random") return;
+  const snap = await db.collection("fixed_categories").doc(categoryId).get();
+  if (snap.data()?.isActive !== true) {
+    throw new HttpsError("invalid-argument", "Unknown category.");
+  }
+}
+
+/**
+ * A player's seat in a live match, from their own user doc: the reserved
+ * username, never a name the client sent.
+ * @param {FirebaseFirestore.DocumentData} user The player's user doc.
+ * @return {Record<string, unknown>} The `players.{uid}` entry.
+ */
+function liveSeatFor(
+  user: FirebaseFirestore.DocumentData
+): Record<string, unknown> {
+  return {
+    displayName: String(user.username || user.displayName || "Player")
+      .slice(0, 20),
+    avatarId: String(user.avatarId || "avatar_1"),
+    equippedFrame: String(user.equippedFrame || ""),
+    bestLeagueId: String(user.bestLeagueId || ""),
+    score: 0,
+    ready: false,
+    finished: false,
+  };
+}
+
+/**
+ * Writes a new live match and its separate answer key.
+ * @param {FirebaseFirestore.Transaction|FirebaseFirestore.WriteBatch} w
+ * Where to write.
+ * @param {FirebaseFirestore.DocumentReference} matchRef The new match.
+ * @param {object} m What the match is.
+ */
+function writeLiveMatch(
+  w: FirebaseFirestore.Transaction | FirebaseFirestore.WriteBatch,
+  matchRef: FirebaseFirestore.DocumentReference,
+  m: {
+    hostUid: string;
+    guestUid: string | null;
+    hostSeat: Record<string, unknown>;
+    guestSeat: Record<string, unknown> | null;
+    params: LiveMatchParams;
+    ranked: boolean;
+    questions: Record<string, unknown>[];
+    status: "waiting" | "playing";
+    extra?: Record<string, unknown>;
+  }
+): void {
+  const {publicQuestions, answerIndices} = splitAnswerKey(m.questions);
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const players: Record<string, unknown> = {[m.hostUid]: m.hostSeat};
+  if (m.guestUid && m.guestSeat) players[m.guestUid] = m.guestSeat;
+
+  (w as FirebaseFirestore.WriteBatch).set(matchRef, {
+    createdAt: now,
+    updatedAt: now,
+    status: m.status,
+    mode: "fixed",
+    ranked: m.ranked,
+    affectsPvpRating: m.ranked,
+    categoryId: m.params.categoryId,
+    difficulty: m.params.difficulty,
+    aiTopic: null,
+    entryFee: 0,
+    winReward: MAX_WIN_REWARD,
+    loseReward: 0,
+    totalQuestions: publicQuestions.length,
+    timePerQuestionSec: m.params.timePerQuestionSec,
+    questions: publicQuestions,
+    hostUid: m.hostUid,
+    guestUid: m.guestUid,
+    players,
+    startAt: m.status === "playing" ? now : null,
+    endedAt: null,
+    winnerUid: null,
+    finishReason: null,
+    rewarded: false,
+    matchCode: randomMatchCode(5),
+    ...(m.extra || {}),
+  });
+  (w as FirebaseFirestore.WriteBatch).set(answerKeyRef(matchRef), {
+    answerIndices,
+  });
+}
+
+/**
+ * Creates a private room, joined later with its code (joinMatchByCode).
+ */
+export const createPrivateLiveMatch = onCall({timeoutSeconds: 60},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "Sign-in required.");
+    }
+
+    const params = clampLiveMatchParams(request.data);
+    const ranked = request.data?.ranked === true;
+    await assertActiveCategory(params.categoryId);
+
+    const userSnap = await db.collection("users").doc(uid).get();
+    const user = userSnap.data() || {};
+
+    if (ranked) {
+      const cooldown = user.pvpCooldownUntil;
+      if (cooldown instanceof admin.firestore.Timestamp &&
+          cooldown.toMillis() > Date.now()) {
+        throw await localizedErrorFor(
+          uid, "failed-precondition",
+          "Estás en espera por abandonar una partida ranked.",
+          "You're on a cooldown for leaving a ranked match."
+        );
+      }
+    }
+
+    const questions = await selectFixedMatchQuestions(
+      params.categoryId, params.difficulty, params.totalQuestions
+    );
+    if (questions.length === 0) {
+      throw new HttpsError("failed-precondition", "No questions available.");
+    }
+
+    const matchRef = db.collection("matches").doc();
+    const batch = db.batch();
+    writeLiveMatch(batch, matchRef, {
+      hostUid: uid,
+      guestUid: null,
+      hostSeat: liveSeatFor(user),
+      guestSeat: null,
+      params,
+      ranked,
+      questions,
+      status: "waiting",
+      extra: {matchType: ranked ? "ranked_private" : "private"},
+    });
+    await batch.commit();
+
+    return {matchId: matchRef.id};
+  });
+
+/**
+ * The caller's seat in a live match, or an error if they have none.
+ * @param {FirebaseFirestore.DocumentData|undefined} data The match doc.
+ * @param {string} uid Caller.
+ * @return {{data: FirebaseFirestore.DocumentData, opponentUid: string}}
+ * The match and the other player's uid (empty while the room is open).
+ */
+function liveSeatContext(
+  data: FirebaseFirestore.DocumentData | undefined, uid: string
+): {data: FirebaseFirestore.DocumentData; opponentUid: string} {
+  if (!data) throw new HttpsError("not-found", "Match not found.");
+  const hostUid = String(data.hostUid || "");
+  const guestUid = String(data.guestUid || "");
+  if (uid !== hostUid && uid !== guestUid) {
+    throw new HttpsError("permission-denied", "Not your match.");
+  }
+  return {data, opponentUid: uid === hostUid ? guestUid : hostUid};
+}
+
+/**
+ * Marks the caller ready (or not) in a room's lobby, and starts the match
+ * once both are.
+ */
+export const setLiveMatchReady = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const matchId = String(request.data?.matchId || "");
+  const ready = request.data?.ready === true;
+  const matchRef = db.collection("matches").doc(matchId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const {data, opponentUid} = liveSeatContext(snap.data(), uid);
+    if (String(data.status || "") !== "waiting") return {started: false};
+
+    const players = data.players || {};
+    const opponentReady = opponentUid !== "" &&
+      players[opponentUid]?.ready === true;
+    const start = ready && opponentReady;
+
+    tx.update(matchRef, {
+      [`players.${uid}.ready`]: ready,
+      ...(start ? {
+        status: "playing",
+        startAt: admin.firestore.FieldValue.serverTimestamp(),
+      } : {}),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return {started: start};
+  });
+});
+
+/**
+ * Cancels a room still in the lobby, so a player whose opponent left isn't
+ * stuck there.
+ */
+export const cancelLiveMatch = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const matchRef = db.collection("matches")
+    .doc(String(request.data?.matchId || ""));
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const {data} = liveSeatContext(snap.data(), uid);
+    if (String(data.status || "") !== "waiting") return;
+    tx.update(matchRef, {
+      status: "cancelled",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+  return {ok: true};
+});
+
+/**
+ * The caller's answers in a live match, as judged so far: question index
+ * to whether it was right. Lets a player who comes back mid-match see the
+ * score they had, without the key itself.
+ * @param {Record<string, unknown>[]} keyed Questions with answers.
+ * @param {Record<string, unknown>} answers Banked answers.
+ * @return {Record<string, boolean>} Verdicts by question index.
+ */
+function verdictsFor(
+  keyed: Record<string, unknown>[],
+  answers: Record<string, unknown>
+): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  for (const [key, selected] of Object.entries(answers)) {
+    const i = parseInt(key, 10);
+    if (Number.isNaN(i) || i < 0 || i >= keyed.length) continue;
+    out[key] = safeInt(selected, -2) === safeInt(keyed[i].answerIndex, -1);
+  }
+  return out;
+}
+
+/**
+ * Opens (or resumes) the caller's run through a live match: the question
+ * to serve and how long is left on it. Same clock as async — see
+ * openAsyncPvpTurn.
+ */
+export const openLiveMatchTurn = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const matchRef = db.collection("matches")
+    .doc(String(request.data?.matchId || ""));
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const {data} = liveSeatContext(snap.data(), uid);
+    const keyed = await keyedQuestions(matchRef, data, tx);
+    const mine = (data.players || {})[uid] || {};
+    const answers = (mine.answers || {}) as Record<string, unknown>;
+
+    if (String(data.status || "") !== "playing" || mine.finished === true) {
+      return {
+        index: keyed.length, finished: true, remainingMs: 0,
+        answers, verdicts: verdictsFor(keyed, answers),
+      };
+    }
+
+    const turn = openTurn({
+      answers,
+      deadlines: mine.deadlines,
+      questionCount: keyed.length,
+      timePerQuestionSec: safeInt(data.timePerQuestionSec, 15),
+      nowMs: Date.now(),
+    });
+
+    const patch: Record<string, unknown> = {};
+    const banked: Record<string, unknown> = {...answers};
+    for (const index of turn.timedOutIndices) {
+      patch[`players.${uid}.answers.${index}`] = TIMED_OUT_ANSWER;
+      banked[String(index)] = TIMED_OUT_ANSWER;
+    }
+    if (turn.deadlineIsNew && turn.deadlineMs !== null) {
+      patch[`players.${uid}.deadlines.${turn.index}`] = turn.deadlineMs;
+    }
+    if (Object.keys(patch).length > 0) tx.update(matchRef, patch);
+
+    return {
+      index: turn.index,
+      finished: turn.finished,
+      remainingMs: turn.remainingMs,
+      answers: banked,
+      verdicts: verdictsFor(keyed, banked),
+    };
+  });
+});
+
+/**
+ * Judges one live answer against the server's clock and key, banks it,
+ * updates the score the opponent sees, and stamps the next question's
+ * deadline. Returns the right option so the client can reveal it.
+ */
+export const submitLiveMatchAnswer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const matchRef = db.collection("matches")
+    .doc(String(request.data?.matchId || ""));
+  const questionIndex = safeInt(request.data?.questionIndex, -1);
+  const selectedIndex = safeInt(request.data?.selectedIndex, TIMED_OUT_ANSWER);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const {data} = liveSeatContext(snap.data(), uid);
+    if (String(data.status || "") !== "playing") {
+      throw new HttpsError("failed-precondition", "Match not in progress.");
+    }
+    const keyed = await keyedQuestions(matchRef, data, tx);
+    const mine = (data.players || {})[uid] || {};
+    if (mine.finished === true) {
+      throw new HttpsError("failed-precondition", "Round already closed.");
+    }
+    const answers = (mine.answers || {}) as Record<string, unknown>;
+
+    const resolution = resolveAnswer({
+      answers,
+      deadlines: mine.deadlines,
+      questionCount: keyed.length,
+      timePerQuestionSec: safeInt(data.timePerQuestionSec, 15),
+      nowMs: Date.now(),
+    }, questionIndex, selectedIndex);
+
+    if (resolution.kind === "out-of-range") {
+      throw new HttpsError("invalid-argument", "Question out of range.");
+    }
+    if (resolution.kind !== "accepted") {
+      throw new HttpsError("failed-precondition", resolution.kind);
+    }
+
+    const banked = {
+      ...answers, [String(questionIndex)]: resolution.storedIndex,
+    };
+    const correctIndex = safeInt(keyed[questionIndex].answerIndex, -1);
+
+    const patch: Record<string, unknown> = {
+      [`players.${uid}.answers.${questionIndex}`]: resolution.storedIndex,
+      [`players.${uid}.score`]: computeVerifiedPvpScore(keyed, banked),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (resolution.nextDeadlineMs !== null) {
+      patch[`players.${uid}.deadlines.${resolution.nextIndex}`] =
+        resolution.nextDeadlineMs;
+    }
+    tx.update(matchRef, patch);
+
+    return {
+      storedIndex: resolution.storedIndex,
+      correctIndex,
+      correct: resolution.storedIndex === correctIndex,
+      timedOut: resolution.timedOut,
+      nextIndex: resolution.nextIndex,
+      nextRemainingMs: resolution.nextRemainingMs,
+      finished: resolution.finished,
+    };
+  });
+});
+
+/**
+ * Closes the caller's run: banks anything that timed out and marks them
+ * finished, which is what lets finalizePvpMatch settle the match once both
+ * are.
+ */
+export const finishLiveMatch = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const matchRef = db.collection("matches")
+    .doc(String(request.data?.matchId || ""));
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(matchRef);
+    const {data} = liveSeatContext(snap.data(), uid);
+    const keyed = await keyedQuestions(matchRef, data, tx);
+    const mine = (data.players || {})[uid] || {};
+    const answers = {...(mine.answers || {})} as Record<string, unknown>;
+
+    if (mine.finished === true || String(data.status || "") !== "playing") {
+      return {score: computeVerifiedPvpScore(keyed, answers)};
+    }
+
+    const turn = openTurn({
+      answers,
+      deadlines: mine.deadlines,
+      questionCount: keyed.length,
+      timePerQuestionSec: safeInt(data.timePerQuestionSec, 15),
+      nowMs: Date.now(),
+    });
+    if (!turn.finished) {
+      throw new HttpsError("failed-precondition", "Round not finished.");
+    }
+
+    const patch: Record<string, unknown> = {
+      [`players.${uid}.finished`]: true,
+      [`players.${uid}.finishedAt`]:
+        admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    for (const index of turn.timedOutIndices) {
+      patch[`players.${uid}.answers.${index}`] = TIMED_OUT_ANSWER;
+      answers[String(index)] = TIMED_OUT_ANSWER;
+    }
+    const score = computeVerifiedPvpScore(keyed, answers);
+    patch[`players.${uid}.score`] = score;
+    tx.update(matchRef, patch);
+
+    return {score};
+  });
+});
+
+/**
+ * Asks for a rematch, and creates it once both players have asked. The
+ * first ask notifies the opponent.
+ */
+export const requestLiveRematch = onCall({timeoutSeconds: 60},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "Sign-in required.");
+    }
+    const matchId = String(request.data?.matchId || "");
+    const oldRef = db.collection("matches").doc(matchId);
+
+    const first = await oldRef.get();
+    const {data: old, opponentUid} = liveSeatContext(first.data(), uid);
+    if (String(old.status || "") !== "finished" || !opponentUid) {
+      throw new HttpsError("failed-precondition", "Match isn't finished.");
+    }
+    if (old.rematchMatchId) return {rematchMatchId: old.rematchMatchId};
+
+    const params = clampLiveMatchParams(old);
+    const ranked = old.ranked === true;
+    // Chosen up front so the rematch can be written in the same
+    // transaction that decides it, with nothing left half-done.
+    const questions = old.rematchRequests?.[opponentUid] === true ?
+      await selectFixedMatchQuestions(
+        params.categoryId, params.difficulty, params.totalQuestions
+      ) : [];
+
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(oldRef);
+      const data = snap.data() || {};
+      if (data.rematchMatchId) {
+        return {rematchMatchId: String(data.rematchMatchId), notify: false};
+      }
+
+      const requests = {...(data.rematchRequests || {}), [uid]: true};
+      const both = requests[opponentUid] === true;
+
+      if (!both || questions.length === 0) {
+        tx.update(oldRef, {
+          [`rematchRequests.${uid}`]: true,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        return {rematchMatchId: null, notify: !both};
+      }
+
+      const [meSnap, oppSnap] = await Promise.all([
+        tx.get(db.collection("users").doc(uid)),
+        tx.get(db.collection("users").doc(opponentUid)),
+      ]);
+      const hostUid = String(data.hostUid);
+      const guestUid = String(data.guestUid);
+      const seats: Record<string, Record<string, unknown>> = {
+        [uid]: {...liveSeatFor(meSnap.data() || {}), ready: true},
+        [opponentUid]: {...liveSeatFor(oppSnap.data() || {}), ready: true},
+      };
+
+      const newRef = db.collection("matches").doc();
+      writeLiveMatch(tx, newRef, {
+        hostUid,
+        guestUid,
+        hostSeat: seats[hostUid],
+        guestSeat: seats[guestUid],
+        params,
+        ranked,
+        questions,
+        status: "playing",
+        extra: {
+          matchmakingType: String(data.matchmakingType || "") ||
+            (ranked ? "ranked_rematch" : "casual_rematch"),
+          previousMatchId: matchId,
+        },
+      });
+      tx.update(oldRef, {
+        [`rematchRequests.${uid}`]: true,
+        rematchMatchId: newRef.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return {rematchMatchId: newRef.id, notify: false};
+    });
+
+    if (result.notify) {
+      await notifyOnce(opponentUid, uid, "rematch_request", {matchId});
+    }
+    return {rematchMatchId: result.rematchMatchId};
+  });
+
+/**
+ * Writes one cross-user notification, at most once per sender, type and
+ * match or invite — the same guarantee sendUserNotification gives.
+ * @param {string} targetUid Recipient.
+ * @param {string} senderUid Sender.
+ * @param {string} type Notification type.
+ * @param {Record<string, string>} ids matchId / inviteId to route on.
+ */
+async function notifyOnce(
+  targetUid: string,
+  senderUid: string,
+  type: string,
+  ids: Record<string, string>
+): Promise<void> {
+  const [senderSnap, targetSnap] = await db.getAll(
+    db.collection("users").doc(senderUid),
+    db.collection("users").doc(targetUid)
+  );
+  const sender = senderSnap.data() || {};
+  const senderName = String(sender.username || sender.displayName || "?")
+    .slice(0, 20);
+  const {title, body} = crossUserNotificationText(
+    type, targetSnap.data()?.languageCode, senderName
+  );
+  const id = [type, senderUid, ids.matchId || ids.inviteId || ""].join("__");
+  try {
+    await db.collection("users").doc(targetUid)
+      .collection("notifications").doc(id).create({
+        type, title, body,
+        data: {...ids, fromUid: senderUid},
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+  } catch (error) {
+    if ((error as {code?: number}).code !== 6) throw error;
+  }
+}
+
+// ---- Friend challenges (realtime invites) ----------------------------
+
+const MAX_PENDING_REALTIME_INVITES = 10;
+
+/**
+ * Challenges a friend to a live match. The invitee is notified; the match
+ * itself is created when they accept.
+ *
+ * Used to be a client write into `realtime_invites` plus a write into the
+ * friend's notifications, which the rules (rightly) refused — so the invite
+ * was saved, the sender saw an error, and the friend was never told.
+ */
+export const createRealtimeInvite = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const toUid = String(request.data?.toUid || "");
+  if (!toUid || toUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid player.");
+  }
+  const params = clampLiveMatchParams(request.data);
+  await assertActiveCategory(params.categoryId);
+
+  const [friendSnap, meSnap, toSnap] = await Promise.all([
+    db.collection("users").doc(uid).collection("friends").doc(toUid).get(),
+    db.collection("users").doc(uid).get(),
+    db.collection("users").doc(toUid).get(),
+  ]);
+  if (!friendSnap.exists || !toSnap.exists) {
+    throw await localizedErrorFor(
+      uid, "permission-denied",
+      "Solo puedes retar en vivo a tus amigos.",
+      "You can only challenge your friends live."
+    );
+  }
+
+  const pending = db.collection("realtime_invites")
+    .where("fromUid", "==", uid)
+    .where("status", "==", "pending");
+  const [pendingCount, pendingForFriend] = await Promise.all([
+    pending.count().get(),
+    pending.where("toUid", "==", toUid).limit(1).get(),
+  ]);
+  if (!pendingForFriend.empty) {
+    return {inviteId: pendingForFriend.docs[0].id};
+  }
+  if (pendingCount.data().count >= MAX_PENDING_REALTIME_INVITES) {
+    throw new HttpsError("resource-exhausted", "Too many pending invites.");
+  }
+
+  const me = meSnap.data() || {};
+  const to = toSnap.data() || {};
+  const inviteRef = db.collection("realtime_invites").doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  await inviteRef.set({
+    fromUid: uid,
+    fromName: String(me.username || me.displayName || "Player").slice(0, 20),
+    toUid,
+    toName: String(to.username || to.displayName || "Player").slice(0, 20),
+    status: "pending",
+    ...params,
+    winReward: MAX_WIN_REWARD,
+    matchId: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  await notifyOnce(toUid, uid, "realtime_invite", {inviteId: inviteRef.id});
+  return {inviteId: inviteRef.id};
+});
+
+/**
+ * Accepts a friend's challenge: creates the match and tells the inviter.
+ */
+export const acceptRealtimeInvite = onCall({timeoutSeconds: 60},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "Sign-in required.");
+    }
+    const inviteRef = db.collection("realtime_invites")
+      .doc(String(request.data?.inviteId || ""));
+
+    const first = (await inviteRef.get()).data();
+    if (!first || first.toUid !== uid || first.status !== "pending") {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Esta invitación ya no está disponible.",
+        "This invite is no longer available."
+      );
+    }
+    const params = clampLiveMatchParams(first);
+    const questions = await selectFixedMatchQuestions(
+      params.categoryId, params.difficulty, params.totalQuestions
+    );
+    if (questions.length === 0) {
+      throw new HttpsError("failed-precondition", "No questions available.");
+    }
+
+    const fromUid = String(first.fromUid);
+    const matchRef = db.collection("matches").doc();
+
+    await db.runTransaction(async (tx) => {
+      const [inviteSnap, fromSnap, toSnap] = await Promise.all([
+        tx.get(inviteRef),
+        tx.get(db.collection("users").doc(fromUid)),
+        tx.get(db.collection("users").doc(uid)),
+      ]);
+      if (inviteSnap.data()?.status !== "pending") {
+        throw new HttpsError("failed-precondition", "Invite not pending.");
+      }
+      writeLiveMatch(tx, matchRef, {
+        hostUid: fromUid,
+        guestUid: uid,
+        hostSeat: liveSeatFor(fromSnap.data() || {}),
+        guestSeat: liveSeatFor(toSnap.data() || {}),
+        params,
+        ranked: false,
+        questions,
+        status: "waiting",
+        extra: {source: "friend_invite", inviteId: inviteRef.id},
+      });
+      tx.update(inviteRef, {
+        status: "accepted",
+        matchId: matchRef.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    });
+
+    await notifyOnce(fromUid, uid, "realtime_invite_accepted", {
+      inviteId: inviteRef.id, matchId: matchRef.id,
+    });
+    return {matchId: matchRef.id};
+  });
+
+/**
+ * Declines a challenge (the invitee) or withdraws it (the inviter).
+ */
+export const closeRealtimeInvite = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const inviteRef = db.collection("realtime_invites")
+    .doc(String(request.data?.inviteId || ""));
+
+  await db.runTransaction(async (tx) => {
+    const data = (await tx.get(inviteRef)).data();
+    if (!data || data.status !== "pending") return;
+    if (data.toUid !== uid && data.fromUid !== uid) {
+      throw new HttpsError("permission-denied", "Not your invite.");
+    }
+    tx.update(inviteRef, {
+      status: data.toUid === uid ? "declined" : "cancelled",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+  return {ok: true};
 });
 
 /**
@@ -1745,14 +2525,14 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
       if (fresh.challengerStatus !== "finished") return;
       if (fresh.challengedStatus !== "finished") return;
 
+      const scoredQuestions = await keyedQuestions(matchRef, fresh, tx);
       const challengerScore = computeVerifiedPvpScore(
-        fresh.questions, fresh.challenger?.answers
+        scoredQuestions, fresh.challenger?.answers
       );
       const challengedScore = computeVerifiedPvpScore(
-        fresh.questions, fresh.challenged?.answers
+        scoredQuestions, fresh.challenged?.answers
       );
-      const matchQuestionCount = Array.isArray(fresh.questions) ?
-        fresh.questions.length : 0;
+      const matchQuestionCount = scoredQuestions.length;
       const challengerWrongCount =
         Math.max(matchQuestionCount - challengerScore, 0);
       const challengedWrongCount =
@@ -2045,6 +2825,7 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
         rewarded: true,
         challengerScore,
         challengedScore,
+        answerKey: answerIndicesOf(scoredQuestions),
         resultNotificationsSent: true,
       });
     });
@@ -2193,8 +2974,12 @@ export const createAsyncPvpMatch = onCall({
 
   const matchRef = db.collection("async_matches").doc();
   const now = admin.firestore.FieldValue.serverTimestamp();
+  // The key goes where no client can read it — see pvp_answer_key.ts.
+  const {publicQuestions, answerIndices} = splitAnswerKey(questions);
+  const createBatch = db.batch();
+  createBatch.set(answerKeyRef(matchRef), {answerIndices});
 
-  await matchRef.set({
+  createBatch.set(matchRef, {
     createdAt: now,
     lastUpdatedAt: now,
 
@@ -2202,9 +2987,9 @@ export const createAsyncPvpMatch = onCall({
     mode: "fixed",
     categoryId,
     difficulty,
-    totalQuestions: questions.length,
+    totalQuestions: publicQuestions.length,
     timePerQuestionSec,
-    questions,
+    questions: publicQuestions,
 
     challengerUid: uid,
     challengedUid,
@@ -2226,6 +3011,7 @@ export const createAsyncPvpMatch = onCall({
     winReward: MAX_WIN_REWARD,
     endedAt: null,
   });
+  await createBatch.commit();
 
   // Written here rather than through sendUserNotification: the challenge
   // and the invite that announces it now land in one call, and this is
@@ -2351,6 +3137,7 @@ export const openAsyncPvpTurn = onCall(async (request) => {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
     const ctx = asyncMatchContextFor(snap.data(), uid);
+    const keyed = await keyedQuestions(matchRef, ctx.data, tx);
 
     if (ctx.finishedAlready) {
       return {
@@ -2358,6 +3145,7 @@ export const openAsyncPvpTurn = onCall(async (request) => {
         finished: true,
         remainingMs: 0,
         answers: ctx.answers,
+        verdicts: verdictsFor(keyed, ctx.answers),
       };
     }
 
@@ -2390,6 +3178,7 @@ export const openAsyncPvpTurn = onCall(async (request) => {
       finished: turn.finished,
       remainingMs: turn.remainingMs,
       answers,
+      verdicts: verdictsFor(keyed, answers),
     };
   });
 });
@@ -2432,6 +3221,7 @@ export const submitAsyncPvpAnswer = onCall(async (request) => {
     if (ctx.finishedAlready) {
       throw new HttpsError("failed-precondition", "Round already closed.");
     }
+    const keyed = await keyedQuestions(matchRef, ctx.data, tx);
 
     const resolution = resolveAnswer({
       answers: ctx.answers,
@@ -2460,8 +3250,11 @@ export const submitAsyncPvpAnswer = onCall(async (request) => {
 
     tx.update(matchRef, patch);
 
+    const correctIndex = safeInt(keyed[questionIndex]?.answerIndex, -1);
     return {
       storedIndex: resolution.storedIndex,
+      correctIndex,
+      correct: resolution.storedIndex === correctIndex,
       timedOut: resolution.timedOut,
       nextIndex: resolution.nextIndex,
       nextRemainingMs: resolution.nextRemainingMs,
@@ -2494,11 +3287,12 @@ export const finishAsyncPvpMatch = onCall(async (request) => {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
     const ctx = asyncMatchContextFor(snap.data(), uid);
+    const keyed = await keyedQuestions(matchRef, ctx.data, tx);
 
     if (ctx.finishedAlready) {
       return {
         alreadyFinished: true,
-        score: computeVerifiedPvpScore(ctx.data.questions, ctx.answers),
+        score: computeVerifiedPvpScore(keyed, ctx.answers),
       };
     }
 
@@ -2530,7 +3324,7 @@ export const finishAsyncPvpMatch = onCall(async (request) => {
       answers[String(index)] = TIMED_OUT_ANSWER;
     }
 
-    const score = computeVerifiedPvpScore(ctx.data.questions, answers);
+    const score = computeVerifiedPvpScore(keyed, answers);
     patch[`${ctx.role}.score`] = score;
 
     tx.update(matchRef, patch);
@@ -4031,6 +4825,14 @@ function crossUserNotificationText(
       body: pickText(languageCode,
         `${senderName} te retó a una partida 1 vs 1.`,
         `${senderName} challenged you to a 1 vs 1 match.`),
+    };
+  case "realtime_invite":
+    return {
+      title: pickText(languageCode,
+        "Reto en tiempo real", "Realtime challenge"),
+      body: pickText(languageCode,
+        `${senderName} te invitó a una partida 1 vs 1 en tiempo real.`,
+        `${senderName} invited you to a realtime 1 vs 1 match.`),
     };
   case "match_turn":
     return {

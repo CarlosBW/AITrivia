@@ -2084,12 +2084,6 @@ abstract class AppLocalizations {
   /// **'Crear sala (Tiempo real)'**
   String get createMatchTitle;
 
-  /// No description provided for @createMatchYourName.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu nombre (displayName)'**
-  String get createMatchYourName;
-
   /// No description provided for @createMatchCategory.
   ///
   /// In es, this message translates to:

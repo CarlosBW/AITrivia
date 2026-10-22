@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
@@ -94,18 +93,13 @@ class _FriendChallengeSetupScreenState
     });
 
     try {
-      final myName = await _matchService.getMyDisplayNameFallback('Player');
-
       if (_challengeType == 'realtime') {
         await _realtimeInviteService.createInvite(
           toUid: widget.friendUid,
-          toName: widget.friendName,
-          fromName: myName,
           categoryId: _categoryId,
           difficulty: _difficulty,
           totalQuestions: _totalQuestions,
           timePerQuestionSec: _timePerQuestionSec,
-          winReward: EconomyService.defaultPvpWinReward,
         );
 
         if (!mounted) return;

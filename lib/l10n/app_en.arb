@@ -578,7 +578,6 @@
   "asyncMenuTip": "Tip: You challenge someone, play immediately, and your opponent can play later. Check Active Matches to see your pending challenges.",
 
   "createMatchTitle": "Create Room (Live)",
-  "createMatchYourName": "Your name (displayName)",
   "createMatchCategory": "Category",
   "createMatchDifficulty": "Difficulty",
   "createMatchDiffEasy": "1 (Easy)",

@@ -183,16 +183,52 @@ test("partidas 1v1", async (t) => {
     await assertSucceeds(getDoc(doc(como(RIVAL), "matches", "m1")));
   });
 
-  await t.test("puede escribir sus propias respuestas", async () => {
+  // Responder pasa por submitLiveMatchAnswer, que juzga contra el reloj y
+  // la clave del servidor. Escribir las propias respuestas directamente era
+  // poder ponerse las correctas.
+  await t.test("no puede escribir sus propias respuestas", async () => {
     await sembrar(["matches", "m1"], partida());
     const p = partida().players;
 
-    await assertSucceeds(
+    await assertFails(
       setDoc(
         doc(como(YO), "matches", "m1"),
         {players: {...p, [YO]: {...p[YO], answers: [1], score: 1}}},
         {merge: true}
       )
+    );
+  });
+
+  await t.test("no puede marcarse listo ni empezar la partida", async () => {
+    await sembrar(["matches", "m1"], partida({status: "waiting"}));
+    await assertFails(
+      setDoc(doc(como(YO), "matches", "m1"), {status: "playing"}, {merge: true})
+    );
+  });
+
+  await t.test("no puede volver ranked una partida casual", async () => {
+    await sembrar(["matches", "m1"], partida({ranked: false}));
+    await assertFails(
+      setDoc(doc(como(YO), "matches", "m1"),
+        {ranked: true, affectsPvpRating: true}, {merge: true})
+    );
+  });
+
+  // La clave de respuestas vive aparte para que ningún jugador la lea antes
+  // de que la partida termine.
+  await t.test("nadie lee la clave de respuestas", async () => {
+    await sembrar(["matches", "m1"], partida());
+    await sembrar(["matches", "m1", "secret", "answers"], {answerIndices: [1]});
+    await assertFails(
+      getDoc(doc(como(YO), "matches", "m1", "secret", "answers"))
+    );
+    await sembrar(["async_matches", "a1"], {
+      challengerUid: YO, challengedUid: RIVAL,
+    });
+    await sembrar(["async_matches", "a1", "secret", "answers"],
+      {answerIndices: [1]});
+    await assertFails(
+      getDoc(doc(como(YO), "async_matches", "a1", "secret", "answers"))
     );
   });
 
@@ -247,6 +283,12 @@ test("partidas 1v1", async (t) => {
     await assertFails(
       setDoc(doc(como(YO), "matches", "m2"), partida({winReward: 500}))
     );
+  });
+
+  // Ni siquiera una normal: con el rival que quisiera y sus propias
+  // preguntas, era un modo de bajarle el rating a cualquiera.
+  await t.test("no puede crear ninguna partida", async () => {
+    await assertFails(setDoc(doc(como(YO), "matches", "m3"), partida()));
   });
 });
 
@@ -309,5 +351,29 @@ test("contadores y contenido del servidor", async (t) => {
   await t.test("no puede borrar el tema semanal", async () => {
     await sembrar(["weekly_topics", "current"], {categoryId: "arte"});
     await assertFails(deleteDoc(doc(como(YO), "weekly_topics", "current")));
+  });
+});
+
+test("invitaciones en vivo", async (t) => {
+  const invitacion = (extra = {}) => ({
+    fromUid: YO, toUid: RIVAL, fromName: "Yo", toName: "Rival",
+    status: "pending", ...extra,
+  });
+
+  await t.test("las dos partes la leen", async () => {
+    await sembrar(["realtime_invites", "i1"], invitacion());
+    await assertSucceeds(getDoc(doc(como(YO), "realtime_invites", "i1")));
+    await assertSucceeds(getDoc(doc(como(RIVAL), "realtime_invites", "i1")));
+    await assertFails(getDoc(doc(como(AJENO), "realtime_invites", "i1")));
+  });
+
+  // Antes cualquiera mandaba invitaciones sin límite, con el nombre que
+  // quisiera, y cualquiera de las dos partes reescribía cualquier campo.
+  await t.test("el cliente no crea ni reescribe invitaciones", async () => {
+    await assertFails(setDoc(doc(como(YO), "realtime_invites", "i2"),
+      invitacion({fromName: "Soporte oficial"})));
+    await sembrar(["realtime_invites", "i1"], invitacion());
+    await assertFails(setDoc(doc(como(RIVAL), "realtime_invites", "i1"),
+      {status: "accepted", toUid: AJENO}, {merge: true}));
   });
 });

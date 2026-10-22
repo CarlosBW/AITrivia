@@ -15,6 +15,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import 'turn_anchor.dart';
 
 class MatchPlayScreen extends StatefulWidget {
   final String matchId;
@@ -41,6 +42,26 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _locked = false;
   int? _selected;
 
+  /// The right option for the question on screen, once the server has
+  /// judged the answer. Null until then: the key isn't in the match doc.
+  int? _revealCorrect;
+
+  /// When the current question was answered, so the reveal pause can
+  /// discount the round trip it waited on.
+  DateTime? _answeredAt;
+
+  /// The server's clock for the question on screen. Null means we don't
+  /// know where the run is and have to ask.
+  TurnAnchor? _anchor;
+  bool _answerInFlight = false;
+  bool _openingTurn = false;
+  bool _turnError = false;
+
+  /// When the opponent last banked an answer, as this screen saw it — the
+  /// cue for asking the server whether they have stopped playing.
+  int _opponentAnsweredCount = -1;
+  DateTime _opponentLastProgressAt = DateTime.now();
+
   bool _finishedSent = false;
   bool _finishing = false;
 
@@ -59,7 +80,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   bool _resultLogged = false;
 
   Timer? _disconnectWatchTimer;
-  DateTime? _opponentUnavailableSince;
   bool _disconnectCheckRunning = false;
   bool _disconnectFinalizing = false;
 
@@ -67,6 +87,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   static const int _defaultTimePerQ = 15;
   static const Duration _revealDelay = Duration(seconds: 1);
+
+  /// The least the revealed answer stays up, however slow the verdict was.
+  static const Duration _minRevealTime = Duration(milliseconds: 600);
+
+  /// How long past a question's time the opponent may go without
+  /// answering before the server is asked to end the match. The server
+  /// applies its own, matching grace; this only decides when to ask.
+  static const Duration _opponentStallGrace = Duration(seconds: 35);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
   // Held rather than rebuilt in `build()`: the per-question countdown calls
@@ -116,6 +144,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   void _resetPerQuestion() {
     _locked = false;
     _selected = null;
+    _revealCorrect = null;
+    _answeredAt = null;
     _timedOut = false;
     _timeoutAnswerIndex = null;
     _autoNextScheduled = false;
@@ -123,47 +153,49 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     _answerSubmitting = false;
   }
 
-  void _startTimerForQuestion(int seconds, int questionIndex, int answerIndex) {
+  /// Seconds left on the question on screen, per the server's anchor.
+  int _secondsLeftFromAnchor() {
+    final anchor = _anchor;
+    if (anchor == null || anchor.index != _index) return 0;
+    return (anchor.leftMs / 1000).ceil().clamp(0, 999);
+  }
+
+  /// Runs the countdown off the server's anchor, like the async screen:
+  /// the server judges every answer against its own deadline, so the
+  /// clock shown here only has to agree with it.
+  void _startTimerForQuestion(int questionIndex) {
     _timer?.cancel();
 
     _timerForIndex = questionIndex;
-    _secondsLeft = seconds;
-
     _resetPerQuestion();
+    _secondsLeft = _secondsLeftFromAnchor();
 
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    _timer = Timer.periodic(const Duration(milliseconds: 200), (t) {
       if (!mounted) return;
 
+      if (_locked) {
+        t.cancel();
+        return;
+      }
+
+      final left = _secondsLeftFromAnchor();
+      if (left > 0) {
+        if (left != _secondsLeft) setState(() => _secondsLeft = left);
+        return;
+      }
+
+      t.cancel();
+
       setState(() {
-        if (_locked) {
-          t.cancel();
-          return;
-        }
-
-        final next = _secondsLeft - 1;
-
-        if (next <= 0) {
-          _secondsLeft = 0;
-          t.cancel();
-
-          _locked = true;
-          _timedOut = true;
-          _timeoutAnswerIndex = answerIndex;
-          _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
-
-          SfxService.instance.playTimeout();
-
-          if (!_autoNextScheduled) {
-            _autoNextScheduled = true;
-            Future.delayed(_revealDelay, () {
-              if (!mounted) return;
-              if (_index == questionIndex) _goNextQuestion();
-            });
-          }
-        } else {
-          _secondsLeft = next;
-        }
+        _secondsLeft = 0;
+        _locked = true;
+        _timedOut = true;
+        _answeredAt = DateTime.now();
+        _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
       });
+
+      SfxService.instance.playTimeout();
+      unawaited(_persistAnswer(questionIndex, -1));
     });
   }
 
@@ -240,50 +272,128 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     _rematchPromptShowing = false;
   }
 
-  Future<void> _onTapAnswer({
-    required int tappedIndex,
-    required int answerIndex,
-  }) async {
+  void _onTapAnswer({required int tappedIndex}) {
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
+
+    final questionIndex = _index;
 
     setState(() {
       _answerSubmitting = true;
       _selected = tappedIndex;
       _locked = true;
-
       _timedOut = false;
       _timeoutAnswerIndex = null;
+      _answeredAt = DateTime.now();
       _statusMsg = null;
     });
 
     _timer?.cancel();
 
-    final correct = tappedIndex == answerIndex;
+    // The verdict, the sound and the move on all come with the server's
+    // answer: only the server knows which option is right.
+    unawaited(_persistAnswer(questionIndex, tappedIndex));
+  }
 
-    if (correct) {
-      SfxService.instance.playCorrect();
-    } else {
-      SfxService.instance.playWrong();
-    }
+  /// Banks one answer server-side, reveals the verdict, and picks up the
+  /// next question's clock from the response.
+  ///
+  /// A failure drops the anchor: the server owns the answers and the clock,
+  /// so the rebuild re-opens the turn and takes its word for where the run
+  /// is.
+  Future<void> _persistAnswer(int questionIndex, int selected) async {
+    _answerInFlight = true;
 
-    await _service.submitAnswer(
-      matchId: widget.matchId,
-      questionIndex: _index,
-      selectedAnswerIndex: tappedIndex,
-      deltaScore: correct ? 1 : 0,
-    );
+    try {
+      final result = await _service.submitLiveAnswer(
+        matchId: widget.matchId,
+        questionIndex: questionIndex,
+        selectedAnswerIndex: selected,
+      );
 
-    if (!_autoNextScheduled) {
-      _autoNextScheduled = true;
-      Future.delayed(_revealDelay, () {
-        if (!mounted) return;
-        _goNextQuestion();
+      if (!mounted) return;
+
+      if (_index == questionIndex && !result.timedOut && selected >= 0) {
+        if (result.correct) {
+          SfxService.instance.playCorrect();
+        } else {
+          SfxService.instance.playWrong();
+        }
+      }
+
+      setState(() {
+        if (_index == questionIndex) {
+          _revealCorrect = result.correctIndex;
+          if (_timedOut) _timeoutAnswerIndex = result.correctIndex;
+        }
+        _anchor = result.finished
+            ? null
+            : TurnAnchor(
+                index: result.nextIndex,
+                remainingMs: result.nextRemainingMs,
+              );
       });
+
+      _scheduleNextAfterReveal(questionIndex);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _anchor = null);
+      if (_index == questionIndex) _goNextQuestion();
+    } finally {
+      _answerInFlight = false;
     }
   }
 
+  /// Moves on after the reveal has been on screen for the usual pause,
+  /// counting the time already spent waiting for the verdict.
+  void _scheduleNextAfterReveal(int questionIndex) {
+    if (_autoNextScheduled) return;
+    _autoNextScheduled = true;
+
+    final waited = _answeredAt == null
+        ? Duration.zero
+        : DateTime.now().difference(_answeredAt!);
+    var delay = _revealDelay - waited;
+    if (delay < _minRevealTime) delay = _minRevealTime;
+
+    Future.delayed(delay, () {
+      if (!mounted) return;
+      if (_index == questionIndex) _goNextQuestion();
+    });
+  }
+
+  /// Asks the server which question to show and how long is left on it —
+  /// the only way in, also when coming back to a match already under way.
+  Future<void> _openTurn(int questionCount) async {
+    if (_openingTurn) return;
+    _openingTurn = true;
+
+    try {
+      final turn = await _service.openLiveTurn(matchId: widget.matchId);
+      if (!mounted) return;
+
+      setState(() {
+        _index = turn.finished ? questionCount : turn.index;
+        _anchor = turn.finished
+            ? null
+            : TurnAnchor(index: turn.index, remainingMs: turn.remainingMs);
+        _timerForIndex = -1;
+        _turnError = false;
+        _resetPerQuestion();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _turnError = true);
+    } finally {
+      _openingTurn = false;
+    }
+  }
+
+  /// Asks the server to end the match when the opponent has stopped
+  /// answering. The server decides from the deadlines it stamped on their
+  /// questions; this screen only watches their progress to know when the
+  /// question is worth asking.
   Future<void> _checkOpponentDisconnect({
     required Map<String, dynamic> matchData,
     required String myUid,
@@ -291,54 +401,37 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     if (_disconnectCheckRunning || _disconnectFinalizing) return;
 
     final status = (matchData['status'] ?? '').toString();
-    if (status != 'playing') {
-      _opponentUnavailableSince = null;
-      return;
-    }
+    if (status != 'playing') return;
 
     final hostUid = (matchData['hostUid'] ?? '').toString();
     final guestUid = (matchData['guestUid'] ?? '').toString();
     final opponentUid = myUid == hostUid ? guestUid : hostUid;
     if (opponentUid.isEmpty || opponentUid == myUid) return;
 
+    final players = Map<String, dynamic>.from(matchData['players'] ?? {});
+    final opponent = Map<String, dynamic>.from(players[opponentUid] ?? {});
+    if (opponent['finished'] == true) return;
+
+    final answered = (opponent['answers'] as Map?)?.length ?? 0;
+    if (answered != _opponentAnsweredCount) {
+      _opponentAnsweredCount = answered;
+      _opponentLastProgressAt = DateTime.now();
+      return;
+    }
+
+    final timePerQ =
+        ((matchData['timePerQuestionSec'] ?? _defaultTimePerQ) as num).toInt();
+    final quietFor = DateTime.now().difference(_opponentLastProgressAt);
+    if (quietFor < Duration(seconds: timePerQ) + _opponentStallGrace) return;
+
     _disconnectCheckRunning = true;
-
     try {
-      final opponentSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(opponentUid)
-          .get();
-
-      final opponentData = opponentSnap.data();
-      final presence = Map<String, dynamic>.from(
-        opponentData?['presence'] as Map? ?? {},
-      );
-
-      final presenceStatus = (presence['status'] ?? 'offline').toString();
-      final inMatch = presence['inMatch'] == true;
-      final isFresh = _presenceService.isProbablyOnline(presence);
-      final opponentOk = isFresh && presenceStatus == 'in_match' && inMatch;
-
-      if (opponentOk) {
-        _opponentUnavailableSince = null;
-        return;
-      }
-
-      _opponentUnavailableSince ??= DateTime.now();
-
-      final unavailableFor = DateTime.now().difference(
-        _opponentUnavailableSince!,
-      );
-
-      if (unavailableFor < const Duration(seconds: 30)) return;
-
       _disconnectFinalizing = true;
       await _service.claimOpponentDisconnected(widget.matchId);
     } catch (_) {
-      // Includes the server rejecting the claim (opponent still looks
-      // active) — reset so the next poll can re-check instead of this
-      // match session silently disabling disconnect-checking forever.
+      // The server still sees them inside their time: look again later.
       _disconnectFinalizing = false;
+      _opponentLastProgressAt = DateTime.now();
     } finally {
       _disconnectCheckRunning = false;
     }
@@ -386,7 +479,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     });
 
     try {
-      await _service.requestRematch(widget.matchId);
+      final rematchId = await _service.requestRematch(widget.matchId);
+      if (rematchId != null && mounted) _goToRematch(rematchId);
     } catch (e) {
       if (!mounted) return;
 
@@ -483,32 +577,30 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           final players = Map<String, dynamic>.from(data['players'] ?? {});
           final me = Map<String, dynamic>.from(players[uid] ?? {});
           final myScore = ((me['score'] ?? 0) as num).toInt();
-          final hostUid = (data['hostUid'] ?? '').toString();
-          final guestUid = (data['guestUid'] ?? '').toString();
-
-          final hostData = Map<String, dynamic>.from(players[hostUid] ?? {});
-          final guestData = Map<String, dynamic>.from(players[guestUid] ?? {});
-
-          final bothFinished =
-              hostData['finished'] == true && guestData['finished'] == true;
-
-          if (status == 'playing' && bothFinished && !_finishing) {
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (_finishing) return;
-
-              _finishing = true;
-
-              try {
-                await _service.forceFinalizeMatch(widget.matchId);
-              } finally {
-                _finishing = false;
-              }
-            });
-          }
-
           if (status == 'finished') {
             _timer?.cancel();
             return _buildEnd(context, data, uid);
+          }
+
+          if (_turnError) {
+            _timer?.cancel();
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.asyncMatchPlayConnectionError,
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => _openTurn(questions.length),
+                      child: Text(l10n.commonRetry),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (_index >= questions.length) {
@@ -526,6 +618,19 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             );
           }
 
+          // Only the server knows which question is next and how long is
+          // left on it. Mid-reveal the anchor already points at the next
+          // question, so the revealed answer stays on screen.
+          final anchored = _anchor?.index == _index;
+          if (!anchored && !_locked) {
+            if (!_answerInFlight) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _openTurn(questions.length);
+              });
+            }
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final qMap = Map<String, dynamic>.from(
             questions[_index] as Map,
           );
@@ -536,14 +641,8 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               .map((e) => e.toString())
               .toList();
 
-          final answerIndex = ((qMap['answerIndex'] ?? 0) as num).toInt();
-
           if (_timerForIndex != _index) {
-            _startTimerForQuestion(
-              timePerQ,
-              _index,
-              answerIndex,
-            );
+            _startTimerForQuestion(_index);
           }
 
           return AnimatedSwitcher(
@@ -568,7 +667,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               key: ValueKey('match_q_$_index'),
               qText: qText,
               options: options,
-              answerIndex: answerIndex,
               total: questions.length,
               myScore: myScore,
               timePerQ: timePerQ,
@@ -583,7 +681,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     required Key key,
     required String qText,
     required List<String> options,
-    required int answerIndex,
     required int total,
     required int myScore,
     required int timePerQ,
@@ -699,12 +796,15 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             const SizedBox(height: 20),
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
-              final isCorrect = i == answerIndex;
+              // Known only once the server has judged the answer: the key
+              // is no longer in the match doc.
+              final revealed = _revealCorrect != null;
+              final isCorrect = revealed && i == _revealCorrect;
               final letter = String.fromCharCode(65 + i);
 
               Color? fillColor;
 
-              if (_locked && !_timedOut) {
+              if (revealed && !_timedOut) {
                 if (isCorrect) {
                   fillColor = context.appColors.success.withValues(alpha: 0.16);
                 }
@@ -712,7 +812,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 if (isSelected && !isCorrect) {
                   fillColor = context.appColors.danger.withValues(alpha: 0.16);
                 }
-              } else if (!_locked && isSelected) {
+              } else if (!revealed && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
               }
 
@@ -724,7 +824,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                   borderColor = context.appColors.reward;
                   borderWidth = 3;
                 }
-              } else if (_locked) {
+              } else if (revealed) {
                 if (isCorrect) {
                   borderColor = context.appColors.success;
                   borderWidth = 2;
@@ -739,11 +839,11 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 borderWidth = 2;
               }
 
-              final badgeColor = (_locked && isCorrect)
+              final badgeColor = (revealed && isCorrect)
                   ? context.appColors.success
-                  : (_locked && isSelected && !isCorrect)
+                  : (revealed && isSelected && !isCorrect)
                       ? context.appColors.danger
-                      : (!_locked && isSelected)
+                      : (!revealed && isSelected)
                           ? colorScheme.primary
                           : colorScheme.surfaceContainerHighest;
 
@@ -754,7 +854,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
               IconData? trailingIcon;
               Color? trailingIconColor;
-              if (_locked && !_timedOut) {
+              if (revealed && !_timedOut) {
                 if (isCorrect) {
                   trailingIcon = Icons.check_circle;
                   trailingIconColor = context.appColors.success;
@@ -768,10 +868,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(context.radii.md),
-                  onTap: () => _onTapAnswer(
-                    tappedIndex: i,
-                    answerIndex: answerIndex,
-                  ),
+                  onTap: () => _onTapAnswer(tappedIndex: i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,

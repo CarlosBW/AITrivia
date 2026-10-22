@@ -15,6 +15,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import 'turn_anchor.dart';
 
 class AsyncMatchPlayScreen extends StatefulWidget {
   final String asyncMatchId;
@@ -46,13 +47,21 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _locked = false;
   int? _selected;
 
+  /// The right option for the question on screen, once the server has
+  /// judged the answer. Null until then: the key isn't in the match doc.
+  int? _revealCorrect;
+
+  /// When the current question was answered, so the reveal pause can
+  /// discount the round trip it waited on.
+  DateTime? _answeredAt;
+
   int _secondsLeft = 0;
   Timer? _timer;
   int _timerForIndex = -1;
 
   /// The server's clock for the question on screen. Null means we don't
   /// know where the run is and have to ask.
-  _TurnAnchor? _anchor;
+  TurnAnchor? _anchor;
 
   bool _timedOut = false;
   int? _timeoutAnswerIndex;
@@ -74,6 +83,9 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _questionInProgress = false;
 
   static const Duration _revealDelay = Duration(seconds: 1);
+
+  /// The least the revealed answer stays up, however slow the verdict was.
+  static const Duration _minRevealTime = Duration(milliseconds: 600);
   static const Duration _switchDuration = Duration(milliseconds: 250);
 
   @override
@@ -105,6 +117,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   void _resetPerQuestion() {
     _locked = false;
     _selected = null;
+    _revealCorrect = null;
+    _answeredAt = null;
     _timedOut = false;
     _timeoutAnswerIndex = null;
     _autoNextScheduled = false;
@@ -124,7 +138,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   /// per-question budget, so the clock a modified client shows itself has
   /// no bearing on what the server accepts. Ticks faster than once a second
   /// because it reads a deadline instead of decrementing a counter.
-  void _startTimerForQuestion(int questionIndex, int answerIndex) {
+  void _startTimerForQuestion(int questionIndex) {
     _timer?.cancel();
 
     _timerForIndex = questionIndex;
@@ -154,7 +168,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         _secondsLeft = 0;
         _locked = true;
         _timedOut = true;
-        _timeoutAnswerIndex = answerIndex;
+        _answeredAt = DateTime.now();
         _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
       });
 
@@ -165,15 +179,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       // after looking it up, which would make running the clock out the
       // cheapest way to buy time.
       _answers[questionIndex] = -1;
-      unawaited(_persistAnswer(questionIndex, -1, answerIndex));
-
-      if (!_autoNextScheduled) {
-        _autoNextScheduled = true;
-        Future.delayed(_revealDelay, () {
-          if (!mounted) return;
-          if (_index == questionIndex) _goNextQuestion();
-        });
-      }
+      unawaited(_persistAnswer(questionIndex, -1));
     });
   }
 
@@ -188,10 +194,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     });
   }
 
-  void _onTapAnswer({
-    required int tappedIndex,
-    required int answerIndex,
-  }) {
+  void _onTapAnswer({required int tappedIndex}) {
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
@@ -204,30 +207,35 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       _locked = true;
       _timedOut = false;
       _timeoutAnswerIndex = null;
+      _answeredAt = DateTime.now();
       _statusMsg = null;
     });
 
     _timer?.cancel();
 
-    if (tappedIndex == answerIndex) {
-      SfxService.instance.playCorrect();
-    } else {
-      SfxService.instance.playWrong();
-    }
-
-    // Banked alongside the reveal rather than before it: the round trip
-    // fits inside the pause, and the running score follows what the server
-    // actually stored (see [_persistAnswer]) instead of the tap.
+    // The verdict, the sound and the move on all come with the server's
+    // answer (see [_persistAnswer]): only the server knows which option is
+    // right.
     _answers[questionIndex] = tappedIndex;
-    unawaited(_persistAnswer(questionIndex, tappedIndex, answerIndex));
+    unawaited(_persistAnswer(questionIndex, tappedIndex));
+  }
 
-    if (!_autoNextScheduled) {
-      _autoNextScheduled = true;
-      Future.delayed(_revealDelay, () {
-        if (!mounted) return;
-        _goNextQuestion();
-      });
-    }
+  /// Moves on after the reveal has been on screen for the usual pause,
+  /// counting the time already spent waiting for the verdict.
+  void _scheduleNextAfterReveal(int questionIndex) {
+    if (_autoNextScheduled) return;
+    _autoNextScheduled = true;
+
+    final waited = _answeredAt == null
+        ? Duration.zero
+        : DateTime.now().difference(_answeredAt!);
+    var delay = _revealDelay - waited;
+    if (delay < _minRevealTime) delay = _minRevealTime;
+
+    Future.delayed(delay, () {
+      if (!mounted) return;
+      if (_index == questionIndex) _goNextQuestion();
+    });
   }
 
   /// Banks one answer server-side and picks up the next question's clock
@@ -240,7 +248,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   Future<void> _persistAnswer(
     int questionIndex,
     int selectedAnswerIndex,
-    int answerIndex,
   ) async {
     _answerInFlight = true;
 
@@ -253,20 +260,39 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
       if (!mounted) return;
 
+      if (_index == questionIndex) {
+        if (result.timedOut || selectedAnswerIndex < 0) {
+          // Already played the timeout sound when the clock ran out.
+        } else if (result.correct) {
+          SfxService.instance.playCorrect();
+        } else {
+          SfxService.instance.playWrong();
+        }
+      }
+
       setState(() {
         _answers[questionIndex] = result.storedIndex;
-        if (result.storedIndex == answerIndex) _correct++;
+        if (result.correct) _correct++;
+
+        if (_index == questionIndex) {
+          _revealCorrect = result.correctIndex;
+          if (_timedOut) _timeoutAnswerIndex = result.correctIndex;
+        }
 
         _anchor = result.finished
             ? null
-            : _TurnAnchor(
+            : TurnAnchor(
                 index: result.nextIndex,
                 remainingMs: result.nextRemainingMs,
               );
       });
+
+      _scheduleNextAfterReveal(questionIndex);
     } catch (_) {
       if (!mounted) return;
+      // Re-opening the turn takes the server's word for where the run is.
       setState(() => _anchor = null);
+      if (_index == questionIndex) _goNextQuestion();
     } finally {
       _answerInFlight = false;
     }
@@ -288,16 +314,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
       if (!mounted) return;
 
-      var correct = 0;
-
-      turn.answers.forEach((index, selected) {
-        if (index < 0 || index >= questions.length) return;
-
-        final question = Map<String, dynamic>.from(questions[index] as Map);
-        final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
-
-        if (selected == answerIndex) correct++;
-      });
+      final correct = turn.correctCount;
 
       setState(() {
         _answers
@@ -307,7 +324,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         _index = turn.finished ? questions.length : turn.index;
         _anchor = turn.finished
             ? null
-            : _TurnAnchor(index: turn.index, remainingMs: turn.remainingMs);
+            : TurnAnchor(index: turn.index, remainingMs: turn.remainingMs);
         _timerForIndex = -1;
         _turnError = false;
         _resetPerQuestion();
@@ -609,10 +626,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               .map((e) => e.toString())
               .toList();
 
-          final answerIndex = ((qMap['answerIndex'] ?? 0) as num).toInt();
-
           if (_timerForIndex != _index) {
-            _startTimerForQuestion(_index, answerIndex);
+            _startTimerForQuestion(_index);
           }
 
           _questionInProgress = !_locked;
@@ -639,7 +654,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               key: ValueKey('async_q_$_index'),
               qText: qText,
               options: options,
-              answerIndex: answerIndex,
               total: questions.length,
               timePerQ: timePerQ,
             ),
@@ -679,7 +693,6 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     required Key key,
     required String qText,
     required List<String> options,
-    required int answerIndex,
     required int total,
     required int timePerQ,
   }) {
@@ -794,12 +807,15 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
             const SizedBox(height: 20),
             ...List.generate(options.length, (i) {
               final isSelected = _selected == i;
-              final isCorrect = i == answerIndex;
+              // Known only once the server has judged the answer: the key
+              // is no longer in the match doc.
+              final revealed = _revealCorrect != null;
+              final isCorrect = revealed && i == _revealCorrect;
               final letter = String.fromCharCode(65 + i);
 
               Color? fillColor;
 
-              if (_locked && !_timedOut) {
+              if (revealed && !_timedOut) {
                 if (isCorrect) {
                   fillColor = context.appColors.success.withValues(alpha: 0.16);
                 }
@@ -807,7 +823,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                 if (isSelected && !isCorrect) {
                   fillColor = context.appColors.danger.withValues(alpha: 0.16);
                 }
-              } else if (!_locked && isSelected) {
+              } else if (!revealed && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;
               }
 
@@ -819,7 +835,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                   borderColor = context.appColors.reward;
                   borderWidth = 3;
                 }
-              } else if (_locked) {
+              } else if (revealed) {
                 if (isCorrect) {
                   borderColor = context.appColors.success;
                   borderWidth = 2;
@@ -834,11 +850,11 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                 borderWidth = 2;
               }
 
-              final badgeColor = (_locked && isCorrect)
+              final badgeColor = (revealed && isCorrect)
                   ? context.appColors.success
-                  : (_locked && isSelected && !isCorrect)
+                  : (revealed && isSelected && !isCorrect)
                       ? context.appColors.danger
-                      : (!_locked && isSelected)
+                      : (!revealed && isSelected)
                           ? colorScheme.primary
                           : colorScheme.surfaceContainerHighest;
 
@@ -849,7 +865,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
               IconData? trailingIcon;
               Color? trailingIconColor;
-              if (_locked && !_timedOut) {
+              if (revealed && !_timedOut) {
                 if (isCorrect) {
                   trailingIcon = Icons.check_circle;
                   trailingIconColor = context.appColors.success;
@@ -863,10 +879,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(context.radii.md),
-                  onTap: () => _onTapAnswer(
-                    tappedIndex: i,
-                    answerIndex: answerIndex,
-                  ),
+                  onTap: () => _onTapAnswer(tappedIndex: i),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
@@ -1103,22 +1116,4 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               ),
     );
   }
-}
-
-/// The server's clock for one question: how much was left when the call
-/// returned, and a stopwatch running since then.
-///
-/// Elapsed time comes from a [Stopwatch] rather than wall-clock arithmetic
-/// so a device clock that jumps mid-question — by accident or on purpose —
-/// can't buy or burn time. The server judges the real deadline anyway; this
-/// only has to keep the countdown honest on screen.
-class _TurnAnchor {
-  _TurnAnchor({required this.index, required this.remainingMs})
-      : _since = Stopwatch()..start();
-
-  final int index;
-  final int remainingMs;
-  final Stopwatch _since;
-
-  int get leftMs => remainingMs - _since.elapsedMilliseconds;
 }

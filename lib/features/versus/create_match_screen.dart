@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../services/economy_service.dart';
 import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
@@ -68,21 +67,8 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     return options;
   }
 
-  // Fijo, igual que el matchmaking público — evita que el jugador siempre
-  // elija la recompensa máxima al crear su propia sala.
-  static const int _winReward = EconomyService.defaultPvpWinReward;
-
-  final TextEditingController _nameCtrl =
-      TextEditingController(text: 'Host');
-
   bool _loading = false;
   String? _error;
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _createRoom() async {
     if (_loading || _categoryId == null) return;
@@ -98,8 +84,6 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         difficulty: _difficulty,
         totalQuestions: _totalQuestions,
         timePerQuestionSec: _timePerQuestionSec,
-        winReward: _winReward,
-        displayName: _nameCtrl.text.trim().isEmpty ? 'Host' : _nameCtrl.text.trim(),
       );
 
       if (!mounted) return;
@@ -129,8 +113,6 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           difficulty: _difficulty,
           totalQuestions: _totalQuestions,
           timePerQuestionSec: _timePerQuestionSec,
-          winReward: _winReward,
-          displayName: _nameCtrl.text.trim().isEmpty ? 'Player' : _nameCtrl.text.trim(),
         ),
       ),
     );
@@ -153,15 +135,6 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               Text(_error!, style: TextStyle(color: context.appColors.danger)),
               const SizedBox(height: 12),
             ],
-
-            TextField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.createMatchYourName,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
 
             FutureBuilder<List<_CategoryOption>>(
               future: _categoriesFuture,

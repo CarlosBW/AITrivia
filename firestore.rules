@@ -174,16 +174,6 @@ service cloud.firestore {
             && request.resource.data.equippedTheme in resource.data.ownedThemes);
     }
 
-    // The only winReward value any PvP match is ever created with today
-    // (see create_match_screen.dart, live_menu_screen.dart,
-    // async_menu_screen.dart, friend_challenge_setup_screen.dart) — locking
-    // it here stops a modified client from creating a match with a higher
-    // stake directly against Firestore. finalizePvpMatch/
-    // finalizeAsyncPvpMatch still clamp it server-side too as a backstop.
-    function isSanctionedWinReward(value) {
-      return value == 2;
-    }
-
     // economyProtectedFields() only locks these down on `update` — `create`
     // only ever fires once per uid (there's no client `delete` on this
     // path, so a doc can't be removed and recreated to hit this branch
@@ -635,39 +625,16 @@ service cloud.firestore {
           request.auth.uid == resource.data.guestUid
         );
 
-      allow create: if request.auth != null
-        && (
-          request.auth.uid == request.resource.data.hostUid ||
-          request.auth.uid == request.resource.data.guestUid
-        )
-        && isSanctionedWinReward(request.resource.data.winReward);
-
-      allow update: if request.auth != null
-        && (
-          request.auth.uid == resource.data.hostUid ||
-          request.auth.uid == resource.data.guestUid ||
-          (
-            resource.data.guestUid == null &&
-            request.resource.data.guestUid == request.auth.uid &&
-            request.resource.data.guestUid != resource.data.hostUid
-          )
-        )
-        && request.resource.data.winReward == resource.data.winReward
-        && request.resource.data.questions == resource.data.questions
-        && request.resource.data.winnerUid == resource.data.winnerUid
-        && request.resource.data.finishReason == resource.data.finishReason
-        && request.resource.data.rewarded == resource.data.rewarded
-        // A player may only touch their own entry in `players`. Locking
-        // `questions` above stops someone swapping in questions they know,
-        // but finalizePvpMatch scores each side from `players.{uid}.answers`
-        // — so without this, either player could rewrite the *opponent's*
-        // answers to wrong ones and hand themselves a verified win, rating
-        // and rewards included. Every legitimate client write here is
-        // `players.$uid.{ready,answers,score,finished,finishedAt}` (see
-        // match_service.dart), so restricting the diff to the caller's own
-        // key costs nothing and closes it.
-        && request.resource.data.players.diff(resource.data.players)
-            .affectedKeys().hasOnly([request.auth.uid]);
+      // Cloud-Function-only, like async_matches. Creating a room,
+      // readiness, answers, finishing and rematches all go through
+      // callables (createPrivateLiveMatch, setLiveMatchReady,
+      // submitLiveMatchAnswer, finishLiveMatch, requestLiveRematch...).
+      // The rules used to allow client creates and updates and could only
+      // check their shape: a player could create a ranked match against
+      // anyone with questions they knew, or flip a casual one to ranked
+      // once winning. The answer key sits in matches/{id}/secret/answers,
+      // which no rule matches, so no client can read it.
+      allow create, update, delete: if false;
     }
 
     // The "current" weekly topic (and its rewardCoins/rewardAvatarId) is
@@ -728,16 +695,11 @@ service cloud.firestore {
           request.auth.uid == resource.data.toUid
         );
 
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.fromUid;
-
-      allow update: if request.auth != null
-        && (
-          request.auth.uid == resource.data.fromUid ||
-          request.auth.uid == resource.data.toUid
-        );
-
-      allow delete: if false;
+      // Created, accepted and closed by callables (createRealtimeInvite,
+      // acceptRealtimeInvite, closeRealtimeInvite). Client writes let
+      // anyone send unlimited invites with any names on them, and either
+      // side rewrite any field, toUid included.
+      allow create, update, delete: if false;
     }
 
     // Cloud-Function-only for anything cross-user (tryFindLiveOpponent,

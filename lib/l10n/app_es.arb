@@ -601,7 +601,6 @@
   "asyncMenuTip": "Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.",
 
   "createMatchTitle": "Crear sala (Tiempo real)",
-  "createMatchYourName": "Tu nombre (displayName)",
   "createMatchCategory": "Categoría",
   "createMatchDifficulty": "Dificultad",
   "createMatchDiffEasy": "1 (Fácil)",

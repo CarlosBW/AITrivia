@@ -1139,9 +1139,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createMatchTitle => 'Crear sala (Tiempo real)';
 
   @override
-  String get createMatchYourName => 'Tu nombre (displayName)';
-
-  @override
   String get createMatchCategory => 'Categoría';
 
   @override

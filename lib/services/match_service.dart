@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,7 +9,7 @@ import 'pvp_league_service.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
 
-/// Where the server says a player stands in an async match.
+/// Where the server says a player stands in a PvP match, async or live.
 ///
 /// [remainingMs] is a duration rather than a deadline on purpose: the
 /// countdown runs off it directly, so a wrong device clock can't buy time.
@@ -20,6 +19,7 @@ class AsyncPvpTurn {
     required this.finished,
     required this.remainingMs,
     required this.answers,
+    this.verdicts = const {},
   });
 
   /// Question to show; equals the question count once [finished].
@@ -29,12 +29,19 @@ class AsyncPvpTurn {
 
   /// Everything banked so far, keyed by question index.
   final Map<int, int> answers;
+
+  /// Whether each banked answer was right, keyed by question index. The
+  /// answer key itself never reaches the client during a match.
+  final Map<int, bool> verdicts;
+
+  int get correctCount => verdicts.values.where((v) => v).length;
 }
 
 /// What the server banked for one answer, plus the next question's clock.
 class AsyncPvpAnswer {
   const AsyncPvpAnswer({
     required this.storedIndex,
+    required this.correctIndex,
     required this.timedOut,
     required this.nextIndex,
     required this.nextRemainingMs,
@@ -44,6 +51,11 @@ class AsyncPvpAnswer {
   /// The option actually recorded — -1 when the answer arrived too late,
   /// whatever the client sent.
   final int storedIndex;
+
+  /// The right option, revealed only once this question is answered.
+  final int correctIndex;
+
+  bool get correct => storedIndex >= 0 && storedIndex == correctIndex;
   final bool timedOut;
   final int nextIndex;
 
@@ -314,68 +326,38 @@ class MatchService {
   // LIVE 1 vs 1 (matches) - lo que ya tenías
   // ============================================================
 
+  // Every write to a live match goes through a Cloud Function now. The
+  // client used to create the match with its own questions and write its
+  // own answers, readiness and rematches; the rules could check the shape
+  // of those writes but not their contents. These calls mirror the async
+  // ones: the server stamps each question's deadline, judges each answer
+  // against a key the client can't read, and writes the scores.
+
+  HttpsCallable _callable(String name, {int timeoutSeconds = 15}) =>
+      FirebaseFunctions.instance.httpsCallable(
+        name,
+        options: HttpsCallableOptions(
+          timeout: Duration(seconds: timeoutSeconds),
+        ),
+      );
+
+  /// Creates a private room; the other player joins with its code.
   Future<String> createFixedMatch({
     required String categoryId,
     int totalQuestions = 10,
     int timePerQuestionSec = 15,
-    int winReward = EconomyService.defaultPvpWinReward,
     int difficulty = 1,
-    String displayName = 'Host',
     bool ranked = false,
   }) async {
-    final matchRef = _db.collection('matches').doc();
-
-    final questions = await _generateFixedQuestions(
-      categoryId: categoryId,
-      difficulty: difficulty,
-      total: totalQuestions,
-    );
-
-    final code = _randomCode(5);
-    final userSnap = await _userRef(uid).get();
-    final userData = userSnap.data() ?? {};
-
-    final avatarId = (userData['avatarId'] ?? 'avatar_1').toString();
-    final frameId = (userData['equippedFrame'] ?? '').toString();
-    final bestLeagueId = (userData['bestLeagueId'] ?? '').toString();
-
-    await matchRef.set({
-      'createdAt': FieldValue.serverTimestamp(),
-      'status': 'waiting',
-      'mode': 'fixed',
-      'matchType': ranked ? 'ranked_private' : 'private',
-      'ranked': ranked,
-      'affectsPvpRating': ranked,
+    final result =
+        await _callable('createPrivateLiveMatch', timeoutSeconds: 30).call({
       'categoryId': categoryId,
       'difficulty': difficulty,
-      'aiTopic': null,
-      'entryFee': 0,
-      'winReward': winReward,
-      'loseReward': 0,
       'totalQuestions': totalQuestions,
       'timePerQuestionSec': timePerQuestionSec,
-      'questions': questions,
-      'hostUid': uid,
-      'guestUid': null,
-      'players': {
-        uid: {
-          'displayName': displayName,
-          'avatarId': avatarId,
-          'equippedFrame': frameId,
-          'bestLeagueId': bestLeagueId,
-          'score': 0,
-          'ready': false,
-          'finished': false,
-        },
-      },
-      'startAt': null,
-      'endedAt': null,
-      'winnerUid': null,
-      'rewarded': false,
-      'matchCode': code,
+      'ranked': ranked,
     });
-
-    return matchRef.id;
+    return ((result.data as Map)['matchId'] ?? '').toString();
   }
 
   /// Looks up a private room by its shared code and claims the guest slot
@@ -400,312 +382,62 @@ class MatchService {
     }
   }
 
+  /// Marks me ready (or not) in the lobby; the server starts the match
+  /// once both players are.
   Future<void> setReady(String matchId, bool ready) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) throw Exception(_l10n.serviceRoomNotFound);
-
-      final data = snap.data() as Map<String, dynamic>;
-      final status = (data['status'] ?? 'waiting').toString();
-      if (status != 'waiting') return;
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-      if (!players.containsKey(uid)) {
-        throw Exception(_l10n.serviceNotInRoom);
-      }
-
-      tx.update(ref, {'players.$uid.ready': ready});
-    });
-
-    await tryStartMatchIfReady(matchId);
-  }
-
-  Future<void> tryStartMatchIfReady(String matchId) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) return;
-
-      final status = (data['status'] ?? 'waiting').toString();
-      if (status != 'waiting') return;
-
-      final mode = (data['mode'] ?? 'fixed').toString();
-      if (mode != 'fixed') return;
-
-      final hostUid = data['hostUid'] as String?;
-      final guestUid = data['guestUid'] as String?;
-      if (hostUid == null || guestUid == null) return;
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-      final hostReady = (players[hostUid]?['ready'] == true);
-      final guestReady = (players[guestUid]?['ready'] == true);
-      if (!hostReady || !guestReady) return;
-
-      tx.update(ref, {
-        'status': 'playing',
-        'startAt': FieldValue.serverTimestamp(),
-      });
+    await _callable('setLiveMatchReady').call({
+      'matchId': matchId,
+      'ready': ready,
     });
   }
 
-  /// Cancels a match still in the lobby (`status == 'waiting'`, nothing of
-  /// economic consequence has happened yet) — used when the other player
-  /// goes stale before both are ready, so the remaining player isn't stuck
-  /// on match_lobby_screen.dart forever with no way out. `status` isn't
-  /// locked in firestore.rules (tryStartMatchIfReady already transitions
-  /// it client-side), so no rules change is needed for this.
+  /// Cancels a room still in the lobby, so the player left behind when the
+  /// other one goes isn't stuck there.
   Future<void> cancelWaitingMatch(String matchId) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) return;
-
-      final status = (data['status'] ?? 'waiting').toString();
-      if (status != 'waiting') return;
-
-      tx.update(ref, {'status': 'cancelled'});
-    });
+    await _callable('cancelLiveMatch').call({'matchId': matchId});
   }
 
-  // `score` here is still an optimistic, client-computed value used only
-  // for this player's own live in-match display — finalizePvpMatch ignores
-  // it entirely and recomputes the authoritative score itself from
-  // `players.$uid.answers` (this player's actual selected option per
-  // question) against the match's own stored `questions`, so a modified
-  // client reporting an inflated deltaScore can no longer affect the real
-  // result. The per-question `answers` map (keyed by questionIndex) also
-  // makes this a one-shot write per question, same as `score` was before.
-  Future<void> submitAnswer({
+  /// Opens (or resumes) my run through a live match. Same contract as
+  /// [openAsyncTurn].
+  Future<AsyncPvpTurn> openLiveTurn({required String matchId}) async {
+    final result =
+        await _callable('openLiveMatchTurn').call({'matchId': matchId});
+    return _turnFrom(result.data);
+  }
+
+  /// Banks one live answer and returns the verdict and the next clock. Same
+  /// contract as [submitAsyncAnswer].
+  Future<AsyncPvpAnswer> submitLiveAnswer({
     required String matchId,
     required int questionIndex,
     required int selectedAnswerIndex,
-    required int deltaScore,
   }) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) return;
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-      if (!players.containsKey(uid)) {
-        throw Exception(_l10n.serviceNotInRoom);
-      }
-
-      final me = Map<String, dynamic>.from(players[uid] ?? {});
-      final answers = Map<String, dynamic>.from(me['answers'] ?? {});
-
-      final key = questionIndex.toString();
-      if (answers.containsKey(key)) return;
-
-      tx.update(ref, {
-        'players.$uid.answers.$key': selectedAnswerIndex,
-        if (deltaScore > 0)
-          'players.$uid.score': FieldValue.increment(deltaScore),
-      });
+    final result = await _callable('submitLiveMatchAnswer').call({
+      'matchId': matchId,
+      'questionIndex': questionIndex,
+      'selectedIndex': selectedAnswerIndex,
     });
+    return _answerFrom(result.data);
   }
 
+  /// Closes my run; once both players have, the server settles the match.
   Future<void> setFinished(String matchId) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    await _db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      final data = snap.data();
-      if (data == null) return;
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-      if (!players.containsKey(uid)) return;
-
-      tx.update(ref, {
-        'players.$uid.finished': true,
-        'players.$uid.finishedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
-  Future<void> finalizeMatchIfComplete(String matchId) async {
-    // La finalización real la hace Firebase Functions.
-    return;
-  }
-
-  Future<void> forceFinalizeMatch(String matchId) async {
-    // La finalización real la hace Firebase Functions.
-    return;
+    await _callable('finishLiveMatch').call({'matchId': matchId});
   }
 
   // ============================================================
   // REMATCH SYSTEM
   // ============================================================
 
-  Future<void> requestRematch(String matchId) async {
-    final ref = _db.collection('matches').doc(matchId);
-
-    final snap = await ref.get();
-    final data = snap.data();
-
-    if (data == null) {
-      throw Exception(_l10n.serviceMatchNotFound);
-    }
-
-    final hostUid = (data['hostUid'] ?? '').toString();
-    final guestUid = (data['guestUid'] ?? '').toString();
-
-    final opponentUid = uid == hostUid ? guestUid : hostUid;
-
-    final rematchRequests =
-        Map<String, dynamic>.from(data['rematchRequests'] ?? {});
-
-    final opponentAlreadyAccepted = rematchRequests[opponentUid] == true;
-
+  /// Asks for a rematch. The server notifies the opponent on the first ask
+  /// and creates the new match once both have asked, returning its id.
+  Future<String?> requestRematch(String matchId) async {
     await _notificationService.markRematchRequestNotificationsAsRead(
       matchId: matchId,
     );
-
-    await ref.set({
-      'rematchRequests': {
-        uid: true,
-      },
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    if (!opponentAlreadyAccepted && opponentUid.isNotEmpty) {
-      await _notificationService.notifyUser(
-        targetUid: opponentUid,
-        type: 'rematch_request',
-        data: {'matchId': matchId},
-      );
-    }
-
-    await createRematchIfReady(matchId);
-  }
-
-  Future<String?> createRematchIfReady(String matchId) async {
-    final oldRef = _db.collection('matches').doc(matchId);
-
-    return _db.runTransaction<String?>((tx) async {
-      final snap = await tx.get(oldRef);
-
-      final data = snap.data();
-      if (data == null) return null;
-
-      final status = (data['status'] ?? '').toString();
-      if (status != 'finished') return null;
-
-      // ✅ evita crear revancha duplicada
-      final existingRematchId = (data['rematchMatchId'] ?? '').toString();
-
-      if (existingRematchId.isNotEmpty) {
-        return existingRematchId;
-      }
-
-      final hostUid = (data['hostUid'] ?? '').toString();
-      final guestUid = (data['guestUid'] ?? '').toString();
-
-      if (hostUid.isEmpty || guestUid.isEmpty) {
-        return null;
-      }
-
-      final rematchRequests =
-          Map<String, dynamic>.from(data['rematchRequests'] ?? {});
-
-      final hostAccepted = rematchRequests[hostUid] == true;
-      final guestAccepted = rematchRequests[guestUid] == true;
-
-      // ❌ todavía falta uno
-      if (!hostAccepted || !guestAccepted) {
-        return null;
-      }
-
-      final categoryId = (data['categoryId'] ?? '').toString();
-      final difficulty = ((data['difficulty'] ?? 1) as num).toInt();
-      final totalQuestions = ((data['totalQuestions'] ?? 10) as num).toInt();
-
-      final timePerQuestionSec =
-          ((data['timePerQuestionSec'] ?? 15) as num).toInt();
-
-      final winReward = ((data['winReward'] ?? 0) as num).toInt();
-
-      final players = Map<String, dynamic>.from(data['players'] ?? {});
-
-      final hostPlayer = Map<String, dynamic>.from(players[hostUid] ?? {});
-
-      final guestPlayer = Map<String, dynamic>.from(players[guestUid] ?? {});
-
-      final hostName = (hostPlayer['displayName'] ?? 'Host').toString();
-
-      final guestName = (guestPlayer['displayName'] ?? 'Guest').toString();
-
-      final questions = await _generateFixedQuestions(
-        categoryId: categoryId,
-        difficulty: difficulty,
-        total: totalQuestions,
-      );
-
-      final newRef = _db.collection('matches').doc();
-
-      final code = _randomCode(5);
-
-      final ranked = data['ranked'] == true;
-      final affectsPvpRating = data['affectsPvpRating'] == true || ranked;
-      final matchmakingType = (data['matchmakingType'] ?? '').toString();
-
-      tx.set(newRef, {
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'playing',
-        'mode': 'fixed',
-        'categoryId': categoryId,
-        'difficulty': difficulty,
-        'aiTopic': null,
-        'entryFee': 0,
-        'winReward': winReward,
-        'loseReward': 0,
-        'totalQuestions': totalQuestions,
-        'timePerQuestionSec': timePerQuestionSec,
-        'questions': questions,
-        'hostUid': hostUid,
-        'guestUid': guestUid,
-        'players': {
-          hostUid: {
-            'displayName': hostName,
-            'score': 0,
-            'ready': true,
-            'finished': false,
-          },
-          guestUid: {
-            'displayName': guestName,
-            'score': 0,
-            'ready': true,
-            'finished': false,
-          },
-        },
-        'startAt': FieldValue.serverTimestamp(),
-        'endedAt': null,
-        'winnerUid': null,
-        'rewarded': false,
-        'matchCode': code,
-        'ranked': ranked,
-        'affectsPvpRating': affectsPvpRating,
-        'matchmakingType': matchmakingType.isEmpty
-            ? (ranked ? 'ranked_rematch' : 'casual_rematch')
-            : matchmakingType,
-        'previousMatchId': matchId,
-      });
-
-      // ✅ marca el match viejo
-      tx.update(oldRef, {
-        'rematchMatchId': newRef.id,
-      });
-
-      return newRef.id;
-    });
+    final result = await _callable('requestLiveRematch', timeoutSeconds: 30)
+        .call({'matchId': matchId});
+    return (result.data as Map)['rematchMatchId']?.toString();
   }
 
   /// Claims that the opponent in a live match has disconnected, ending it
@@ -829,14 +561,7 @@ class MatchService {
         )
         .call({'matchId': matchId});
 
-    final data = Map<String, dynamic>.from(result.data as Map);
-
-    return AsyncPvpTurn(
-      index: (data['index'] as num).toInt(),
-      finished: data['finished'] == true,
-      remainingMs: ((data['remainingMs'] ?? 0) as num).toInt(),
-      answers: _parseAnswerMap(data['answers']),
-    );
+    return _turnFrom(result.data);
   }
 
   /// Banks one answer and returns the clock for the question after it.
@@ -866,15 +591,7 @@ class MatchService {
       'selectedIndex': selectedAnswerIndex,
     });
 
-    final data = Map<String, dynamic>.from(result.data as Map);
-
-    return AsyncPvpAnswer(
-      storedIndex: ((data['storedIndex'] ?? -1) as num).toInt(),
-      timedOut: data['timedOut'] == true,
-      nextIndex: ((data['nextIndex'] ?? 0) as num).toInt(),
-      nextRemainingMs: ((data['nextRemainingMs'] ?? 0) as num).toInt(),
-      finished: data['finished'] == true,
-    );
+    return _answerFrom(result.data);
   }
 
   /// Closes my round and returns the score the server computed from the
@@ -933,6 +650,37 @@ class MatchService {
   /// An answers map as the callables return it, keyed by question index.
   Map<int, int> _parseAnswerMap(Object? raw) => rules.parseAnswerMap(raw);
 
+  AsyncPvpTurn _turnFrom(Object? raw) {
+    final data = Map<String, dynamic>.from(raw as Map);
+    final verdicts = <int, bool>{};
+    final rawVerdicts = data['verdicts'];
+    if (rawVerdicts is Map) {
+      rawVerdicts.forEach((k, v) {
+        final i = int.tryParse(k.toString());
+        if (i != null) verdicts[i] = v == true;
+      });
+    }
+    return AsyncPvpTurn(
+      index: ((data['index'] ?? 0) as num).toInt(),
+      finished: data['finished'] == true,
+      remainingMs: ((data['remainingMs'] ?? 0) as num).toInt(),
+      answers: _parseAnswerMap(data['answers']),
+      verdicts: verdicts,
+    );
+  }
+
+  AsyncPvpAnswer _answerFrom(Object? raw) {
+    final data = Map<String, dynamic>.from(raw as Map);
+    return AsyncPvpAnswer(
+      storedIndex: ((data['storedIndex'] ?? -1) as num).toInt(),
+      correctIndex: ((data['correctIndex'] ?? -1) as num).toInt(),
+      timedOut: data['timedOut'] == true,
+      nextIndex: ((data['nextIndex'] ?? 0) as num).toInt(),
+      nextRemainingMs: ((data['nextRemainingMs'] ?? 0) as num).toInt(),
+      finished: data['finished'] == true,
+    );
+  }
+
   /// Inbox de retos: soy el retado.
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyAsyncChallengesInbox({
     int limit = 50,
@@ -955,109 +703,5 @@ class MatchService {
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots();
-  }
-
-  // ============================================================
-  // UTIL
-  // ============================================================
-
-  Future<String> getMyDisplayNameFallback(String fallback) async {
-    try {
-      final snap = await _db.collection('users').doc(uid).get();
-      final data = snap.data();
-      final name = (data?['displayName'] ?? '').toString().trim();
-      if (name.isNotEmpty) return name;
-    } catch (_) {}
-    return fallback;
-  }
-
-  final _secureRandom = Random.secure();
-
-  String _randomCode(int len) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final b = StringBuffer();
-    for (int i = 0; i < len; i++) {
-      b.write(chars[_secureRandom.nextInt(chars.length)]);
-    }
-    return b.toString();
-  }
-
-  static const Duration _questionFetchTimeout = Duration(seconds: 15);
-
-  Future<List<Map<String, dynamic>>> _generateFixedQuestions({
-    required String categoryId,
-    required int difficulty,
-    required int total,
-  }) async {
-    if (categoryId == 'random') {
-      return _generateRandomAcrossCategories(
-        difficulty: difficulty,
-        total: total,
-      );
-    }
-
-    final col = _db
-        .collection('fixed_pools')
-        .doc(categoryId)
-        .collection('difficulty_$difficulty')
-        .doc('pool')
-        .collection('questions');
-
-    final snap = await col.get().timeout(
-          _questionFetchTimeout,
-          onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
-        );
-    final docs = snap.docs;
-    if (docs.isEmpty) {
-      throw Exception(_l10n.servicePoolEmptyForCategory(categoryId));
-    }
-
-    docs.shuffle(Random());
-    return docs.take(min(total, docs.length)).map((d) => d.data()).toList();
-  }
-
-  Future<List<Map<String, dynamic>>> _generateRandomAcrossCategories({
-    required int difficulty,
-    required int total,
-  }) async {
-    final catsSnap = await _db
-        .collection('fixed_categories')
-        .where('isActive', isEqualTo: true)
-        .get()
-        .timeout(
-          _questionFetchTimeout,
-          onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
-        );
-
-    final categories = catsSnap.docs.map((d) => d.id).toList();
-    if (categories.isEmpty) {
-      throw Exception(_l10n.serviceNoActiveCategories);
-    }
-
-    final rnd = Random();
-    categories.shuffle(rnd);
-
-    final out = <Map<String, dynamic>>[];
-
-    while (out.length < total) {
-      final cat = categories[rnd.nextInt(categories.length)];
-      final col = _db
-          .collection('fixed_pools')
-          .doc(cat)
-          .collection('difficulty_$difficulty')
-          .doc('pool')
-          .collection('questions');
-
-      final snap = await col.get().timeout(
-            _questionFetchTimeout,
-            onTimeout: () => throw Exception(_l10n.serviceConnectionTimeout),
-          );
-      if (snap.docs.isEmpty) continue;
-
-      final pick = snap.docs[rnd.nextInt(snap.docs.length)].data();
-      out.add(pick);
-    }
-
-    return out;
   }
 }

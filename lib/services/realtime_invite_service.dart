@@ -1,11 +1,8 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'economy_service.dart';
 import 'locale_controller.dart';
-import 'notification_service.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
 
@@ -16,8 +13,6 @@ class RealtimeInviteService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final NotificationService _notificationService = NotificationService.instance;
-  final Random _random = Random();
 
   String get uid => _auth.currentUser!.uid;
 
@@ -28,10 +23,6 @@ class RealtimeInviteService {
 
   CollectionReference<Map<String, dynamic>> get _invitesCol {
     return _db.collection('realtime_invites');
-  }
-
-  CollectionReference<Map<String, dynamic>> get _matchesCol {
-    return _db.collection('matches');
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyIncomingInvites({
@@ -56,385 +47,62 @@ class RealtimeInviteService {
         .snapshots();
   }
 
-  String _notificationIdForInvite({
-    required String fromUid,
-    required String categoryId,
-    required int difficulty,
-    required int totalQuestions,
-    required int timePerQuestionSec,
-  }) {
-    return 'realtime_invite_${fromUid}_${categoryId}_${difficulty}_${totalQuestions}_$timePerQuestionSec';
-  }
+  // Creating, accepting and closing an invite all go through Cloud
+  // Functions. As client writes, creating one also wrote into the friend's
+  // notifications, which the rules refuse — the invite was saved, the
+  // sender saw an error, and the friend was never told. The rules also
+  // could not stop invites being sent without limit, under any name.
 
-  Future<String?> _findExistingPendingInvite({
-    required String toUid,
-    required String categoryId,
-    required int difficulty,
-    required int totalQuestions,
-    required int timePerQuestionSec,
-  }) async {
-    final snap = await _invitesCol
-        .where('fromUid', isEqualTo: uid)
-        .where('toUid', isEqualTo: toUid)
-        .where('status', isEqualTo: 'pending')
-        .where('categoryId', isEqualTo: categoryId)
-        .where('difficulty', isEqualTo: difficulty)
-        .where('totalQuestions', isEqualTo: totalQuestions)
-        .where('timePerQuestionSec', isEqualTo: timePerQuestionSec)
-        .limit(1)
-        .get();
+  HttpsCallable _callable(String name, {int timeoutSeconds = 15}) =>
+      FirebaseFunctions.instance.httpsCallable(
+        name,
+        options: HttpsCallableOptions(
+          timeout: Duration(seconds: timeoutSeconds),
+        ),
+      );
 
-    if (snap.docs.isEmpty) return null;
-    return snap.docs.first.id;
-  }
-
+  /// Challenges a friend to a live match; the server notifies them. A
+  /// pending invite to the same friend is returned instead of a new one.
   Future<String> createInvite({
     required String toUid,
-    required String toName,
-    required String fromName,
     String categoryId = 'random',
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 15,
-    int winReward = EconomyService.defaultPvpWinReward,
   }) async {
     if (toUid.trim().isEmpty) {
       throw Exception(_l10n.serviceInvalidUser);
     }
-
     if (toUid == uid) {
       throw Exception(_l10n.serviceCannotChallengeSelfPeriod);
     }
 
-    final existingInviteId = await _findExistingPendingInvite(
-      toUid: toUid,
-      categoryId: categoryId,
-      difficulty: difficulty,
-      totalQuestions: totalQuestions,
-      timePerQuestionSec: timePerQuestionSec,
-    );
-
-    final now = FieldValue.serverTimestamp();
-
-    late final String inviteId;
-
-    if (existingInviteId != null) {
-      inviteId = existingInviteId;
-
-      await _invitesCol.doc(inviteId).set({
-        'fromName': fromName,
-        'toName': toName,
-        'winReward': winReward,
-        'updatedAt': now,
-      }, SetOptions(merge: true));
-    } else {
-      final inviteRef = _invitesCol.doc();
-      inviteId = inviteRef.id;
-
-      await inviteRef.set({
-        'fromUid': uid,
-        'fromName': fromName,
-        'toUid': toUid,
-        'toName': toName,
-        'status': 'pending',
-        'categoryId': categoryId,
-        'difficulty': difficulty,
-        'totalQuestions': totalQuestions,
-        'timePerQuestionSec': timePerQuestionSec,
-        'winReward': winReward,
-        'matchId': null,
-        'createdAt': now,
-        'updatedAt': now,
-      });
-    }
-
-    final notificationId = _notificationIdForInvite(
-      fromUid: uid,
-      categoryId: categoryId,
-      difficulty: difficulty,
-      totalQuestions: totalQuestions,
-      timePerQuestionSec: timePerQuestionSec,
-    );
-
-    final recipientL10n = await _notificationService.l10nForRecipient(toUid);
-
-    await _notificationService.createOrBumpNotificationById(
-      targetUid: toUid,
-      notificationId: notificationId,
-      type: 'realtime_invite',
-      title: recipientL10n.serviceRealtimeChallengeTitle,
-      body: recipientL10n.serviceRealtimeChallengeBody(fromName),
-      data: {
-        'inviteId': inviteId,
-        'fromUid': uid,
-        'fromName': fromName,
-        'categoryId': categoryId,
-        'difficulty': difficulty,
-        'totalQuestions': totalQuestions,
-        'timePerQuestionSec': timePerQuestionSec,
-        'winReward': winReward,
-      },
-    );
-
-    return inviteId;
-  }
-
-  Future<String> acceptInvite({
-    required String inviteId,
-  }) async {
-    final inviteRef = _invitesCol.doc(inviteId);
-    final matchRef = _matchesCol.doc();
-
-    final inviteSnap = await inviteRef.get();
-    final invite = inviteSnap.data();
-
-    if (invite == null) {
-      throw Exception(_l10n.serviceInviteNotFound);
-    }
-
-    final fromUid = (invite['fromUid'] ?? '').toString();
-    final fromName = (invite['fromName'] ?? 'Player 1').toString();
-    final toUid = (invite['toUid'] ?? '').toString();
-    final toName = (invite['toName'] ?? 'Player 2').toString();
-    final status = (invite['status'] ?? '').toString();
-
-    if (toUid != uid) {
-      throw Exception(_l10n.serviceCannotAcceptInvite);
-    }
-
-    if (status != 'pending') {
-      throw Exception(_l10n.serviceInviteNoLongerAvailable);
-    }
-
-    final categoryId = (invite['categoryId'] ?? 'random').toString();
-    final difficulty = ((invite['difficulty'] ?? 1) as num).toInt();
-    final totalQuestions = ((invite['totalQuestions'] ?? 10) as num).toInt();
-    final timePerQuestionSec =
-        ((invite['timePerQuestionSec'] ?? 15) as num).toInt();
-    final winReward = ((invite['winReward'] ?? 2) as num).toInt();
-
-    final resolvedCategoryId = await _resolveCategoryId(categoryId);
-
-    final questions = await _generateQuestions(
-      categoryId: resolvedCategoryId,
-      difficulty: difficulty,
-      totalQuestions: totalQuestions,
-    );
-
-    if (questions.isEmpty) {
-      throw Exception(_l10n.serviceNoQuestionsForCategory);
-    }
-
-    final now = FieldValue.serverTimestamp();
-
-    // Re-check status and transition atomically — a plain read-then-write
-    // here let two near-simultaneous accepts (double-tap, a retried
-    // request that actually succeeded) both see "pending" and each create
-    // their own match from the same invite. Firestore retries this
-    // transaction if the invite doc changes between the read and the
-    // commit, so only one of two racing calls can win.
-    await _db.runTransaction((tx) async {
-      final freshInviteSnap = await tx.get(inviteRef);
-      final freshStatus =
-          (freshInviteSnap.data()?['status'] ?? '').toString();
-
-      if (freshStatus != 'pending') {
-        throw Exception(_l10n.serviceInviteNoLongerAvailable);
-      }
-
-      tx.set(matchRef, {
-        'createdAt': now,
-        'updatedAt': now,
-        'status': 'waiting',
-        'mode': 'fixed',
-        'source': 'friend_invite',
-        'inviteId': inviteId,
-        'categoryId': resolvedCategoryId,
-        'requestedCategoryId': categoryId,
-        'difficulty': difficulty,
-        'totalQuestions': totalQuestions,
-        'timePerQuestionSec': timePerQuestionSec,
-        'winReward': winReward,
-        'loseReward': 0,
-        'ranked': false,
-        'affectsPvpRating': false,
-        'hostUid': fromUid,
-        'guestUid': toUid,
-        'player1Uid': fromUid,
-        'player1Name': fromName,
-        'player1Ready': false,
-        'player2Uid': toUid,
-        'player2Name': toName,
-        'player2Ready': false,
-        'players': {
-          fromUid: {
-            'displayName': fromName,
-            'score': 0,
-            'ready': false,
-            'finished': false,
-          },
-          toUid: {
-            'displayName': toName,
-            'score': 0,
-            'ready': false,
-            'finished': false,
-          },
-        },
-        'questions': questions,
-        'startAt': null,
-        'endedAt': null,
-        'winnerUid': null,
-        'rewarded': false,
-      });
-
-      tx.update(inviteRef, {
-        'status': 'accepted',
-        'matchId': matchRef.id,
-        'updatedAt': now,
-      });
+    final result = await _callable('createRealtimeInvite').call({
+      'toUid': toUid,
+      'categoryId': categoryId,
+      'difficulty': difficulty,
+      'totalQuestions': totalQuestions,
+      'timePerQuestionSec': timePerQuestionSec,
     });
-
-    await _notificationService.notifyUser(
-      targetUid: fromUid,
-      type: 'realtime_invite_accepted',
-      data: {
-        'inviteId': inviteId,
-        'matchId': matchRef.id,
-      },
-    );
-
-    return matchRef.id;
+    return ((result.data as Map)['inviteId'] ?? '').toString();
   }
 
-  Future<String> _resolveCategoryId(String categoryId) async {
-    if (categoryId != 'random') return categoryId;
-
-    final snap = await _db
-        .collection('fixed_categories')
-        .where('isActive', isEqualTo: true)
-        .get();
-
-    final ids = snap.docs.map((d) => d.id).toList();
-
-    if (ids.isEmpty) {
-      throw Exception(_l10n.serviceNoActiveCategoriesAvailable);
+  /// Accepts an invite; the server creates the match and tells the inviter.
+  Future<String> acceptInvite({required String inviteId}) async {
+    try {
+      final result = await _callable('acceptRealtimeInvite', timeoutSeconds: 30)
+          .call({'inviteId': inviteId});
+      return ((result.data as Map)['matchId'] ?? '').toString();
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(e.message ?? _l10n.serviceInviteNoLongerAvailable);
     }
-
-    ids.shuffle(_random);
-    return ids.first;
   }
 
-  Future<List<Map<String, dynamic>>> _generateQuestions({
-    required String categoryId,
-    required int difficulty,
-    required int totalQuestions,
-  }) async {
-    final questions = <Map<String, dynamic>>[];
-
-    final difficulties = <int>{
-      difficulty,
-      1,
-      2,
-      3,
-    }.toList();
-
-    QuerySnapshot<Map<String, dynamic>>? poolSnap;
-
-    for (final diff in difficulties) {
-      final snap = await _db
-          .collection('fixed_pools')
-          .doc(categoryId)
-          .collection('difficulty_$diff')
-          .doc('pool')
-          .collection('questions')
-          .get();
-
-      if (snap.docs.isNotEmpty) {
-        poolSnap = snap;
-        break;
-      }
-    }
-
-    if (poolSnap == null || poolSnap.docs.isEmpty) {
-      return questions;
-    }
-
-    final allQuestions = poolSnap.docs.map((d) => d.data()).toList();
-    allQuestions.shuffle(_random);
-
-    final selected = allQuestions.take(totalQuestions).toList();
-
-    for (final q in selected) {
-      final existingQuestionText = (q['q'] ?? q['question'] ?? '').toString();
-
-      final existingOptions =
-          (q['options'] as List<dynamic>?)?.map((e) => e.toString()).toList();
-
-      final existingAnswerIndex = q['answerIndex'];
-
-      if (existingQuestionText.isNotEmpty &&
-          existingOptions != null &&
-          existingOptions.length >= 2 &&
-          existingAnswerIndex is num) {
-        questions.add({
-          'q': existingQuestionText,
-          'options': existingOptions,
-          'answerIndex': existingAnswerIndex.toInt(),
-        });
-        continue;
-      }
-
-      final correct = (q['correctAnswer'] ?? '').toString().trim();
-
-      final incorrect = (q['incorrectAnswers'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .where((e) => e.trim().isNotEmpty)
-              .toList() ??
-          [];
-
-      if (existingQuestionText.isEmpty ||
-          correct.isEmpty ||
-          incorrect.isEmpty) {
-        continue;
-      }
-
-      final options = [
-        correct,
-        ...incorrect,
-      ];
-
-      options.shuffle(_random);
-
-      questions.add({
-        'q': existingQuestionText,
-        'options': options,
-        'answerIndex': options.indexOf(correct),
-      });
-    }
-
-    return questions;
+  Future<void> declineInvite({required String inviteId}) async {
+    await _callable('closeRealtimeInvite').call({'inviteId': inviteId});
   }
 
-  Future<void> declineInvite({
-    required String inviteId,
-  }) async {
-    final ref = _invitesCol.doc(inviteId);
-
-    await ref.update({
-      'status': 'declined',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+  Future<void> cancelInvite({required String inviteId}) async {
+    await _callable('closeRealtimeInvite').call({'inviteId': inviteId});
   }
-
-  Future<void> cancelInvite({
-    required String inviteId,
-  }) async {
-    final ref = _invitesCol.doc(inviteId);
-
-    await ref.update({
-      'status': 'cancelled',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
 }

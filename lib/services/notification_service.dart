@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../l10n/generated/app_localizations.dart';
-import '../l10n/l10n_for.dart';
 
 class NotificationService {
   NotificationService._();
@@ -17,14 +15,6 @@ class NotificationService {
 
   CollectionReference<Map<String, dynamic>> _notificationsCol(String userId) {
     return _db.collection('users').doc(userId).collection('notifications');
-  }
-
-  /// Resolves the [AppLocalizations] instance matching a notification
-  /// recipient's stored language preference, for building notification
-  /// title/body text server-independently of the sender's own locale.
-  Future<AppLocalizations> l10nForRecipient(String targetUid) async {
-    final snap = await _db.collection('users').doc(targetUid).get();
-    return l10nFor(snap.data()?['languageCode'] as String?);
   }
 
   /// Stores this device's FCM token in a subcollection only its owner can
@@ -129,30 +119,6 @@ class NotificationService {
     }
 
     await batch.commit();
-  }
-
-  Future<void> createOrBumpNotificationById({
-    required String targetUid,
-    required String notificationId,
-    required String type,
-    required String title,
-    required String body,
-    Map<String, dynamic>? data,
-  }) async {
-    if (targetUid.trim().isEmpty) return;
-
-    final ref = _notificationsCol(targetUid).doc(notificationId);
-
-    await ref.set({
-      'type': type,
-      'title': title,
-      'body': body,
-      'data': data ?? {},
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-      'bumpedAt': FieldValue.serverTimestamp(),
-    });
   }
 
   /// Writes a notification into **this player's own** inbox.

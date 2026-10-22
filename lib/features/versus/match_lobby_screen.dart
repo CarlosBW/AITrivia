@@ -197,6 +197,11 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _matchDoc,
         builder: (context, snap) {
+          // A match the player can't read any more — e.g. opened from an
+          // old notification — errors the stream; it used to spin forever.
+          if (snap.hasError) {
+            return Center(child: Text(l10n.matchLobbyNotFound));
+          }
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -219,7 +224,11 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             });
           }
 
-          if (status == 'playing' && !_navigatingToMatch) {
+          // A finished match goes to the play screen too, which shows its
+          // result — opened from an old notification, the lobby used to
+          // sit there with nothing to do.
+          if ((status == 'playing' || status == 'finished') &&
+              !_navigatingToMatch) {
             _navigatingToMatch = true;
 
             WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -63,7 +63,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      await markOnboardingSeen(uid);
+      // Con tope: una escritura en Firestore solo termina cuando el
+      // servidor la confirma, así que sin conexión esto esperaba para
+      // siempre. La escritura queda en cola y se envía al reconectar.
+      await markOnboardingSeen(uid).timeout(const Duration(seconds: 5));
     } catch (_) {
       // No bloquear la entrada al juego si falla marcar el flag.
     }

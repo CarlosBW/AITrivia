@@ -10,6 +10,9 @@
   "navNewNotificationSubtitle": "Revisa la campana",
 
   "commonCancel": "Cancelar",
+  "commonConnectionError": "No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.",
+  "notificationChannelName": "Notificaciones de TriviaIA",
+  "notificationChannelDescription": "Recordatorios del Daily Challenge, retos y recompensas",
   "commonRetry": "Reintentar",
   "commonLoading": "Cargando...",
   "commonSaving": "Guardando...",
@@ -1103,12 +1106,8 @@
   "dailyLeaderboardScoreLabel": "Puntaje",
 
   "dailyChallengeCoinsPopup": "+5 Monedas 🎉",
-  "dailyChallengeErrorSaving": "Error guardando resultados: {error}",
-  "@dailyChallengeErrorSaving": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "dailyChallengeLeaveTitle": "¿Salir del Daily Challenge?",
+  "dailyChallengeLeaveBody": "El reloj sigue corriendo mientras no estás. Tus respuestas se guardan, pero el tiempo que pases fuera no vuelve.",
   "dailyChallengeNoQuestions": "No hay preguntas disponibles",
   "dailyChallengeTimeLabel": "Tiempo",
   "dailyChallengeDifficultyLine": "Dificultad: {level}",
@@ -1272,12 +1271,7 @@
     }
   },
 
-  "authGateError": "Error: {error}",
-  "@authGateError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "authGateConnectionError": "No pudimos conectar con TriviaIA. Revisa tu conexión e inténtalo de nuevo.",
 
   "achievementsTitle": "Logros",
   "achievementsRewardClaimed": "🎉 Recompensa reclamada: +{coins} monedas, +{xp} XP",
@@ -1477,6 +1471,20 @@
     }
   },
   "themeShopNotEnoughCoins": "Te faltan monedas para este tema.",
+  "themeShopConfirmTitle": "¿Comprar {theme}?",
+  "@themeShopConfirmTitle": {
+    "placeholders": {
+      "theme": {"type": "String"}
+    }
+  },
+  "themeShopConfirmBody": "Cuesta {price} monedas. Tienes {coins}.",
+  "@themeShopConfirmBody": {
+    "placeholders": {
+      "price": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "themeShopConfirmBuy": "Comprar",
   "themeShopPurchased": "¡{theme} desbloqueado!",
   "@themeShopPurchased": {
     "placeholders": {

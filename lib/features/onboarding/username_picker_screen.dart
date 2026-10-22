@@ -80,7 +80,7 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
       setState(() {
         _errorText = e is UsernameTakenException
             ? l10n.profileUsernameTaken
-            : l10n.authGateError(e.toString());
+            : l10n.authGateConnectionError;
       });
     } finally {
       if (mounted) setState(() => _saving = false);

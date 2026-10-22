@@ -140,6 +140,24 @@ abstract class AppLocalizations {
   /// **'Cancelar'**
   String get commonCancel;
 
+  /// No description provided for @commonConnectionError.
+  ///
+  /// In es, this message translates to:
+  /// **'No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.'**
+  String get commonConnectionError;
+
+  /// No description provided for @notificationChannelName.
+  ///
+  /// In es, this message translates to:
+  /// **'Notificaciones de TriviaIA'**
+  String get notificationChannelName;
+
+  /// No description provided for @notificationChannelDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Recordatorios del Daily Challenge, retos y recompensas'**
+  String get notificationChannelDescription;
+
   /// No description provided for @commonRetry.
   ///
   /// In es, this message translates to:
@@ -3459,11 +3477,17 @@ abstract class AppLocalizations {
   /// **'+5 Monedas 🎉'**
   String get dailyChallengeCoinsPopup;
 
-  /// No description provided for @dailyChallengeErrorSaving.
+  /// No description provided for @dailyChallengeLeaveTitle.
   ///
   /// In es, this message translates to:
-  /// **'Error guardando resultados: {error}'**
-  String dailyChallengeErrorSaving(String error);
+  /// **'¿Salir del Daily Challenge?'**
+  String get dailyChallengeLeaveTitle;
+
+  /// No description provided for @dailyChallengeLeaveBody.
+  ///
+  /// In es, this message translates to:
+  /// **'El reloj sigue corriendo mientras no estás. Tus respuestas se guardan, pero el tiempo que pases fuera no vuelve.'**
+  String get dailyChallengeLeaveBody;
 
   /// No description provided for @dailyChallengeNoQuestions.
   ///
@@ -3772,11 +3796,11 @@ abstract class AppLocalizations {
   /// **'¡Reclamaste {count} recompensas: +{coins} monedas!'**
   String weeklyLeagueClaimedRewards(int count, int coins);
 
-  /// No description provided for @authGateError.
+  /// No description provided for @authGateConnectionError.
   ///
   /// In es, this message translates to:
-  /// **'Error: {error}'**
-  String authGateError(String error);
+  /// **'No pudimos conectar con TriviaIA. Revisa tu conexión e inténtalo de nuevo.'**
+  String get authGateConnectionError;
 
   /// No description provided for @achievementsTitle.
   ///
@@ -4329,6 +4353,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Te faltan monedas para este tema.'**
   String get themeShopNotEnoughCoins;
+
+  /// No description provided for @themeShopConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Comprar {theme}?'**
+  String themeShopConfirmTitle(String theme);
+
+  /// No description provided for @themeShopConfirmBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuesta {price} monedas. Tienes {coins}.'**
+  String themeShopConfirmBody(int price, int coins);
+
+  /// No description provided for @themeShopConfirmBuy.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprar'**
+  String get themeShopConfirmBuy;
 
   /// No description provided for @themeShopPurchased.
   ///

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
@@ -108,6 +109,27 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
       return;
     }
 
+    // A purchase is several hundred coins and can't be undone, so it is
+    // confirmed rather than spent on a single tap.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.themeShopConfirmTitle(_nameOf(l10n, spec.id))),
+        content: Text(l10n.themeShopConfirmBody(spec.price, coins)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.themeShopConfirmBuy),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
     setState(() => _busyThemeId = spec.id);
 
     try {
@@ -120,8 +142,15 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
       );
     } catch (e) {
       if (!mounted) return;
+      // The server's own message when it refused the purchase (it writes
+      // them in the player's language); a connection message otherwise,
+      // never the raw exception.
+      final refusal = e is FirebaseFunctionsException &&
+              e.code == 'failed-precondition'
+          ? e.message
+          : null;
       messenger.showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(refusal ?? l10n.commonConnectionError)),
       );
     } finally {
       if (mounted) setState(() => _busyThemeId = null);

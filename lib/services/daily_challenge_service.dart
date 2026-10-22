@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'weekly_league_service.dart';
 import 'economy_service.dart';
@@ -78,6 +81,70 @@ class DailyChallengeService {
     EconomyService.dailyCorrectPerCoinBlock;
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
+
+  // The run's answers, kept on the device as they are given. They used to
+  // live only in the screen's memory: leaving mid-run lost them while the
+  // server clock kept going, and coming back after it ran out submitted
+  // an empty run — a score of zero for a day already played.
+  static const String _lastPlayedKey = 'daily_last_played_date';
+
+  /// Called once today's challenge is saved — main.dart uses it to move the
+  /// evening reminder to tomorrow.
+  VoidCallback? onPlayedToday;
+
+  /// Whether this device saved today's challenge already.
+  Future<bool> playedTodayOnThisDevice() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_lastPlayedKey) == todayDateId();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static String _progressKey(String uid, String dateId) =>
+      'daily_progress_${uid}_$dateId';
+
+  Future<void> saveLocalProgress({
+    required String uid,
+    required String dateId,
+    required List<Map<String, dynamic>> answers,
+    required int correct,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _progressKey(uid, dateId),
+        jsonEncode({'answers': answers, 'correct': correct}),
+      );
+    } catch (_) {
+      // Best effort: losing this only loses the protection it adds.
+    }
+  }
+
+  /// The answers saved for [dateId]'s run, or null if there are none.
+  Future<({List<Map<String, dynamic>> answers, int correct})?>
+      loadLocalProgress({required String uid, required String dateId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_progressKey(uid, dateId));
+      if (raw == null) return null;
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final answers = (data['answers'] as List)
+          .map((a) => Map<String, dynamic>.from(a as Map))
+          .toList();
+      return (answers: answers, correct: (data['correct'] as num).toInt());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _clearLocalProgress(String uid, String dateId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_progressKey(uid, dateId));
+    } catch (_) {}
+  }
 
   String todayDateId([DateTime? now]) {
     final d = now ?? DateTime.now();
@@ -256,6 +323,15 @@ class DailyChallengeService {
       newLevel: ((data['newLevel'] ?? 1) as num).toInt(),
       xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
     );
+
+    // Settled on the server, saved or already played: nothing to restore.
+    await _clearLocalProgress(uid, dateId);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_lastPlayedKey, dateId);
+    } catch (_) {}
+    onPlayedToday?.call();
 
     if (result.saved) {
       unawaited(_syncDailyRetentionHooks(

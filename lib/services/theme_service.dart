@@ -119,7 +119,12 @@ class ThemeService {
       alreadyOwned: data['alreadyOwned'] == true,
     );
 
-    await equip(result.themeId);
+    // Bought is bought: a failure to equip it afterwards must not read as a
+    // failed purchase, which it used to — the coins were gone and the
+    // player was told it hadn't worked. It stays one tap away in the store.
+    try {
+      await equip(result.themeId);
+    } catch (_) {}
     return result;
   }
 }

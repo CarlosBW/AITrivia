@@ -49,6 +49,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
   bool _loading = true;
   bool _submitting = false;
+  bool _submitFailed = false;
   String? _errorMessage;
 
   @override
@@ -57,19 +58,15 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     _init();
   }
 
+  /// Loads the round first and charges the entry life only once it is
+  /// there. In the other order a round that failed to load had already
+  /// cost a life, with nothing to play for it; and any failure here used
+  /// to leave an endless spinner with no way back.
   Future<void> _init() async {
-    await LifeService.instance.ensureUserLifeDoc(_uid);
-    final entry = await LifeService.instance.tryConsumeLevelEntry(_uid);
-
-    if (!entry.applied) {
-      if (!mounted) return;
-      Navigator.pop(context);
-      return;
-    }
-
-    // The consume call already reported the life state it left behind, so
-    // there's nothing left for a refreshLives round trip to find out.
-    final lifeState = entry.state;
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
 
     try {
       final questions = await WeeklyTopicService.instance.loadRandomRound(
@@ -78,18 +75,26 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         categoryId: widget.categoryId,
       );
 
+      final entry = await LifeService.instance.tryConsumeLevelEntry(_uid);
+
       if (!mounted) return;
+
+      if (!entry.applied) {
+        Navigator.pop(context);
+        return;
+      }
 
       setState(() {
         _questions = questions;
-        _lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
+        _lifeUnits = (entry.state['lifeUnits'] ?? 0) as int;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage =
+            AppLocalizations.of(context).commonConnectionError;
         _loading = false;
       });
     }
@@ -140,16 +145,21 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     });
 
     if (!isCorrect) {
-      final life = await LifeService.instance.tryConsumeWrongAnswer(_uid);
+      // A failed call never stops the round: it used to throw here, with
+      // the options already disabled, and leave the player on a locked
+      // question.
+      try {
+        final life = await LifeService.instance.tryConsumeWrongAnswer(_uid);
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      final newLifeUnits = (life.state['lifeUnits'] ?? 0) as int;
+        final newLifeUnits = (life.state['lifeUnits'] ?? 0) as int;
 
-      setState(() {
-        _lifeUnits = newLifeUnits;
-        if (life.applied && newLifeUnits <= 0) _endedByNoLives = true;
-      });
+        setState(() {
+          _lifeUnits = newLifeUnits;
+          if (life.applied && newLifeUnits <= 0) _endedByNoLives = true;
+        });
+      } catch (_) {}
     }
 
     await Future.delayed(const Duration(milliseconds: 700));
@@ -169,7 +179,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
   }
 
   Future<void> _finish() async {
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _submitFailed = false;
+    });
 
     try {
       final result = await WeeklyTopicService.instance.submitRound(
@@ -201,14 +214,15 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
       if (!mounted) return;
       Navigator.pop(context);
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
-      setState(() => _submitting = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      // The round only counts once submitted, so a failure keeps the
+      // answers here and offers to send them again rather than losing it.
+      setState(() {
+        _submitting = false;
+        _submitFailed = true;
+      });
     }
   }
 
@@ -235,7 +249,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     final l10n = AppLocalizations.of(context);
 
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: AppBarTitle(widget.categoryName)),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_errorMessage != null) {
@@ -247,7 +264,17 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(_errorMessage!, textAlign: TextAlign.center),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(_errorMessage!, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _init,
+                  child: Text(l10n.commonRetry),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -268,7 +295,9 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         color: _flashColor,
         child: AbsorbPointer(
           absorbing: _submitting,
-          child: Padding(
+          // Scrolls instead of fitting with a Spacer: a long question with
+          // four long answers overflowed a small phone or a large font.
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -310,9 +339,17 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
+                        // The disabled colours too: once an answer is
+                        // picked every option is disabled, and a disabled
+                        // button ignores backgroundColor, so the right and
+                        // wrong answers were never shown.
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _buttonColor(i, correctIndex),
                           foregroundColor: _buttonTextColor(i, correctIndex),
+                          disabledBackgroundColor:
+                              _buttonColor(i, correctIndex),
+                          disabledForegroundColor:
+                              _buttonTextColor(i, correctIndex),
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
@@ -326,11 +363,23 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                     ),
                   );
                 }),
-                const Spacer(),
+                const SizedBox(height: 24),
                 Text(
                   l10n.weeklyTopicRoundCorrectCount(_correct),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
+                if (_submitFailed) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.commonConnectionError,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: _finish,
+                    child: Text(l10n.commonRetry),
+                  ),
+                ],
               ],
             ),
           ),

@@ -30,6 +30,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonCancel => 'Cancelar';
 
   @override
+  String get commonConnectionError =>
+      'No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get notificationChannelName => 'Notificaciones de TriviaIA';
+
+  @override
+  String get notificationChannelDescription =>
+      'Recordatorios del Daily Challenge, retos y recompensas';
+
+  @override
   String get commonRetry => 'Reintentar';
 
   @override
@@ -1978,9 +1989,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyChallengeCoinsPopup => '+5 Monedas 🎉';
 
   @override
-  String dailyChallengeErrorSaving(String error) {
-    return 'Error guardando resultados: $error';
-  }
+  String get dailyChallengeLeaveTitle => '¿Salir del Daily Challenge?';
+
+  @override
+  String get dailyChallengeLeaveBody =>
+      'El reloj sigue corriendo mientras no estás. Tus respuestas se guardan, pero el tiempo que pases fuera no vuelve.';
 
   @override
   String get dailyChallengeNoQuestions => 'No hay preguntas disponibles';
@@ -2187,9 +2200,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String authGateError(String error) {
-    return 'Error: $error';
-  }
+  String get authGateConnectionError =>
+      'No pudimos conectar con TriviaIA. Revisa tu conexión e inténtalo de nuevo.';
 
   @override
   String get achievementsTitle => 'Logros';
@@ -2520,6 +2532,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get themeShopNotEnoughCoins => 'Te faltan monedas para este tema.';
+
+  @override
+  String themeShopConfirmTitle(String theme) {
+    return '¿Comprar $theme?';
+  }
+
+  @override
+  String themeShopConfirmBody(int price, int coins) {
+    return 'Cuesta $price monedas. Tienes $coins.';
+  }
+
+  @override
+  String get themeShopConfirmBuy => 'Comprar';
 
   @override
   String themeShopPurchased(String theme) {

@@ -126,6 +126,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     try {
       await _service.markAllAsRead();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).commonConnectionError),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _markingAll = false);
@@ -199,8 +207,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  /// Not awaited by anything that navigates: a Firestore write only
+  /// completes once the server acknowledges it, so offline, tapping a
+  /// notification waited on it forever and never opened anything. The
+  /// write is queued and lands when the connection is back.
   Future<void> _markAsRead(String notificationId) async {
-    await _service.markAsRead(notificationId: notificationId);
+    _service.markAsRead(notificationId: notificationId).catchError((_) {});
   }
 
   Future<void> _delete(String notificationId) async {

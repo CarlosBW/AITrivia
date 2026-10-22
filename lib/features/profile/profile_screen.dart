@@ -6,9 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../app/app.dart';
 
-import '../../services/daily_challenge_service.dart';
 import '../../services/player_level_service.dart';
-import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
@@ -134,83 +132,51 @@ class _ProfileScreenState extends State<ProfileScreen>
       await FirebaseFunctions.instance
           .httpsCallable(
             'deleteMyAccount',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+            // Deleting walks every subcollection of the account; 15 seconds
+            // could run out while the server went on to finish the job.
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
           )
           .call();
-      await FirebaseAuth.instance.signOut();
-
-      // The deleted account's theme would otherwise stay painted over the
-      // brand-new one, which owns nothing.
-      ThemeService.instance.stop();
-
-      if (!mounted) return;
-
-      // Full app restart: AuthGate signs back in anonymously as a brand
-      // new account, matching what a fresh install would see.
-      runApp(const TriviaIAApp());
+      await _restartAfterDeletion();
     } catch (e) {
+      // A call that timed out may still have deleted the account. Staying
+      // signed in to a deleted account was the worst outcome, so ask Auth.
+      if (await _accountIsGone()) {
+        await _restartAfterDeletion();
+        return;
+      }
+
       if (!mounted) return;
 
       setState(() => _saving = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).commonConnectionError),
+        ),
       );
     }
   }
 
-  Future<void> _syncTodayLeaderboardProfile({
-    required String uid,
-    String? username,
-    String? avatarId,
-    String? equippedFrame,
-  }) async {
-    final dateId = DailyChallengeService.instance.todayDateId();
-
-    final leaderboardRef = FirebaseFirestore.instance
-        .collection('daily_leaderboards')
-        .doc(dateId)
-        .collection('players')
-        .doc(uid);
-
-    final leaderboardSnap = await leaderboardRef.get();
-    if (!leaderboardSnap.exists) return;
-
-    final update = <String, dynamic>{
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-
-    if (username != null) {
-      update['username'] = username;
-      update['displayName'] = username;
-    }
-
-    if (avatarId != null) {
-      update['avatarId'] = avatarId;
-    }
-
-    if (equippedFrame != null) {
-      update['equippedFrame'] = equippedFrame;
-    }
-
-    await leaderboardRef.set(update, SetOptions(merge: true));
-  }
-
   Future<void> _syncCurrentWeeklyLeaderboardProfile({
     required String uid,
-    required Map<String, dynamic> latestUserData,
     String? username,
     String? avatarId,
     String? equippedFrame,
   }) async {
-    final leagueScore = ((latestUserData['leagueScore'] ?? 0) as num).toInt();
-    final league = LeagueService.instance.getLeagueFromScore(leagueScore);
     final weekId = WeeklyLeagueService.instance.currentWeekId();
+    // The league the player is playing this week in, where their row is —
+    // not the one their total score reaches now (see weekLeagueId).
+    final leagueId = await WeeklyLeagueService.instance.weekLeagueId(
+      uid: uid,
+      weekId: weekId,
+    );
+    if (leagueId == null) return;
 
     final weeklyRef = WeeklyLeagueService.instance.weeklyPlayerRef(
       uid: uid,
       weekId: weekId,
-      leagueId: league.id,
+      leagueId: leagueId,
     );
 
     final weeklySnap = await weeklyRef.get();
@@ -236,29 +202,52 @@ class _ProfileScreenState extends State<ProfileScreen>
     await weeklyRef.set(update, SetOptions(merge: true));
   }
 
+  Future<void> _restartAfterDeletion() async {
+    await FirebaseAuth.instance.signOut();
+
+    // The deleted account's theme would otherwise stay painted over the
+    // brand-new one, which owns nothing.
+    ThemeService.instance.stop();
+
+    if (!mounted) return;
+
+    // Full app restart: AuthGate signs back in anonymously as a brand
+    // new account, matching what a fresh install would see.
+    runApp(const TriviaIAApp());
+  }
+
+  /// Whether the signed-in account no longer exists on the server.
+  Future<bool> _accountIsGone() async {
+    try {
+      await FirebaseAuth.instance.currentUser?.reload();
+      return false;
+    } on FirebaseAuthException catch (e) {
+      return e.code == 'user-not-found' || e.code == 'user-disabled';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Mirrors a cosmetic change onto this week's league row.
+  ///
+  /// Best effort: the change itself is already saved on the profile. This
+  /// used to also write today's daily leaderboard row, which only the
+  /// server may write — so for anyone who had played the Daily Challenge,
+  /// every avatar or frame change ended in an error message although it
+  /// had worked.
   Future<void> _syncLeaderboardProfiles({
     String? username,
     String? avatarId,
     String? equippedFrame,
   }) async {
-    final latestUserSnap = await userRef.get();
-    final latestUserData = latestUserSnap.data() ?? {};
-
-    await Future.wait([
-      _syncTodayLeaderboardProfile(
+    try {
+      await _syncCurrentWeeklyLeaderboardProfile(
         uid: uid,
         username: username,
         avatarId: avatarId,
         equippedFrame: equippedFrame,
-      ),
-      _syncCurrentWeeklyLeaderboardProfile(
-        uid: uid,
-        latestUserData: latestUserData,
-        username: username,
-        avatarId: avatarId,
-        equippedFrame: equippedFrame,
-      ),
-    ]);
+      );
+    } catch (_) {}
   }
 
   Future<void> _chooseAvatar({
@@ -661,6 +650,13 @@ class _ProfileScreenState extends State<ProfileScreen>
             l10n.profileEquippedNotice(frame.emoji, frame.name),
           ),
         ),
+      );
+    } catch (_) {
+      // There was no catch: a failed save ended in an unhandled error and
+      // no message at all.
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.commonConnectionError)),
       );
     } finally {
       if (mounted) {

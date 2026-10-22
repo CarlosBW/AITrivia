@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -9,6 +11,7 @@ import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
 import '../../services/purchase_service.dart';
 import '../../services/theme_service.dart';
+import '../../services/notification_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 
 class AuthGate extends StatefulWidget {
@@ -32,6 +35,11 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _start() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
     try {
       final auth = FirebaseAuth.instance;
 
@@ -88,8 +96,14 @@ class _AuthGateState extends State<AuthGate> {
     // crediting is a callable, and that needs the signed-in user.
     PurchaseService.instance.start();
 
-    await MatchService().recoverMyRealtimeStateOnAppStart();
-    await PresenceService.instance.setOnline();
+    // Nice to have, never a reason not to open the app: these used to be
+    // awaited bare, so a failure in either stopped the launch.
+    try {
+      await MatchService().recoverMyRealtimeStateOnAppStart();
+      await PresenceService.instance.setOnline();
+    } catch (_) {}
+
+    unawaited(NotificationService.instance.registerPushToken(uid));
 
     if (!mounted) return;
 
@@ -136,13 +150,20 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     if (_error != null) {
+      // Shown when the first launch can't reach the server. It used to
+      // print the raw exception and offer nothing but killing the app.
+      final l10n = AppLocalizations.of(context);
       return Scaffold(
         body: Center(
           child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              AppLocalizations.of(context).authGateError(_error!),
-              textAlign: TextAlign.center,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.authGateConnectionError, textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _start, child: Text(l10n.commonRetry)),
+              ],
             ),
           ),
         ),

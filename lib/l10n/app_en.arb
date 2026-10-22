@@ -10,6 +10,9 @@
   "navNewNotificationSubtitle": "Check the bell",
 
   "commonCancel": "Cancel",
+  "commonConnectionError": "We couldn't connect. Check your connection and try again.",
+  "notificationChannelName": "TriviaIA notifications",
+  "notificationChannelDescription": "Daily Challenge reminders, challenges and rewards",
   "commonRetry": "Retry",
   "commonLoading": "Loading...",
   "commonSaving": "Saving...",
@@ -1075,12 +1078,8 @@
   "dailyLeaderboardScoreLabel": "Score",
 
   "dailyChallengeCoinsPopup": "+5 Coins 🎉",
-  "dailyChallengeErrorSaving": "Error saving results: {error}",
-  "@dailyChallengeErrorSaving": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "dailyChallengeLeaveTitle": "Leave the Daily Challenge?",
+  "dailyChallengeLeaveBody": "The clock keeps running while you're away. Your answers are kept, but the time you spend away doesn't come back.",
   "dailyChallengeNoQuestions": "No questions available",
   "dailyChallengeTimeLabel": "Time",
   "dailyChallengeDifficultyLine": "Difficulty: {level}",
@@ -1244,12 +1243,7 @@
     }
   },
 
-  "authGateError": "Error: {error}",
-  "@authGateError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
+  "authGateConnectionError": "We couldn't reach TriviaIA. Check your connection and try again.",
 
   "achievementsTitle": "Achievements",
   "achievementsRewardClaimed": "🎉 Reward claimed: +{coins} coins, +{xp} XP",
@@ -1449,6 +1443,20 @@
     }
   },
   "themeShopNotEnoughCoins": "Not enough coins for this theme.",
+  "themeShopConfirmTitle": "Buy {theme}?",
+  "@themeShopConfirmTitle": {
+    "placeholders": {
+      "theme": {"type": "String"}
+    }
+  },
+  "themeShopConfirmBody": "It costs {price} coins. You have {coins}.",
+  "@themeShopConfirmBody": {
+    "placeholders": {
+      "price": {"type": "int"},
+      "coins": {"type": "int"}
+    }
+  },
+  "themeShopConfirmBuy": "Buy",
   "themeShopPurchased": "{theme} unlocked!",
   "@themeShopPurchased": {
     "placeholders": {

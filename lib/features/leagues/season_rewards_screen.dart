@@ -65,6 +65,15 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
       setState(() {
         _reload(uid);
       });
+    } catch (_) {
+      // Used to fail without a word: the button just stopped spinning.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).commonConnectionError),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _claiming = false);

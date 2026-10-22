@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 class NotificationService {
   NotificationService._();
@@ -25,6 +28,44 @@ class NotificationService {
   /// need, so the whole document was effectively public and the push token
   /// rode along with it. The old field is cleared on the same write so a
   /// device that upgrades stops leaving a copy behind.
+  StreamSubscription<String>? _tokenRefresh;
+
+  /// Saves this device's push token for [userId] and keeps it current.
+  ///
+  /// Called once the player is signed in. It used to run only at startup,
+  /// and only if someone was already signed in — which a brand-new install
+  /// never is at that point — so a new player got no pushes until their
+  /// next cold start, and a rotated token was never saved at all.
+  Future<void> registerPushToken(String userId) async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      // Asked here, once the player is in, rather than at startup: on a
+      // first launch that put the system prompt over the language picker
+      // before the player had seen anything of the game.
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      final token = await messaging.getToken();
+      if (token != null) await saveFcmToken(userId, token);
+
+      await _tokenRefresh?.cancel();
+      _tokenRefresh = messaging.onTokenRefresh.listen((fresh) {
+        saveFcmToken(userId, fresh).catchError((Object e) {
+          debugPrint('FCM token refresh not saved: $e');
+        });
+      });
+    } catch (e) {
+      debugPrint('FCM token unavailable: $e');
+    }
+  }
+
+  /// Fires when the player opens the app by tapping a push: the one that
+  /// launched it, then any tapped while it runs in the background. Tapping
+  /// one used to just open the app wherever it was.
+  Stream<RemoteMessage> pushTaps() async* {
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) yield initial;
+    yield* FirebaseMessaging.onMessageOpenedApp;
+  }
+
   Future<void> saveFcmToken(String userId, String token) async {
     final userRef = _db.collection('users').doc(userId);
 

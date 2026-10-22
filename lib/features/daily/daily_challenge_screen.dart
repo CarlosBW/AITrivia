@@ -35,8 +35,11 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   int _timeLeft = 120;
   Timer? _timer;
   bool _loading = true;
+  bool _loadFailed = false;
   bool _finishing = false;
   bool _savingResults = false;
+  bool _saveFailed = false;
+  String _dateId = '';
 
   int? _selectedIndex;
   Color _flashColor = Colors.transparent;
@@ -99,13 +102,45 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   }
 
   Future<void> _init() async {
-    final session = await _service.createTodaySession(uid: widget.uid);
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
+
+    final DailyChallengeSession session;
+    try {
+      session = await _service.createTodaySession(uid: widget.uid);
+    } catch (_) {
+      // Used to have no handling at all: the spinner never stopped.
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
+      return;
+    }
+
+    // Answers already given today, if the player left and came back.
+    final saved = await _service.loadLocalProgress(
+      uid: widget.uid,
+      dateId: session.dateId,
+    );
 
     if (!mounted) return;
 
     setState(() {
+      _dateId = session.dateId;
       _questions = session.questions;
       _timeLeft = session.remainingSeconds;
+      if (saved != null) {
+        _answers
+          ..clear()
+          ..addAll(saved.answers);
+        _correct = saved.correct;
+        _totalAnswered = saved.answers.length;
+        _currentIndex = saved.answers.length;
+        _lastCoinMilestone = _correct ~/ 10;
+      }
       _loading = false;
     });
 
@@ -161,6 +196,13 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       _checkCoinMilestone();
     }
 
+    unawaited(_service.saveLocalProgress(
+      uid: widget.uid,
+      dateId: _dateId,
+      answers: _answers,
+      correct: _correct,
+    ));
+
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted || _finishing) return;
@@ -181,6 +223,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     if (mounted) {
       setState(() {
         _savingResults = true;
+        _saveFailed = false;
         _selectedIndex = null;
         _coinPopupText = null;
         _flashColor = Colors.transparent;
@@ -203,20 +246,46 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
           builder: (_) => DailyChallengeResultScreen(result: result),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
+      // The clock is already over, so nothing would ever call this again:
+      // the run stays on screen with a way to send it again. The answers
+      // are kept on the device too, in case the player leaves instead.
       setState(() {
-        _savingResults = false;
+        _saveFailed = true;
         _finishing = false;
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).dailyChallengeErrorSaving(e.toString())),
-        ),
-      );
     }
+  }
+
+  /// Confirms leaving while the clock is still running.
+  Future<void> _confirmLeave() async {
+    if (_loading || _loadFailed || _savingResults || _timeLeft <= 0) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.dailyChallengeLeaveTitle),
+        content: Text(l10n.dailyChallengeLeaveBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.asyncMatchPlayLeaveStay),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.asyncMatchPlayLeaveConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (leave == true && mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -291,12 +360,20 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                l10n.dailyChallengeSavingResults,
+                _saveFailed
+                    ? l10n.commonConnectionError
+                    : l10n.dailyChallengeSavingResults,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 20),
-              CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              if (_saveFailed)
+                FilledButton(
+                  onPressed: _finish,
+                  child: Text(l10n.commonRetry),
+                )
+              else
+                const CircularProgressIndicator(),
             ],
           ),
         ),
@@ -308,14 +385,40 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // These used to have no AppBar: on iOS, with no back gesture to fall
+    // back on, there was no way out of a load that never finished.
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadFailed) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.commonConnectionError,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: _init, child: Text(l10n.commonRetry)),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
     if (_questions.isEmpty) {
       return Scaffold(
+        appBar: AppBar(),
         body: Center(child: Text(l10n.dailyChallengeNoQuestions)),
       );
     }
@@ -324,111 +427,119 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     final options = _options(q);
     final correctIndex = _answerIndex(q);
 
-    return Scaffold(
-      appBar: AppBar(
-        actions: const [ProfileAvatarButton(openProfileOnTap: false)],
-        title: AppBarTitle(l10n.homeDailyChallengeTitle),
-        automaticallyImplyLeading: !_savingResults,
-      ),
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        color: _flashColor,
-        child: Stack(
-          children: [
-            AbsorbPointer(
-              absorbing: _savingResults,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _HeaderCard(
-                            icon: Icons.timer_outlined,
-                            label: l10n.dailyChallengeTimeLabel,
-                            value: _formatTime(_timeLeft),
+    // Every way back goes through the warning: the clock keeps running
+    // while the player is away.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          actions: const [ProfileAvatarButton(openProfileOnTap: false)],
+          title: AppBarTitle(l10n.homeDailyChallengeTitle),
+          automaticallyImplyLeading: !_savingResults,
+        ),
+        body: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          color: _flashColor,
+          child: Stack(
+            children: [
+              AbsorbPointer(
+                absorbing: _savingResults,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _HeaderCard(
+                              icon: Icons.timer_outlined,
+                              label: l10n.dailyChallengeTimeLabel,
+                              value: _formatTime(_timeLeft),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _HeaderCard(
-                            icon: Icons.star_border,
-                            label: l10n.dailyLeaderboardScoreLabel,
-                            value: '$_correct',
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _HeaderCard(
+                              icon: Icons.star_border,
+                              label: l10n.dailyLeaderboardScoreLabel,
+                              value: '$_correct',
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _HeaderCard(
-                            icon: Icons.monetization_on_outlined,
-                            label: l10n.homeCoins,
-                            value: '+$_liveCoinsEarned',
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _HeaderCard(
+                              icon: Icons.monetization_on_outlined,
+                              label: l10n.homeCoins,
+                              value: '+$_liveCoinsEarned',
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.dailyChallengeDifficultyLine(_difficultyLabel()),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    QuestionAnswerCard(
-                      qText: _questionText(q),
-                      options: options,
-                      answerIndex: correctIndex,
-                      selectedIndex: _selectedIndex,
-                      locked: _selectedIndex != null,
-                      onTapAnswer: (i) => _answer(i, correctIndex),
-                    ),
-                    const Spacer(),
-                    Text(
-                      l10n.dailyChallengeAnsweredCount(_totalAnswered),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.dailyChallengeDifficultyLine(_difficultyLabel()),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      QuestionAnswerCard(
+                        qText: _questionText(q),
+                        options: options,
+                        answerIndex: correctIndex,
+                        selectedIndex: _selectedIndex,
+                        locked: _selectedIndex != null,
+                        onTapAnswer: (i) => _answer(i, correctIndex),
+                      ),
+                      const Spacer(),
+                      Text(
+                        l10n.dailyChallengeAnsweredCount(_totalAnswered),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (_coinPopupText != null && !_savingResults)
-              Center(
-                child: AnimatedOpacity(
-                  opacity: _coinPopupText == null ? 0 : 1,
-                  duration: const Duration(milliseconds: 200),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.appColors.reward,
-                      borderRadius: BorderRadius.circular(context.radii.md),
-                      border: context.surfaces.borderOr(null),
-                      boxShadow: context.surfaces.shadowsOr([
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
+              if (_coinPopupText != null && !_savingResults)
+                Center(
+                  child: AnimatedOpacity(
+                    opacity: _coinPopupText == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 200),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.appColors.reward,
+                        borderRadius: BorderRadius.circular(context.radii.md),
+                        border: context.surfaces.borderOr(null),
+                        boxShadow: context.surfaces.shadowsOr([
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ]),
+                      ),
+                      child: Text(
+                        _coinPopupText!,
+                        style: context.heading(
+                          24,
+                          color: context.appColors.onReward,
                         ),
-                      ]),
-                    ),
-                    child: Text(
-                      _coinPopupText!,
-                      style: context.heading(
-                        24,
-                        color: context.appColors.onReward,
                       ),
                     ),
                   ),
                 ),
-              ),
-            if (_savingResults) _savingOverlay(),
-          ],
+              if (_savingResults) _savingOverlay(),
+            ],
+          ),
         ),
-      ),
+    ),
     );
   }
 }

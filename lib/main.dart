@@ -16,15 +16,21 @@ import 'app/app.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
-import 'services/notification_service.dart';
 import 'services/locale_controller.dart';
+import 'services/daily_challenge_service.dart';
 
-const AndroidNotificationChannel triviaChannel = AndroidNotificationChannel(
-  'triviaia_channel',
-  'TriviaIA Notifications',
-  description: 'Notifications for TriviaIA daily reminders and rewards',
-  importance: Importance.high,
-);
+/// The app's notification channel, named in the player's language — it is
+/// what Android shows under the app's notification settings, and it was
+/// English-only. Re-creating it under the same id updates the name.
+AndroidNotificationChannel get triviaChannel {
+  final l10n = lookupAppLocalizations(LocaleController.instance.locale.value);
+  return AndroidNotificationChannel(
+    'triviaia_channel',
+    l10n.notificationChannelName,
+    description: l10n.notificationChannelDescription,
+    importance: Importance.high,
+  );
+}
 
 final FlutterLocalNotificationsPlugin localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -74,6 +80,7 @@ final AppLifecyclePresenceObserver presenceObserver =
 tz.TZDateTime _nextDailyReminderTime({
   int hour = 19,
   int minute = 0,
+  bool skipToday = false,
 }) {
   final now = tz.TZDateTime.now(tz.local);
 
@@ -86,25 +93,33 @@ tz.TZDateTime _nextDailyReminderTime({
     minute,
   );
 
-  if (scheduled.isBefore(now)) {
+  if (skipToday || scheduled.isBefore(now)) {
     scheduled = scheduled.add(const Duration(days: 1));
   }
 
   return scheduled;
 }
 
+/// Schedules the evening Daily Challenge reminder: today at 19:00, or
+/// tomorrow if today's challenge was already played on this device.
+///
+/// One-off rather than repeating, and re-scheduled on every launch and
+/// after each Daily Challenge: a repeating one fired every evening, also
+/// for players who had already played that day.
 Future<void> _scheduleDailyChallengeReminder() async {
   // No BuildContext this early, so the strings are looked up for the
   // player's locale directly. Scheduling under the same id replaces the
   // previous reminder, which is how a language change takes effect.
   final l10n = lookupAppLocalizations(LocaleController.instance.locale.value);
+  final playedToday =
+      await DailyChallengeService.instance.playedTodayOnThisDevice();
 
   try {
     await localNotifications.zonedSchedule(
       1001,
       l10n.dailyReminderTitle,
       l10n.dailyReminderBody,
-      _nextDailyReminderTime(hour: 19, minute: 0),
+      _nextDailyReminderTime(hour: 19, minute: 0, skipToday: playedToday),
       NotificationDetails(
         android: AndroidNotificationDetails(
           triviaChannel.id,
@@ -118,11 +133,19 @@ Future<void> _scheduleDailyChallengeReminder() async {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
     );
   } catch (e) {
     debugPrint('Local daily reminder unavailable: $e');
   }
+}
+
+Future<void> _renameNotificationChannel() async {
+  try {
+    await localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(triviaChannel);
+  } catch (_) {}
 }
 
 Future<void> _setupNotifications() async {
@@ -152,14 +175,8 @@ Future<void> _setupNotifications() async {
   }
 
   try {
-    final messaging = FirebaseMessaging.instance;
-
-    await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
+    // Permission is asked after sign-in — see
+    // NotificationService.registerPushToken.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       try {
         final notification = message.notification;
@@ -186,33 +203,22 @@ Future<void> _setupNotifications() async {
       }
     });
 
-    try {
-      final token = await messaging.getToken();
-      // Solo en debug: en release el token acabaría en logcat, legible por
-      // cualquier app con permiso de lectura de logs.
-      if (kDebugMode) {
-        debugPrint('🔥 FCM TOKEN: $token');
-      }
-
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-
-      if (token != null && uid != null) {
-        await NotificationService.instance.saveFcmToken(uid, token);
-      }
-    } catch (e) {
-      debugPrint('FCM token unavailable: $e');
-    }
+    // The token itself is saved once there is a signed-in player — see
+    // NotificationService.registerPushToken, called from AuthGate.
   } catch (e) {
     debugPrint('Firebase Messaging unavailable: $e');
   }
 
   await _scheduleDailyChallengeReminder();
+  DailyChallengeService.instance.onPlayedToday =
+      () => unawaited(_scheduleDailyChallengeReminder());
 
   // The reminder's text is fixed when it is scheduled, and it repeats
   // daily — without this it would keep the language the app started in
   // long after the player switched.
   LocaleController.instance.locale.addListener(() {
     unawaited(_scheduleDailyChallengeReminder());
+    unawaited(_renameNotificationChannel());
   });
 }
 

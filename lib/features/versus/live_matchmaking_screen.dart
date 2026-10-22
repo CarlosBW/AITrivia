@@ -94,8 +94,10 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Not on `inactive`: pulling down the notification shade or opening
+    // Control Center triggers that, and it cancelled the search while the
+    // app was still on screen.
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
       _cancel(silent: true);
     }

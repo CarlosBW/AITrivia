@@ -345,8 +345,15 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                   return Dismissible(
                     key: ValueKey(doc.id),
                     direction: DismissDirection.endToStart,
+                    // Deletes inside confirmDismiss, so the tile only goes
+                    // once the topic really has. Deleting in onDismissed
+                    // left a dismissed tile still in the list whenever the
+                    // call failed, which Flutter reports as an error on
+                    // the next rebuild.
                     confirmDismiss: (_) async {
-                      return showDialog<bool>(
+                      final messenger = ScaffoldMessenger.of(context);
+                      final failed = l10n.commonConnectionError;
+                      final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (dialogContext) {
                           return AlertDialog(
@@ -371,9 +378,16 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                           );
                         },
                       );
-                    },
-                    onDismissed: (_) async {
-                      await service.deleteAiTopic(topicId: doc.id);
+                      if (confirmed != true) return false;
+                      try {
+                        await service.deleteAiTopic(topicId: doc.id);
+                        return true;
+                      } catch (_) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(failed)),
+                        );
+                        return false;
+                      }
                     },
                     background: Container(
                       alignment: Alignment.centerRight,

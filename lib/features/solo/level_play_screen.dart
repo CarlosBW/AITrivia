@@ -433,9 +433,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             // entrada si aún no se había cobrado.
             if (!await _chargeLevelEntryIfNeeded(uid)) return;
 
-            final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
-            final lifeLost = life.applied;
-            await _refreshLivesAndStopIfEmpty(knownState: life.state);
+            final lifeLost = await _spendWrongAnswerLife(uid);
 
             if (!mounted) return;
 
@@ -444,9 +442,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             setState(() {
               _statusMsg = _endedByNoLives
                   ? l10n.levelPlayTimeUpNoLives
-                  : lifeLost
-                      ? l10n.levelPlayTimeUpLostHalfLife
-                      : l10n.levelPlayTimeUpNoLifeLoss;
+                  : lifeLost == null
+                      ? l10n.levelPlayTimeUp
+                      : lifeLost
+                          ? l10n.levelPlayTimeUpLostHalfLife
+                          : l10n.levelPlayTimeUpNoLifeLoss;
             });
 
             // Same rule as a wrong tap: banked as -1 so letting the clock
@@ -577,6 +577,25 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     }
   }
 
+  /// Charges the half life a wrong answer or a timeout costs, and stops
+  /// the level if that was the last one. Returns whether a life was taken,
+  /// or null when the call failed.
+  ///
+  /// A failure (offline, a slow server) never stops the run: this used to
+  /// throw before the move to the next question was scheduled, and there is
+  /// no manual "next" button, so the player was left on a locked question.
+  /// A half life that goes uncharged this way is a smaller loss than a
+  /// level the player can't finish.
+  Future<bool?> _spendWrongAnswerLife(String uid) async {
+    try {
+      final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
+      await _refreshLivesAndStopIfEmpty(knownState: life.state);
+      return life.applied;
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _goNextQuestion() {
     if (!mounted || _endedByNoLives) return;
     setState(() {
@@ -646,9 +665,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       SfxService.instance.playWrong();
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
-      final lifeLost = life.applied;
-      await _refreshLivesAndStopIfEmpty(knownState: life.state);
+      final lifeLost = await _spendWrongAnswerLife(uid);
 
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -656,9 +673,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         setState(() {
           _statusMsg = _endedByNoLives
               ? l10n.levelPlayWrongNoLives
-              : lifeLost
-                  ? l10n.levelPlayWrongLostHalfLife
-                  : l10n.levelPlayWrongNoLifeLoss;
+              : lifeLost == null
+                  ? null
+                  : lifeLost
+                      ? l10n.levelPlayWrongLostHalfLife
+                      : l10n.levelPlayWrongNoLifeLoss;
         });
       }
     }

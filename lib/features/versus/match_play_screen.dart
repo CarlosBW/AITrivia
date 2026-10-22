@@ -85,6 +85,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   bool _rematchPromptShowing = false;
 
+  /// Whether leaving now abandons a match still being played. Written by
+  /// `build`, read when the player tries to go back.
+  bool _matchInProgress = false;
+
   static const int _defaultTimePerQ = 15;
   static const Duration _revealDelay = Duration(seconds: 1);
 
@@ -225,6 +229,44 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       ),
       (route) => route.isFirst,
     );
+  }
+
+  /// Leaves the match, asking first while it is still being played: the
+  /// opponent can then claim it, and in a ranked match that costs rating
+  /// and a cooldown. The back button and the system back gesture used to
+  /// leave on the spot.
+  Future<void> _leaveMatch() async {
+    if (_matchInProgress) {
+      final l10n = AppLocalizations.of(context);
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.asyncMatchPlayLeaveTitle),
+          content: Text(l10n.asyncMatchPlayLeaveBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.asyncMatchPlayLeaveStay),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.asyncMatchPlayLeaveConfirm),
+            ),
+          ],
+        ),
+      );
+      if (leave != true || !mounted) return;
+    }
+
+    _leavingMatch = true;
+
+    try {
+      await _presenceService.setAvailable();
+    } catch (_) {}
+
+    if (!mounted) return;
+
+    Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   Future<void> _maybeShowIncomingRematchDialog({
@@ -518,28 +560,23 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         title: AppBarTitle(l10n.matchPlayTitle),
         actions: const [ProfileAvatarButton(openProfileOnTap: false)],
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            _leavingMatch = true;
-
-            try {
-              await _presenceService.setAvailable();
-            } catch (_) {}
-
-            if (!context.mounted) return;
-
-            Navigator.popUntil(context, (route) => route.isFirst);
-          },
+          onPressed: _leaveMatch,
         ),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: _matchDoc,
         builder: (context, snap) {
+          // A match the player can't read any more — e.g. opened from an
+          // old notification — errors the stream; it used to spin forever.
+          if (snap.hasError) {
+            return Center(child: Text(l10n.matchPlayNotFound));
+          }
           if (!snap.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -551,6 +588,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           }
 
           final status = (data['status'] ?? 'waiting').toString();
+          _matchInProgress = status == 'playing' && !_finishedSent;
 
           if (status != 'playing' && status != 'finished') {
             return Center(child: Text(l10n.matchPlayWaitingToStart));
@@ -674,6 +712,14 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           );
         },
       ),
+    );
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leaveMatch();
+      },
+      child: scaffold,
     );
   }
 

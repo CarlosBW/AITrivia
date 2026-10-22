@@ -137,6 +137,7 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 - [x] Borradas el 2026-10-15 las dos cuentas de prueba de la tienda, cuyas sesiones se habían perdido: `ClaudeShopTest` (`n2qlwmewl4ZjwmglTCCAQC1gB0r2`) y `ClaudeShopTest2` (`9D2tNE2CiReUKCmSZk47ASjPRS32`). Se borró lo mismo que borra `deleteMyAccount`: `users/{uid}` con sus subcolecciones, `usernames/…` y el usuario de Authentication. Ninguna tenía entradas en clasificaciones, `live_search` ni solicitudes de amistad. Comprobado después: no queda nada de ninguna.
 - [ ] Borrar el usuario anónimo `C84wqr2v0JWZvQ7PvK1gf6uxsLD3`, creado el 2026-10-14 desde el emulador de la PC de escritorio al verificar App Check, y las cuentas que creen las pruebas que vengan. **Pospuesto** hasta terminar de agregar temas nuevos: es la sesión del emulador y sirve para probarlos. Desde el 2026-10-15 se llama `ClaudeThemeTest`, para recorrer el tema Espacio: hay que borrar también `usernames/claudethemetest` y su documento en `users`.
+- [ ] Borrar también la cuenta de prueba `ClaudePvpBot` (`claudePvpBot0001`), creada el 2026-10-21 desde un script para jugar contra `ClaudeThemeTest` y probar el PvP en vivo en la app: su usuario de Authentication, `users/claudePvpBot0001` y `usernames/claudepvpbot`. Las partidas de prueba que jugaron (`matches/sGe5oJySpuimkdnGN7r4` y su revancha `xRwJeqp9rmWBlJ0V4pxn`, que quedó a medio jugar) se pueden borrar con ellas.
 
 ## 7. Revisión factual del banco de preguntas
 

@@ -395,6 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Text on the welcome-back and avatar-unlock popups, which sit on
+    // primaryContainer: a pale wash in the light themes, where the white
+    // these used was unreadable.
+    final onPopup = Theme.of(context).colorScheme.onPrimaryContainer;
 
     return Scaffold(
       appBar: AppBar(
@@ -797,24 +801,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeWelcomeBackTitle,
-                        style: context.heading(26, color: context.appColors.onAccent),
+                        style: context.heading(26, color: onPopup),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         l10n.homeLoginStreakLabel(_loginStreakForPopup),
                         style: TextStyle(
                           fontSize: 14,
-                          color: context.appColors.onAccent,
+                          color: onPopup,
                         ),
                       ),
                       if (_loginCoinsForPopup > 0) ...[
                         const SizedBox(height: 4),
                         Text(
                           l10n.homeLoginStreakCoins(_loginCoinsForPopup),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.amberAccent,
+                            color: readableInk(
+                              context.appColors.reward,
+                              Theme.of(context).colorScheme.primaryContainer,
+                            ),
                           ),
                         ),
                       ],
@@ -922,7 +929,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         l10n.homeAvatarUnlockedTitle,
-                        style: context.heading(24, color: context.appColors.onAccent),
+                        style: context.heading(24, color: onPopup),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -932,7 +939,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         style: TextStyle(
                           fontSize: 14,
-                          color: context.appColors.onAccent,
+                          color: onPopup,
                         ),
                       ),
                     ],

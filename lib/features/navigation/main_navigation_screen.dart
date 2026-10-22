@@ -52,6 +52,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _unreadNotifications =
       NotificationService.instance.watchMyUnreadNotifications(limit: 99);
 
+  StreamSubscription<Object>? _pushTaps;
+
+  @override
+  void initState() {
+    super.initState();
+    _pushTaps = NotificationService.instance.pushTaps().listen((_) {
+      if (mounted) _openNotifications();
+    });
+  }
+
   static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'store'];
 
   void _selectTab(int index) {
@@ -89,6 +99,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (_navigatingToAcceptedChallenge) return;
     if (_isOpeningNotifications) return;
     if (snap.docs.isEmpty) return;
+    // Only over the shell itself: it was opened from here whatever was on
+    // screen, so it popped up over a running Solo level or Daily clock.
+    // The notification stays unread and is offered again on return.
+    if (ModalRoute.of(context)?.isCurrent != true) return;
 
     final doc = snap.docs.first;
 
@@ -134,6 +148,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
+                // "Later" didn't mark it read, so it came back on every
+                // launch, long after the match it pointed at was over.
+                NotificationService.instance
+                    .markAsRead(notificationId: doc.id)
+                    .catchError((_) {});
               },
               child: Text(l10n.navLater),
             ),
@@ -234,6 +253,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   void dispose() {
+    _pushTaps?.cancel();
     _overlayTimer?.cancel();
     super.dispose();
   }

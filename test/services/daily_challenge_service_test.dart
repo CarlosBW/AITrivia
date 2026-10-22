@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trivia_ia_flutter/services/daily_challenge_service.dart';
 
-/// Only the two pure helpers are covered here — the rest of the service
-/// talks to Firestore. `todayDateId` is the one that matters most: it names
+/// The pure helpers and the on-device run progress are covered here — the
+/// rest of the service talks to Firestore. `todayDateId` is the one that matters most: it names
 /// the document a day's challenge lives in, and the server refuses a
 /// submission whose date id it doesn't consider plausible, so a formatting
 /// slip means a player simply can't play that day.
@@ -70,6 +71,76 @@ void main() {
         expect(earned, greaterThanOrEqualTo(previous));
         previous = earned;
       }
+    });
+  });
+
+  // The run's answers used to live only in the screen: leaving mid-run
+  // lost them, and coming back after the clock ran out submitted an empty
+  // run, a zero for a day already played.
+  group('respuestas guardadas en el teléfono', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    final answers = [
+      {'questionIndex': 0, 'selectedIndex': 2},
+      {'questionIndex': 3, 'selectedIndex': 1},
+    ];
+
+    test('se recuperan al volver', () async {
+      await service.saveLocalProgress(
+        uid: 'u1', dateId: '2026-10-21', answers: answers, correct: 1,
+      );
+      final saved =
+          await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-21');
+
+      expect(saved, isNotNull);
+      expect(saved!.answers, answers);
+      expect(saved.correct, 1);
+    });
+
+    test('son de un día y una cuenta', () async {
+      await service.saveLocalProgress(
+        uid: 'u1', dateId: '2026-10-21', answers: answers, correct: 1,
+      );
+
+      expect(
+        await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-22'),
+        isNull,
+      );
+      expect(
+        await service.loadLocalProgress(uid: 'u2', dateId: '2026-10-21'),
+        isNull,
+      );
+    });
+
+    test('sin nada guardado no hay nada que recuperar', () async {
+      expect(
+        await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-21'),
+        isNull,
+      );
+    });
+  });
+
+  group('recordatorio diario', () {
+    test('sin jugar hoy, el recordatorio es para hoy', () async {
+      SharedPreferences.setMockInitialValues({});
+      expect(await service.playedTodayOnThisDevice(), isFalse);
+    });
+
+    test('jugado hoy, el recordatorio pasa a mañana', () async {
+      SharedPreferences.setMockInitialValues(
+        {'daily_last_played_date': service.todayDateId()},
+      );
+      expect(await service.playedTodayOnThisDevice(), isTrue);
+    });
+
+    test('jugado ayer no cuenta', () async {
+      final yesterday = service.todayDateId(
+        DateTime.now().subtract(const Duration(days: 1)),
+      );
+      SharedPreferences.setMockInitialValues(
+        {'daily_last_played_date': yesterday},
+      );
+      expect(await service.playedTodayOnThisDevice(), isFalse);
     });
   });
 }

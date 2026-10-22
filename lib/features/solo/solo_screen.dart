@@ -10,6 +10,8 @@ import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/locale_controller.dart';
+import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 
@@ -66,7 +68,8 @@ class _SoloScreenState extends State<SoloScreen> {
         docs.map((doc) async {
           final data = doc.data();
           final categoryId = doc.id;
-          final name = (data['name'] ?? categoryId).toString();
+          final name =
+              localizedCategoryName(data, LocaleController.instance.locale.value.languageCode) ?? categoryId;
           final levelCount = ((data['levelCount'] ?? 10) as num).toInt();
 
           final progressSnap = await db

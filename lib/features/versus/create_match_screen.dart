@@ -5,6 +5,8 @@ import '../../services/match_service.dart';
 import 'live_matchmaking_screen.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/locale_controller.dart';
+import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -57,7 +59,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       for (final doc in docs)
         _CategoryOption(
           id: doc.id,
-          name: (doc.data()['name'] ?? doc.id).toString(),
+          name: localizedCategoryName(doc.data(), LocaleController.instance.locale.value.languageCode) ?? doc.id,
         ),
     ];
 

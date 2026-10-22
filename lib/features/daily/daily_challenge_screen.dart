@@ -7,6 +7,7 @@ import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/localized_content.dart';
 import '../../widgets/question_answer_card.dart';
 import 'daily_challenge_result_screen.dart';
 import '../../widgets/app_bar_title.dart';
@@ -252,6 +253,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
               questions: _questions,
               answers: _answers,
               onlyAnswered: true,
+              languageCode: Localizations.localeOf(context).languageCode,
               targetFor: (index, _) => {
                 'mode': 'daily',
                 'dateId': _dateId,
@@ -310,13 +312,11 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   }
 
   String _questionText(Map<String, dynamic> q) {
-    return (q['q'] ?? q['question'] ?? '').toString();
+    return localizedQuestion(q, Localizations.localeOf(context).languageCode).text;
   }
 
   List<String> _options(Map<String, dynamic> q) {
-    return (q['options'] ?? q['answers'] ?? [])
-        .map<String>((e) => e.toString())
-        .toList();
+    return localizedQuestion(q, Localizations.localeOf(context).languageCode).options;
   }
 
   int _answerIndex(Map<String, dynamic> q) {

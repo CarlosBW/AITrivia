@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Cuál es el país más grande del mundo por superficie?",
+    "options": [
+      "Canadá",
+      "Estados Unidos",
+      "Rusia",
+      "China"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Cuál es la capital de Francia?",
+    "options": [
+      "Roma",
+      "Madrid",
+      "Londres",
+      "París"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Cuál es el río más largo de África?",
+    "options": [
+      "El Nilo",
+      "El Yangtsé",
+      "El Misisipi",
+      "El Amazonas"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Cuál es el continente más grande?",
+    "options": [
+      "África",
+      "Europa",
+      "América",
+      "Asia"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué océano es el más grande del mundo?",
+    "options": [
+      "El Atlántico",
+      "El Ártico",
+      "El Pacífico",
+      "El Índico"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Cuál es la montaña más alta del mundo?",
+    "options": [
+      "El Aconcagua",
+      "El K2",
+      "El Kilimanjaro",
+      "El Monte Everest"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué país tiene forma de bota?",
+    "options": [
+      "Portugal",
+      "Grecia",
+      "Italia",
+      "España"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Cuál es la capital de Japón?",
+    "options": [
+      "Osaka",
+      "Seúl",
+      "Tokio",
+      "Kioto"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿En qué continente está Egipto?",
+    "options": [
+      "Oceanía",
+      "Asia",
+      "África",
+      "Europa"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Cuál es el desierto cálido más grande del mundo?",
+    "options": [
+      "El Sahara",
+      "El Gobi",
+      "El Atacama",
+      "El Kalahari"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Cuál es la capital de Brasil?",
+    "options": [
+      "São Paulo",
+      "Río de Janeiro",
+      "Salvador",
+      "Brasilia"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué país conformado por miles de islas tiene como capital Yakarta?",
+    "options": [
+      "Filipinas",
+      "Tailandia",
+      "Malasia",
+      "Indonesia"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Cuál es el país más poblado del mundo actualmente?",
+    "options": [
+      "China",
+      "Indonesia",
+      "India",
+      "Estados Unidos"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Cuál es la capital de España?",
+    "options": [
+      "Sevilla",
+      "Madrid",
+      "Valencia",
+      "Barcelona"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Cuál es la capital de Italia?",
+    "options": [
+      "Milán",
+      "Roma",
+      "Nápoles",
+      "Turín"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Cuál es la capital de Alemania?",
+    "options": [
+      "Hamburgo",
+      "Fráncfort",
+      "Múnich",
+      "Berlín"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿En qué continente se encuentra Australia?",
+    "options": [
+      "Oceanía",
+      "América",
+      "África",
+      "Asia"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué país es famoso por la Torre Eiffel?",
+    "options": [
+      "Suiza",
+      "Francia",
+      "Bélgica",
+      "Italia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Cuál es la capital de Argentina?",
+    "options": [
+      "Mendoza",
+      "Córdoba",
+      "Buenos Aires",
+      "Rosario"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿En qué país se encuentra la Gran Muralla?",
+    "options": [
+      "China",
+      "Mongolia",
+      "Japón",
+      "India"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Cuál es el continente más frío del planeta?",
+    "options": [
+      "Europa",
+      "Asia",
+      "América del Norte",
+      "Antártida"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Cuál es la capital de Perú?",
+    "options": [
+      "Cusco",
+      "Lima",
+      "Trujillo",
+      "Arequipa"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Qué mar separa Europa de África?",
+    "options": [
+      "El Caribe",
+      "El Negro",
+      "El Báltico",
+      "El Mediterráneo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Cuál es la capital de Colombia?",
+    "options": [
+      "Cartagena",
+      "Cali",
+      "Medellín",
+      "Bogotá"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué línea imaginaria divide la Tierra en hemisferio norte y sur?",
+    "options": [
+      "El meridiano de Greenwich",
+      "El círculo polar",
+      "El ecuador",
+      "El trópico de Cáncer"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Cuál es la capital de Chile?",
+    "options": [
+      "Valparaíso",
+      "Concepción",
+      "Santiago",
+      "Antofagasta"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿En qué continente se encuentra Brasil?",
+    "options": [
+      "África",
+      "Oceanía",
+      "América Central",
+      "América del Sur"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué océano baña la costa este de Estados Unidos?",
+    "options": [
+      "El Atlántico",
+      "El Ártico",
+      "El Índico",
+      "El Pacífico"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Cuál es la capital de Portugal?",
+    "options": [
+      "Oporto",
+      "Braga",
+      "Coímbra",
+      "Lisboa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué país sudamericano es largo y estrecho a lo largo de la costa del Pacífico?",
+    "options": [
+      "Perú",
+      "Colombia",
+      "Ecuador",
+      "Chile"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Cuál es el país más pequeño del mundo?",
+    "options": [
+      "Liechtenstein",
+      "Ciudad del Vaticano",
+      "San Marino",
+      "Mónaco"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué estrecho separa España de África?",
+    "options": [
+      "Estrecho de Gibraltar",
+      "Estrecho de Magallanes",
+      "Canal de la Mancha",
+      "Estrecho de Bering"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Cuál es la cordillera montañosa más larga del mundo?",
+    "options": [
+      "Los Alpes",
+      "Los Andes",
+      "Las Montañas Rocosas",
+      "El Himalaya"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué país tiene más husos horarios?",
+    "options": [
+      "Rusia",
+      "China",
+      "Francia",
+      "Estados Unidos"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Cuál es la capital de Australia?",
+    "options": [
+      "Sídney",
+      "Perth",
+      "Canberra",
+      "Melbourne"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué lago es el más grande del mundo por superficie?",
+    "options": [
+      "El Lago Superior",
+      "El Lago Baikal",
+      "El Mar Caspio",
+      "El Lago Victoria"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué país limita con más países del mundo, empatado con Rusia?",
+    "options": [
+      "Alemania",
+      "Brasil",
+      "India",
+      "China"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Cuál es la capital de Canadá?",
+    "options": [
+      "Vancouver",
+      "Ottawa",
+      "Toronto",
+      "Montreal"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué río atraviesa Egipto?",
+    "options": [
+      "El Nilo",
+      "El Tigris",
+      "El Jordán",
+      "El Éufrates"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Cuál es el punto más bajo de la Tierra en tierra firme?",
+    "options": [
+      "La Depresión de Turfan",
+      "El Mar Muerto",
+      "El Mar Caspio",
+      "El Valle de la Muerte"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué país es conocido como \"la tierra del fuego y el hielo\" por sus volcanes y glaciares?",
+    "options": [
+      "Islandia",
+      "Groenlandia",
+      "Noruega",
+      "Nueva Zelanda"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Cuál es la capital legislativa de Sudáfrica?",
+    "options": [
+      "Pretoria",
+      "Johannesburgo",
+      "Ciudad del Cabo",
+      "Bloemfontein"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué país europeo tiene la mayor cantidad de fiordos?",
+    "options": [
+      "Finlandia",
+      "Islandia",
+      "Noruega",
+      "Suecia"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Cuál es la capital de Nueva Zelanda?",
+    "options": [
+      "Christchurch",
+      "Dunedin",
+      "Wellington",
+      "Auckland"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Cuál es el segundo país más grande del mundo por superficie?",
+    "options": [
+      "Estados Unidos",
+      "Canadá",
+      "Brasil",
+      "China"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué desierto se extiende por Mongolia y el norte de China?",
+    "options": [
+      "El Karakum",
+      "El Kizilkum",
+      "El Gobi",
+      "El Taklamakán"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Cuál es el país más poblado de África?",
+    "options": [
+      "Etiopía",
+      "Egipto",
+      "Nigeria",
+      "Sudáfrica"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué cordillera marca tradicionalmente la separación entre Europa y Asia?",
+    "options": [
+      "Los Balcanes",
+      "El Cáucaso",
+      "Los Cárpatos",
+      "Los Urales"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Cuál es la capital de Turquía?",
+    "options": [
+      "Bursa",
+      "Ankara",
+      "Estambul",
+      "Esmirna"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué canal artificial conecta el Atlántico con el Pacífico en América Central?",
+    "options": [
+      "El canal de Suez",
+      "El canal de Panamá",
+      "El canal de Corinto",
+      "El canal de Kiel"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué canal conecta el mar Mediterráneo con el mar Rojo?",
+    "options": [
+      "El canal de Kiel",
+      "El canal de Panamá",
+      "El canal de Corinto",
+      "El canal de Suez"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Cuál es el lago más profundo del mundo?",
+    "options": [
+      "El lago Superior",
+      "El lago Baikal",
+      "El lago Tanganica",
+      "El mar Caspio"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Cuál es la capital de Egipto?",
+    "options": [
+      "Luxor",
+      "Alejandría",
+      "El Cairo",
+      "Guiza"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Cuál es la isla más grande del mundo?",
+    "options": [
+      "Groenlandia",
+      "Madagascar",
+      "Nueva Guinea",
+      "Borneo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Cuál es la capital de Etiopía?",
+    "options": [
+      "Jartum",
+      "Mogadiscio",
+      "Adís Abeba",
+      "Nairobi"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Cuál es la capital de Rusia?",
+    "options": [
+      "San Petersburgo",
+      "Kazán",
+      "Moscú",
+      "Novosibirsk"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué país sudamericano no tiene salida al mar junto con Paraguay?",
+    "options": [
+      "Venezuela",
+      "Bolivia",
+      "Uruguay",
+      "Ecuador"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Cuál es el río más largo de Europa?",
+    "options": [
+      "El Volga",
+      "El Dniéper",
+      "El Danubio",
+      "El Rin"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué estrecho separa Alaska de Rusia?",
+    "options": [
+      "El estrecho de Ormuz",
+      "El estrecho de Malaca",
+      "El estrecho de Bering",
+      "El estrecho de Magallanes"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Cuál es la capital de Marruecos?",
+    "options": [
+      "Fez",
+      "Rabat",
+      "Marrakech",
+      "Casablanca"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Cuál es la montaña más alta de África?",
+    "options": [
+      "El Toubkal",
+      "El monte Stanley",
+      "El monte Kenia",
+      "El Kilimanjaro"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Cuál es la capital de Kenia?",
+    "options": [
+      "Dar es Salaam",
+      "Lusaka",
+      "Nairobi",
+      "Kampala"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Cuál es el país más poblado de la Unión Europea?",
+    "options": [
+      "Alemania",
+      "Francia",
+      "Italia",
+      "España"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué océano baña la costa oeste de América del Sur?",
+    "options": [
+      "El Pacífico",
+      "El Ártico",
+      "El Atlántico",
+      "El Índico"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué desierto sudamericano es considerado el lugar más árido del mundo?",
+    "options": [
+      "El de Sechura",
+      "El Patagónico",
+      "El de Atacama",
+      "El de La Guajira"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Cuál es la capital de la India?",
+    "options": [
+      "Nueva Delhi",
+      "Bombay",
+      "Bangalore",
+      "Calcuta"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué país europeo es famoso por sus tulipanes y molinos de viento?",
+    "options": [
+      "Dinamarca",
+      "Bélgica",
+      "Países Bajos",
+      "Suiza"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué país tiene el mayor número de volcanes activos?",
+    "options": [
+      "Indonesia",
+      "Chile",
+      "Islandia",
+      "Japón"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Cuál es el mar que baña las costas de Grecia y el oeste de Turquía?",
+    "options": [
+      "El mar Jónico",
+      "El mar Adriático",
+      "El mar Egeo",
+      "El mar Negro"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué país africano tiene como capital Pretoria en su función administrativa?",
+    "options": [
+      "Namibia",
+      "Botsuana",
+      "Zimbabue",
+      "Sudáfrica"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Cuál es la capital de Kazajistán?",
+    "options": [
+      "Bishkek",
+      "Tashkent",
+      "Almaty",
+      "Astaná"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué país tiene tres capitales oficiales (administrativa, legislativa y judicial)?",
+    "options": [
+      "Sudáfrica",
+      "Bolivia",
+      "Sri Lanka",
+      "Países Bajos"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Cuál es el punto más profundo de los océanos?",
+    "options": [
+      "La Fosa de Puerto Rico",
+      "La Fosa de Tonga",
+      "La Fosa de Kermadec",
+      "La Fosa de las Marianas"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué país tiene la línea de costa más larga del mundo?",
+    "options": [
+      "Indonesia",
+      "Noruega",
+      "Rusia",
+      "Canadá"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Cuál es la capital de Mongolia?",
+    "options": [
+      "Bishkek",
+      "Ulán Bator",
+      "Astaná",
+      "Dusambé"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué estrecho conecta el Mar Mediterráneo con el Mar Negro junto con el Bósforo?",
+    "options": [
+      "El Estrecho de Ormuz",
+      "Los Dardanelos",
+      "El Canal de Suez",
+      "El Estrecho de Malaca"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué país sin salida al mar está rodeado completamente por Sudáfrica?",
+    "options": [
+      "Botsuana",
+      "Malaui",
+      "Suazilandia",
+      "Lesoto"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Cuál es la cascada más alta del mundo?",
+    "options": [
+      "Las Cataratas del Iguazú",
+      "Las Cataratas Victoria",
+      "El Salto Ángel",
+      "Las Cataratas del Niágara"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué archipiélago pertenece a Ecuador y es famoso por su biodiversidad estudiada por Darwin?",
+    "options": [
+      "Islas Canarias",
+      "Islas Malvinas",
+      "Islas Salomón",
+      "Islas Galápagos"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Cuál es el país más extenso de África?",
+    "options": [
+      "Argelia",
+      "Sudán",
+      "Libia",
+      "República Democrática del Congo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué meridiano se usa como referencia para el Tiempo Universal (0°)?",
+    "options": [
+      "El Meridiano de Ecuador",
+      "El Antimeridiano",
+      "El Meridiano de Greenwich",
+      "El Meridiano de París"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué país centroamericano no tiene ejército desde 1948?",
+    "options": [
+      "Costa Rica",
+      "Belice",
+      "Nicaragua",
+      "Panamá"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Cuál es la capital administrativa de Sri Lanka?",
+    "options": [
+      "Galle",
+      "Colombo",
+      "Sri Jayawardenapura Kotte",
+      "Kandy"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Cuál es la capital de Bután?",
+    "options": [
+      "Katmandú",
+      "Timbu",
+      "Timor",
+      "Daca"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Cuál es el país soberano más densamente poblado del mundo?",
+    "options": [
+      "Malta",
+      "Mónaco",
+      "Singapur",
+      "Bangladés"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué río forma buena parte de la frontera entre México y Estados Unidos?",
+    "options": [
+      "El Misisipi",
+      "El Río Bravo",
+      "El Usumacinta",
+      "El Colorado"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Cuál es la capital de Myanmar desde 2006?",
+    "options": [
+      "Rangún",
+      "Naipyidó",
+      "Bago",
+      "Mandalay"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué desierto costero de Namibia es considerado el más antiguo del mundo?",
+    "options": [
+      "El Namib",
+      "El Karoo",
+      "El Danakil",
+      "El Kalahari"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué país africano fue fundado por personas esclavizadas liberadas de Estados Unidos?",
+    "options": [
+      "Ghana",
+      "Liberia",
+      "Sierra Leona",
+      "Costa de Marfil"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Cuál es la montaña más alta de Australia continental?",
+    "options": [
+      "El monte Kosciuszko",
+      "El monte Ossa",
+      "El monte Zeil",
+      "El monte Bogong"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué estrecho separa Sicilia de la península itálica?",
+    "options": [
+      "El de Otranto",
+      "El de Gibraltar",
+      "El de Bonifacio",
+      "El de Mesina"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Cuál es la capital de Uzbekistán?",
+    "options": [
+      "Samarcanda",
+      "Nukus",
+      "Taskent",
+      "Bujará"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué país tiene la única bandera nacional que no es rectangular?",
+    "options": [
+      "Catar",
+      "Vaticano",
+      "Suiza",
+      "Nepal"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué mar del Atlántico no tiene costas y está delimitado por corrientes marinas?",
+    "options": [
+      "El mar de Labrador",
+      "El mar de Weddell",
+      "El mar de Coral",
+      "El mar de los Sargazos"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Cuál es la capital constitucional de Bolivia?",
+    "options": [
+      "Sucre",
+      "La Paz",
+      "Cochabamba",
+      "Santa Cruz"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué cordillera atraviesa Marruecos, Argelia y Túnez?",
+    "options": [
+      "El Tibesti",
+      "El Rif",
+      "El Atlas",
+      "El Ahaggar"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Cuál es el país más joven reconocido por la ONU?",
+    "options": [
+      "Montenegro",
+      "Timor Oriental",
+      "Sudán del Sur",
+      "Kosovo"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Cuál es el lago de agua dulce más grande de África por superficie?",
+    "options": [
+      "El lago Chad",
+      "El lago Victoria",
+      "El lago Tanganica",
+      "El lago Malaui"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué corriente oceánica cálida suaviza el clima del noroeste de Europa?",
+    "options": [
+      "La corriente de Canarias",
+      "La corriente del Golfo",
+      "La corriente de Humboldt",
+      "La corriente de Benguela"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué archipiélago noruego se sitúa entre el continente y el océano Ártico?",
+    "options": [
+      "Åland",
+      "Lofoten",
+      "Svalbard",
+      "Feroe"
+    ],
+    "answerIndex": 2
+  }
+]

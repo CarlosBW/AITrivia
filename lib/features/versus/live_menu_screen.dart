@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../services/economy_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/locale_controller.dart';
+import '../../l10n/localized_content.dart';
 import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import 'create_match_screen.dart';
@@ -60,7 +62,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
       for (final doc in docs)
         _CategoryOption(
           id: doc.id,
-          name: (doc.data()['name'] ?? doc.id).toString(),
+          name: localizedCategoryName(doc.data(), LocaleController.instance.locale.value.languageCode) ?? doc.id,
         ),
     ];
   }

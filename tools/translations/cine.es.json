@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Quién dirigió \"Titanic\"?",
+    "options": [
+      "Ridley Scott",
+      "James Cameron",
+      "Christopher Nolan",
+      "Steven Spielberg"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿En qué año se estrenó \"The Matrix\"?",
+    "options": [
+      "1997",
+      "2001",
+      "2003",
+      "1999"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Qué actor interpreta a Jack Sparrow?",
+    "options": [
+      "Tom Cruise",
+      "Johnny Depp",
+      "Brad Pitt",
+      "Orlando Bloom"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué película tiene a Woody y Buzz?",
+    "options": [
+      "Frozen",
+      "Shrek",
+      "Toy Story",
+      "Cars"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Quién dirigió \"Pulp Fiction\"?",
+    "options": [
+      "Martin Scorsese",
+      "Quentin Tarantino",
+      "Peter Jackson",
+      "David Fincher"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué saga incluye a \"Darth Vader\"?",
+    "options": [
+      "Dune",
+      "Alien",
+      "Star Wars",
+      "Star Trek"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Cómo se llama la nave en \"Alien\" (1979)?",
+    "options": [
+      "Nostromo",
+      "Serenity",
+      "Galactica",
+      "Enterprise"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Quién interpreta a Neo en \"The Matrix\"?",
+    "options": [
+      "Christian Bale",
+      "Matt Damon",
+      "Keanu Reeves",
+      "Tom Hanks"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué película incluye la frase \"I’ll be back\"?",
+    "options": [
+      "Terminator",
+      "Rambo",
+      "Die Hard",
+      "Rocky"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué personaje dice \"May the Force be with you\"?",
+    "options": [
+      "Varios personajes en Star Wars",
+      "Neo",
+      "Frodo",
+      "Harry Potter"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Quién interpretó a Wolverine en la mayoría de películas de X-Men?",
+    "options": [
+      "Hugh Jackman",
+      "Ryan Reynolds",
+      "Ben Affleck",
+      "Chris Evans"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿En qué ciudad transcurre mayormente \"The Dark Knight\"?",
+    "options": [
+      "Chicago",
+      "Metropolis",
+      "New York",
+      "Gotham"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué animal es Simba en \"El Rey León\"?",
+    "options": [
+      "Tigre",
+      "Guepardo",
+      "León",
+      "Leopardo"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Qué actor interpreta a Iron Man en el Universo Marvel?",
+    "options": [
+      "Chris Hemsworth",
+      "Chris Evans",
+      "Mark Ruffalo",
+      "Robert Downey Jr."
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Qué princesa de Disney pierde una zapatilla de cristal?",
+    "options": [
+      "Blancanieves",
+      "Cenicienta",
+      "Aurora",
+      "Bella"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿De qué color es el ogro protagonista de \"Shrek\"?",
+    "options": [
+      "Gris",
+      "Marrón",
+      "Azul",
+      "Verde"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Qué actor protagonizó \"Forrest Gump\"?",
+    "options": [
+      "Tom Hanks",
+      "Kevin Costner",
+      "Harrison Ford",
+      "Robin Williams"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué tipo de animal es Nemo en la película de Pixar?",
+    "options": [
+      "Una tortuga",
+      "Un pez payaso",
+      "Un delfín",
+      "Un tiburón"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Qué actriz protagonizó \"Titanic\" junto a Leonardo DiCaprio?",
+    "options": [
+      "Julia Roberts",
+      "Cameron Diaz",
+      "Nicole Kidman",
+      "Kate Winslet"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿Qué superhéroe tiene como identidad secreta a Bruce Wayne?",
+    "options": [
+      "Linterna Verde",
+      "Superman",
+      "Flash",
+      "Batman"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Qué superhéroe tiene como identidad secreta a Clark Kent?",
+    "options": [
+      "Batman",
+      "Hulk",
+      "Superman",
+      "Aquaman"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué maestro pequeño y verde entrena a los Jedi en \"Star Wars\"?",
+    "options": [
+      "R2-D2",
+      "Yoda",
+      "Chewbacca",
+      "Jabba"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Qué película de Disney tiene una princesa con poderes de hielo llamada Elsa?",
+    "options": [
+      "Frozen",
+      "Valiente",
+      "Enredados",
+      "Moana"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Cómo se llama el premio más importante del cine estadounidense?",
+    "options": [
+      "El Goya",
+      "El Globo de Oro",
+      "El Óscar",
+      "El BAFTA"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué actor interpretó a Harry Potter en las películas?",
+    "options": [
+      "Tom Felton",
+      "Daniel Radcliffe",
+      "Elijah Wood",
+      "Rupert Grint"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿En qué ciudad vive Spider-Man?",
+    "options": [
+      "Metrópolis",
+      "Los Ángeles",
+      "Chicago",
+      "Nueva York"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Cuántas películas componen la trilogía original de \"El Señor de los Anillos\"?",
+    "options": [
+      "Tres",
+      "Cinco",
+      "Dos",
+      "Cuatro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué película narra la historia de un niño que se queda solo en casa en Navidad?",
+    "options": [
+      "Elf",
+      "Mi pobre angelito",
+      "Polar Express",
+      "El Grinch"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué estudio produjo la película \"El Rey León\"?",
+    "options": [
+      "Paramount",
+      "Universal",
+      "Disney",
+      "Warner Bros."
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué personaje de \"Star Wars\" es un robot pequeño con forma de barril?",
+    "options": [
+      "BB-8",
+      "IG-11",
+      "C-3PO",
+      "R2-D2"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué película ganó el Óscar a Mejor Película en la ceremonia de 2020?",
+    "options": [
+      "1917",
+      "Ford v Ferrari",
+      "Joker",
+      "Parasite"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué película trata sobre sueños dentro de sueños?",
+    "options": [
+      "Interstellar",
+      "Memento",
+      "Inception",
+      "Tenet"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Quién dirigió \"Interstellar\"?",
+    "options": [
+      "Denis Villeneuve",
+      "Ridley Scott",
+      "James Cameron",
+      "Christopher Nolan"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué actor interpretó a Michael Corleone en \"El Padrino\"?",
+    "options": [
+      "Al Pacino",
+      "Marlon Brando",
+      "James Caan",
+      "Robert De Niro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué estudio de animación creó \"Toy Story\"?",
+    "options": [
+      "Pixar",
+      "Illumination",
+      "Studio Ghibli",
+      "DreamWorks"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Quién dirigió \"Jurassic Park\" (1993)?",
+    "options": [
+      "George Lucas",
+      "James Cameron",
+      "Steven Spielberg",
+      "Robert Zemeckis"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿En qué película aparece el personaje \"Hannibal Lecter\"?",
+    "options": [
+      "Seven",
+      "Psycho",
+      "El Silencio de los Inocentes",
+      "Zodiac"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué actriz interpretó a Hermione Granger en Harry Potter?",
+    "options": [
+      "Emma Watson",
+      "Emma Stone",
+      "Natalie Portman",
+      "Kristen Stewart"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué director es conocido por \"Kill Bill\" y \"Django Unchained\"?",
+    "options": [
+      "Robert Rodriguez",
+      "Quentin Tarantino",
+      "Martin Scorsese",
+      "Guy Ritchie"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Cuál fue la primera película de la saga \"Star Wars\" en estrenarse (1977)?",
+    "options": [
+      "Una Nueva Esperanza",
+      "La Amenaza Fantasma",
+      "El Retorno del Jedi",
+      "El Imperio Contraataca"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué película de Pixar trata sobre las emociones dentro de la mente de una niña?",
+    "options": [
+      "Wall-E",
+      "Up",
+      "Intensamente",
+      "Coco"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Quién interpretó al Joker en \"The Dark Knight\" (2008)?",
+    "options": [
+      "Jack Nicholson",
+      "Joaquin Phoenix",
+      "Heath Ledger",
+      "Jared Leto"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué película ganó el Óscar a Mejor Película Animada en 2018?",
+    "options": [
+      "Coco",
+      "Ferdinand",
+      "Los Increíbles 2",
+      "Hotel Transylvania 3"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué director dirigió \"El club de la pelea\"?",
+    "options": [
+      "Darren Aronofsky",
+      "Paul Thomas Anderson",
+      "Spike Jonze",
+      "David Fincher"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué director es conocido por \"El resplandor\" y \"La naranja mecánica\"?",
+    "options": [
+      "Stanley Kubrick",
+      "William Friedkin",
+      "Sidney Lumet",
+      "Roman Polanski"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué actriz protagonizó \"La La Land\"?",
+    "options": [
+      "Anne Hathaway",
+      "Natalie Portman",
+      "Emma Stone",
+      "Amy Adams"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué película de Studio Ghibli sigue a una niña llamada Chihiro?",
+    "options": [
+      "El viaje de Chihiro",
+      "El castillo ambulante",
+      "Mi vecino Totoro",
+      "La princesa Mononoke"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué cineasta japonés fundó Studio Ghibli junto a Isao Takahata?",
+    "options": [
+      "Makoto Shinkai",
+      "Hayao Miyazaki",
+      "Mamoru Hosoda",
+      "Satoshi Kon"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué director surcoreano dirigió \"Parásitos\"?",
+    "options": [
+      "Kim Ki-duk",
+      "Park Chan-wook",
+      "Lee Chang-dong",
+      "Bong Joon-ho"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué película de 1972 dirigida por Coppola retrata a la familia Corleone?",
+    "options": [
+      "El Padrino",
+      "Uno de los nuestros",
+      "Scarface",
+      "Casino"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué película de Ridley Scott tiene a Russell Crowe como el general Máximo?",
+    "options": [
+      "Troya",
+      "El reino de los cielos",
+      "Gladiador",
+      "Alejandro Magno"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué compositor italiano creó la música de \"El bueno, el feo y el malo\"?",
+    "options": [
+      "Nino Rota",
+      "Piero Piccioni",
+      "Riz Ortolani",
+      "Ennio Morricone"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿En qué país se rodó principalmente la saga de \"El Señor de los Anillos\"?",
+    "options": [
+      "Irlanda",
+      "Escocia",
+      "Canadá",
+      "Nueva Zelanda"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué actor interpretó a Hannibal Lecter en \"El silencio de los inocentes\"?",
+    "options": [
+      "Ian McKellen",
+      "Gary Oldman",
+      "Michael Caine",
+      "Anthony Hopkins"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué película de Martin Scorsese sigue el ascenso de Henry Hill en la mafia?",
+    "options": [
+      "Taxi Driver",
+      "Casino",
+      "Buenos muchachos",
+      "El irlandés"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Qué director japonés dirigió \"Los siete samuráis\"?",
+    "options": [
+      "Yasujirō Ozu",
+      "Kenji Mizoguchi",
+      "Takeshi Kitano",
+      "Akira Kurosawa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué película de 1975 dirigida por Spielberg trata sobre un tiburón blanco?",
+    "options": [
+      "Mar abierto",
+      "Orca",
+      "Abyss",
+      "Tiburón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Qué actriz interpretó a Katniss Everdeen en \"Los Juegos del Hambre\"?",
+    "options": [
+      "Shailene Woodley",
+      "Kristen Stewart",
+      "Saoirse Ronan",
+      "Jennifer Lawrence"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué película de Pixar sigue a un robot que limpia una Tierra abandonada?",
+    "options": [
+      "WALL·E",
+      "Up",
+      "Los Increíbles",
+      "Ratatouille"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué actor español ganó el Óscar por \"No es país para viejos\"?",
+    "options": [
+      "Eduardo Noriega",
+      "Luis Tosar",
+      "Antonio Banderas",
+      "Javier Bardem"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué director español dirigió \"Todo sobre mi madre\"?",
+    "options": [
+      "Carlos Saura",
+      "Juan Antonio Bayona",
+      "Pedro Almodóvar",
+      "Alejandro Amenábar"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué película de Frank Darabont transcurre en la prisión de Shawshank?",
+    "options": [
+      "La milla verde",
+      "El expreso de medianoche",
+      "Escape de Alcatraz",
+      "Sueño de fuga"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué directora dirigió \"Lost in Translation\"?",
+    "options": [
+      "Sofia Coppola",
+      "Jane Campion",
+      "Kathryn Bigelow",
+      "Greta Gerwig"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué película mexicana de Alfonso Cuarón ganó el Óscar a Mejor Película Extranjera en 2019?",
+    "options": [
+      "Y tu mamá también",
+      "Roma",
+      "Amores perros",
+      "Güeros"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué actor interpretó a Vito Corleone en \"El Padrino\" de 1972?",
+    "options": [
+      "Robert Duvall",
+      "Marlon Brando",
+      "Robert De Niro",
+      "James Caan"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué director dirigió \"Taxi Driver\"?",
+    "options": [
+      "Michael Cimino",
+      "John Cassavetes",
+      "Brian De Palma",
+      "Martin Scorsese"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué película de animación japonesa de 1988 dirigida por Katsuhiro Otomo es un clásico cyberpunk?",
+    "options": [
+      "Akira",
+      "Ghost in the Shell",
+      "Paprika",
+      "Perfect Blue"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué actriz interpretó a Sarah Connor en la primera película de \"Terminator\"?",
+    "options": [
+      "Jamie Lee Curtis",
+      "Linda Hamilton",
+      "Carrie Fisher",
+      "Sigourney Weaver"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué película de superhéroes de 2019 cerró la saga del Infinito de Marvel?",
+    "options": [
+      "Spider-Man: Lejos de casa",
+      "Black Panther",
+      "Capitana Marvel",
+      "Avengers: Endgame"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué actriz ha ganado el mayor número de Óscar de actuación en la historia?",
+    "options": [
+      "Meryl Streep",
+      "Katharine Hepburn",
+      "Bette Davis",
+      "Ingrid Bergman"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Quién compuso la banda sonora original de \"Star Wars\"?",
+    "options": [
+      "Danny Elfman",
+      "John Williams",
+      "Ennio Morricone",
+      "Hans Zimmer"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué película de Alfred Hitchcock presenta la famosa escena de la ducha?",
+    "options": [
+      "La Ventana Indiscreta",
+      "Vértigo",
+      "Los Pájaros",
+      "Psycho"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué actriz protagonizó \"Alien\" (1979) interpretando a Ripley?",
+    "options": [
+      "Linda Hamilton",
+      "Jamie Lee Curtis",
+      "Sigourney Weaver",
+      "Meryl Streep"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿En qué año se estrenó la primera película de \"Blade Runner\"?",
+    "options": [
+      "1982",
+      "1985",
+      "1990",
+      "1979"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué director dirigió \"2001: Una Odisea del Espacio\"?",
+    "options": [
+      "Stanley Kubrick",
+      "Steven Spielberg",
+      "George Lucas",
+      "Ridley Scott"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Cuál es el nombre del boxeador interpretado por Sylvester Stallone?",
+    "options": [
+      "Rocky Balboa",
+      "Clubber Lang",
+      "Tommy Gunn",
+      "Apollo Creed"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué película francesa muda, dirigida por Michel Hazanavicius, ganó el Óscar a Mejor Película en 2012?",
+    "options": [
+      "La La Land",
+      "Delicatessen",
+      "The Artist",
+      "Amélie"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Quién dirigió \"Apocalypse Now\"?",
+    "options": [
+      "Francis Ford Coppola",
+      "Oliver Stone",
+      "Michael Cimino",
+      "Martin Scorsese"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué actor interpretó a Tony Montana en \"Scarface\" (1983)?",
+    "options": [
+      "Steven Bauer",
+      "Robert De Niro",
+      "Al Lettieri",
+      "Al Pacino"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿En qué película aparece por primera vez el personaje de James Bond?",
+    "options": [
+      "Dr. No",
+      "Casino Royale",
+      "Goldfinger",
+      "Skyfall"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué director es conocido por el uso de planos secuencia largos, como en \"Birdman\"?",
+    "options": [
+      "Alfonso Cuarón",
+      "Guillermo del Toro",
+      "Pedro Almodóvar",
+      "Alejandro González Iñárritu"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué película de Guillermo del Toro ganó el Óscar a Mejor Película en 2018?",
+    "options": [
+      "Pacific Rim",
+      "La Forma del Agua",
+      "El Laberinto del Fauno",
+      "Hellboy"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Cuál es el nombre del planeta natal de Superman?",
+    "options": [
+      "Pandora",
+      "Tatooine",
+      "Krypton",
+      "Arrakis"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué película alemana de 1927 dirigida por Fritz Lang es un clásico de la ciencia ficción muda?",
+    "options": [
+      "Nosferatu",
+      "El gabinete del doctor Caligari",
+      "M, el vampiro de Düsseldorf",
+      "Metrópolis"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué director sueco dirigió \"El séptimo sello\"?",
+    "options": [
+      "Lasse Hallström",
+      "Ingmar Bergman",
+      "Bo Widerberg",
+      "Roy Andersson"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué película de Federico Fellini sigue a un periodista por la Roma de la alta sociedad?",
+    "options": [
+      "La dolce vita",
+      "Ocho y medio",
+      "Amarcord",
+      "La strada"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué cineasta soviético teorizó el montaje intelectual y dirigió \"El acorazado Potemkin\"?",
+    "options": [
+      "Serguéi Eisenstein",
+      "Lev Kuleshov",
+      "Vsévolod Pudovkin",
+      "Dziga Vertov"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué director francés de la Nouvelle Vague dirigió \"Sin aliento\"?",
+    "options": [
+      "Claude Chabrol",
+      "François Truffaut",
+      "Éric Rohmer",
+      "Jean-Luc Godard"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué película de Orson Welles de 1941 es considerada una de las mejores de la historia?",
+    "options": [
+      "Sed de mal",
+      "El tercer hombre",
+      "Ciudadano Kane",
+      "La dama de Shanghái"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué director italiano dirigió \"Ladrón de bicicletas\", obra clave del neorrealismo?",
+    "options": [
+      "Vittorio De Sica",
+      "Michelangelo Antonioni",
+      "Luchino Visconti",
+      "Roberto Rossellini"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué cineasta español, ligado al surrealismo, dirigió \"Un perro andaluz\"?",
+    "options": [
+      "Luis Buñuel",
+      "Víctor Erice",
+      "Juan Antonio Bardem",
+      "Carlos Saura"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué película de Andréi Tarkovski adapta la novela de Stanisław Lem sobre un planeta oceánico?",
+    "options": [
+      "El espejo",
+      "Andréi Rubliov",
+      "Solaris",
+      "Stalker"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué director de fotografía mexicano ganó tres premios Óscar consecutivos?",
+    "options": [
+      "Rodrigo Prieto",
+      "Gabriel Figueroa",
+      "Emmanuel Lubezki",
+      "Guillermo Navarro"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué película de Michael Curtiz de 1942 transcurre en Marruecos durante la Segunda Guerra Mundial?",
+    "options": [
+      "Sabotaje",
+      "El halcón maltés",
+      "Tener y no tener",
+      "Casablanca"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué movimiento cinematográfico danés impulsado por Lars von Trier estableció un \"voto de castidad\"?",
+    "options": [
+      "Cinema Novo",
+      "Nuevo Cine Alemán",
+      "Free Cinema",
+      "Dogma 95"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué actriz sueca protagonizó \"Casablanca\" junto a Humphrey Bogart?",
+    "options": [
+      "Ingrid Bergman",
+      "Greta Garbo",
+      "Marlene Dietrich",
+      "Lauren Bacall"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué película muda de Charles Chaplin incluye la escena en la que se come un zapato?",
+    "options": [
+      "La quimera del oro",
+      "El chico",
+      "Luces de la ciudad",
+      "Tiempos modernos"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué festival de cine entrega la Palma de Oro?",
+    "options": [
+      "Cannes",
+      "San Sebastián",
+      "Berlín",
+      "Venecia"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué director ganó el Óscar a Mejor Director por \"La vida de Pi\"?",
+    "options": [
+      "Danny Boyle",
+      "Alfonso Cuarón",
+      "Ang Lee",
+      "Alejandro González Iñárritu"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué película francesa de Jean Renoir de 1939 es una sátira de la sociedad de su época?",
+    "options": [
+      "El salario del miedo",
+      "Hiroshima mon amour",
+      "Los 400 golpes",
+      "La regla del juego"
+    ],
+    "answerIndex": 3
+  }
+]

@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/l10n_for.dart';
+import '../l10n/localized_content.dart';
 import '../l10n/user_facing_error.dart';
 import 'locale_controller.dart';
 
@@ -38,6 +39,7 @@ List<ReviewedQuestion> reviewedQuestions({
   required Map<String, dynamic> Function(int index, Map<String, dynamic> q)
       targetFor,
   bool onlyAnswered = false,
+  String languageCode = 'es',
 }) {
   final selectedByIndex = <int, int>{
     for (final answer in answers)
@@ -51,10 +53,9 @@ List<ReviewedQuestion> reviewedQuestions({
     if (raw is! Map) continue;
     final q = Map<String, dynamic>.from(raw);
 
-    final text = (q['q'] ?? q['question'] ?? '').toString();
-    final options = ((q['options'] ?? q['answers']) as List? ?? [])
-        .map((o) => o.toString())
-        .toList();
+    final localized = localizedQuestion(q, languageCode);
+    final text = localized.text;
+    final options = localized.options;
     final correct = q['answerIndex'] ?? q['correctIndex'];
     if (text.isEmpty || options.isEmpty || correct is! num) continue;
 

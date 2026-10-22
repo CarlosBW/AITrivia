@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Quién pintó la Mona Lisa?",
+    "options": [
+      "Rafael",
+      "Sandro Botticelli",
+      "Leonardo da Vinci",
+      "Miguel Ángel"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Quién pintó \"La noche estrellada\"?",
+    "options": [
+      "Salvador Dalí",
+      "Pablo Picasso",
+      "Vincent van Gogh",
+      "Claude Monet"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Qué pintor español es famoso por el cubismo?",
+    "options": [
+      "Diego Velázquez",
+      "Joan Miró",
+      "Pablo Picasso",
+      "Salvador Dalí"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Quién pintó el techo de la Capilla Sixtina?",
+    "options": [
+      "Leonardo da Vinci",
+      "Rafael",
+      "Donatello",
+      "Miguel Ángel"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué pintora mexicana es conocida por sus autorretratos, como \"Las Dos Fridas\"?",
+    "options": [
+      "Frida Kahlo",
+      "Diego Rivera",
+      "José Clemente Orozco",
+      "Rufino Tamayo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué museo alberga la Mona Lisa?",
+    "options": [
+      "El Hermitage",
+      "El Louvre",
+      "El MoMA",
+      "El Prado"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué pintor holandés se cortó una oreja?",
+    "options": [
+      "Vincent van Gogh",
+      "Johannes Vermeer",
+      "Rembrandt",
+      "Piet Mondrian"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Qué famosa escultura de mármol de Miguel Ángel representa a un joven bíblico?",
+    "options": [
+      "Moisés",
+      "David",
+      "El Pensador",
+      "Pietà"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué pintor pintó \"Guernica\"?",
+    "options": [
+      "Salvador Dalí",
+      "Francisco Goya",
+      "Joan Miró",
+      "Pablo Picasso"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué pintor es conocido por los relojes derretidos en \"La persistencia de la memoria\"?",
+    "options": [
+      "Salvador Dalí",
+      "Max Ernst",
+      "Pablo Picasso",
+      "René Magritte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Qué escultor francés creó \"El Pensador\"?",
+    "options": [
+      "Auguste Rodin",
+      "Edgar Degas",
+      "Camille Claudel",
+      "Claude Monet"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué pintor pintó \"El grito\"?",
+    "options": [
+      "Egon Schiele",
+      "Vincent van Gogh",
+      "Gustav Klimt",
+      "Edvard Munch"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué arquitecto catalán diseñó la Sagrada Familia en Barcelona?",
+    "options": [
+      "Le Corbusier",
+      "Antoni Gaudí",
+      "Rafael Moneo",
+      "Santiago Calatrava"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Qué pintor italiano del Renacimiento pintó \"El nacimiento de Venus\"?",
+    "options": [
+      "Rafael",
+      "Tiziano",
+      "Leonardo da Vinci",
+      "Sandro Botticelli"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿En qué ciudad se encuentra el Museo del Prado?",
+    "options": [
+      "Madrid",
+      "Sevilla",
+      "Barcelona",
+      "Valencia"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Cuáles son los tres colores primarios en la pintura tradicional?",
+    "options": [
+      "Verde, naranja y violeta",
+      "Rojo, verde y azul",
+      "Blanco, negro y gris",
+      "Rojo, azul y amarillo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Qué técnica pictórica usa pigmentos diluidos en agua sobre papel?",
+    "options": [
+      "Fresco",
+      "Óleo",
+      "Acuarela",
+      "Grabado"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué herramienta usa un pintor para mezclar sus colores?",
+    "options": [
+      "El compás",
+      "El torno",
+      "La paleta",
+      "El cincel"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Qué museo de París tiene una pirámide de vidrio en su entrada?",
+    "options": [
+      "El Orsay",
+      "El Pompidou",
+      "El Louvre",
+      "El Rodin"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿Qué material se usa tradicionalmente para esculpir estatuas clásicas?",
+    "options": [
+      "Papel",
+      "Plástico",
+      "Mármol",
+      "Vidrio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Qué torre italiana es famosa por estar inclinada?",
+    "options": [
+      "El Big Ben",
+      "La Torre Eiffel",
+      "La Torre de Londres",
+      "La Torre de Pisa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Cómo se llama una pintura que representa a una persona?",
+    "options": [
+      "Mural",
+      "Bodegón",
+      "Retrato",
+      "Paisaje"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Cómo se llama una pintura que representa objetos inanimados como frutas y jarrones?",
+    "options": [
+      "Retrato",
+      "Autorretrato",
+      "Bodegón",
+      "Paisaje"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿En qué país nació Pablo Picasso?",
+    "options": [
+      "Portugal",
+      "España",
+      "Italia",
+      "Francia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué pintor neerlandés pintó la serie de \"Los girasoles\"?",
+    "options": [
+      "Rembrandt",
+      "Johannes Vermeer",
+      "Vincent van Gogh",
+      "Piet Mondrian"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Qué es un mural?",
+    "options": [
+      "Un dibujo a lápiz",
+      "Una pintura realizada sobre una pared",
+      "Una fotografía antigua",
+      "Una escultura de bronce"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Qué significan las siglas del museo MoMA de Nueva York?",
+    "options": [
+      "Museo Metropolitano de Arte",
+      "Museo de Obras Maestras Americanas",
+      "Museo de Oriente y Medio Asia",
+      "Museo de Arte Moderno"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué herramienta usa un escultor para tallar la piedra?",
+    "options": [
+      "El cincel",
+      "La espátula",
+      "El pincel",
+      "El rodillo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué periodo de Picasso siguió a su periodo azul?",
+    "options": [
+      "El periodo verde",
+      "El periodo amarillo",
+      "El periodo gris",
+      "El periodo rosa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué arte tradicional japonés consiste en doblar papel?",
+    "options": [
+      "Kabuki",
+      "Ikebana",
+      "Origami",
+      "Sumi-e"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué movimiento artístico se caracteriza por captar la luz y el momento fugaz, iniciado por Claude Monet?",
+    "options": [
+      "Cubismo",
+      "Surrealismo",
+      "Expresionismo",
+      "Impresionismo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué pintor holandés del Barroco pintó \"La ronda de noche\"?",
+    "options": [
+      "Frans Hals",
+      "Jan van Eyck",
+      "Johannes Vermeer",
+      "Rembrandt"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Qué pintora mexicana estuvo casada con el muralista Diego Rivera?",
+    "options": [
+      "Leonora Carrington",
+      "Frida Kahlo",
+      "Remedios Varo",
+      "María Izquierdo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué movimiento artístico del siglo XX, liderado por Dalí y Magritte, exploraba el mundo de los sueños?",
+    "options": [
+      "Dadaísmo",
+      "Surrealismo",
+      "Fauvismo",
+      "Cubismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué pintor español pintó \"Las Meninas\"?",
+    "options": [
+      "Diego Velázquez",
+      "Francisco Goya",
+      "El Greco",
+      "Bartolomé Esteban Murillo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué pintor austríaco es conocido por \"El Beso\" y el estilo Art Nouveau?",
+    "options": [
+      "Koloman Moser",
+      "Egon Schiele",
+      "Oskar Kokoschka",
+      "Gustav Klimt"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué escultor renacentista, también pintor, arquitecto y poeta, es autor de la Pietà?",
+    "options": [
+      "Brunelleschi",
+      "Miguel Ángel",
+      "Ghiberti",
+      "Donatello"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué corriente artística fragmenta los objetos en formas geométricas, desarrollada por Picasso y Braque?",
+    "options": [
+      "Futurismo",
+      "Suprematismo",
+      "Constructivismo",
+      "Cubismo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué pintor francés es conocido por sus obras de bailarinas de ballet?",
+    "options": [
+      "Claude Monet",
+      "Paul Cézanne",
+      "Auguste Renoir",
+      "Edgar Degas"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Qué pintor italiano pintó \"La última cena\"?",
+    "options": [
+      "Rafael",
+      "Tiziano",
+      "Miguel Ángel",
+      "Leonardo da Vinci"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué pintor neerlandés del siglo XVII es famoso por \"La joven de la perla\"?",
+    "options": [
+      "Rembrandt",
+      "Frans Hals",
+      "Johannes Vermeer",
+      "Pieter de Hooch"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué artista pop estadounidense es conocido por sus serigrafías de latas de sopa Campbell?",
+    "options": [
+      "Roy Lichtenstein",
+      "Jasper Johns",
+      "Keith Haring",
+      "Andy Warhol"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué pintor español, conocido como \"el pintor de la corte\", creó \"Los fusilamientos del 3 de mayo\"?",
+    "options": [
+      "Joaquín Sorolla",
+      "El Greco",
+      "Francisco Goya",
+      "Diego Velázquez"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué pintor francés lideró el movimiento fauvista junto a André Derain?",
+    "options": [
+      "Paul Signac",
+      "Georges Braque",
+      "Henri Matisse",
+      "Raoul Dufy"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué museo de San Petersburgo es uno de los más grandes del mundo?",
+    "options": [
+      "El Tretiakov",
+      "El Hermitage",
+      "El Russo",
+      "El Pushkin"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué pintor inglés es célebre por sus paisajes marinos y su tratamiento de la luz?",
+    "options": [
+      "J. M. W. Turner",
+      "William Hogarth",
+      "John Constable",
+      "Thomas Gainsborough"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué técnica mural consiste en pintar sobre yeso todavía húmedo?",
+    "options": [
+      "El fresco",
+      "El temple",
+      "La encáustica",
+      "El esmalte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué escultor y pintor colombiano es famoso por sus figuras de volúmenes exagerados?",
+    "options": [
+      "Rufino Tamayo",
+      "Fernando Botero",
+      "Wifredo Lam",
+      "Oswaldo Guayasamín"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué movimiento artístico italiano de 1909 exaltaba la velocidad y la máquina?",
+    "options": [
+      "La pintura metafísica",
+      "El futurismo",
+      "El divisionismo",
+      "El novecento"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué pintor francés dio nombre al impresionismo con \"Impresión, sol naciente\"?",
+    "options": [
+      "Édouard Manet",
+      "Alfred Sisley",
+      "Claude Monet",
+      "Camille Pissarro"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué artista estadounidense popularizó la técnica del goteo o \"dripping\"?",
+    "options": [
+      "Willem de Kooning",
+      "Mark Rothko",
+      "Jackson Pollock",
+      "Franz Kline"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué pintor español creó la serie de las Pinturas Negras?",
+    "options": [
+      "José de Ribera",
+      "Francisco de Goya",
+      "Bartolomé Esteban Murillo",
+      "Joaquín Sorolla"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿En qué ciudad se encuentra el Museo Van Gogh?",
+    "options": [
+      "Ámsterdam",
+      "Bruselas",
+      "Amberes",
+      "Róterdam"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué pintor italiano del Renacimiento pintó \"La escuela de Atenas\"?",
+    "options": [
+      "Paolo Uccello",
+      "Rafael Sanzio",
+      "Pietro Perugino",
+      "Andrea Mantegna"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué estilo arquitectónico medieval se caracteriza por arcos apuntados y grandes vitrales?",
+    "options": [
+      "El gótico",
+      "El plateresco",
+      "El bizantino",
+      "El románico"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Qué pintor neerlandés es conocido por sus interiores domésticos iluminados por una ventana lateral?",
+    "options": [
+      "Frans Hals",
+      "Jan Steen",
+      "Pieter de Hooch",
+      "Johannes Vermeer"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué artista japonés creó la estampa \"La gran ola de Kanagawa\"?",
+    "options": [
+      "Tōshūsai Sharaku",
+      "Kitagawa Utamaro",
+      "Katsushika Hokusai",
+      "Utagawa Hiroshige"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Qué galería de Londres alberga arte moderno y contemporáneo en una antigua central eléctrica?",
+    "options": [
+      "La Serpentine",
+      "La National Gallery",
+      "La Royal Academy",
+      "La Tate Modern"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué corriente de los años 60 tomó imágenes de la publicidad y la cultura de masas?",
+    "options": [
+      "El arte pop",
+      "El constructivismo",
+      "El informalismo",
+      "El acción-pintura"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué pintor de origen bielorruso es conocido por sus escenas oníricas y su color intenso?",
+    "options": [
+      "Chaim Soutine",
+      "Marc Chagall",
+      "Jules Pascin",
+      "Amedeo Modigliani"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué museo de Florencia alberga \"El nacimiento de Venus\"?",
+    "options": [
+      "El Bargello",
+      "La Galería Uffizi",
+      "La Academia",
+      "El Palacio Pitti"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué artista suizo es famoso por sus esculturas de figuras humanas alargadas y delgadas?",
+    "options": [
+      "Hans Arp",
+      "Jean Tinguely",
+      "Alberto Giacometti",
+      "Paul Klee"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué pintor postimpresionista francés se instaló en Tahití y retrató a sus habitantes?",
+    "options": [
+      "Henri de Toulouse-Lautrec",
+      "Georges Seurat",
+      "Odilon Redon",
+      "Paul Gauguin"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué pintor francés es considerado precursor del cubismo por su tratamiento geométrico de la naturaleza?",
+    "options": [
+      "Paul Cézanne",
+      "Pierre Bonnard",
+      "Maurice Denis",
+      "Édouard Vuillard"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué monumento de la India es un mausoleo de mármol blanco?",
+    "options": [
+      "El Fuerte Rojo",
+      "El Taj Mahal",
+      "El Qutab Minar",
+      "El Templo Dorado"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué técnica consiste en pegar recortes y materiales diversos sobre una superficie?",
+    "options": [
+      "El puntillismo",
+      "El esgrafiado",
+      "La serigrafía",
+      "El collage"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué pintor belga acompañó una pipa con la frase \"Esto no es una pipa\"?",
+    "options": [
+      "Constant Permeke",
+      "James Ensor",
+      "Paul Delvaux",
+      "René Magritte"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué artista del Renacimiento escribía sus cuadernos en escritura especular, de derecha a izquierda?",
+    "options": [
+      "Leonardo da Vinci",
+      "Filippo Brunelleschi",
+      "Donatello",
+      "Sandro Botticelli"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué arquitecto estadounidense diseñó la Casa de la Cascada?",
+    "options": [
+      "Frank Lloyd Wright",
+      "Louis Sullivan",
+      "Philip Johnson",
+      "Eero Saarinen"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué técnica de pintura mezcla los pigmentos con cera caliente?",
+    "options": [
+      "La encáustica",
+      "La aguada",
+      "El pastel",
+      "El gouache"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Qué pintor flamenco del siglo XV pintó \"El jardín de las delicias\"?",
+    "options": [
+      "Rogier van der Weyden",
+      "Pieter Bruegel el Viejo",
+      "El Bosco",
+      "Jan van Eyck"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué movimiento artístico ruso de principios del siglo XX, liderado por Kazimir Malévich, se centró en formas geométricas puras?",
+    "options": [
+      "Futurismo",
+      "Constructivismo",
+      "Rayonismo",
+      "Suprematismo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué escultor italiano del Renacimiento esculpió un \"David\" de bronce antes que Miguel Ángel?",
+    "options": [
+      "Verrocchio",
+      "Donatello",
+      "Brunelleschi",
+      "Ghiberti"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué pintor alemán es considerado el maestro del grabado renacentista, autor de \"Melencolia I\"?",
+    "options": [
+      "Alberto Durero",
+      "Matthias Grünewald",
+      "Hans Holbein",
+      "Lucas Cranach"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué corriente pictórica del siglo XVII se caracteriza por el uso dramático del claroscuro, con Caravaggio como referente?",
+    "options": [
+      "Rococó",
+      "Tenebrismo",
+      "Neoclasicismo",
+      "Manierismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué pintor español manierista, de origen griego, trabajó principalmente en Toledo?",
+    "options": [
+      "José de Ribera",
+      "Francisco de Zurbarán",
+      "El Greco",
+      "Diego Velázquez"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué movimiento artístico francés del siglo XVIII se caracteriza por la ornamentación y los colores pastel, previo al Neoclasicismo?",
+    "options": [
+      "Rococó",
+      "Romanticismo",
+      "Academicismo",
+      "Barroco"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué arquitecto suizo-francés, pionero del movimiento moderno, promovió los \"cinco puntos de la arquitectura\"?",
+    "options": [
+      "Walter Gropius",
+      "Frank Lloyd Wright",
+      "Mies van der Rohe",
+      "Le Corbusier"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué pintor neerlandés del siglo XX, pionero de la abstracción geométrica, pintó composiciones con líneas y colores primarios?",
+    "options": [
+      "Theo van Doesburg",
+      "Piet Mondrian",
+      "Wassily Kandinsky",
+      "Kazimir Malévich"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué pintor ruso es considerado uno de los pioneros del arte abstracto junto con Malévich y Mondrian?",
+    "options": [
+      "Marc Chagall",
+      "Wassily Kandinsky",
+      "Natalia Goncharova",
+      "El Lissitzky"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué movimiento de vanguardia, surgido en Zúrich durante la Primera Guerra Mundial, rechazaba la lógica y la razón en el arte?",
+    "options": [
+      "Expresionismo",
+      "Dadaísmo",
+      "Surrealismo",
+      "Futurismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué escultor rumano-francés es conocido por sus formas abstractas y minimalistas como \"El pájaro en el espacio\"?",
+    "options": [
+      "Alberto Giacometti",
+      "Henry Moore",
+      "Jean Arp",
+      "Constantin Brâncuși"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué pintor italiano del Renacimiento temprano es autor de los frescos de la Capilla Brancacci en Florencia?",
+    "options": [
+      "Masaccio",
+      "Fra Angelico",
+      "Domenico Ghirlandaio",
+      "Piero della Francesca"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué pintora del Barroco italiano es autora de \"Judit decapitando a Holofernes\"?",
+    "options": [
+      "Sofonisba Anguissola",
+      "Elisabetta Sirani",
+      "Artemisia Gentileschi",
+      "Lavinia Fontana"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué grupo expresionista alemán fundado en Dresde en 1905 incluyó a Ernst Ludwig Kirchner?",
+    "options": [
+      "Die Brücke",
+      "Der Sturm",
+      "Neue Sachlichkeit",
+      "Der Blaue Reiter"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué escuela de diseño alemana fundada por Walter Gropius en 1919 unió arte, artesanía e industria?",
+    "options": [
+      "La Bauhaus",
+      "La Werkbund",
+      "La Vkhutemas",
+      "La Secesión"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué pintor italiano realizó los frescos de la Capilla de los Scrovegni en Padua?",
+    "options": [
+      "Giotto",
+      "Duccio",
+      "Simone Martini",
+      "Cimabue"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué artista introdujo el concepto de \"ready-made\" con obras como \"La Fuente\"?",
+    "options": [
+      "Francis Picabia",
+      "Kurt Schwitters",
+      "Marcel Duchamp",
+      "Man Ray"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué término designa la técnica de difuminar los contornos con transiciones suaves, asociada a Leonardo?",
+    "options": [
+      "Impasto",
+      "Veladura",
+      "Grisalla",
+      "Sfumato"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué pintora estadounidense es conocida por sus flores en primer plano y paisajes de Nuevo México?",
+    "options": [
+      "Helen Frankenthaler",
+      "Georgia O'Keeffe",
+      "Lee Krasner",
+      "Mary Cassatt"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿A qué escultor de la Grecia clásica se atribuye el \"Discóbolo\"?",
+    "options": [
+      "Policleto",
+      "Mirón",
+      "Praxíteles",
+      "Fidias"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué corriente de los años 60 reduce la obra a formas geométricas simples y a la repetición?",
+    "options": [
+      "El minimalismo",
+      "El arte póvera",
+      "El op art",
+      "El arte cinético"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué técnica de grabado cubre una plancha metálica con barniz y la muerde con ácido?",
+    "options": [
+      "La litografía",
+      "La punta seca",
+      "El aguafuerte",
+      "La xilografía"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué arquitecto diseñó el Museo Guggenheim de Bilbao?",
+    "options": [
+      "Frank Gehry",
+      "Norman Foster",
+      "Rafael Moneo",
+      "Santiago Calatrava"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué pintor del Neoclasicismo francés pintó \"La muerte de Marat\"?",
+    "options": [
+      "Jean-Auguste-Dominique Ingres",
+      "Antoine-Jean Gros",
+      "Jacques-Louis David",
+      "Théodore Géricault"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué movimiento británico del siglo XIX buscaba recuperar el detalle y el color anteriores a Rafael?",
+    "options": [
+      "El academicismo victoriano",
+      "Arts and Crafts",
+      "El esteticismo",
+      "El prerrafaelismo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué pintor del Renacimiento veneciano es autor de la enigmática \"La tempestad\"?",
+    "options": [
+      "Giorgione",
+      "Veronés",
+      "Tiziano",
+      "Tintoretto"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué artista alemán contemporáneo emplea plomo, paja y ceniza en sus obras de gran formato?",
+    "options": [
+      "Georg Baselitz",
+      "Anselm Kiefer",
+      "Gerhard Richter",
+      "Sigmar Polke"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué término designa la pintura mural realizada sobre yeso ya seco?",
+    "options": [
+      "Buon fresco",
+      "Terracota",
+      "Estuco",
+      "Pintura al secco"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué escultor francés del siglo XIX creó \"Los burgueses de Calais\"?",
+    "options": [
+      "Antoine Bourdelle",
+      "Auguste Rodin",
+      "Aristide Maillol",
+      "Jean-Baptiste Carpeaux"
+    ],
+    "answerIndex": 1
+  }
+]

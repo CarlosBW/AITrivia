@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Cuántos jugadores hay en un equipo de fútbol en el campo?",
+    "options": [
+      "12",
+      "10",
+      "11",
+      "9"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Cada cuántos años se celebran los Juegos Olímpicos de verano?",
+    "options": [
+      "4",
+      "5",
+      "2",
+      "3"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿En qué deporte se usa una raqueta y una pelota amarilla sobre una cancha con red?",
+    "options": [
+      "Tenis",
+      "Ping pong",
+      "Squash",
+      "Bádminton"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Cuántos puntos vale un touchdown en fútbol americano (sin conversión)?",
+    "options": [
+      "2",
+      "6",
+      "7",
+      "3"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿En qué país se originaron los Juegos Olímpicos antiguos?",
+    "options": [
+      "Italia",
+      "Francia",
+      "Grecia",
+      "Egipto"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Cuántos jugadores conforman un equipo de baloncesto en la cancha?",
+    "options": [
+      "5",
+      "7",
+      "4",
+      "6"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué deporte practica Lionel Messi?",
+    "options": [
+      "Fútbol",
+      "Tenis",
+      "Rugby",
+      "Baloncesto"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Cuántos aros de colores tiene el símbolo olímpico?",
+    "options": [
+      "3",
+      "6",
+      "5",
+      "4"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿En qué deporte se realiza un \"jaque mate\"?",
+    "options": [
+      "Damas",
+      "Backgammon",
+      "Dominó",
+      "Ajedrez"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué deporte se juega en Wimbledon?",
+    "options": [
+      "Críquet",
+      "Golf",
+      "Tenis",
+      "Rugby"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Cuántos sets como máximo se juegan en un partido de tenis masculino de Grand Slam?",
+    "options": [
+      "3",
+      "5",
+      "4",
+      "7"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué país ha ganado más Copas Mundiales de fútbol?",
+    "options": [
+      "Alemania",
+      "Brasil",
+      "Argentina",
+      "Italia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿En qué deporte se compite en una piscina?",
+    "options": [
+      "Ciclismo",
+      "Natación",
+      "Remo",
+      "Atletismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Cuántos jugadores hay en un equipo de voleibol en cancha?",
+    "options": [
+      "6",
+      "7",
+      "5",
+      "4"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Con qué parte del cuerpo no puede tocar el balón un jugador de campo en el fútbol?",
+    "options": [
+      "El pecho",
+      "La cabeza",
+      "Las manos",
+      "Los muslos"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Cuántos tiempos tiene un partido de fútbol reglamentario?",
+    "options": [
+      "Dos",
+      "Uno",
+      "Tres",
+      "Cuatro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Cuántos minutos dura cada tiempo de un partido de fútbol?",
+    "options": [
+      "45",
+      "50",
+      "40",
+      "30"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué deporte se juega con un balón naranja y un aro elevado?",
+    "options": [
+      "Balonmano",
+      "Baloncesto",
+      "Voleibol",
+      "Rugby"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿En qué deporte se usa un bate, una pelota y se corre entre bases?",
+    "options": [
+      "Golf",
+      "Críquet",
+      "Béisbol",
+      "Hockey"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿De qué color es la tarjeta con la que se expulsa a un jugador de fútbol?",
+    "options": [
+      "Roja",
+      "Azul",
+      "Amarilla",
+      "Verde"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿En qué deporte compiten Rafael Nadal y Roger Federer?",
+    "options": [
+      "Pádel",
+      "Bádminton",
+      "Squash",
+      "Tenis"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué deporte se practica sobre hielo con un disco y bastones?",
+    "options": [
+      "Hockey sobre hielo",
+      "Patinaje artístico",
+      "Curling",
+      "Bobsleigh"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿En qué deporte se anota un \"home run\"?",
+    "options": [
+      "Rugby",
+      "Fútbol americano",
+      "Béisbol",
+      "Baloncesto"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿En qué país se disputa el torneo de tenis de Roland Garros?",
+    "options": [
+      "Francia",
+      "Estados Unidos",
+      "Australia",
+      "Reino Unido"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué animal se monta en las competencias de equitación?",
+    "options": [
+      "El elefante",
+      "El toro",
+      "El caballo",
+      "El camello"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Con qué se golpea la pelota en el golf?",
+    "options": [
+      "Un mazo",
+      "Un palo",
+      "Una raqueta",
+      "Un bate"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Qué deporte se practica con un balón ovalado y cascos en Estados Unidos?",
+    "options": [
+      "Lacrosse",
+      "Balonmano",
+      "Rugby",
+      "Fútbol americano"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Cuántas ruedas tiene una bicicleta de carreras?",
+    "options": [
+      "Cuatro",
+      "Dos",
+      "Tres",
+      "Una"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué se necesita cruzar para ganar una carrera de atletismo?",
+    "options": [
+      "La línea de meta",
+      "La línea de salida",
+      "El carril central",
+      "La zona de relevos"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿En qué deporte destacó Michael Jordan?",
+    "options": [
+      "Fútbol americano",
+      "Baloncesto",
+      "Béisbol",
+      "Atletismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿En qué ciudad se realizaron los Juegos Olímpicos de 2016?",
+    "options": [
+      "Londres",
+      "Tokio",
+      "Río de Janeiro",
+      "Pekín"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué boxeador es conocido como \"El Más Grande\" (The Greatest)?",
+    "options": [
+      "Sugar Ray Robinson",
+      "Muhammad Ali",
+      "Joe Frazier",
+      "Mike Tyson"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Cuántos hoyos tiene un campo de golf estándar?",
+    "options": [
+      "20",
+      "18",
+      "16",
+      "9"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué tenista ha ganado más títulos individuales de Grand Slam masculino (a 2023)?",
+    "options": [
+      "Novak Djokovic",
+      "Rafael Nadal",
+      "Pete Sampras",
+      "Roger Federer"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué país organizó el Mundial de Fútbol de 2014?",
+    "options": [
+      "Rusia",
+      "Catar",
+      "Sudáfrica",
+      "Brasil"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿En qué deporte destaca Usain Bolt?",
+    "options": [
+      "Atletismo (velocidad)",
+      "Ciclismo",
+      "Salto largo",
+      "Natación"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Cuántos jinetes componen un equipo de polo?",
+    "options": [
+      "4",
+      "3",
+      "6",
+      "5"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué selección ganó el Mundial de Fútbol de 2022 en Catar?",
+    "options": [
+      "Francia",
+      "Argentina",
+      "Brasil",
+      "Croacia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿En qué deporte se usa el término \"birdie\"?",
+    "options": [
+      "Tenis",
+      "Bádminton",
+      "Béisbol",
+      "Golf"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Cuántos años dura un ciclo olímpico entre Juegos de Verano?",
+    "options": [
+      "2",
+      "5",
+      "4",
+      "3"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué nadador estadounidense ha ganado más medallas olímpicas de la historia?",
+    "options": [
+      "Ian Thorpe",
+      "Ryan Lochte",
+      "Mark Spitz",
+      "Michael Phelps"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué país es conocido por dominar el rugby con el equipo \"All Blacks\"?",
+    "options": [
+      "Sudáfrica",
+      "Nueva Zelanda",
+      "Inglaterra",
+      "Australia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿En qué deporte se disputa la \"Vuelta a España\"?",
+    "options": [
+      "Atletismo",
+      "Automovilismo",
+      "Motociclismo",
+      "Ciclismo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿En qué ciudad se celebraron los Juegos Olímpicos de 2020, aplazados a 2021?",
+    "options": [
+      "Seúl",
+      "París",
+      "Tokio",
+      "Pekín"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Cuántos jugadores tiene en el campo un equipo de rugby union?",
+    "options": [
+      "11",
+      "13",
+      "15",
+      "9"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué selección ganó la Eurocopa de 2021?",
+    "options": [
+      "Inglaterra",
+      "Francia",
+      "Italia",
+      "España"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué club español ha ganado más Copas de Europa y Champions League?",
+    "options": [
+      "Valencia",
+      "Barcelona",
+      "Atlético de Madrid",
+      "Real Madrid"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Cuál es la distancia oficial de un maratón?",
+    "options": [
+      "38,6 km",
+      "40 km",
+      "45 km",
+      "42,195 km"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Sobre qué superficie se juega el torneo de Roland Garros?",
+    "options": [
+      "Moqueta",
+      "Tierra batida",
+      "Hierba",
+      "Cemento"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué selección ganó el Mundial de fútbol de 2018?",
+    "options": [
+      "Francia",
+      "Croacia",
+      "Alemania",
+      "Bélgica"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿En qué deporte se entrega el Trofeo Vince Lombardi?",
+    "options": [
+      "Baloncesto",
+      "Fútbol americano",
+      "Béisbol",
+      "Hockey sobre hielo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Cuántos jugadores tiene en el agua un equipo de waterpolo?",
+    "options": [
+      "Cinco",
+      "Siete",
+      "Nueve",
+      "Seis"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿En qué país se originó el judo?",
+    "options": [
+      "Corea",
+      "Tailandia",
+      "China",
+      "Japón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué piloto alemán ganó siete campeonatos mundiales de Fórmula 1?",
+    "options": [
+      "Sebastian Vettel",
+      "Ralf Schumacher",
+      "Michael Schumacher",
+      "Nico Rosberg"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué longitud tiene una piscina olímpica?",
+    "options": [
+      "33 metros",
+      "50 metros",
+      "40 metros",
+      "25 metros"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿En qué deporte se entrega el Balón de Oro?",
+    "options": [
+      "Fútbol",
+      "Baloncesto",
+      "Balonmano",
+      "Voleibol"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué club inglés juega como local en Old Trafford?",
+    "options": [
+      "Chelsea",
+      "Manchester United",
+      "Liverpool",
+      "Arsenal"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿En cuántos cuartos se divide un partido de la NBA?",
+    "options": [
+      "Cuatro",
+      "Tres",
+      "Dos",
+      "Seis"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Cuánto dura cada cuarto en un partido de la NBA?",
+    "options": [
+      "15 minutos",
+      "10 minutos",
+      "12 minutos",
+      "8 minutos"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué disciplina olímpica combina esgrima, natación, equitación, tiro y carrera?",
+    "options": [
+      "Decatlón",
+      "Heptatlón",
+      "Pentatlón moderno",
+      "Triatlón"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué ciclista belga es conocido como \"El Caníbal\"?",
+    "options": [
+      "Eddy Merckx",
+      "Fausto Coppi",
+      "Bernard Hinault",
+      "Jacques Anquetil"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué selección de fútbol es conocida como \"La Albiceleste\"?",
+    "options": [
+      "Chile",
+      "Perú",
+      "Argentina",
+      "Uruguay"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿En qué deporte se lanza la jabalina?",
+    "options": [
+      "Esgrima",
+      "Halterofilia",
+      "Atletismo",
+      "Gimnasia"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Cuántos jugadores tiene en la pista un equipo de hockey sobre hielo?",
+    "options": [
+      "Siete",
+      "Seis",
+      "Ocho",
+      "Cinco"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué torneo de golf se disputa cada año en Augusta?",
+    "options": [
+      "El Abierto Británico",
+      "El US Open",
+      "El PGA Championship",
+      "El Masters"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué país organizó los Juegos Olímpicos de Invierno de 2018?",
+    "options": [
+      "Japón",
+      "Canadá",
+      "Corea del Sur",
+      "Rusia"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué boxeador mexicano es conocido como \"Canelo\"?",
+    "options": [
+      "Saúl Álvarez",
+      "Juan Manuel Márquez",
+      "Julio César Chávez",
+      "Érik Morales"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿En qué deporte se usa el término \"break point\"?",
+    "options": [
+      "Tenis",
+      "Natación",
+      "Golf",
+      "Ciclismo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué país es la sede del Tour de Francia?",
+    "options": [
+      "Bélgica",
+      "Italia",
+      "Francia",
+      "Suiza"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Cuántos jugadores forman un equipo de balonmano en cancha?",
+    "options": [
+      "Siete",
+      "Cinco",
+      "Seis",
+      "Ocho"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Qué ciclista ganó siete Tours de Francia consecutivos antes de ser descalificado por dopaje?",
+    "options": [
+      "Lance Armstrong",
+      "Bernard Hinault",
+      "Miguel Induráin",
+      "Eddy Merckx"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿En qué ciudad se celebraron los primeros Juegos Olímpicos de la era moderna en 1896?",
+    "options": [
+      "Londres",
+      "París",
+      "Roma",
+      "Atenas"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué boxeador ganó la medalla de oro olímpica en 1960 antes de ser campeón mundial de los pesos pesados?",
+    "options": [
+      "Muhammad Ali (Cassius Clay)",
+      "George Foreman",
+      "Sonny Liston",
+      "Joe Frazier"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué futbolista brasileño es el único en ganar tres Copas del Mundo como jugador?",
+    "options": [
+      "Ronaldo",
+      "Kaká",
+      "Pelé",
+      "Ronaldinho"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿En qué deporte se usa el término \"grand slam\" para los cuatro torneos más importantes del año?",
+    "options": [
+      "Squash",
+      "Bádminton",
+      "Golf",
+      "Tenis"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué país ha ganado más medallas de oro en la historia de los Juegos Olímpicos de Verano?",
+    "options": [
+      "Unión Soviética",
+      "Reino Unido",
+      "China",
+      "Estados Unidos"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué corredor jamaiquino ostenta el récord mundial de los 100 metros planos?",
+    "options": [
+      "Justin Gatlin",
+      "Tyson Gay",
+      "Usain Bolt",
+      "Yohan Blake"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué maratonista keniano ha sido plusmarquista mundial de maratón?",
+    "options": [
+      "Eliud Kipchoge",
+      "Kenenisa Bekele",
+      "Mo Farah",
+      "Haile Gebrselassie"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué tenista ha ganado más veces el torneo de Roland Garros en la historia?",
+    "options": [
+      "Björn Borg",
+      "Novak Djokovic",
+      "Roger Federer",
+      "Rafael Nadal"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué equipo de la NBA ha ganado más campeonatos en la historia?",
+    "options": [
+      "Boston Celtics",
+      "Golden State Warriors",
+      "Chicago Bulls",
+      "Los Angeles Lakers"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué gimnasta estadounidense es la más condecorada en la historia de la gimnasia artística?",
+    "options": [
+      "Nadia Comăneci",
+      "Simone Biles",
+      "Gabby Douglas",
+      "Shannon Miller"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué país organizó y ganó el primer Mundial de Fútbol en 1930?",
+    "options": [
+      "Uruguay",
+      "Brasil",
+      "Italia",
+      "Argentina"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿En qué disciplina compite un decatleta?",
+    "options": [
+      "Natación",
+      "Atletismo combinado (10 pruebas)",
+      "Gimnasia",
+      "Triatlón"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué atleta estadounidense ganó cuatro medallas de oro en los Juegos de Berlín 1936?",
+    "options": [
+      "Ralph Metcalfe",
+      "Eddie Tolan",
+      "Jesse Owens",
+      "Carl Lewis"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué futbolista alemán ganó el Mundial como jugador y luego como entrenador?",
+    "options": [
+      "Jürgen Klinsmann",
+      "Gerd Müller",
+      "Lothar Matthäus",
+      "Franz Beckenbauer"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué selección ganó el primer Campeonato Mundial de Baloncesto en 1950?",
+    "options": [
+      "Yugoslavia",
+      "Brasil",
+      "Estados Unidos",
+      "Argentina"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué tenista completó el Golden Slam en 1988?",
+    "options": [
+      "Chris Evert",
+      "Martina Navratilova",
+      "Monica Seles",
+      "Steffi Graf"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué escudería tiene más títulos de constructores en la Fórmula 1?",
+    "options": [
+      "McLaren",
+      "Mercedes",
+      "Williams",
+      "Ferrari"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué ciclista español ganó cinco Tours de Francia consecutivos en los años 90?",
+    "options": [
+      "Alberto Contador",
+      "Miguel Induráin",
+      "Pedro Delgado",
+      "Óscar Freire"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿En qué ciudad se celebraron los primeros Juegos Paralímpicos oficiales, en 1960?",
+    "options": [
+      "Tokio",
+      "Roma",
+      "Heidelberg",
+      "Londres"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué gimnasta rumana consiguió el primer 10 perfecto en unos Juegos Olímpicos?",
+    "options": [
+      "Larisa Latýnina",
+      "Olga Kórbut",
+      "Vera Cáslavská",
+      "Nadia Comăneci"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué corredor checo ganó tres oros de fondo en los Juegos de Helsinki 1952?",
+    "options": [
+      "Paavo Nurmi",
+      "Lasse Virén",
+      "Vladimir Kuts",
+      "Emil Zátopek"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué selección africana fue la primera en alcanzar los cuartos de final de un Mundial?",
+    "options": [
+      "Nigeria",
+      "Ghana",
+      "Camerún",
+      "Senegal"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué jugador anotó 100 puntos en un solo partido de la NBA?",
+    "options": [
+      "Bill Russell",
+      "Wilt Chamberlain",
+      "Kareem Abdul-Jabbar",
+      "Elgin Baylor"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué ajedrecista fue campeón mundial durante más de quince años desde 1985?",
+    "options": [
+      "Garri Kaspárov",
+      "Bobby Fischer",
+      "Vladímir Krámnik",
+      "Anatoli Kárpov"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué país ha ganado más medallas en la historia de los Juegos Olímpicos de Invierno?",
+    "options": [
+      "Estados Unidos",
+      "Canadá",
+      "Alemania",
+      "Noruega"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿En qué deporte se disputa la Copa Davis?",
+    "options": [
+      "Rugby",
+      "Golf",
+      "Vela",
+      "Tenis"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué piloto brasileño de Fórmula 1 falleció en el circuito de Imola en 1994?",
+    "options": [
+      "Nelson Piquet",
+      "Rubens Barrichello",
+      "Emerson Fittipaldi",
+      "Ayrton Senna"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué club ganó la primera edición de la Copa de Europa en 1956?",
+    "options": [
+      "Benfica",
+      "Ajax",
+      "Real Madrid",
+      "Milan"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué atleta etíope ganó descalzo el maratón olímpico de Roma 1960?",
+    "options": [
+      "Abebe Bikila",
+      "Kenenisa Bekele",
+      "Mamo Wolde",
+      "Haile Gebrselassie"
+    ],
+    "answerIndex": 0
+  }
+]

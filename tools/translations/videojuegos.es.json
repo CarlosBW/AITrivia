@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Qué compañía creó a Mario Bros?",
+    "options": [
+      "Sega",
+      "Microsoft",
+      "Sony",
+      "Nintendo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Qué personaje azul y veloz es la mascota de Sega?",
+    "options": [
+      "Mario",
+      "Sonic",
+      "Rayman",
+      "Crash Bandicoot"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Qué videojuego popularizó el género \"battle royale\" junto con PUBG?",
+    "options": [
+      "Fortnite",
+      "Minecraft",
+      "Among Us",
+      "Roblox"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué compañía creó la saga \"The Legend of Zelda\"?",
+    "options": [
+      "Sega",
+      "Nintendo",
+      "Xbox",
+      "PlayStation"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué juego de construcción y supervivencia usa bloques cúbicos?",
+    "options": [
+      "Terraria",
+      "Minecraft",
+      "Roblox",
+      "Fortnite"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué compañía desarrolla la saga \"Call of Duty\"?",
+    "options": [
+      "Rockstar Games",
+      "Ubisoft",
+      "Electronic Arts",
+      "Activision"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué personaje es protagonista de \"Grand Theft Auto V\" junto a Michael y Franklin?",
+    "options": [
+      "Tommy",
+      "CJ",
+      "Trevor",
+      "Niko"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Qué juego de rol de mundo abierto sigue a Geralt de Rivia?",
+    "options": [
+      "Elden Ring",
+      "Skyrim",
+      "The Witcher 3",
+      "Dark Souls"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué compañía creó la consola PlayStation?",
+    "options": [
+      "Microsoft",
+      "Nintendo",
+      "Sony",
+      "Sega"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué juego de fútbol es desarrollado por EA Sports?",
+    "options": [
+      "FC (antes FIFA)",
+      "Football Manager",
+      "Rocket League",
+      "PES"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿En qué videojuego los jugadores deben adivinar quién es el \"impostor\"?",
+    "options": [
+      "Fall Guys",
+      "Fortnite",
+      "Minecraft",
+      "Among Us"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué saga de videojuegos sigue las aventuras de un fontanero italiano?",
+    "options": [
+      "Crash Bandicoot",
+      "Super Mario",
+      "Rayman",
+      "Sonic"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué compañía desarrolla la consola Xbox?",
+    "options": [
+      "Microsoft",
+      "Sony",
+      "Sega",
+      "Nintendo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Qué juego de simulación de vida permite construir casas y controlar personajes cotidianos?",
+    "options": [
+      "The Sims",
+      "Roller Coaster Tycoon",
+      "SimCity",
+      "Cities: Skylines"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿De qué color es la gorra de Mario?",
+    "options": [
+      "Verde",
+      "Azul",
+      "Roja",
+      "Amarilla"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Cómo se llama el hermano de Mario?",
+    "options": [
+      "Toad",
+      "Wario",
+      "Waluigi",
+      "Luigi"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Qué Pokémon amarillo de tipo eléctrico es la mascota de la saga?",
+    "options": [
+      "Pikachu",
+      "Charmander",
+      "Squirtle",
+      "Bulbasaur"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué juego consiste en encajar piezas geométricas que caen desde arriba?",
+    "options": [
+      "Bejeweled",
+      "Tetris",
+      "Pac-Man",
+      "Candy Crush"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Cómo se llama la princesa que Mario suele rescatar?",
+    "options": [
+      "Peach",
+      "Zelda",
+      "Daisy",
+      "Rosalina"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿Qué tipo de animal es Sonic?",
+    "options": [
+      "Una ardilla",
+      "Un ratón",
+      "Un zorro",
+      "Un erizo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Cómo se llama el dinosaurio verde que acompaña a Mario?",
+    "options": [
+      "Yoshi",
+      "Bowser",
+      "Goomba",
+      "Koopa"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué saga de Nintendo consiste en carreras de karts?",
+    "options": [
+      "Mario Tennis",
+      "Mario Golf",
+      "Mario Kart",
+      "Mario Party"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿En qué videojuego se juega al fútbol conduciendo automóviles?",
+    "options": [
+      "FIFA Street",
+      "Trackmania",
+      "Fall Guys",
+      "Rocket League"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Qué saga de lucha incluye a Ryu y Chun-Li?",
+    "options": [
+      "King of Fighters",
+      "Tekken",
+      "Street Fighter",
+      "Mortal Kombat"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué consola portátil de Nintendo se caracterizaba por tener dos pantallas?",
+    "options": [
+      "PSP",
+      "Nintendo DS",
+      "Game Gear",
+      "Game Boy"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Qué significan las siglas \"RPG\" en los videojuegos?",
+    "options": [
+      "Juego de carreras",
+      "Juego de disparos",
+      "Juego de rol",
+      "Juego de estrategia"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Con qué dispositivo se juega normalmente en una consola?",
+    "options": [
+      "La tableta",
+      "El ratón",
+      "El mando",
+      "El micrófono"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué juego de disparos por equipos de Blizzard incluye a la heroína Tracer?",
+    "options": [
+      "Paladins",
+      "Overwatch",
+      "Valorant",
+      "Team Fortress"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué enemigo con caparazón y cuernos es el villano principal de Mario?",
+    "options": [
+      "King Boo",
+      "Kamek",
+      "Bowser",
+      "Donkey Kong"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué saga de Nintendo protagoniza una cazarrecompensas llamada Samus Aran?",
+    "options": [
+      "F-Zero",
+      "Metroid",
+      "Star Fox",
+      "Kirby"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué estudio desarrolló \"The Last of Us\"?",
+    "options": [
+      "Rockstar Games",
+      "Naughty Dog",
+      "Bethesda",
+      "CD Projekt Red"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué compañía polaca desarrolló \"The Witcher 3\"?",
+    "options": [
+      "CD Projekt Red",
+      "Bioware",
+      "Bethesda",
+      "Ubisoft"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Qué saga de disparos en primera persona protagoniza el Jefe Maestro?",
+    "options": [
+      "Halo",
+      "Battlefield",
+      "Doom",
+      "Call of Duty"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué juego de FromSoftware es considerado pionero del género souls-like?",
+    "options": [
+      "Elden Ring",
+      "Sekiro",
+      "Bloodborne",
+      "Dark Souls"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué videojuego de Rockstar está ambientado en el lejano oeste con Arthur Morgan como protagonista?",
+    "options": [
+      "Red Dead Redemption 2",
+      "Grand Theft Auto V",
+      "Max Payne",
+      "L.A. Noire"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué compañía japonesa desarrolla la saga \"Final Fantasy\"?",
+    "options": [
+      "Konami",
+      "Capcom",
+      "Bandai Namco",
+      "Square Enix"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué videojuego de Nintendo presenta a un elfo llamado Link en un mundo de fantasía?",
+    "options": [
+      "Kirby",
+      "Fire Emblem",
+      "Metroid",
+      "The Legend of Zelda"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué juego de terror y supervivencia de Capcom sigue a personajes en Raccoon City?",
+    "options": [
+      "The Evil Within",
+      "Dead Space",
+      "Silent Hill",
+      "Resident Evil"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué compañía desarrolla la saga \"Assassin's Creed\"?",
+    "options": [
+      "Bethesda",
+      "Square Enix",
+      "Ubisoft",
+      "Rockstar Games"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Qué videojuego de battle royale fue creado por Epic Games?",
+    "options": [
+      "PUBG",
+      "Fortnite",
+      "Apex Legends",
+      "Warzone"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué juego de estrategia de Blizzard se ambienta en un universo de ciencia ficción con tres razas?",
+    "options": [
+      "Warcraft",
+      "Diablo",
+      "StarCraft",
+      "Overwatch"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué videojuego de Naughty Dog sigue a Joel y Ellie en un mundo postapocalíptico?",
+    "options": [
+      "Days Gone",
+      "Horizon Zero Dawn",
+      "The Last of Us",
+      "Uncharted"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué compañía desarrolla la saga \"Pokémon\" junto con Nintendo?",
+    "options": [
+      "Game Freak",
+      "Intelligent Systems",
+      "HAL Laboratory",
+      "Retro Studios"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué estudio desarrolló la saga \"God of War\"?",
+    "options": [
+      "Sucker Punch",
+      "Guerrilla Games",
+      "Insomniac Games",
+      "Santa Monica Studio"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué juego de 2017 renovó la saga Zelda con un enorme mundo abierto?",
+    "options": [
+      "Twilight Princess",
+      "Skyward Sword",
+      "Breath of the Wild",
+      "A Link Between Worlds"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿En qué ciudad ficticia transcurre \"Cyberpunk 2077\"?",
+    "options": [
+      "Rapture",
+      "Neo Tokio",
+      "Night City",
+      "Midgar"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué saga de Bethesda transcurre en un mundo postnuclear con refugios llamados Vault?",
+    "options": [
+      "Fallout",
+      "Wasteland",
+      "BioShock",
+      "Metro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué juego de rol de Bethesda transcurre en la región de Skyrim?",
+    "options": [
+      "Divinity",
+      "Gothic",
+      "Dragon Age",
+      "The Elder Scrolls V"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué compañía desarrolló \"Overwatch\"?",
+    "options": [
+      "Valve",
+      "Bungie",
+      "Blizzard",
+      "Riot Games"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué saga de estrategia en tiempo real de Blizzard enfrenta a orcos y humanos?",
+    "options": [
+      "Warcraft",
+      "Command & Conquer",
+      "Total War",
+      "Age of Empires"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué videojuego de Valve se basa en resolver puzles con un arma que crea portales?",
+    "options": [
+      "The Talos Principle",
+      "Antichamber",
+      "Portal",
+      "Half-Life"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué plataforma digital de distribución de juegos para PC creó Valve?",
+    "options": [
+      "Steam",
+      "Origin",
+      "Epic Games Store",
+      "GOG"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Qué saga de Konami protagoniza el soldado Solid Snake?",
+    "options": [
+      "Hitman",
+      "Metal Gear Solid",
+      "Splinter Cell",
+      "Syphon Filter"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué juego de Nintendo enfrenta en combate a personajes de distintas sagas?",
+    "options": [
+      "Nintendo Land",
+      "Super Smash Bros.",
+      "Mario Party",
+      "Wii Sports"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué juego indie de plataformas protagoniza un insecto en el reino de Hallownest?",
+    "options": [
+      "Celeste",
+      "Hollow Knight",
+      "Ori and the Blind Forest",
+      "Dead Cells"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Qué compañía desarrolló \"League of Legends\"?",
+    "options": [
+      "Tencent Games",
+      "Valve",
+      "Riot Games",
+      "Blizzard"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿A qué género pertenece \"League of Legends\"?",
+    "options": [
+      "MMORPG",
+      "RTS",
+      "MOBA",
+      "Battle royale"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Qué juego de FromSoftware ganó el premio al Juego del Año en 2022?",
+    "options": [
+      "Bloodborne",
+      "Sekiro",
+      "Dark Souls III",
+      "Elden Ring"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué compañía desarrolló originalmente la saga \"Halo\"?",
+    "options": [
+      "id Software",
+      "Bungie",
+      "343 Industries",
+      "Epic Games"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué juego de Nintendo permite construir una isla habitada por vecinos animales?",
+    "options": [
+      "Pikmin",
+      "Harvest Moon",
+      "Nintendogs",
+      "Animal Crossing"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué battle royale de Respawn se ambienta en el universo de Titanfall?",
+    "options": [
+      "Blackout",
+      "Apex Legends",
+      "Fortnite",
+      "Warzone"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué saga de rol de Square Enix protagoniza Cloud Strife?",
+    "options": [
+      "Chrono",
+      "Dragon Quest",
+      "Final Fantasy",
+      "Kingdom Hearts"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué juego de simulación de granja fue creado casi por completo por ConcernedApe?",
+    "options": [
+      "Farming Simulator",
+      "Stardew Valley",
+      "My Time at Portia",
+      "Graveyard Keeper"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué juego de 1996 llevó a Mario al mundo tridimensional?",
+    "options": [
+      "Super Mario Galaxy",
+      "Super Mario Sunshine",
+      "Super Mario World",
+      "Super Mario 64"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Cuál es la consola más vendida en la historia de PlayStation?",
+    "options": [
+      "PlayStation 4",
+      "PlayStation 2",
+      "PlayStation 1",
+      "PlayStation 3"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué saga de fútbol de Konami competía históricamente con FIFA?",
+    "options": [
+      "Football Manager",
+      "Sensible Soccer",
+      "Pro Evolution Soccer",
+      "Kick Off"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué juego de Rockstar transcurre en Liberty City con Niko Bellic?",
+    "options": [
+      "GTA IV",
+      "GTA: Vice City",
+      "GTA V",
+      "GTA: San Andreas"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué shooter competitivo de Valve enfrenta a terroristas y antiterroristas?",
+    "options": [
+      "Counter-Strike",
+      "Valorant",
+      "Rainbow Six Siege",
+      "Call of Duty"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué saga de Ubisoft protagoniza el pirata Edward Kenway?",
+    "options": [
+      "Prince of Persia",
+      "Assassin's Creed",
+      "Watch Dogs",
+      "Far Cry"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué juego de Capcom con Leon y Claire recibió un aclamado remake en 2019?",
+    "options": [
+      "Resident Evil 2",
+      "Resident Evil 7",
+      "Resident Evil 3",
+      "Resident Evil 4"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Quién es el creador principal de las sagas \"Super Mario\" y \"The Legend of Zelda\"?",
+    "options": [
+      "Hideo Kojima",
+      "Shigeru Miyamoto",
+      "Satoru Iwata",
+      "Shigesato Itoi"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué diseñador japonés es conocido por crear la saga \"Metal Gear\"?",
+    "options": [
+      "Yoji Shinkawa",
+      "Hidetaka Miyazaki",
+      "Shigeru Miyamoto",
+      "Hideo Kojima"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué diseñador es conocido como el creador de \"Dark Souls\", \"Bloodborne\" y \"Elden Ring\"?",
+    "options": [
+      "Yoko Taro",
+      "Hideo Kojima",
+      "Shigeru Miyamoto",
+      "Hidetaka Miyazaki"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿En qué año se lanzó la primera PlayStation?",
+    "options": [
+      "2000",
+      "1990",
+      "1994",
+      "1998"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué videojuego arcade de Namco de 1980, con un personaje amarillo que come puntos, es un ícono de la industria?",
+    "options": [
+      "Space Invaders",
+      "Frogger",
+      "Pac-Man",
+      "Donkey Kong"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué compañía lanzó la consola Mega Drive, conocida como Genesis en Norteamérica?",
+    "options": [
+      "Sega",
+      "Atari",
+      "NEC",
+      "Nintendo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué juego arcade de 1981 introdujo por primera vez al personaje que luego se convertiría en Mario?",
+    "options": [
+      "Donkey Kong",
+      "Mario Bros.",
+      "Excitebike",
+      "Punch-Out!!"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué estudio sueco creó \"Minecraft\" originalmente?",
+    "options": [
+      "Massive Entertainment",
+      "DICE",
+      "King",
+      "Mojang"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué motor gráfico, desarrollado por Epic Games, es ampliamente usado en la industria?",
+    "options": [
+      "Unity",
+      "Frostbite",
+      "CryEngine",
+      "Unreal Engine"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué entrega de \"Final Fantasy\" es considerada la más vendida de la saga?",
+    "options": [
+      "Final Fantasy VI",
+      "Final Fantasy VII",
+      "Final Fantasy X",
+      "Final Fantasy IX"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué compañía desarrolló originalmente la saga \"Tomb Raider\" con Lara Croft?",
+    "options": [
+      "Crystal Dynamics",
+      "Eidos",
+      "Square Enix",
+      "Core Design"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué videojuego dirigido por Fumito Ueda presenta a un niño y una criatura gigante llamada Trico?",
+    "options": [
+      "Shadow of the Colossus",
+      "Ico",
+      "Journey",
+      "The Last Guardian"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué compañía lanzó en 1977 una consola pionera de cartuchos intercambiables, conocida al inicio como VCS?",
+    "options": [
+      "Atari",
+      "Magnavox",
+      "Mattel",
+      "Coleco"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué videojuego de 1985 impulsó la recuperación de la industria tras la crisis de 1983?",
+    "options": [
+      "Duck Hunt",
+      "The Legend of Zelda",
+      "Metroid",
+      "Super Mario Bros."
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué juego de Atari de 1972 fue el primer gran éxito comercial de la industria?",
+    "options": [
+      "Centipede",
+      "Pong",
+      "Asteroids",
+      "Breakout"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué diseñador creó \"SimCity\" y \"The Sims\"?",
+    "options": [
+      "Richard Garriott",
+      "Will Wright",
+      "Peter Molyneux",
+      "Sid Meier"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué compañía japonesa desarrolló \"Chrono Trigger\" en 1995?",
+    "options": [
+      "Namco",
+      "Square",
+      "Konami",
+      "Enix"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué juego de Nintendo 64 de 1998 es considerado uno de los mejores de la historia?",
+    "options": [
+      "Ocarina of Time",
+      "Banjo-Kazooie",
+      "Perfect Dark",
+      "GoldenEye 007"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Con qué motor gráfico se desarrollaron juegos como \"Hollow Knight\" y \"Cuphead\"?",
+    "options": [
+      "CryEngine",
+      "Godot",
+      "Source",
+      "Unity"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué juego de id Software de 1993 popularizó el shooter en primera persona?",
+    "options": [
+      "Quake",
+      "Wolfenstein 3D",
+      "Doom",
+      "Duke Nukem 3D"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué programador cofundó id Software y es célebre por sus motores 3D?",
+    "options": [
+      "Gabe Newell",
+      "John Carmack",
+      "John Romero",
+      "Tim Sweeney"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Cuál fue la última consola doméstica fabricada por Sega?",
+    "options": [
+      "Dreamcast",
+      "Master System",
+      "Mega Drive",
+      "Saturn"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué diseñador creó la saga de estrategia \"Civilization\"?",
+    "options": [
+      "Chris Taylor",
+      "Bruce Shelley",
+      "Sid Meier",
+      "Will Wright"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué juego de rol de BioWare está ambientado en el universo de Star Wars?",
+    "options": [
+      "Knights of the Old Republic",
+      "Baldur's Gate",
+      "Jade Empire",
+      "Mass Effect"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué juego japonés de Taito de 1978 impulsó la era dorada de los arcades?",
+    "options": [
+      "Asteroids",
+      "Space Invaders",
+      "Galaga",
+      "Defender"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué estudio japonés desarrolló \"Shadow of the Colossus\"?",
+    "options": [
+      "Grasshopper Manufacture",
+      "Platinum Games",
+      "Team Ico",
+      "Clover Studio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué estudio desarrolla la saga de simulación de conducción \"Gran Turismo\"?",
+    "options": [
+      "Polyphony Digital",
+      "Evolution Studios",
+      "Bizarre Creations",
+      "Codemasters"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué término designa un juego gratuito que se financia con compras dentro de la aplicación?",
+    "options": [
+      "Free-to-play",
+      "Early access",
+      "Season pass",
+      "Shareware"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué diseñador japonés es considerado el creador de la saga \"Sonic\"?",
+    "options": [
+      "Hideo Kojima",
+      "Yu Suzuki",
+      "Shigeru Miyamoto",
+      "Yuji Naka"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué crisis estuvo a punto de hundir a la industria de los videojuegos en Norteamérica?",
+    "options": [
+      "La burbuja de 1995",
+      "El crac de 1977",
+      "La recesión de 1990",
+      "La crisis de 1983"
+    ],
+    "answerIndex": 3
+  }
+]

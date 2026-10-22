@@ -9,6 +9,8 @@ import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/locale_controller.dart';
+import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 import 'match_play_screen.dart';
 import '../../widgets/app_bar_title.dart';
@@ -150,8 +152,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             .collection('fixed_categories')
             .doc(categoryId)
             .get();
-        final name = snap.data()?['name'];
-        if (name is String && name.isNotEmpty) return name;
+        final name = localizedCategoryName(snap.data(), LocaleController.instance.locale.value.languageCode);
+        if (name != null) return name;
       } catch (_) {}
 
       return categoryId[0].toUpperCase() + categoryId.substring(1);

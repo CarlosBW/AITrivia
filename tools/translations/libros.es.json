@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Quién escribió \"Don Quijote de la Mancha\"?",
+    "options": [
+      "Gabriel García Márquez",
+      "Federico García Lorca",
+      "Miguel de Cervantes",
+      "Lope de Vega"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Quién escribió la saga de \"Harry Potter\"?",
+    "options": [
+      "J.K. Rowling",
+      "J.R.R. Tolkien",
+      "C.S. Lewis",
+      "Suzanne Collins"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Qué autor colombiano escribió \"Cien años de soledad\"?",
+    "options": [
+      "Julio Cortázar",
+      "Jorge Luis Borges",
+      "Gabriel García Márquez",
+      "Mario Vargas Llosa"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué escritor creó a Sherlock Holmes?",
+    "options": [
+      "H.G. Wells",
+      "Arthur Conan Doyle",
+      "Edgar Allan Poe",
+      "Agatha Christie"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué autor escribió \"Romeo y Julieta\"?",
+    "options": [
+      "William Shakespeare",
+      "Jane Austen",
+      "Charles Dickens",
+      "Oscar Wilde"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿En qué saga de fantasía aparecen Frodo, Gandalf y el Anillo Único?",
+    "options": [
+      "Harry Potter",
+      "El Señor de los Anillos",
+      "Percy Jackson",
+      "Narnia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué autora escribió \"Orgullo y prejuicio\"?",
+    "options": [
+      "Virginia Woolf",
+      "Mary Shelley",
+      "Jane Austen",
+      "Charlotte Brontë"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Qué libro narra la historia de un niño mago que estudia en Hogwarts?",
+    "options": [
+      "Las Crónicas de Narnia",
+      "Harry Potter",
+      "Eragon",
+      "Percy Jackson"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué escritora chilena escribió \"La casa de los espíritus\"?",
+    "options": [
+      "Isabel Allende",
+      "Gabriela Mistral",
+      "Roberto Bolaño",
+      "Pablo Neruda"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué autor escribió \"1984\"?",
+    "options": [
+      "George Orwell",
+      "Ray Bradbury",
+      "Franz Kafka",
+      "Aldous Huxley"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Qué escritora británica creó al detective Hércules Poirot?",
+    "options": [
+      "Dorothy Sayers",
+      "Agatha Christie",
+      "P.D. James",
+      "Arthur Conan Doyle"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué autor escribió \"El Principito\"?",
+    "options": [
+      "Víctor Hugo",
+      "Antoine de Saint-Exupéry",
+      "Albert Camus",
+      "Julio Verne"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué saga trata sobre un joven llamado Percy Jackson, hijo de un dios griego?",
+    "options": [
+      "Harry Potter",
+      "Narnia",
+      "Percy Jackson y los dioses del Olimpo",
+      "Eragon"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Qué escritor peruano ganó el Premio Nobel de Literatura en 2010?",
+    "options": [
+      "Pablo Neruda",
+      "Octavio Paz",
+      "Gabriel García Márquez",
+      "Mario Vargas Llosa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Quién escribió \"La Odisea\"?",
+    "options": [
+      "Homero",
+      "Sófocles",
+      "Esopo",
+      "Virgilio"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Qué autor escribió \"Alicia en el país de las maravillas\"?",
+    "options": [
+      "J. M. Barrie",
+      "Lewis Carroll",
+      "C. S. Lewis",
+      "Roald Dahl"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Qué libro narra la historia de un niño criado por animales en la jungla?",
+    "options": [
+      "El principito",
+      "Peter Pan",
+      "El libro de la selva",
+      "Bambi"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Quién escribió \"Los tres mosqueteros\"?",
+    "options": [
+      "Émile Zola",
+      "Alejandro Dumas",
+      "Victor Hugo",
+      "Julio Verne"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Qué autor escribió \"Veinte mil leguas de viaje submarino\"?",
+    "options": [
+      "H. G. Wells",
+      "Daniel Defoe",
+      "Julio Verne",
+      "Jonathan Swift"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿Cómo se llama el escudero que acompaña a Don Quijote?",
+    "options": [
+      "Rocinante",
+      "Cide Hamete",
+      "Dulcinea",
+      "Sancho Panza"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Qué escritor danés es autor de cuentos como \"El patito feo\"?",
+    "options": [
+      "Charles Perrault",
+      "Hans Christian Andersen",
+      "Esopo",
+      "Los hermanos Grimm"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué autor italiano creó el personaje de Pinocho?",
+    "options": [
+      "Italo Calvino",
+      "Carlo Collodi",
+      "Edmondo De Amicis",
+      "Gianni Rodari"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Qué obra comienza con la frase \"En un lugar de la Mancha...\"?",
+    "options": [
+      "Don Quijote de la Mancha",
+      "El Cantar de mio Cid",
+      "El Lazarillo de Tormes",
+      "La Celestina"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Qué hermanos alemanes recopilaron cuentos como \"Hansel y Gretel\"?",
+    "options": [
+      "Los hermanos Marx",
+      "Los hermanos Machado",
+      "Los hermanos Grimm",
+      "Los hermanos Lumière"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué autor inglés escribió \"Oliver Twist\"?",
+    "options": [
+      "Thomas Hardy",
+      "Rudyard Kipling",
+      "Charles Dickens",
+      "William Thackeray"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Qué libro recoge las vivencias de una niña judía escondida durante la Segunda Guerra Mundial?",
+    "options": [
+      "El diario de Ana Frank",
+      "Si esto es un hombre",
+      "La ladrona de libros",
+      "El niño con el pijama de rayas"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Qué autor escocés escribió \"La isla del tesoro\"?",
+    "options": [
+      "Walter Scott",
+      "Robert Louis Stevenson",
+      "Arthur Conan Doyle",
+      "J. M. Barrie"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué escritor estadounidense creó a Tom Sawyer?",
+    "options": [
+      "Washington Irving",
+      "Jack London",
+      "Herman Melville",
+      "Mark Twain"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué autora escribió \"Mujercitas\"?",
+    "options": [
+      "Harriet Beecher Stowe",
+      "Louisa May Alcott",
+      "Emily Dickinson",
+      "Edith Wharton"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Cómo se llama un texto literario escrito en verso?",
+    "options": [
+      "Un poema",
+      "Una novela",
+      "Un ensayo",
+      "Un cuento"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué autor mexicano escribió \"Pedro Páramo\"?",
+    "options": [
+      "Juan Rulfo",
+      "Carlos Fuentes",
+      "Octavio Paz",
+      "José Emilio Pacheco"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué novela de Fiódor Dostoyevski narra la historia de un estudiante que comete un asesinato?",
+    "options": [
+      "El idiota",
+      "Crimen y castigo",
+      "Guerra y paz",
+      "Los hermanos Karamázov"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Qué autor argentino escribió \"Rayuela\"?",
+    "options": [
+      "Adolfo Bioy Casares",
+      "Julio Cortázar",
+      "Ernesto Sabato",
+      "Jorge Luis Borges"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué escritor estadounidense escribió \"Matar a un ruiseñor\"?",
+    "options": [
+      "Ernest Hemingway",
+      "Mark Twain",
+      "John Steinbeck",
+      "Harper Lee"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué autora escribió la trilogía distópica \"Los Juegos del Hambre\"?",
+    "options": [
+      "Veronica Roth",
+      "James Dashner",
+      "Stephenie Meyer",
+      "Suzanne Collins"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué escritor ruso escribió \"Guerra y paz\"?",
+    "options": [
+      "León Tolstói",
+      "Nikolái Gógol",
+      "Fiódor Dostoyevski",
+      "Antón Chéjov"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué autor español de la Generación del 27 escribió \"Romancero gitano\"?",
+    "options": [
+      "Rafael Alberti",
+      "Pedro Salinas",
+      "Vicente Aleixandre",
+      "Federico García Lorca"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué escritora inglesa escribió \"Frankenstein\"?",
+    "options": [
+      "Emily Brontë",
+      "Virginia Woolf",
+      "Mary Shelley",
+      "Jane Austen"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué novela de Gabriel García Márquez narra la historia de Florentino Ariza esperando a Fermina Daza?",
+    "options": [
+      "Cien años de soledad",
+      "El otoño del patriarca",
+      "El amor en los tiempos del cólera",
+      "Crónica de una muerte anunciada"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Qué autor checo escribió \"La metamorfosis\"?",
+    "options": [
+      "Karel Čapek",
+      "Bohumil Hrabal",
+      "Milan Kundera",
+      "Franz Kafka"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué escritor estadounidense escribió \"El gran Gatsby\"?",
+    "options": [
+      "F. Scott Fitzgerald",
+      "William Faulkner",
+      "John Steinbeck",
+      "Ernest Hemingway"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué saga juvenil sigue a una chica llamada Katniss Everdeen?",
+    "options": [
+      "Crepúsculo",
+      "Divergente",
+      "Los Juegos del Hambre",
+      "Maze Runner"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué poeta chilena ganó el Premio Nobel de Literatura en 1945?",
+    "options": [
+      "Isabel Allende",
+      "Gabriela Mistral",
+      "Vicente Huidobro",
+      "Pablo Neruda"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué autor irlandés escribió \"El retrato de Dorian Gray\"?",
+    "options": [
+      "Oscar Wilde",
+      "Bram Stoker",
+      "George Bernard Shaw",
+      "W. B. Yeats"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué escritor español, Premio Nobel en 1989, escribió \"La colmena\"?",
+    "options": [
+      "Rafael Sánchez Ferlosio",
+      "Camilo José Cela",
+      "Miguel Delibes",
+      "Juan Goytisolo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué autor escribió \"Rebelión en la granja\"?",
+    "options": [
+      "Evelyn Waugh",
+      "George Orwell",
+      "Aldous Huxley",
+      "Anthony Burgess"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué poeta italiano escribió \"La Divina Comedia\"?",
+    "options": [
+      "Ariosto",
+      "Dante Alighieri",
+      "Boccaccio",
+      "Petrarca"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué autora británica escribió \"Cumbres borrascosas\"?",
+    "options": [
+      "George Eliot",
+      "Elizabeth Gaskell",
+      "Charlotte Brontë",
+      "Emily Brontë"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué escritor francés escribió \"Los miserables\"?",
+    "options": [
+      "Stendhal",
+      "Honoré de Balzac",
+      "Victor Hugo",
+      "Alphonse Daudet"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué autor ruso escribió \"El maestro y Margarita\"?",
+    "options": [
+      "Mijaíl Bulgákov",
+      "Iván Turguénev",
+      "Borís Pasternak",
+      "Antón Chéjov"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué escritor uruguayo escribió \"La tregua\"?",
+    "options": [
+      "Felisberto Hernández",
+      "Horacio Quiroga",
+      "Juan Carlos Onetti",
+      "Mario Benedetti"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué autor escribió \"En el camino\", obra clave de la generación beat?",
+    "options": [
+      "Jack Kerouac",
+      "Allen Ginsberg",
+      "William Burroughs",
+      "Charles Bukowski"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Qué escritora mexicana escribió \"Como agua para chocolate\"?",
+    "options": [
+      "Ángeles Mastretta",
+      "Rosario Castellanos",
+      "Elena Poniatowska",
+      "Laura Esquivel"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué autor británico escribió \"El señor de las moscas\"?",
+    "options": [
+      "William Golding",
+      "Kingsley Amis",
+      "Graham Greene",
+      "E. M. Forster"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué escritor japonés escribió \"Tokio blues\"?",
+    "options": [
+      "Kenzaburō Ōe",
+      "Haruki Murakami",
+      "Yasunari Kawabata",
+      "Yukio Mishima"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Qué autor estadounidense escribió \"El viejo y el mar\"?",
+    "options": [
+      "Truman Capote",
+      "John Steinbeck",
+      "William Faulkner",
+      "Ernest Hemingway"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué escritor irlandés escribió \"Drácula\"?",
+    "options": [
+      "Oscar Wilde",
+      "Sheridan Le Fanu",
+      "Arthur Machen",
+      "Bram Stoker"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Qué autor sueco escribió \"Los hombres que no amaban a las mujeres\"?",
+    "options": [
+      "Stieg Larsson",
+      "Camilla Läckberg",
+      "Henning Mankell",
+      "Jo Nesbø"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué novela de Anthony Burgess inspiró la película de Kubrick protagonizada por Alex?",
+    "options": [
+      "La naranja mecánica",
+      "1984",
+      "Nosotros",
+      "Un mundo feliz"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué autor escribió \"Fahrenheit 451\"?",
+    "options": [
+      "Philip K. Dick",
+      "Isaac Asimov",
+      "Arthur C. Clarke",
+      "Ray Bradbury"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué escritor argentino escribió \"Sobre héroes y tumbas\"?",
+    "options": [
+      "Adolfo Bioy Casares",
+      "Leopoldo Marechal",
+      "Roberto Arlt",
+      "Ernesto Sabato"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué autora estadounidense ganó el Premio Nobel de Literatura en 1993 por obras como \"Beloved\"?",
+    "options": [
+      "Alice Walker",
+      "Joyce Carol Oates",
+      "Maya Angelou",
+      "Toni Morrison"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué escritor portugués es autor del \"Libro del desasosiego\"?",
+    "options": [
+      "António Lobo Antunes",
+      "Camilo Castelo Branco",
+      "Fernando Pessoa",
+      "Eça de Queirós"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué poeta nicaragüense es considerado el padre del modernismo hispanoamericano?",
+    "options": [
+      "Leopoldo Lugones",
+      "Amado Nervo",
+      "José Martí",
+      "Rubén Darío"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué autora canadiense escribió \"El cuento de la criada\"?",
+    "options": [
+      "Margaret Atwood",
+      "Ursula K. Le Guin",
+      "Alice Munro",
+      "Doris Lessing"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué escritor español escribió \"La sombra del viento\"?",
+    "options": [
+      "Eduardo Mendoza",
+      "Javier Marías",
+      "Carlos Ruiz Zafón",
+      "Arturo Pérez-Reverte"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué autor galés escribió \"Los pilares de la Tierra\"?",
+    "options": [
+      "John le Carré",
+      "Ken Follett",
+      "Wilbur Smith",
+      "Frederick Forsyth"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué escritor estadounidense es conocido por novelas de terror como \"It\"?",
+    "options": [
+      "Dean Koontz",
+      "Peter Straub",
+      "Clive Barker",
+      "Stephen King"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué obra de Homero narra episodios de la guerra de Troya?",
+    "options": [
+      "La Ilíada",
+      "La Teogonía",
+      "La Eneida",
+      "Las Metamorfosis"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué escritor mexicano escribió \"La región más transparente\"?",
+    "options": [
+      "Octavio Paz",
+      "Juan José Arreola",
+      "Carlos Fuentes",
+      "Salvador Elizondo"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Qué novela de Umberto Eco está ambientada en un monasterio medieval con una serie de misteriosos asesinatos?",
+    "options": [
+      "Baudolino",
+      "La isla del día de antes",
+      "El nombre de la rosa",
+      "El péndulo de Foucault"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué escritor irlandés escribió \"Ulises\", una obra maestra del modernismo?",
+    "options": [
+      "W.B. Yeats",
+      "Samuel Beckett",
+      "Oscar Wilde",
+      "James Joyce"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué autor colombiano escribió \"El coronel no tiene quien le escriba\"?",
+    "options": [
+      "Jorge Isaacs",
+      "Gabriel García Márquez",
+      "José Eustasio Rivera",
+      "Álvaro Mutis"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué novelista francés escribió \"En busca del tiempo perdido\"?",
+    "options": [
+      "Émile Zola",
+      "Gustave Flaubert",
+      "Victor Hugo",
+      "Marcel Proust"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué escritor argentino, célebre por sus cuentos y laberintos literarios, escribió \"Ficciones\"?",
+    "options": [
+      "Julio Cortázar",
+      "Jorge Luis Borges",
+      "Ernesto Sabato",
+      "Adolfo Bioy Casares"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué autor ruso escribió \"Crimen y castigo\" mientras enfrentaba dificultades económicas propias?",
+    "options": [
+      "Iván Turguénev",
+      "Nikolái Gógol",
+      "León Tolstói",
+      "Fiódor Dostoyevski"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué escritor uruguayo escribió \"Las venas abiertas de América Latina\"?",
+    "options": [
+      "Horacio Quiroga",
+      "Juan Carlos Onetti",
+      "Eduardo Galeano",
+      "Mario Benedetti"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué obra de teatro de Shakespeare trata sobre un príncipe danés que busca vengar la muerte de su padre?",
+    "options": [
+      "Hamlet",
+      "Otelo",
+      "El rey Lear",
+      "Macbeth"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué escritor portugués ganó el Premio Nobel de Literatura en 1998 por obras como \"Ensayo sobre la ceguera\"?",
+    "options": [
+      "Fernando Pessoa",
+      "Eça de Queirós",
+      "Miguel Torga",
+      "José Saramago"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué autor estadounidense escribió \"Moby Dick\"?",
+    "options": [
+      "Nathaniel Hawthorne",
+      "Edgar Allan Poe",
+      "Mark Twain",
+      "Herman Melville"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué escritor británico escribió la distopía \"Un mundo feliz\"?",
+    "options": [
+      "Aldous Huxley",
+      "Anthony Burgess",
+      "George Orwell",
+      "H.G. Wells"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué poeta español fue fusilado al inicio de la Guerra Civil Española en 1936?",
+    "options": [
+      "Miguel Hernández",
+      "Rafael Alberti",
+      "Antonio Machado",
+      "Federico García Lorca"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué autor brasileño escribió \"Dom Casmurro\"?",
+    "options": [
+      "Clarice Lispector",
+      "Jorge Amado",
+      "Machado de Assis",
+      "Paulo Coelho"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué escritor austríaco escribió las memorias \"El mundo de ayer\"?",
+    "options": [
+      "Stefan Zweig",
+      "Joseph Roth",
+      "Robert Musil",
+      "Hermann Broch"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué autor británico escribió \"Bajo el volcán\", ambientada en México?",
+    "options": [
+      "Malcolm Lowry",
+      "D. H. Lawrence",
+      "Graham Greene",
+      "Aldous Huxley"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué poeta estadounidense escribió \"Hojas de hierba\"?",
+    "options": [
+      "T. S. Eliot",
+      "Ezra Pound",
+      "Robert Frost",
+      "Walt Whitman"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué escritora británica escribió \"La señora Dalloway\"?",
+    "options": [
+      "Muriel Spark",
+      "Katherine Mansfield",
+      "Virginia Woolf",
+      "Iris Murdoch"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué autor francés escribió \"El extranjero\"?",
+    "options": [
+      "André Malraux",
+      "Jean-Paul Sartre",
+      "Albert Camus",
+      "Louis-Ferdinand Céline"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué escritor ruso escribió \"Almas muertas\"?",
+    "options": [
+      "Nikolái Gógol",
+      "Iván Goncharov",
+      "Mijaíl Lérmontov",
+      "Alexander Pushkin"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué autor alemán escribió \"La montaña mágica\"?",
+    "options": [
+      "Günter Grass",
+      "Thomas Mann",
+      "Heinrich Böll",
+      "Hermann Hesse"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué novela del siglo XVIII de Laurence Sterne es célebre por sus digresiones?",
+    "options": [
+      "Robinson Crusoe",
+      "Pamela",
+      "Tom Jones",
+      "Tristram Shandy"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué escritor peruano escribió \"Los ríos profundos\"?",
+    "options": [
+      "Ciro Alegría",
+      "Manuel Scorza",
+      "Julio Ramón Ribeyro",
+      "José María Arguedas"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué poeta chileno escribió \"Veinte poemas de amor y una canción desesperada\"?",
+    "options": [
+      "Nicanor Parra",
+      "Pablo Neruda",
+      "Vicente Huidobro",
+      "Gonzalo Rojas"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué autor italiano escribió \"Si esto es un hombre\", testimonio de Auschwitz?",
+    "options": [
+      "Elio Vittorini",
+      "Primo Levi",
+      "Cesare Pavese",
+      "Italo Svevo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué escritor cubano escribió \"El siglo de las luces\"?",
+    "options": [
+      "Guillermo Cabrera Infante",
+      "José Lezama Lima",
+      "Alejo Carpentier",
+      "Virgilio Piñera"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué obra de Goethe narra el pacto de un erudito con el diablo?",
+    "options": [
+      "Werther",
+      "Egmont",
+      "Fausto",
+      "Ifigenia en Táuride"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué autor nigeriano escribió \"Todo se desmorona\"?",
+    "options": [
+      "Wole Soyinka",
+      "Ngũgĩ wa Thiong'o",
+      "Ben Okri",
+      "Chinua Achebe"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué escritor francés escribió \"Madame Bovary\"?",
+    "options": [
+      "Guy de Maupassant",
+      "Gustave Flaubert",
+      "Émile Zola",
+      "Prosper Mérimée"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué poeta inglés escribió \"El paraíso perdido\"?",
+    "options": [
+      "Edmund Spenser",
+      "William Blake",
+      "Geoffrey Chaucer",
+      "John Milton"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué escritor guatemalteco ganó el Nobel en 1967, autor de \"El señor Presidente\"?",
+    "options": [
+      "Luis Cardoza y Aragón",
+      "Rodrigo Rey Rosa",
+      "Augusto Monterroso",
+      "Miguel Ángel Asturias"
+    ],
+    "answerIndex": 3
+  }
+]

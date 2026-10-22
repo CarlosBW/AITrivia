@@ -521,10 +521,20 @@ async function run() {
       if (change.kind === "drop") {
         batch.delete(change.ref);
       } else {
+        // A changed text or option leaves the English version describing
+        // a question that no longer exists; dropping it shows the Spanish
+        // until it is translated again (see apply_translations.js).
+        const textChanged =
+          change.updated.q !== change.original.q ||
+          change.updated.options.some((o, j) => o !== change.original.options[j]);
         batch.update(change.ref, {
           q: change.updated.q,
           options: change.updated.options,
           answerIndex: change.updated.answerIndex,
+          ...(textChanged ? {
+            q_en: admin.firestore.FieldValue.delete(),
+            options_en: admin.firestore.FieldValue.delete(),
+          } : {}),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       }

@@ -7,6 +7,7 @@ import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -103,13 +104,11 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
   }
 
   String _questionText(Map<String, dynamic> q) {
-    return (q['q'] ?? q['question'] ?? '').toString();
+    return localizedQuestion(q, Localizations.localeOf(context).languageCode).text;
   }
 
   List<String> _options(Map<String, dynamic> q) {
-    return (q['options'] ?? q['answers'] ?? [])
-        .map<String>((e) => e.toString())
-        .toList();
+    return localizedQuestion(q, Localizations.localeOf(context).languageCode).options;
   }
 
   int _answerIndex(Map<String, dynamic> q) {
@@ -207,6 +206,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
             {'questionIndex': i, 'selectedIndex': _answers[i]['selectedIndex']},
         ],
         onlyAnswered: true,
+        languageCode: Localizations.localeOf(context).languageCode,
         targetFor: (_, q) => {
           'mode': 'weekly',
           'categoryId': widget.categoryId,

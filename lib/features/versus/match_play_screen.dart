@@ -11,6 +11,7 @@ import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
@@ -674,11 +675,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
             questions[_index] as Map,
           );
 
-          final qText = (qMap['q'] ?? '').toString();
-
-          final options = (qMap['options'] as List<dynamic>? ?? [])
-              .map((e) => e.toString())
-              .toList();
+          final localized = localizedQuestion(qMap, Localizations.localeOf(context).languageCode);
+          final qText = localized.text;
+          final options = localized.options;
 
           if (_timerForIndex != _index) {
             _startTimerForQuestion(_index);

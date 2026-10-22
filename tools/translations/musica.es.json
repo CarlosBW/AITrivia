@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Cuántas cuerdas tiene una guitarra estándar?",
+    "options": [
+      "7",
+      "6",
+      "5",
+      "4"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Qué banda británica formaron John Lennon y Paul McCartney?",
+    "options": [
+      "Pink Floyd",
+      "The Rolling Stones",
+      "Queen",
+      "The Beatles"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Quién es conocido como el \"Rey del Pop\"?",
+    "options": [
+      "Michael Jackson",
+      "Elvis Presley",
+      "Freddie Mercury",
+      "Prince"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué instrumento tiene teclas blancas y negras?",
+    "options": [
+      "Batería",
+      "Piano",
+      "Guitarra",
+      "Violín"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué cantante colombiana canta \"Waka Waka\"?",
+    "options": [
+      "Shakira",
+      "Maluma",
+      "J Balvin",
+      "Karol G"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué género musical se originó en Jamaica?",
+    "options": [
+      "Reggae",
+      "Flamenco",
+      "Blues",
+      "Salsa"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Qué instrumento de cuerda se toca con arco?",
+    "options": [
+      "El banjo",
+      "El arpa",
+      "La guitarra",
+      "El violín"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Quién fue el vocalista de la banda Queen?",
+    "options": [
+      "Brian May",
+      "John Deacon",
+      "Freddie Mercury",
+      "Roger Taylor"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué género musical tiene su origen en Argentina y se baila en pareja?",
+    "options": [
+      "El tango",
+      "El flamenco",
+      "La salsa",
+      "La cumbia"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Cuántas teclas tiene un piano estándar?",
+    "options": [
+      "88",
+      "100",
+      "64",
+      "76"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Qué cantante puertorriqueño es conocido como \"El Rey del Reguetón\"?",
+    "options": [
+      "Daddy Yankee",
+      "Bad Bunny",
+      "Wisin",
+      "Ozuna"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué instrumento de percusión se toca con las manos y es típico del jazz y la música afrocaribeña?",
+    "options": [
+      "La pandereta",
+      "El triángulo",
+      "Los bongós",
+      "El xilófono"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué banda cantó \"Bohemian Rhapsody\"?",
+    "options": [
+      "The Who",
+      "Queen",
+      "The Beatles",
+      "Led Zeppelin"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Qué artista canta \"Despacito\"?",
+    "options": [
+      "Luis Fonsi",
+      "Marc Anthony",
+      "Ricky Martin",
+      "Enrique Iglesias"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Cuántas notas tiene la escala musical básica de do a si?",
+    "options": [
+      "Doce",
+      "Ocho",
+      "Siete",
+      "Cinco"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Qué instrumento de viento con llaves es característico del jazz?",
+    "options": [
+      "El saxofón",
+      "El clarinete",
+      "La trompeta",
+      "La flauta"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Cómo se llama el conjunto de músicos que interpreta música clásica bajo un director?",
+    "options": [
+      "La orquesta",
+      "El coro",
+      "El cuarteto",
+      "La banda"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué objeto usa un director para marcar el ritmo de la orquesta?",
+    "options": [
+      "La baqueta",
+      "El arco",
+      "La púa",
+      "La batuta"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Qué instrumento de percusión combina tambores y platillos tocados con baquetas?",
+    "options": [
+      "La batería",
+      "El xilófono",
+      "La pandereta",
+      "El timbal"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿De qué país es originario el mariachi?",
+    "options": [
+      "Colombia",
+      "Perú",
+      "México",
+      "Argentina"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Qué instrumento tiene teclas y se toca abriendo y cerrando un fuelle?",
+    "options": [
+      "El acordeón",
+      "El órgano",
+      "La armónica",
+      "El clavecín"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué género musical brasileño es protagonista del carnaval?",
+    "options": [
+      "La bachata",
+      "La samba",
+      "El son",
+      "La cumbia"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Cuántas líneas tiene un pentagrama?",
+    "options": [
+      "Siete",
+      "Seis",
+      "Cuatro",
+      "Cinco"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Qué banda irlandesa tiene a Bono como vocalista?",
+    "options": [
+      "U2",
+      "The Cranberries",
+      "Snow Patrol",
+      "Coldplay"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué instrumento tradicional escocés utiliza un fuelle y varios tubos?",
+    "options": [
+      "La gaita",
+      "El banjo",
+      "La cítara",
+      "El laúd"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Qué género urbano nació entre Puerto Rico y Panamá?",
+    "options": [
+      "El reguetón",
+      "La cumbia",
+      "El hip hop",
+      "El dancehall"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Qué cantante británica interpreta \"Rolling in the Deep\"?",
+    "options": [
+      "Amy Winehouse",
+      "Dua Lipa",
+      "Adele",
+      "Ellie Goulding"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Qué cantante canadiense se hizo famoso con la canción \"Baby\" en 2010?",
+    "options": [
+      "Shawn Mendes",
+      "The Weeknd",
+      "Drake",
+      "Justin Bieber"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué instrumento de cuerda es el más pequeño y agudo de la orquesta?",
+    "options": [
+      "El violonchelo",
+      "La viola",
+      "El contrabajo",
+      "El violín"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué cantante estadounidense es conocida como \"Queen B\"?",
+    "options": [
+      "Rihanna",
+      "Beyoncé",
+      "Mariah Carey",
+      "Alicia Keys"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué compositor alemán quedó sordo y aun así compuso su Novena Sinfonía?",
+    "options": [
+      "Wolfgang Amadeus Mozart",
+      "Franz Schubert",
+      "Ludwig van Beethoven",
+      "Johann Sebastian Bach"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué banda de rock formaron Mick Jagger y Keith Richards?",
+    "options": [
+      "Led Zeppelin",
+      "The Beatles",
+      "The Who",
+      "The Rolling Stones"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Qué cantante es conocida como la \"Reina del Pop\"?",
+    "options": [
+      "Britney Spears",
+      "Whitney Houston",
+      "Cher",
+      "Madonna"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué género musical surgió en Nueva Orleans a principios del siglo XX?",
+    "options": [
+      "Blues",
+      "Country",
+      "Rock",
+      "Jazz"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Qué compositor austríaco escribió \"Las Bodas de Fígaro\"?",
+    "options": [
+      "Joseph Haydn",
+      "Wolfgang Amadeus Mozart",
+      "Franz Liszt",
+      "Ludwig van Beethoven"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué banda británica lanzó el álbum \"The Dark Side of the Moon\"?",
+    "options": [
+      "Led Zeppelin",
+      "Deep Purple",
+      "Genesis",
+      "Pink Floyd"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué género musical brasileño nació a finales de los años 50 combinando samba y jazz?",
+    "options": [
+      "Forró",
+      "Bossa nova",
+      "Axé",
+      "Samba-reggae"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué instrumento es característico del flamenco español?",
+    "options": [
+      "El acordeón",
+      "El violín",
+      "El arpa",
+      "La guitarra española"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué cantante estadounidense es conocida como \"The Queen of Soul\"?",
+    "options": [
+      "Aretha Franklin",
+      "Tina Turner",
+      "Diana Ross",
+      "Whitney Houston"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Qué compositor ruso escribió \"El Cascanueces\"?",
+    "options": [
+      "Piotr Ilich Tchaikovsky",
+      "Igor Stravinsky",
+      "Dmitri Shostakovich",
+      "Sergei Rachmaninoff"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué banda de rock de Seattle lideró el movimiento grunge en los 90 con Kurt Cobain?",
+    "options": [
+      "Soundgarden",
+      "Alice in Chains",
+      "Nirvana",
+      "Pearl Jam"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué género musical colombiano tiene el acordeón como instrumento principal?",
+    "options": [
+      "El vallenato",
+      "La cumbia",
+      "El bolero",
+      "La salsa"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué cantante cubana es conocida como \"La Guarachera de Cuba\" y reina de la salsa?",
+    "options": [
+      "Gloria Estefan",
+      "Celia Gómez",
+      "Celia Cruz",
+      "La India"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué compositor barroco escribió el oratorio \"El Mesías\"?",
+    "options": [
+      "Georg Friedrich Händel",
+      "Domenico Scarlatti",
+      "Arcangelo Corelli",
+      "Henry Purcell"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué banda de Seattle tiene a Eddie Vedder como vocalista?",
+    "options": [
+      "Alice in Chains",
+      "Stone Temple Pilots",
+      "Soundgarden",
+      "Pearl Jam"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué instrumento andino es una flauta formada por varios tubos de distinta longitud?",
+    "options": [
+      "La quena",
+      "La zampoña",
+      "El charango",
+      "El bombo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué cantante mexicano era conocido como \"El Divo de Juárez\"?",
+    "options": [
+      "José José",
+      "Vicente Fernández",
+      "Pedro Infante",
+      "Juan Gabriel"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué banda estadounidense lideró Jim Morrison?",
+    "options": [
+      "Grateful Dead",
+      "Creedence Clearwater Revival",
+      "The Velvet Underground",
+      "The Doors"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué género musical dominicano se baila en pareja con un ritmo rápido de dos tiempos?",
+    "options": [
+      "La salsa",
+      "El son",
+      "La bachata",
+      "El merengue"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué compositor polaco es célebre por sus nocturnos para piano?",
+    "options": [
+      "Johannes Brahms",
+      "Frédéric Chopin",
+      "Franz Liszt",
+      "Robert Schumann"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué banda británica publicó el álbum \"OK Computer\"?",
+    "options": [
+      "Muse",
+      "Radiohead",
+      "Oasis",
+      "Blur"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué músico estadounidense es conocido como \"The Boss\"?",
+    "options": [
+      "Bob Seger",
+      "Bruce Springsteen",
+      "Tom Petty",
+      "John Mellencamp"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Qué género cubano es considerado la base rítmica de la salsa?",
+    "options": [
+      "La guaracha",
+      "El son cubano",
+      "El danzón",
+      "El mambo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué banda australiana grabó \"Highway to Hell\"?",
+    "options": [
+      "INXS",
+      "Men at Work",
+      "Midnight Oil",
+      "AC/DC"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué cantante británica grabó el álbum \"Back to Black\"?",
+    "options": [
+      "Amy Winehouse",
+      "Florence Welch",
+      "Duffy",
+      "Lily Allen"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Qué compositor ruso escribió \"La consagración de la primavera\"?",
+    "options": [
+      "Serguéi Prokófiev",
+      "Ígor Stravinski",
+      "Dmitri Shostakóvich",
+      "Nikolái Rimski-Kórsakov"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Cuál es el instrumento más grave de la familia del viento metal?",
+    "options": [
+      "El bombardino",
+      "La tuba",
+      "La trompa",
+      "El trombón"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Qué género musical estadounidense nació en los Apalaches con banjo y violín?",
+    "options": [
+      "El gospel",
+      "El country",
+      "El blues",
+      "El bluegrass"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué banda británica grabó \"Stairway to Heaven\"?",
+    "options": [
+      "Black Sabbath",
+      "Deep Purple",
+      "Led Zeppelin",
+      "The Who"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué artista española publicó el álbum \"El mal querer\"?",
+    "options": [
+      "La Oreja de Van Gogh",
+      "Bebe",
+      "Rosalía",
+      "Amaral"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué compositor italiano escribió la ópera \"Madama Butterfly\"?",
+    "options": [
+      "Gaetano Donizetti",
+      "Vincenzo Bellini",
+      "Giacomo Puccini",
+      "Gioachino Rossini"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué instrumento de cuerda pulsada tiene siete pedales y unas 47 cuerdas?",
+    "options": [
+      "El arpa",
+      "El laúd",
+      "La mandolina",
+      "La cítara"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué grupo sueco de los años 70 grabó \"Dancing Queen\"?",
+    "options": [
+      "Roxette",
+      "Ace of Base",
+      "The Cardigans",
+      "ABBA"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué género jamaicano precedió al reggae?",
+    "options": [
+      "El calipso",
+      "El soca",
+      "El ska",
+      "El dub"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué cantante colombiano grabó \"La Bicicleta\" junto a Shakira?",
+    "options": [
+      "Carlos Vives",
+      "Maluma",
+      "Juanes",
+      "Fonseca"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué compositor estadounidense escribió \"Rhapsody in Blue\"?",
+    "options": [
+      "Leonard Bernstein",
+      "Aaron Copland",
+      "George Gershwin",
+      "Charles Ives"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Cuál es la voz femenina más aguda en la ópera?",
+    "options": [
+      "El contratenor",
+      "La mezzosoprano",
+      "La contralto",
+      "La soprano"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Cuál es el instrumento más grave de un cuarteto de cuerda clásico?",
+    "options": [
+      "El segundo violín",
+      "El violonchelo",
+      "La viola",
+      "El contrabajo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué banda mexicana de rock grabó \"Rayando el sol\"?",
+    "options": [
+      "Maná",
+      "Caifanes",
+      "Molotov",
+      "Café Tacvba"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué músico argentino, junto a Charly García, es figura fundacional del rock en español?",
+    "options": [
+      "Fito Páez",
+      "Gustavo Cerati",
+      "Andrés Calamaro",
+      "Luis Alberto Spinetta"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Qué compositor barroco alemán compuso \"El Clave Bien Temperado\"?",
+    "options": [
+      "Antonio Vivaldi",
+      "Claudio Monteverdi",
+      "Georg Friedrich Händel",
+      "Johann Sebastian Bach"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué compositor italiano compuso \"Las Cuatro Estaciones\"?",
+    "options": [
+      "Gioachino Rossini",
+      "Antonio Vivaldi",
+      "Georg Friedrich Händel",
+      "Johann Sebastian Bach"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué movimiento musical de vanguardia del siglo XX utilizó el dodecafonismo, creado por Arnold Schoenberg?",
+    "options": [
+      "Romanticismo",
+      "Serialismo",
+      "Impresionismo",
+      "Minimalismo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué compositor francés es asociado con el impresionismo musical y compuso \"Claro de Luna\"?",
+    "options": [
+      "Claude Debussy",
+      "Maurice Ravel",
+      "Erik Satie",
+      "Camille Saint-Saëns"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué cantautor estadounidense ganó el Premio Nobel de Literatura en 2016?",
+    "options": [
+      "Bob Dylan",
+      "Paul Simon",
+      "Leonard Cohen",
+      "Neil Young"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué ópera de Giuseppe Verdi está ambientada en el Antiguo Egipto?",
+    "options": [
+      "Rigoletto",
+      "Aida",
+      "Otello",
+      "La Traviata"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué compositor alemán del Romanticismo es conocido por \"La Cabalgata de las Valquirias\"?",
+    "options": [
+      "Johannes Brahms",
+      "Robert Schumann",
+      "Richard Wagner",
+      "Franz Schubert"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué término musical indica que una pieza debe tocarse rápido y con alegría?",
+    "options": [
+      "Allegro",
+      "Andante",
+      "Adagio",
+      "Largo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué compositor compuso la ópera \"La Flauta Mágica\"?",
+    "options": [
+      "Wolfgang Amadeus Mozart",
+      "Franz Joseph Haydn",
+      "Ludwig van Beethoven",
+      "Christoph Willibald Gluck"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué género musical afroamericano, surgido en los años 70 en el Bronx, incluye el rap como elemento central?",
+    "options": [
+      "Hip hop",
+      "Disco",
+      "Funk",
+      "R&B"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué compositor húngaro es conocido por sus \"Rapsodias Húngaras\"?",
+    "options": [
+      "Zoltán Kodály",
+      "Johannes Brahms",
+      "Franz Liszt",
+      "Béla Bartók"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué cantaor español es considerado una leyenda del flamenco y trabajó junto a Paco de Lucía?",
+    "options": [
+      "Diego El Cigala",
+      "Camarón de la Isla",
+      "José Mercé",
+      "Enrique Morente"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué compositor ruso escribió la \"Sinfonía Patética\" (Sinfonía n.º 6)?",
+    "options": [
+      "Piotr Ilich Tchaikovsky",
+      "Modest Mussorgsky",
+      "Dmitri Shostakovich",
+      "Sergei Prokofiev"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué compositor austríaco escribió el ciclo de canciones \"Winterreise\"?",
+    "options": [
+      "Hugo Wolf",
+      "Franz Schubert",
+      "Gustav Mahler",
+      "Anton Bruckner"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué compositor finlandés escribió el poema sinfónico \"Finlandia\"?",
+    "options": [
+      "Edvard Grieg",
+      "Niels Gade",
+      "Carl Nielsen",
+      "Jean Sibelius"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué término musical indica un aumento gradual del volumen?",
+    "options": [
+      "Diminuendo",
+      "Legato",
+      "Crescendo",
+      "Staccato"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué compositor húngaro recopiló música folclórica junto a Zoltán Kodály?",
+    "options": [
+      "Béla Bartók",
+      "Franz Liszt",
+      "Ernő Dohnányi",
+      "György Ligeti"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué compositor español escribió el ballet \"El amor brujo\"?",
+    "options": [
+      "Manuel de Falla",
+      "Joaquín Rodrigo",
+      "Isaac Albéniz",
+      "Enrique Granados"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué compositor minimalista estadounidense escribió \"Einstein on the Beach\"?",
+    "options": [
+      "John Adams",
+      "Terry Riley",
+      "Steve Reich",
+      "Philip Glass"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué forma musical barroca se basa en la entrada sucesiva de un mismo tema por imitación?",
+    "options": [
+      "La tocata",
+      "La sonata",
+      "La fuga",
+      "El rondó"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué compositor checo escribió la sinfonía \"Del Nuevo Mundo\"?",
+    "options": [
+      "Antonín Dvořák",
+      "Leoš Janáček",
+      "Bedřich Smetana",
+      "Bohuslav Martinů"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué instrumento electrónico se interpreta sin contacto físico con el ejecutante?",
+    "options": [
+      "Las ondas Martenot",
+      "El mellotrón",
+      "El theremín",
+      "El sintetizador"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué compositor francés escribió el \"Bolero\"?",
+    "options": [
+      "Erik Satie",
+      "Camille Saint-Saëns",
+      "Maurice Ravel",
+      "Claude Debussy"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué compositor noruego escribió la música incidental de \"Peer Gynt\"?",
+    "options": [
+      "Carl Nielsen",
+      "Christian Sinding",
+      "Edvard Grieg",
+      "Johan Svendsen"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué compositor ruso escribió la suite \"Cuadros de una exposición\"?",
+    "options": [
+      "Aleksandr Borodín",
+      "César Cui",
+      "Modest Músorgski",
+      "Mili Balákirev"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué cantante estadounidense de jazz era conocida como \"Lady Day\"?",
+    "options": [
+      "Billie Holiday",
+      "Sarah Vaughan",
+      "Nina Simone",
+      "Ella Fitzgerald"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué trompetista grabó el álbum \"Kind of Blue\"?",
+    "options": [
+      "Louis Armstrong",
+      "Miles Davis",
+      "Chet Baker",
+      "Dizzy Gillespie"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué músico argentino renovó el tango dando origen al llamado nuevo tango?",
+    "options": [
+      "Astor Piazzolla",
+      "Juan D'Arienzo",
+      "Osvaldo Pugliese",
+      "Aníbal Troilo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué compositor alemán del Romanticismo escribió el \"Concierto para violín en mi menor\"?",
+    "options": [
+      "Robert Schumann",
+      "Max Bruch",
+      "Carl Maria von Weber",
+      "Felix Mendelssohn"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Cómo se llama el tema principal que expone una fuga al comienzo?",
+    "options": [
+      "El estribillo",
+      "El sujeto",
+      "El puente",
+      "La coda"
+    ],
+    "answerIndex": 1
+  }
+]

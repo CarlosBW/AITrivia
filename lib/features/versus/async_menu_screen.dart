@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import 'async_find_players_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../services/locale_controller.dart';
+import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 
 class AsyncMenuScreen extends StatefulWidget {
@@ -102,7 +104,8 @@ class _AsyncMenuScreenState extends State<AsyncMenuScreen> {
                   ),
                   items: docs.map((d) {
                     final data = d.data();
-                    final name = (data['name'] ?? d.id).toString();
+                    final name =
+                        localizedCategoryName(data, LocaleController.instance.locale.value.languageCode) ?? d.id;
                     return DropdownMenuItem(
                       value: d.id,
                       child: Text(name),

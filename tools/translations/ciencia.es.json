@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Cuál es el planeta más cercano al Sol?",
+    "options": [
+      "Venus",
+      "Marte",
+      "Mercurio",
+      "Tierra"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Cuál es el símbolo químico del oxígeno?",
+    "options": [
+      "O",
+      "O2",
+      "Og",
+      "Ox"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Cuántos huesos tiene el cuerpo humano adulto aproximadamente?",
+    "options": [
+      "150",
+      "450",
+      "300",
+      "206"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué gas necesitan las plantas para hacer fotosíntesis?",
+    "options": [
+      "Hidrógeno",
+      "Nitrógeno",
+      "Dióxido de carbono",
+      "Oxígeno"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Cuál es el órgano que bombea la sangre en el cuerpo?",
+    "options": [
+      "El riñón",
+      "El hígado",
+      "El pulmón",
+      "El corazón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué planeta es conocido como el planeta rojo?",
+    "options": [
+      "Marte",
+      "Venus",
+      "Júpiter",
+      "Saturno"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Cuál es la velocidad de la luz aproximadamente?",
+    "options": [
+      "50.000 km/s",
+      "300.000 km/s",
+      "150.000 km/s",
+      "1.000.000 km/s"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Qué parte de la célula contiene el material genético?",
+    "options": [
+      "La mitocondria",
+      "El citoplasma",
+      "La membrana",
+      "El núcleo"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Qué metal es líquido a temperatura ambiente?",
+    "options": [
+      "Plomo",
+      "Mercurio",
+      "Aluminio",
+      "Hierro"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Qué científico propuso la teoría de la relatividad?",
+    "options": [
+      "Nikola Tesla",
+      "Isaac Newton",
+      "Galileo Galilei",
+      "Albert Einstein"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Cuántos planetas tiene el sistema solar actualmente?",
+    "options": [
+      "10",
+      "8",
+      "9",
+      "7"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Qué vitamina se obtiene principalmente del sol?",
+    "options": [
+      "Vitamina D",
+      "Vitamina C",
+      "Vitamina A",
+      "Vitamina B12"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué instrumento se usa para medir la temperatura?",
+    "options": [
+      "Termómetro",
+      "Higrómetro",
+      "Barómetro",
+      "Anemómetro"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Cuál es el hueso más largo del cuerpo humano?",
+    "options": [
+      "El húmero",
+      "La tibia",
+      "La columna",
+      "El fémur"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Cuál es el único satélite natural de la Tierra?",
+    "options": [
+      "Ío",
+      "La Luna",
+      "Fobos",
+      "Titán"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Qué órgano usamos principalmente para respirar?",
+    "options": [
+      "El hígado",
+      "Los pulmones",
+      "Los riñones",
+      "El estómago"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Cuál es la fórmula química del agua?",
+    "options": [
+      "O2",
+      "H2O",
+      "CO2",
+      "NaCl"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿A qué temperatura hierve el agua a nivel del mar?",
+    "options": [
+      "80 °C",
+      "100 °C",
+      "50 °C",
+      "150 °C"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿A qué temperatura se congela el agua a nivel del mar?",
+    "options": [
+      "-10 °C",
+      "10 °C",
+      "5 °C",
+      "0 °C"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿Qué fuerza nos mantiene sobre la superficie de la Tierra?",
+    "options": [
+      "La fricción",
+      "La inercia",
+      "La gravedad",
+      "El magnetismo"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Cuántas patas tiene un insecto adulto?",
+    "options": [
+      "Seis",
+      "Cuatro",
+      "Diez",
+      "Ocho"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué gas es el más abundante en la atmósfera terrestre?",
+    "options": [
+      "Oxígeno",
+      "Nitrógeno",
+      "Hidrógeno",
+      "Dióxido de carbono"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Qué planeta del sistema solar tiene los anillos más visibles?",
+    "options": [
+      "Júpiter",
+      "Saturno",
+      "Urano",
+      "Neptuno"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿Qué sentido está asociado a la lengua?",
+    "options": [
+      "El gusto",
+      "El olfato",
+      "El oído",
+      "El tacto"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué instrumento se usa para observar objetos muy pequeños?",
+    "options": [
+      "El estetoscopio",
+      "El periscopio",
+      "El microscopio",
+      "El telescopio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Cuál es el animal terrestre más grande de la actualidad?",
+    "options": [
+      "La jirafa",
+      "El elefante africano",
+      "El rinoceronte blanco",
+      "El hipopótamo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Qué tipo de energía produce un panel solar?",
+    "options": [
+      "Energía sonora",
+      "Energía química",
+      "Energía nuclear",
+      "Energía eléctrica"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Cuál es el órgano más extenso del cuerpo humano?",
+    "options": [
+      "El intestino",
+      "El hígado",
+      "La piel",
+      "El cerebro"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Qué animal de esta lista es un mamífero?",
+    "options": [
+      "El delfín",
+      "El tiburón",
+      "El cocodrilo",
+      "La tortuga"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Cuántas cámaras tiene el corazón humano?",
+    "options": [
+      "Tres",
+      "Cuatro",
+      "Cinco",
+      "Dos"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Quién formuló las leyes del movimiento y la gravitación universal?",
+    "options": [
+      "Johannes Kepler",
+      "Galileo Galilei",
+      "Albert Einstein",
+      "Isaac Newton"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Cuál es la unidad básica de la herencia genética?",
+    "options": [
+      "La proteína",
+      "El gen",
+      "El ribosoma",
+      "El cromosoma"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Qué elemento tiene el número atómico 1?",
+    "options": [
+      "Oxígeno",
+      "Helio",
+      "Hidrógeno",
+      "Litio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Qué científica ganó dos premios Nobel por sus investigaciones sobre la radiactividad?",
+    "options": [
+      "Marie Curie",
+      "Ada Lovelace",
+      "Rosalind Franklin",
+      "Dorothy Hodgkin"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Cuál es el proceso por el cual las plantas producen su propio alimento?",
+    "options": [
+      "Respiración",
+      "Digestión",
+      "Fermentación",
+      "Fotosíntesis"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Qué tipo de célula no tiene núcleo definido?",
+    "options": [
+      "Célula procariota",
+      "Célula vegetal",
+      "Célula animal",
+      "Célula eucariota"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Qué teoría explica el origen y evolución del universo a partir de una gran explosión?",
+    "options": [
+      "Teoría de cuerdas",
+      "Big Bang",
+      "Teoría del estado estacionario",
+      "Teoría cuántica"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué gas es el principal responsable del efecto invernadero?",
+    "options": [
+      "Argón",
+      "Nitrógeno",
+      "Oxígeno",
+      "Dióxido de carbono"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Cuántos cromosomas tiene una célula humana normal?",
+    "options": [
+      "23",
+      "46",
+      "48",
+      "44"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Qué científico desarrolló la tabla periódica de los elementos?",
+    "options": [
+      "Dmitri Mendeléyev",
+      "Niels Bohr",
+      "Ernest Rutherford",
+      "Marie Curie"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué parte del cerebro controla el equilibrio y la coordinación?",
+    "options": [
+      "El cerebro",
+      "El tálamo",
+      "El cerebelo",
+      "El bulbo raquídeo"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué proceso libera energía al romper enlaces de moléculas de glucosa en las células?",
+    "options": [
+      "Fermentación",
+      "Fotosíntesis",
+      "Respiración celular",
+      "Ósmosis"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Qué científico formuló la teoría de la evolución por selección natural?",
+    "options": [
+      "Alfred Wallace",
+      "Louis Pasteur",
+      "Gregor Mendel",
+      "Charles Darwin"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Cuál es la unidad de medida de la resistencia eléctrica?",
+    "options": [
+      "El amperio",
+      "El voltio",
+      "El ohmio",
+      "El vatio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿Qué órgano produce la insulina?",
+    "options": [
+      "El bazo",
+      "El páncreas",
+      "El hígado",
+      "La tiroides"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Qué tipo de roca se forma al enfriarse el magma?",
+    "options": [
+      "Ígnea",
+      "Sedimentaria",
+      "Metamórfica",
+      "Caliza"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Qué sabio griego enunció el principio de flotación de los cuerpos?",
+    "options": [
+      "Arquímedes",
+      "Euclides",
+      "Pitágoras",
+      "Tales de Mileto"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Cuál es el metal más abundante en la corteza terrestre?",
+    "options": [
+      "Magnesio",
+      "Hierro",
+      "Aluminio",
+      "Cobre"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Qué parte de la neurona transmite el impulso hacia otras células?",
+    "options": [
+      "La mielina",
+      "El soma",
+      "Las dendritas",
+      "El axón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Qué proceso convierte un líquido en gas por debajo de su punto de ebullición?",
+    "options": [
+      "La sublimación",
+      "La evaporación",
+      "La solidificación",
+      "La condensación"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué elemento químico tiene el símbolo Fe?",
+    "options": [
+      "Hierro",
+      "Fósforo",
+      "Fermio",
+      "Flúor"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Cuál es el planeta más grande del sistema solar?",
+    "options": [
+      "Saturno",
+      "Neptuno",
+      "Júpiter",
+      "Urano"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Qué tipo de enlace químico comparte electrones entre dos átomos?",
+    "options": [
+      "Metálico",
+      "Puente de hidrógeno",
+      "Iónico",
+      "Covalente"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué órganos filtran la sangre y producen la orina?",
+    "options": [
+      "El bazo",
+      "El hígado",
+      "Los riñones",
+      "Los pulmones"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Qué vitamina previene el escorbuto?",
+    "options": [
+      "Vitamina B12",
+      "Vitamina C",
+      "Vitamina K",
+      "Vitamina A"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿En qué capa de la atmósfera ocurren los fenómenos meteorológicos?",
+    "options": [
+      "Estratosfera",
+      "Troposfera",
+      "Termosfera",
+      "Mesosfera"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué gas noble emite luz rojiza en los letreros luminosos?",
+    "options": [
+      "Neón",
+      "Helio",
+      "Kriptón",
+      "Argón"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Cuál es la unidad de frecuencia en el Sistema Internacional?",
+    "options": [
+      "El kelvin",
+      "El julio",
+      "El hercio",
+      "El pascal"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿Qué instrumento mide la presión atmosférica?",
+    "options": [
+      "El anemómetro",
+      "El higrómetro",
+      "El pluviómetro",
+      "El barómetro"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿Qué proteína transporta el oxígeno en la sangre?",
+    "options": [
+      "La queratina",
+      "La albúmina",
+      "La hemoglobina",
+      "El colágeno"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué científico formuló las leyes de la herencia estudiando guisantes?",
+    "options": [
+      "Carl Linneo",
+      "Robert Koch",
+      "Louis Pasteur",
+      "Gregor Mendel"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué estado de la materia tiene forma y volumen definidos?",
+    "options": [
+      "Gaseoso",
+      "Sólido",
+      "Plasma",
+      "Líquido"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué parte de la planta realiza principalmente la fotosíntesis?",
+    "options": [
+      "El tallo",
+      "La raíz",
+      "La flor",
+      "La hoja"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Cuál es el elemento más abundante del universo?",
+    "options": [
+      "Hidrógeno",
+      "Oxígeno",
+      "Carbono",
+      "Helio"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué tipo de energía posee un cuerpo debido a su movimiento?",
+    "options": [
+      "Cinética",
+      "Térmica",
+      "Química",
+      "Potencial"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué ácido predomina en el jugo gástrico del estómago?",
+    "options": [
+      "Ácido sulfúrico",
+      "Ácido clorhídrico",
+      "Ácido cítrico",
+      "Ácido acético"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Cuánto tarda aproximadamente la luz del Sol en llegar a la Tierra?",
+    "options": [
+      "8 minutos",
+      "8 días",
+      "8 horas",
+      "8 segundos"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Qué reproducción no requiere la unión de gametos?",
+    "options": [
+      "Alogamia",
+      "Asexual",
+      "Cruzada",
+      "Sexual"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué tipo de onda es el sonido?",
+    "options": [
+      "Estacionaria transversal",
+      "Mecánica longitudinal",
+      "Gravitacional",
+      "Electromagnética"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué escala se usa tradicionalmente para medir la magnitud de un terremoto?",
+    "options": [
+      "La escala Mohs",
+      "La escala Kelvin",
+      "La escala Beaufort",
+      "La escala de Richter"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Qué partícula subatómica tiene carga negativa?",
+    "options": [
+      "Electrón",
+      "Protón",
+      "Neutrón",
+      "Positrón"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Qué científico formuló el principio de incertidumbre en mecánica cuántica?",
+    "options": [
+      "Werner Heisenberg",
+      "Max Planck",
+      "Niels Bohr",
+      "Erwin Schrödinger"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Cuál es la unidad de medida de la fuerza en el Sistema Internacional?",
+    "options": [
+      "Watt",
+      "Pascal",
+      "Newton",
+      "Joule"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué enzima corta el ADN en fragmentos específicos, usada en ingeniería genética?",
+    "options": [
+      "Ligasa",
+      "Helicasa",
+      "Enzima de restricción",
+      "ADN polimerasa"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué científico descubrió la penicilina?",
+    "options": [
+      "Alexander Fleming",
+      "Edward Jenner",
+      "Louis Pasteur",
+      "Robert Koch"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué proceso describe la fusión de núcleos atómicos que ocurre en el Sol?",
+    "options": [
+      "Ionización",
+      "Fusión nuclear",
+      "Fisión nuclear",
+      "Radiación"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Qué modelo atómico propuso que los electrones orbitan el núcleo en niveles de energía definidos?",
+    "options": [
+      "Modelo de Bohr",
+      "Modelo de Rutherford",
+      "Modelo de Thomson",
+      "Modelo de Dalton"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Qué nombre recibe la fuerza que mantiene unidos a los nucleones dentro del núcleo atómico?",
+    "options": [
+      "Fuerza electromagnética",
+      "Fuerza nuclear fuerte",
+      "Fuerza gravitacional",
+      "Fuerza nuclear débil"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿Qué científica fue pionera en el estudio de la estructura del ADN mediante cristalografía de rayos X?",
+    "options": [
+      "Lise Meitner",
+      "Rosalind Franklin",
+      "Barbara McClintock",
+      "Marie Curie"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Qué proceso bioquímico produce la mayor parte del ATP en las mitocondrias?",
+    "options": [
+      "Fermentación",
+      "Fosforilación oxidativa",
+      "Fotosíntesis",
+      "Glucólisis"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué unidad mide la cantidad de sustancia en química?",
+    "options": [
+      "Mol",
+      "Litro",
+      "Joule",
+      "Gramo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Qué principio establece que la energía no se crea ni se destruye, solo se transforma?",
+    "options": [
+      "Primera ley de la termodinámica",
+      "Segunda ley de la termodinámica",
+      "Ley de conservación de la masa",
+      "Ley de Hooke"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué astrónomo propuso el modelo heliocéntrico del sistema solar?",
+    "options": [
+      "Nicolás Copérnico",
+      "Johannes Kepler",
+      "Galileo Galilei",
+      "Ptolomeo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué ley relaciona presión y volumen de un gas a temperatura constante?",
+    "options": [
+      "La ley de Dalton",
+      "La ley de Gay-Lussac",
+      "La ley de Charles",
+      "La ley de Boyle"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué orgánulo celular se encarga de sintetizar las proteínas?",
+    "options": [
+      "El lisosoma",
+      "El peroxisoma",
+      "El centriolo",
+      "El ribosoma"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Cuál es el valor aproximado de la constante de Avogadro?",
+    "options": [
+      "1,602 × 10^-19",
+      "6,022 × 10^23",
+      "3,14 × 10^8",
+      "9,81 × 10^5"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿Qué tipo de radiación tiene mayor poder de penetración?",
+    "options": [
+      "Gamma",
+      "Alfa",
+      "Beta",
+      "Ultravioleta"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué ciclo bioquímico también se conoce como ciclo del ácido cítrico?",
+    "options": [
+      "El ciclo de Calvin",
+      "El ciclo de la urea",
+      "El ciclo de Krebs",
+      "La glucólisis"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Qué partícula es responsable de mediar la fuerza electromagnética?",
+    "options": [
+      "El bosón W",
+      "El neutrino",
+      "El gluón",
+      "El fotón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Qué científico propuso el modelo atómico del \"budín de pasas\"?",
+    "options": [
+      "J. J. Thomson",
+      "John Dalton",
+      "James Chadwick",
+      "Ernest Rutherford"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Qué ley de la termodinámica introduce el concepto de entropía?",
+    "options": [
+      "La primera ley",
+      "La tercera ley",
+      "La ley cero",
+      "La segunda ley"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué tipo de interacción mantiene unidas las dos hebras del ADN?",
+    "options": [
+      "Puentes de hidrógeno",
+      "Fuerzas metálicas",
+      "Enlaces iónicos",
+      "Enlaces covalentes"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Cuál es la unidad de actividad radiactiva en el Sistema Internacional?",
+    "options": [
+      "El curio",
+      "El gray",
+      "El sievert",
+      "El becquerel"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué enzima sintetiza ARN a partir de una hebra molde de ADN?",
+    "options": [
+      "La ADN ligasa",
+      "La transcriptasa inversa",
+      "La ARN polimerasa",
+      "La helicasa"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué metal tiene el punto de fusión más alto?",
+    "options": [
+      "Tungsteno",
+      "Platino",
+      "Osmio",
+      "Titanio"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Cómo se llama la temperatura por encima de la cual un gas no puede licuarse solo con presión?",
+    "options": [
+      "Temperatura crítica",
+      "Temperatura de Curie",
+      "Punto triple",
+      "Cero absoluto"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué teoría describe la interacción fuerte entre quarks?",
+    "options": [
+      "La teoría electrodébil",
+      "La relatividad general",
+      "La electrodinámica cuántica",
+      "La cromodinámica cuántica"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Qué tipo de división celular da origen a los gametos?",
+    "options": [
+      "La meiosis",
+      "La citocinesis",
+      "La amitosis",
+      "La mitosis"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Qué físico formuló las ecuaciones que unifican electricidad y magnetismo?",
+    "options": [
+      "Michael Faraday",
+      "André-Marie Ampère",
+      "James Clerk Maxwell",
+      "Heinrich Hertz"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "¿Qué fenómeno explica que la luz de las galaxias lejanas se desplace hacia el rojo?",
+    "options": [
+      "La expansión del universo",
+      "La absorción interestelar",
+      "La refracción atmosférica",
+      "El efecto fotoeléctrico"
+    ],
+    "answerIndex": 0
+  }
+]

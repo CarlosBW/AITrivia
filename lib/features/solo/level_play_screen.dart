@@ -14,6 +14,7 @@ import '../../services/ai_topic_service.dart';
 import '../../services/question_report_service.dart';
 import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
@@ -1007,7 +1008,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       }
 
                       final qMap = questions[_index] as Map<String, dynamic>;
-                      final qText = (qMap['q'] ?? '').toString();
+                      final localized = localizedQuestion(
+                        qMap,
+                        Localizations.localeOf(context).languageCode,
+                      );
+                      final qText = localized.text;
 
                       List<String> options;
                       int answerIndex;
@@ -1021,10 +1026,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             (cached['originalIndexByShuffled'] as List)
                                 .cast<int>();
                       } else {
-                        final rawOptions =
-                            (qMap['options'] as List<dynamic>? ?? [])
-                                .map((e) => e.toString())
-                                .toList();
+                        final rawOptions = localized.options;
                         final rawAnswerIndex =
                             (qMap['answerIndex'] ?? 0) as int;
 
@@ -1733,6 +1735,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     final review = reviewedQuestions(
       questions: _finishedQuestions,
       answers: _answers,
+      languageCode: Localizations.localeOf(context).languageCode,
       targetFor: (index, q) => widget.isAiTopic
           ? {
               'mode': 'ai',

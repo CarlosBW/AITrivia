@@ -7,6 +7,8 @@ import '../../services/pvp_season_service.dart';
 import '../../widgets/tier_badge.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -164,7 +166,9 @@ class _SeasonOverviewTab extends StatelessWidget {
               TierBadge(
                 emoji: league.emoji,
                 name: l10n.liveMenuLeagueTitle(
-                  PvpLeagueService.instance.displayNameForRating(rating),
+                  l10n.leagueName(
+                    PvpLeagueService.instance.displayNameForRating(rating),
+                  ),
                 ),
                 colorValue: league.colorValue,
               ),
@@ -314,7 +318,7 @@ class _GlobalLeaderboardTab extends StatelessWidget {
             tabs: [
               Tab(text: l10n.pvpSeasonAllTab),
               ...PvpLeagueService.leagues.map(
-                (league) => Tab(text: '${league.emoji} ${league.name}'),
+                (league) => Tab(text: '${league.emoji} ${l10n.leagueName(league.id)}'),
               ),
             ],
           ),
@@ -424,10 +428,10 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
       final data = snap.data();
       if (data == null) continue;
 
-      final username = (data['username'] ??
-              data['displayName'] ??
-              (snap.id == currentUid ? 'You' : 'Player'))
-          .toString();
+      // Loaded from initState, before the strings can be looked up: a
+      // missing name stays empty and the row fills it in.
+      final username =
+          (data['username'] ?? data['displayName'] ?? '').toString();
 
       players.add(
         _LeaderboardPlayer(
@@ -464,7 +468,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                l10n.pvpSeasonErrorLoadingFriends(snap.error.toString()),
+                l10n.pvpSeasonErrorLoadingFriends(userFacingError(AppLocalizations.of(context), snap.error!)),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -558,14 +562,22 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isMe ? l10n.pvpSeasonYouSuffix(player.username) : player.username,
+                            isMe
+                                ? l10n.pvpSeasonYouSuffix(
+                                    player.username.isEmpty
+                                        ? l10n.asyncMatchPlayYouFallback
+                                        : player.username,
+                                  )
+                                : (player.username.isEmpty
+                                    ? l10n.commonPlayerFallback
+                                    : player.username),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${league.emoji} ${league.name} • ${l10n.pvpSeasonMatchesCount(player.matches)}',
+                            '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(player.matches)}',
                             style: const TextStyle(fontSize: 12),
                           ),
                           Text(
@@ -621,7 +633,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                l10n.pvpSeasonErrorLoadingLeaderboard(snap.error.toString()),
+                l10n.pvpSeasonErrorLoadingLeaderboard(userFacingError(AppLocalizations.of(context), snap.error!)),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -656,7 +668,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                     .toInt();
             final league = PvpLeagueService.instance.leagueForRating(rating);
             final username =
-                (data['username'] ?? data['displayName'] ?? 'Player')
+                (data['username'] ?? data['displayName'] ?? AppLocalizations.of(context).commonPlayerFallback)
                     .toString();
             final avatarId = (data['avatarId'] ?? 'avatar_1').toString();
             final wins = ((data['wins1v1'] ?? 0) as num).toInt();
@@ -704,7 +716,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${league.emoji} ${league.name} • ${l10n.pvpSeasonMatchesCount(matches)}',
+                          '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(matches)}',
                           style: const TextStyle(fontSize: 12),
                         ),
                         Text(
@@ -798,7 +810,7 @@ class _RewardsTabState extends State<_RewardsTab> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     } finally {
@@ -843,7 +855,7 @@ class _RewardsTabState extends State<_RewardsTab> {
 
               if (snap.hasError) {
                 return _PendingRewardsCard.error(
-                  message: snap.error.toString(),
+                  message: userFacingError(AppLocalizations.of(context), snap.error!),
                   onRetry: _refreshPendingRewards,
                 );
               }
@@ -866,11 +878,13 @@ class _RewardsTabState extends State<_RewardsTab> {
             final reward = isCurrent
                 ? widget.seasonService.rewardForRating(widget.rating)
                 : widget.seasonService.rewardForLeague(league);
-            final displayName = isCurrent
-                ? PvpLeagueService.instance.displayNameForRating(
-                    widget.rating,
-                  )
-                : league.name;
+            final displayName = l10n.leagueName(
+              isCurrent
+                  ? PvpLeagueService.instance.displayNameForRating(
+                      widget.rating,
+                    )
+                  : league.id,
+            );
             final color = Color(league.colorValue);
 
             return Container(
@@ -977,7 +991,9 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   l10n.liveMenuLeagueTitle(
-                    PvpLeagueService.instance.displayNameForRating(rating),
+                    l10n.leagueName(
+                      PvpLeagueService.instance.displayNameForRating(rating),
+                    ),
                   ),
                   style: context.heading(18),
                 ),
@@ -1193,7 +1209,7 @@ class _PendingRewardsCard extends StatelessWidget {
                         child: Text(
                           l10n.pvpSeasonPendingRewardLine(
                             reward.seasonId,
-                            reward.leagueName,
+                            l10n.leagueName(reward.leagueName),
                             reward.bestRating,
                           ),
                           style: const TextStyle(fontSize: 12),

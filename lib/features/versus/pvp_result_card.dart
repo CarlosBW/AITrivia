@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 
 enum PvpResultState {
@@ -618,8 +619,9 @@ class _RatingChangeCard extends StatelessWidget {
               oldLeagueName != null &&
                       newLeagueName != null &&
                       oldLeagueName != newLeagueName
-                  ? '$oldLeagueName → $newLeagueName'
-                  : (newLeagueName ?? oldLeagueName ?? ''),
+                  ? '${l10n.leagueName(oldLeagueName!)} → '
+                      '${l10n.leagueName(newLeagueName!)}'
+                  : l10n.leagueName(newLeagueName ?? oldLeagueName ?? ''),
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
               ),

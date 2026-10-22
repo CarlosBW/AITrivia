@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trivia_ia_flutter/l10n/generated/app_localizations.dart';
 import 'package:trivia_ia_flutter/widgets/guarded_navigation.dart';
 
 /// Home opens the Daily Challenge and the Weekly League through this, and
@@ -19,6 +20,10 @@ void main() {
   ) {
     return tester.pumpWidget(
       MaterialApp(
+        // The failure message is looked up in the player's language.
+        locale: const Locale('es'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(
             builder: (context) => TextButton(

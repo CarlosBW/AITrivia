@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import '../../services/realtime_invite_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 
@@ -43,7 +45,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(AppLocalizations.of(context), e),
           ),
         ),
       );
@@ -80,7 +82,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(AppLocalizations.of(context), e),
           ),
         ),
       );
@@ -110,7 +112,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(AppLocalizations.of(context), e),
           ),
         ),
       );
@@ -170,7 +172,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      l10n.realtimeInvitesErrorLoading(snap.error.toString()),
+                      l10n.realtimeInvitesErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -197,7 +199,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                   final doc = docs[index];
                   final data = doc.data();
 
-                  final fromName = (data['fromName'] ?? 'Player').toString();
+                  final fromName = (data['fromName'] ?? AppLocalizations.of(context).commonPlayerFallback).toString();
 
                   final categoryId =
                       (data['categoryId'] ?? 'random').toString();
@@ -238,10 +240,13 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            l10n.realtimeInvitesSubtitle(categoryId),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          CategoryNameBuilder(
+                            categoryId: categoryId,
+                            builder: (context, name) => Text(
+                              l10n.realtimeInvitesSubtitle(name),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -297,7 +302,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                l10n.realtimeInvitesErrorLoading(snap.error.toString()),
+                l10n.realtimeInvitesErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -324,7 +329,7 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
             final doc = docs[index];
             final data = doc.data();
 
-            final toName = (data['toName'] ?? 'Player').toString();
+            final toName = (data['toName'] ?? AppLocalizations.of(context).commonPlayerFallback).toString();
             final categoryId = (data['categoryId'] ?? 'random').toString();
 
             return Card(
@@ -362,10 +367,13 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      l10n.realtimeInvitesSubtitle(categoryId),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    CategoryNameBuilder(
+                      categoryId: categoryId,
+                      builder: (context, name) => Text(
+                        l10n.realtimeInvitesSubtitle(name),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -65,7 +66,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            userFacingError(AppLocalizations.of(context), e),
           ),
         ),
       );
@@ -94,7 +95,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  l10n.achievementsErrorLoading(snap.error.toString()),
+                  l10n.achievementsErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                   textAlign: TextAlign.center,
                 ),
               ),

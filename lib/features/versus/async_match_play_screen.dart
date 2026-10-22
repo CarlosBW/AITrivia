@@ -11,6 +11,7 @@ import 'pvp_result_card.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
@@ -462,7 +463,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     }

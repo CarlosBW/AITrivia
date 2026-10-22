@@ -19,6 +19,8 @@ import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../widgets/save_progress_sheet.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 
 const _kPrivacyPolicyUrl = 'https://trivia-ia-app.web.app/privacy.html';
@@ -84,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = userFacingError(AppLocalizations.of(context), e);
       });
     }
   }
@@ -514,7 +516,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     } catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.profileAvatarUpdateError(e.toString()))),
+        SnackBar(content: Text(l10n.profileAvatarUpdateError(userFacingError(l10n, e)))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -1100,7 +1102,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                l10n.profilePvpLeague(pvpLeague.name),
+                                l10n.profilePvpLeague(l10n.leagueName(pvpLeague.id)),
                                 style: TextStyle(
                                   color: context.readableOnOwnTint(
                                     Color(pvpLeague.colorValue),
@@ -1416,7 +1418,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
       builder: (context, snap) {
         if (snap.hasError) {
           return Text(
-            l10n.profileErrorLoadingMatchHistory(snap.error.toString()),
+            l10n.profileErrorLoadingMatchHistory(userFacingError(AppLocalizations.of(context), snap.error!)),
             textAlign: TextAlign.center,
           );
         }
@@ -1451,7 +1453,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
           children: docs.map((doc) {
             final data = doc.data();
             final result = (data['result'] ?? 'match').toString();
-            final opponent = (data['opponentName'] ?? 'Rival').toString();
+            final opponent = (data['opponentName'] ?? AppLocalizations.of(context).asyncMatchPlayOpponentFallback).toString();
             final myScore = ((data['myScore'] ?? 0) as num).toInt();
             final opponentScore = ((data['opponentScore'] ?? 0) as num).toInt();
             final ranked = data['ranked'] == true;

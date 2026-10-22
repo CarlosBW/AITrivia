@@ -30,6 +30,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancel => 'Cancel';
 
   @override
+  String get commonGenericError => 'Something went wrong. Please try again.';
+
+  @override
   String get commonConnectionError =>
       'We couldn\'t connect. Check your connection and try again.';
 
@@ -81,7 +84,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeTabsHint =>
-      'Use the bottom tabs to play SOLO, compete in PvP, challenge friends, and view your profile.';
+      'Use the tabs below to play Solo, compete in PvP, challenge your friends and visit the shop. Your profile opens from your avatar at the top.';
 
   @override
   String get homeStreakUpTitle => '🔥 STREAK UP!';
@@ -710,6 +713,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get soloStatusNew => 'New';
 
   @override
+  String get soloStartButton => 'Start';
+
+  @override
   String soloContinueLevel(int level) {
     return 'Continue L$level';
   }
@@ -841,6 +847,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get levelPlaySessionCreateErrorTitle => 'Error creating session';
+
+  @override
+  String get levelPlayPreparingLevel => 'Getting the level ready...';
 
   @override
   String get levelPlayGeneratingQuestions => 'Generating level questions...';
@@ -1089,6 +1098,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get findOpponentAsyncTab => 'Async';
 
   @override
+  String get leagueBronze => 'Bronze';
+
+  @override
+  String get leagueSilver => 'Silver';
+
+  @override
+  String get leagueGold => 'Gold';
+
+  @override
+  String get leaguePlatinum => 'Platinum';
+
+  @override
+  String get leagueDiamond => 'Diamond';
+
+  @override
+  String get leagueMaster => 'Master';
+
+  @override
   String liveMenuLeagueTitle(String name) {
     return '$name League';
   }
@@ -1224,15 +1251,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveMatchmakingSearchButton => 'Search';
 
   @override
+  String get liveMatchmakingOpponentFound => 'Opponent found!';
+
+  @override
+  String get matchLobbyRoomClosed => 'The room was closed.';
+
+  @override
+  String get matchLobbyStarting => 'Starting the match…';
+
+  @override
   String get liveMatchmakingSearching => 'Searching...';
 
   @override
   String get liveMatchmakingSearchingOpponent => 'Searching for opponent...';
-
-  @override
-  String liveMatchmakingQueueStatus(String status) {
-    return 'Queue status: $status';
-  }
 
   @override
   String get liveMatchmakingRankedHint =>
@@ -1453,11 +1484,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchLobbyCancelReady => 'Cancel ready';
 
   @override
-  String matchLobbyRoomStatus(String status) {
-    return 'Room status: $status';
-  }
-
-  @override
   String get matchLobbyPlayer1 => 'Player 1';
 
   @override
@@ -1602,6 +1628,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get asyncMatchPlayNoQuestions => 'This challenge has no questions.';
+
+  @override
+  String get commonPlayerFallback => 'Player';
 
   @override
   String get asyncMatchPlayYouFallback => 'You';

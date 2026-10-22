@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/friend_service.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 
 /// Small "add friend" affordance for player rows outside the Friends tab
 /// (leaderboards) — the only other place a player can discover someone by
@@ -43,7 +44,7 @@ class _AddFriendButtonState extends State<AddFriendButton> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(AppLocalizations.of(context), e))),
       );
     } finally {
       if (mounted) setState(() => _sending = false);

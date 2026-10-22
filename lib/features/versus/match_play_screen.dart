@@ -11,6 +11,7 @@ import '../../services/analytics_service.dart';
 import 'pvp_result_card.dart';
 import 'find_opponent_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
@@ -498,7 +499,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
       setState(() {
         _finishedSent = false;
-        _statusMsg = e.toString().replaceFirst('Exception: ', '');
+        _statusMsg = userFacingError(AppLocalizations.of(context), e);
       });
     } finally {
       _finishing = false;
@@ -528,7 +529,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     } finally {
@@ -1077,8 +1078,9 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final myScore = ((myData['score'] ?? 0) as num).toInt();
     final opponentScore = ((opponentData['score'] ?? 0) as num).toInt();
 
-    final myName = (myData['displayName'] ?? 'Tú').toString();
-    final opponentName = (opponentData['displayName'] ?? 'Rival').toString();
+    final myName = (myData['displayName'] ?? l10n.asyncMatchPlayYouFallback).toString();
+    final opponentName = (opponentData['displayName'] ??
+            l10n.asyncMatchPlayOpponentFallback).toString();
 
     final myAvatarId = (myData['avatarId'] ?? 'avatar_1').toString();
     final myFrameId = myData['equippedFrame']?.toString();

@@ -8,6 +8,7 @@ import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -163,7 +164,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
 
       setState(() {
         _loading = false;
-        _loadError = e.toString();
+        _loadError = userFacingError(AppLocalizations.of(context), e);
       });
     }
   }
@@ -311,6 +312,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
         MaterialPageRoute(
           builder: (_) => LevelPlayScreen(
             categoryId: widget.categoryId,
+            categoryName: widget.categoryName,
             levelNumber: level,
             isAiTopic: widget.isAiTopic,
             aiTopicId: widget.aiTopicId,

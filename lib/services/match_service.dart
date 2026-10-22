@@ -7,6 +7,7 @@ import 'match_rules.dart' as rules;
 import 'notification_service.dart';
 import 'pvp_league_service.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
 
 /// Where the server says a player stands in a PvP match, async or live.
@@ -378,7 +379,7 @@ class MatchService {
 
       return (result.data as Map)['matchId'].toString();
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceRoomNotFound);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceRoomNotFound));
     }
   }
 

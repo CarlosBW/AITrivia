@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../services/season_service.dart';
 import '../../services/league_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -135,7 +137,7 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
             builder: (context, snap) {
               if (snap.hasError) {
                 return Text(
-                  l10n.weeklyRewardsErrorLoadingHistory(snap.error.toString()),
+                  l10n.weeklyRewardsErrorLoadingHistory(userFacingError(AppLocalizations.of(context), snap.error!)),
                   textAlign: TextAlign.center,
                 );
               }
@@ -356,7 +358,7 @@ class _PendingRewardMiniTile extends StatelessWidget {
             child: Text(
               AppLocalizations.of(context).weeklyRewardsMiniTile(
                 reward.seasonId,
-                reward.leagueName,
+                AppLocalizations.of(context).leagueName(reward.leagueName),
                 reward.rank,
                 seasonRewardMessageFor(
                   AppLocalizations.of(context),
@@ -459,7 +461,10 @@ class _HistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.weeklyRewardsHistoryTitleLine(seasonId, leagueName),
+                  l10n.weeklyRewardsHistoryTitleLine(
+                    seasonId,
+                    l10n.leagueName(leagueName),
+                  ),
                   style: context.headingFace,
                 ),
                 const SizedBox(height: 2),

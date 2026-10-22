@@ -11,6 +11,8 @@ import '../../services/pvp_league_service.dart';
 import 'match_lobby_screen.dart';
 import 'async_menu_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../l10n/l10n_for.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -150,7 +152,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${league.emoji} ${league.name} • $rating MMR',
+            '${league.emoji} ${l10n.leagueName(league.id)} • $rating MMR',
             style: TextStyle(
               color: context.readableOnOwnTint(
                 Color(league.colorValue),
@@ -222,7 +224,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = userFacingError(AppLocalizations.of(context), e);
         _searching = false;
       });
 
@@ -256,7 +258,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       await _service.tryFindLiveOpponent();
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString());
+        setState(() => _error = userFacingError(AppLocalizations.of(context), e));
       }
     } finally {
       _matchAttemptRunning = false;
@@ -279,7 +281,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
       await _presenceService.setAvailable();
     } catch (e) {
       if (!silent && mounted) {
-        setState(() => _error = e.toString());
+        setState(() => _error = userFacingError(AppLocalizations.of(context), e));
       }
     }
   }
@@ -436,7 +438,9 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                               ? l10n.liveMatchmakingSearching
                               : status == 'searching'
                                   ? l10n.liveMatchmakingSearchingOpponent
-                                  : l10n.liveMatchmakingQueueStatus(status),
+                                  : status == 'matched'
+                                      ? l10n.liveMatchmakingOpponentFound
+                                      : l10n.liveMatchmakingSearching,
                         ),
                       ),
                     ],

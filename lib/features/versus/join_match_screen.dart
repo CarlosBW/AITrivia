@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
@@ -48,7 +49,7 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
       );
     } catch (e) {
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = userFacingError(AppLocalizations.of(context), e);
       });
     } finally {
       if (mounted) {

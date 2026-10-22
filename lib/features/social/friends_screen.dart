@@ -7,6 +7,7 @@ import '../../services/daily_challenge_service.dart';
 import '../versus/friend_challenge_setup_screen.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 
 enum _RelationStatus { friend, requestSent, requestReceived, none }
@@ -169,7 +170,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _error = userFacingError(AppLocalizations.of(context), e);
         _searchResults = [];
       });
     } finally {
@@ -204,7 +205,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     } finally {
@@ -240,7 +241,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     } finally {
@@ -364,7 +365,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             ..._searchResults.map((doc) {
               final data = doc.data();
               final username =
-                  (data['username'] ?? data['displayName'] ?? 'Player')
+                  (data['username'] ?? data['displayName'] ?? AppLocalizations.of(context).commonPlayerFallback)
                       .toString();
               final status = _searchStatus[doc.id] ?? _RelationStatus.none;
 
@@ -407,7 +408,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         if (snap.hasError) {
           return Center(
             child: Text(
-              l10n.friendsErrorLoadingFriends(snap.error.toString()),
+              l10n.friendsErrorLoadingFriends(userFacingError(AppLocalizations.of(context), snap.error!)),
               textAlign: TextAlign.center,
             ),
           );
@@ -436,7 +437,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             final data = doc.data();
             final friendUid = (data['uid'] ?? doc.id).toString();
             final displayName =
-                (data['displayName'] ?? data['username'] ?? 'Player')
+                (data['displayName'] ?? data['username'] ?? AppLocalizations.of(context).commonPlayerFallback)
                     .toString();
 
             return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -498,7 +499,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         if (snap.hasError) {
           return Center(
             child: Text(
-              l10n.friendsErrorLoadingSent(snap.error.toString()),
+              l10n.friendsErrorLoadingSent(userFacingError(AppLocalizations.of(context), snap.error!)),
               textAlign: TextAlign.center,
             ),
           );
@@ -528,7 +529,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
             final targetName = (data['targetDisplayName'] ??
                     data['targetUsername'] ??
-                    'Player')
+                    AppLocalizations.of(context).commonPlayerFallback)
                 .toString();
 
             final targetPlayer = {
@@ -560,7 +561,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
         if (snap.hasError) {
           return Center(
             child: Text(
-              l10n.friendsErrorLoadingReceived(snap.error.toString()),
+              l10n.friendsErrorLoadingReceived(userFacingError(AppLocalizations.of(context), snap.error!)),
               textAlign: TextAlign.center,
             ),
           );
@@ -591,7 +592,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
             final name = (data['requesterDisplayName'] ??
                     data['requesterUsername'] ??
-                    'Player')
+                    AppLocalizations.of(context).commonPlayerFallback)
                 .toString();
 
             final requesterPlayer = {

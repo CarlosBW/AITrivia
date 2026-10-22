@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
+
 /// Runs [action] — some loading, then usually a `Navigator.push` — and tells
 /// the player if it fails or hangs.
 ///
@@ -32,7 +35,7 @@ Future<void> runGuardedNavigation(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          e.toString().replaceFirst('Exception: ', ''),
+          userFacingError(AppLocalizations.of(context), e),
         ),
       ),
     );

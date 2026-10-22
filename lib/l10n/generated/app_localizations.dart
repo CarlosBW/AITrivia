@@ -140,6 +140,12 @@ abstract class AppLocalizations {
   /// **'Cancelar'**
   String get commonCancel;
 
+  /// No description provided for @commonGenericError.
+  ///
+  /// In es, this message translates to:
+  /// **'Algo salió mal. Inténtalo de nuevo.'**
+  String get commonGenericError;
+
   /// No description provided for @commonConnectionError.
   ///
   /// In es, this message translates to:
@@ -155,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationChannelDescription.
   ///
   /// In es, this message translates to:
-  /// **'Recordatorios del Daily Challenge, retos y recompensas'**
+  /// **'Recordatorios del reto diario, desafíos y recompensas'**
   String get notificationChannelDescription;
 
   /// No description provided for @commonRetry.
@@ -203,7 +209,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeAlreadyPlayedDaily.
   ///
   /// In es, this message translates to:
-  /// **'Ya jugaste el Daily Challenge de hoy.'**
+  /// **'Ya jugaste el reto diario de hoy.'**
   String get homeAlreadyPlayedDaily;
 
   /// No description provided for @homeMoreWaysToPlay.
@@ -215,13 +221,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeWeeklyChallengeReward.
   ///
   /// In es, this message translates to:
-  /// **'Weekly Challenge • ¡Recompensa!'**
+  /// **'Liga semanal • ¡Recompensa!'**
   String get homeWeeklyChallengeReward;
 
   /// No description provided for @homeWeeklyChallenge.
   ///
   /// In es, this message translates to:
-  /// **'Weekly Challenge'**
+  /// **'Liga semanal'**
   String get homeWeeklyChallenge;
 
   /// No description provided for @homeWeeklyResetsIn.
@@ -233,7 +239,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTabsHint.
   ///
   /// In es, this message translates to:
-  /// **'Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.'**
+  /// **'Usa las pestañas de abajo para jugar Solo, competir en PvP, retar a tus amigos y visitar la tienda. Tu perfil se abre desde tu avatar, arriba.'**
   String get homeTabsHint;
 
   /// No description provided for @homeStreakUpTitle.
@@ -329,13 +335,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeWeeklyTopicUnavailable.
   ///
   /// In es, this message translates to:
-  /// **'Weekly Topic no disponible'**
+  /// **'Tema de la semana no disponible'**
   String get homeWeeklyTopicUnavailable;
 
   /// No description provided for @homeWeeklyTopicNoneAvailable.
   ///
   /// In es, this message translates to:
-  /// **'No hay Weekly Topic disponible'**
+  /// **'No hay tema de la semana disponible'**
   String get homeWeeklyTopicNoneAvailable;
 
   /// No description provided for @homeWeeklyTopicCheckBack.
@@ -347,13 +353,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeWeeklyTopicLoading.
   ///
   /// In es, this message translates to:
-  /// **'Cargando Weekly Topic...'**
+  /// **'Cargando el tema de la semana...'**
   String get homeWeeklyTopicLoading;
 
   /// No description provided for @homeOpenWeeklyTopic.
   ///
   /// In es, this message translates to:
-  /// **'Abrir Weekly Topic'**
+  /// **'Abrir tema de la semana'**
   String get homeOpenWeeklyTopic;
 
   /// No description provided for @homeWeeklyTopicRewardCoins.
@@ -371,7 +377,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeDailyChallengeTitle.
   ///
   /// In es, this message translates to:
-  /// **'Daily Challenge'**
+  /// **'Reto diario'**
   String get homeDailyChallengeTitle;
 
   /// No description provided for @homeDailyChallengeStreak.
@@ -647,19 +653,19 @@ abstract class AppLocalizations {
   /// No description provided for @profileLegalSectionTitle.
   ///
   /// In es, this message translates to:
-  /// **'Legal'**
+  /// **'Información legal'**
   String get profileLegalSectionTitle;
 
   /// No description provided for @profilePrivacyPolicy.
   ///
   /// In es, this message translates to:
-  /// **'Política de Privacidad'**
+  /// **'Política de privacidad'**
   String get profilePrivacyPolicy;
 
   /// No description provided for @profileTermsOfService.
   ///
   /// In es, this message translates to:
-  /// **'Términos de Servicio'**
+  /// **'Términos del servicio'**
   String get profileTermsOfService;
 
   /// No description provided for @profileLinkOpenFailed.
@@ -773,7 +779,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileRankedHint.
   ///
   /// In es, this message translates to:
-  /// **'Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.'**
+  /// **'En clasificatoria se buscan primero rivales de tu liga, y el rango se amplía si no hay jugadores disponibles.'**
   String get profileRankedHint;
 
   /// No description provided for @profile1v1Stats.
@@ -893,7 +899,7 @@ abstract class AppLocalizations {
   /// No description provided for @avatarCategoryBase.
   ///
   /// In es, this message translates to:
-  /// **'BASE'**
+  /// **'BÁSICOS'**
   String get avatarCategoryBase;
 
   /// No description provided for @avatarCategoryPvp.
@@ -1019,37 +1025,37 @@ abstract class AppLocalizations {
   /// No description provided for @avatarUnlockReachBronze.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Bronce'**
+  /// **'Alcanza la liga Bronce'**
   String get avatarUnlockReachBronze;
 
   /// No description provided for @avatarUnlockReachSilver.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Plata'**
+  /// **'Alcanza la liga Plata'**
   String get avatarUnlockReachSilver;
 
   /// No description provided for @avatarUnlockReachGold.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Oro'**
+  /// **'Alcanza la liga Oro'**
   String get avatarUnlockReachGold;
 
   /// No description provided for @avatarUnlockReachPlatinum.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Platino'**
+  /// **'Alcanza la liga Platino'**
   String get avatarUnlockReachPlatinum;
 
   /// No description provided for @avatarUnlockReachDiamond.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Diamante'**
+  /// **'Alcanza la liga Diamante'**
   String get avatarUnlockReachDiamond;
 
   /// No description provided for @avatarUnlockReachMaster.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza la Liga Maestro'**
+  /// **'Alcanza la liga Maestro'**
   String get avatarUnlockReachMaster;
 
   /// No description provided for @avatarNameWeeklyCine.
@@ -1109,55 +1115,55 @@ abstract class AppLocalizations {
   /// No description provided for @avatarUnlockWeeklyCine.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Cine'**
+  /// **'Completa un tema de la semana de cine'**
   String get avatarUnlockWeeklyCine;
 
   /// No description provided for @avatarUnlockWeeklyHistory.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Historia'**
+  /// **'Completa un tema de la semana de historia'**
   String get avatarUnlockWeeklyHistory;
 
   /// No description provided for @avatarUnlockWeeklyScience.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Ciencia'**
+  /// **'Completa un tema de la semana de ciencia'**
   String get avatarUnlockWeeklyScience;
 
   /// No description provided for @avatarUnlockWeeklySports.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Deportes'**
+  /// **'Completa un tema de la semana de deportes'**
   String get avatarUnlockWeeklySports;
 
   /// No description provided for @avatarUnlockWeeklyMusic.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Música'**
+  /// **'Completa un tema de la semana de música'**
   String get avatarUnlockWeeklyMusic;
 
   /// No description provided for @avatarUnlockWeeklyArt.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Arte'**
+  /// **'Completa un tema de la semana de arte'**
   String get avatarUnlockWeeklyArt;
 
   /// No description provided for @avatarUnlockWeeklyGeography.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Geografía'**
+  /// **'Completa un tema de la semana de geografía'**
   String get avatarUnlockWeeklyGeography;
 
   /// No description provided for @avatarUnlockWeeklyVideogames.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Videojuegos'**
+  /// **'Completa un tema de la semana de videojuegos'**
   String get avatarUnlockWeeklyVideogames;
 
   /// No description provided for @avatarUnlockWeeklyBooks.
   ///
   /// In es, this message translates to:
-  /// **'Completa un Tema Semanal de Libros'**
+  /// **'Completa un tema de la semana de libros'**
   String get avatarUnlockWeeklyBooks;
 
   /// No description provided for @avatarName100Questions.
@@ -1313,13 +1319,13 @@ abstract class AppLocalizations {
   /// No description provided for @soloAllCompletedBody.
   ///
   /// In es, this message translates to:
-  /// **'Sigue ganando monedas y XP en el Daily Challenge o retando a otros jugadores en PvP.'**
+  /// **'Sigue ganando monedas y XP en el reto diario o retando a otros jugadores en PvP.'**
   String get soloAllCompletedBody;
 
   /// No description provided for @soloAllCompletedDailyButton.
   ///
   /// In es, this message translates to:
-  /// **'Ir al Daily Challenge'**
+  /// **'Ir al reto diario'**
   String get soloAllCompletedDailyButton;
 
   /// No description provided for @soloAllCompletedPvpButton.
@@ -1370,10 +1376,16 @@ abstract class AppLocalizations {
   /// **'Nuevo'**
   String get soloStatusNew;
 
+  /// No description provided for @soloStartButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezar'**
+  String get soloStartButton;
+
   /// No description provided for @soloContinueLevel.
   ///
   /// In es, this message translates to:
-  /// **'Continuar N{level}'**
+  /// **'Continuar nivel {level}'**
   String soloContinueLevel(int level);
 
   /// No description provided for @levelSelectNoLevelsYet.
@@ -1598,6 +1610,12 @@ abstract class AppLocalizations {
   /// **'Error creando sesión'**
   String get levelPlaySessionCreateErrorTitle;
 
+  /// No description provided for @levelPlayPreparingLevel.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando el nivel...'**
+  String get levelPlayPreparingLevel;
+
   /// No description provided for @levelPlayGeneratingQuestions.
   ///
   /// In es, this message translates to:
@@ -1619,7 +1637,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelPlayLivesMax.
   ///
   /// In es, this message translates to:
-  /// **'MAX'**
+  /// **'MÁX'**
   String get levelPlayLivesMax;
 
   /// No description provided for @levelPlayOutOfLivesTitle.
@@ -1799,7 +1817,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpActiveMatchesTitle.
   ///
   /// In es, this message translates to:
-  /// **'Partidas Activas'**
+  /// **'Partidas activas'**
   String get pvpActiveMatchesTitle;
 
   /// No description provided for @pvpActiveMatchesTitleAlert.
@@ -1823,7 +1841,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpRealtimeInvitesTitle.
   ///
   /// In es, this message translates to:
-  /// **'Invitaciones en Vivo'**
+  /// **'Invitaciones en vivo'**
   String get pvpRealtimeInvitesTitle;
 
   /// No description provided for @pvpRealtimeInvitesTitleAlert.
@@ -1835,7 +1853,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpRealtimeInvitesSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Friends.'**
+  /// **'Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Amigos.'**
   String get pvpRealtimeInvitesSubtitle;
 
   /// No description provided for @pvpRealtimeInvitesSubtitleAlert.
@@ -1847,7 +1865,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpFindOpponentTitle.
   ///
   /// In es, this message translates to:
-  /// **'Buscar Rival'**
+  /// **'Buscar rival'**
   String get pvpFindOpponentTitle;
 
   /// No description provided for @pvpFindOpponentSubtitle.
@@ -1865,13 +1883,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Consulta tu liga ranked, progreso de temporada, leaderboard y recompensas.'**
+  /// **'Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.'**
   String get pvpSeasonSubtitle;
 
   /// No description provided for @activeMatchesTitle.
   ///
   /// In es, this message translates to:
-  /// **'Partidas Activas'**
+  /// **'Partidas activas'**
   String get activeMatchesTitle;
 
   /// No description provided for @activeMatchesReconnecting.
@@ -2000,6 +2018,42 @@ abstract class AppLocalizations {
   /// **'Asíncrono'**
   String get findOpponentAsyncTab;
 
+  /// No description provided for @leagueBronze.
+  ///
+  /// In es, this message translates to:
+  /// **'Bronce'**
+  String get leagueBronze;
+
+  /// No description provided for @leagueSilver.
+  ///
+  /// In es, this message translates to:
+  /// **'Plata'**
+  String get leagueSilver;
+
+  /// No description provided for @leagueGold.
+  ///
+  /// In es, this message translates to:
+  /// **'Oro'**
+  String get leagueGold;
+
+  /// No description provided for @leaguePlatinum.
+  ///
+  /// In es, this message translates to:
+  /// **'Platino'**
+  String get leaguePlatinum;
+
+  /// No description provided for @leagueDiamond.
+  ///
+  /// In es, this message translates to:
+  /// **'Diamante'**
+  String get leagueDiamond;
+
+  /// No description provided for @leagueMaster.
+  ///
+  /// In es, this message translates to:
+  /// **'Maestro'**
+  String get leagueMaster;
+
   /// No description provided for @liveMenuLeagueTitle.
   ///
   /// In es, this message translates to:
@@ -2021,7 +2075,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMenuPublicMatchmaking.
   ///
   /// In es, this message translates to:
-  /// **'Matchmaking público'**
+  /// **'Búsqueda pública de rival'**
   String get liveMenuPublicMatchmaking;
 
   /// No description provided for @liveMenuMmrHint2.
@@ -2051,7 +2105,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMenuPrivateMatchesHint.
   ///
   /// In es, this message translates to:
-  /// **'Las partidas privadas son amistosas y no afectan tu ranking.'**
+  /// **'Las partidas privadas son amistosas y no afectan tu clasificación.'**
   String get liveMenuPrivateMatchesHint;
 
   /// No description provided for @asyncMenuSelectTopicFirst.
@@ -2093,13 +2147,13 @@ abstract class AppLocalizations {
   /// No description provided for @asyncMenuTip.
   ///
   /// In es, this message translates to:
-  /// **'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.'**
+  /// **'Consejo: retas a alguien, juegas de inmediato y tu rival puede jugar después. Revisa tus partidas activas para ver los retos pendientes.'**
   String get asyncMenuTip;
 
   /// No description provided for @createMatchTitle.
   ///
   /// In es, this message translates to:
-  /// **'Crear sala (Tiempo real)'**
+  /// **'Crear sala'**
   String get createMatchTitle;
 
   /// No description provided for @createMatchCategory.
@@ -2171,13 +2225,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveMatchmakingRankedTitle.
   ///
   /// In es, this message translates to:
-  /// **'Matchmaking Ranked'**
+  /// **'Búsqueda clasificatoria'**
   String get liveMatchmakingRankedTitle;
 
   /// No description provided for @liveMatchmakingCasualTitle.
   ///
   /// In es, this message translates to:
-  /// **'Matchmaking Casual'**
+  /// **'Búsqueda casual'**
   String get liveMatchmakingCasualTitle;
 
   /// No description provided for @liveMatchmakingTypeLine.
@@ -2234,6 +2288,24 @@ abstract class AppLocalizations {
   /// **'Buscar'**
   String get liveMatchmakingSearchButton;
 
+  /// No description provided for @liveMatchmakingOpponentFound.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Rival encontrado!'**
+  String get liveMatchmakingOpponentFound;
+
+  /// No description provided for @matchLobbyRoomClosed.
+  ///
+  /// In es, this message translates to:
+  /// **'La sala se cerró.'**
+  String get matchLobbyRoomClosed;
+
+  /// No description provided for @matchLobbyStarting.
+  ///
+  /// In es, this message translates to:
+  /// **'Empezando la partida…'**
+  String get matchLobbyStarting;
+
   /// No description provided for @liveMatchmakingSearching.
   ///
   /// In es, this message translates to:
@@ -2246,12 +2318,6 @@ abstract class AppLocalizations {
   /// **'Buscando rival...'**
   String get liveMatchmakingSearchingOpponent;
 
-  /// No description provided for @liveMatchmakingQueueStatus.
-  ///
-  /// In es, this message translates to:
-  /// **'Estado cola: {status}'**
-  String liveMatchmakingQueueStatus(String status);
-
   /// No description provided for @liveMatchmakingRankedHint.
   ///
   /// In es, this message translates to:
@@ -2261,7 +2327,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveMatchmakingCasualHint.
   ///
   /// In es, this message translates to:
-  /// **'Casual no afecta tu MMR. Se prioriza encontrar rival rápido.'**
+  /// **'La partida casual no afecta tu MMR. Se prioriza encontrar rival rápido.'**
   String get liveMatchmakingCasualHint;
 
   /// No description provided for @liveMatchmakingCancelSearch.
@@ -2405,13 +2471,13 @@ abstract class AppLocalizations {
   /// No description provided for @friendChallengeOnline.
   ///
   /// In es, this message translates to:
-  /// **'Online'**
+  /// **'En línea'**
   String get friendChallengeOnline;
 
   /// No description provided for @friendChallengeOffline.
   ///
   /// In es, this message translates to:
-  /// **'Offline'**
+  /// **'Desconectado'**
   String get friendChallengeOffline;
 
   /// No description provided for @friendChallengeSendRealtime.
@@ -2441,13 +2507,13 @@ abstract class AppLocalizations {
   /// No description provided for @friendChallengeNeedOnlineHint.
   ///
   /// In es, this message translates to:
-  /// **'Tu amigo debe estar online para jugar en tiempo real.'**
+  /// **'Tu amigo debe estar en línea para jugar en tiempo real.'**
   String get friendChallengeNeedOnlineHint;
 
   /// No description provided for @friendChallengeMatchConfig.
   ///
   /// In es, this message translates to:
-  /// **'Configuración del match'**
+  /// **'Configuración de la partida'**
   String get friendChallengeMatchConfig;
 
   /// No description provided for @friendChallengeCategoryRandom.
@@ -2501,7 +2567,7 @@ abstract class AppLocalizations {
   /// No description provided for @friendChallengeRealtimeHint.
   ///
   /// In es, this message translates to:
-  /// **'Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.'**
+  /// **'En tiempo real ambos deben estar en línea. Las partidas con amigos son casuales y no afectan el MMR.'**
   String get friendChallengeRealtimeHint;
 
   /// No description provided for @friendChallengeAsyncHint.
@@ -2630,12 +2696,6 @@ abstract class AppLocalizations {
   /// **'Cancelar listo'**
   String get matchLobbyCancelReady;
 
-  /// No description provided for @matchLobbyRoomStatus.
-  ///
-  /// In es, this message translates to:
-  /// **'Estado de la sala: {status}'**
-  String matchLobbyRoomStatus(String status);
-
   /// No description provided for @matchLobbyPlayer1.
   ///
   /// In es, this message translates to:
@@ -2705,13 +2765,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpResultMatchSummary.
   ///
   /// In es, this message translates to:
-  /// **'Resumen del match'**
+  /// **'Resumen de la partida'**
   String get pvpResultMatchSummary;
 
   /// No description provided for @pvpResultYourScore.
   ///
   /// In es, this message translates to:
-  /// **'Tu score'**
+  /// **'Tu puntaje'**
   String get pvpResultYourScore;
 
   /// No description provided for @pvpResultOpponent.
@@ -2765,7 +2825,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchPlayNotFound.
   ///
   /// In es, this message translates to:
-  /// **'Match no encontrado'**
+  /// **'Partida no encontrada'**
   String get matchPlayNotFound;
 
   /// No description provided for @matchPlayWaitingToStart.
@@ -2777,7 +2837,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchPlayNoQuestions.
   ///
   /// In es, this message translates to:
-  /// **'Este match no tiene preguntas.'**
+  /// **'Esta partida no tiene preguntas.'**
   String get matchPlayNoQuestions;
 
   /// No description provided for @matchPlayYourScoreLabel.
@@ -2825,7 +2885,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchPlayVictoryRankedSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Buen duelo. Tu rating competitivo fue actualizado.'**
+  /// **'Buen duelo. Tu puntuación competitiva se actualizó.'**
   String get matchPlayVictoryRankedSubtitle;
 
   /// No description provided for @matchPlayVictoryCasualSubtitle.
@@ -2843,7 +2903,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchPlayDefeatRankedSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Estuviste cerca. Tu rating competitivo fue actualizado.'**
+  /// **'Estuviste cerca. Tu puntuación competitiva se actualizó.'**
   String get matchPlayDefeatRankedSubtitle;
 
   /// No description provided for @matchPlayDefeatCasualSubtitle.
@@ -2899,6 +2959,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Este reto no tiene preguntas.'**
   String get asyncMatchPlayNoQuestions;
+
+  /// No description provided for @commonPlayerFallback.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugador'**
+  String get commonPlayerFallback;
 
   /// No description provided for @asyncMatchPlayYouFallback.
   ///
@@ -3023,19 +3089,19 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonRankedHint.
   ///
   /// In es, this message translates to:
-  /// **'Ranked usa matchmaking flexible: primero busca cerca de tu liga, luego amplía el rango para que nadie se quede esperando.'**
+  /// **'La búsqueda clasificatoria es flexible: primero busca cerca de tu liga y luego amplía el rango para que nadie se quede esperando.'**
   String get pvpSeasonRankedHint;
 
   /// No description provided for @pvpSeasonHowItWorksTitle.
   ///
   /// In es, this message translates to:
-  /// **'Cómo funcionan las Temporadas PvP'**
+  /// **'Cómo funcionan las temporadas PvP'**
   String get pvpSeasonHowItWorksTitle;
 
   /// No description provided for @pvpSeasonHowItWorksBullet1.
   ///
   /// In es, this message translates to:
-  /// **'• Juega partidas Ranked para subir tu MMR.'**
+  /// **'• Juega partidas clasificatorias para subir tu MMR.'**
   String get pvpSeasonHowItWorksBullet1;
 
   /// No description provided for @pvpSeasonHowItWorksBullet2.
@@ -3089,13 +3155,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonNoFriendsEmptyHint.
   ///
   /// In es, this message translates to:
-  /// **'Juega partidas Ranked y agrega amigos para comparar tu rating PvP.'**
+  /// **'Juega partidas clasificatorias y agrega amigos para comparar tu puntuación PvP.'**
   String get pvpSeasonNoFriendsEmptyHint;
 
   /// No description provided for @pvpSeasonNoFriendsHint.
   ///
   /// In es, this message translates to:
-  /// **'Agrega amigos para comparar tu rating PvP con gente que conoces.'**
+  /// **'Agrega amigos para comparar tu puntuación PvP con gente que conoces.'**
   String get pvpSeasonNoFriendsHint;
 
   /// No description provided for @pvpSeasonYouSuffix.
@@ -3125,13 +3191,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonNoRankedPlayers.
   ///
   /// In es, this message translates to:
-  /// **'Aún no hay jugadores ranked.\nJuega una partida Ranked para entrar en esta clasificación.'**
+  /// **'Aún no hay jugadores en la clasificatoria.\nJuega una partida clasificatoria para entrar en esta clasificación.'**
   String get pvpSeasonNoRankedPlayers;
 
   /// No description provided for @pvpSeasonRewardsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Recompensas de Temporada'**
+  /// **'Recompensas de temporada'**
   String get pvpSeasonRewardsTitle;
 
   /// No description provided for @pvpSeasonRewardsSubtitle.
@@ -3173,7 +3239,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonNoRewardYetHint.
   ///
   /// In es, this message translates to:
-  /// **'Juega partidas Ranked esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.'**
+  /// **'Juega partidas clasificatorias esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.'**
   String get pvpSeasonNoRewardYetHint;
 
   /// No description provided for @pvpSeasonPendingSingle.
@@ -3233,7 +3299,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyResultComplete.
   ///
   /// In es, this message translates to:
-  /// **'¡Daily Challenge completado!'**
+  /// **'¡Reto diario completado!'**
   String get dailyResultComplete;
 
   /// No description provided for @dailyResultCorrectAnswers.
@@ -3287,7 +3353,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyReminderTitle.
   ///
   /// In es, this message translates to:
-  /// **'🔥 ¡Daily Challenge listo!'**
+  /// **'🔥 ¡Tu reto diario está listo!'**
   String get dailyReminderTitle;
 
   /// No description provided for @dailyReminderBody.
@@ -3311,7 +3377,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyResultViewLeaderboard.
   ///
   /// In es, this message translates to:
-  /// **'Ver ranking de hoy'**
+  /// **'Ver la clasificación de hoy'**
   String get dailyResultViewLeaderboard;
 
   /// No description provided for @weeklyRewardsTitle.
@@ -3347,7 +3413,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyRewardsKeepPlayingHint.
   ///
   /// In es, this message translates to:
-  /// **'Sigue jugando el Weekly Challenge para ganar recompensas semanales.'**
+  /// **'Sigue jugando en la liga semanal para ganar recompensas cada semana.'**
   String get weeklyRewardsKeepPlayingHint;
 
   /// No description provided for @weeklyRewardsPendingSingle.
@@ -3420,7 +3486,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyLeaderboardTitle.
   ///
   /// In es, this message translates to:
-  /// **'Clasificación Diaria'**
+  /// **'Clasificación diaria'**
   String get dailyLeaderboardTitle;
 
   /// No description provided for @dailyLeaderboardErrorLoading.
@@ -3438,7 +3504,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyLeaderboardNoScoresYet.
   ///
   /// In es, this message translates to:
-  /// **'Aún no hay puntajes hoy.\n¡Juega el Daily Challenge primero!'**
+  /// **'Aún no hay puntajes hoy.\n¡Juega el reto diario primero!'**
   String get dailyLeaderboardNoScoresYet;
 
   /// No description provided for @dailyLeaderboardRankingTitle.
@@ -3474,13 +3540,13 @@ abstract class AppLocalizations {
   /// No description provided for @dailyChallengeCoinsPopup.
   ///
   /// In es, this message translates to:
-  /// **'+5 Monedas 🎉'**
+  /// **'+5 monedas 🎉'**
   String get dailyChallengeCoinsPopup;
 
   /// No description provided for @dailyChallengeLeaveTitle.
   ///
   /// In es, this message translates to:
-  /// **'¿Salir del Daily Challenge?'**
+  /// **'¿Salir del reto diario?'**
   String get dailyChallengeLeaveTitle;
 
   /// No description provided for @dailyChallengeLeaveBody.
@@ -3516,7 +3582,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyChallengeCompletedTitle.
   ///
   /// In es, this message translates to:
-  /// **'¡Daily completado!'**
+  /// **'¡Reto diario completado!'**
   String get dailyChallengeCompletedTitle;
 
   /// No description provided for @dailyChallengeSavingResults.
@@ -3528,7 +3594,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyTopicScreenTitle.
   ///
   /// In es, this message translates to:
-  /// **'Weekly Topic'**
+  /// **'Tema de la semana'**
   String get weeklyTopicScreenTitle;
 
   /// No description provided for @weeklyTopicCoinsClaimed.
@@ -3558,7 +3624,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyTopicFeaturedBadge.
   ///
   /// In es, this message translates to:
-  /// **'Tema Semanal Destacado'**
+  /// **'Tema de la semana destacado'**
   String get weeklyTopicFeaturedBadge;
 
   /// No description provided for @weeklyTopicProgressTitle.
@@ -3600,13 +3666,13 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyTopicCategoryMissing.
   ///
   /// In es, this message translates to:
-  /// **'Falta la categoría del Weekly Topic.'**
+  /// **'Falta la categoría del tema de la semana.'**
   String get weeklyTopicCategoryMissing;
 
   /// No description provided for @weeklyTopicPlayButton.
   ///
   /// In es, this message translates to:
-  /// **'Jugar Weekly Topic'**
+  /// **'Jugar tema de la semana'**
   String get weeklyTopicPlayButton;
 
   /// No description provided for @weeklyTopicCorrectAnswersProgress.
@@ -3679,31 +3745,31 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyLeagueScreenTitle.
   ///
   /// In es, this message translates to:
-  /// **'Weekly Challenge'**
+  /// **'Liga semanal'**
   String get weeklyLeagueScreenTitle;
 
   /// No description provided for @weeklyLeagueErrorLoading.
   ///
   /// In es, this message translates to:
-  /// **'Error cargando el desafío semanal:\n{error}'**
+  /// **'Error cargando la liga semanal:\n{error}'**
   String weeklyLeagueErrorLoading(String error);
 
   /// No description provided for @weeklyLeagueNoScoresYet.
   ///
   /// In es, this message translates to:
-  /// **'Aún no hay puntajes semanales.\nJuega un Daily Challenge para entrar en esta clasificación semanal.'**
+  /// **'Aún no hay puntajes semanales.\nJuega un reto diario para entrar en esta clasificación semanal.'**
   String get weeklyLeagueNoScoresYet;
 
   /// No description provided for @weeklyLeagueRankingTitle.
   ///
   /// In es, this message translates to:
-  /// **'Clasificación Semanal'**
+  /// **'Clasificación semanal'**
   String get weeklyLeagueRankingTitle;
 
   /// No description provided for @weeklyLeagueTierSuffix.
   ///
   /// In es, this message translates to:
-  /// **'Nivel {name}'**
+  /// **'Liga {name}'**
   String weeklyLeagueTierSuffix(String name);
 
   /// No description provided for @weeklyLeagueScoreLabel.
@@ -3751,7 +3817,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyLeagueWeeklyRewardsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Recompensas Semanales'**
+  /// **'Recompensas semanales'**
   String get weeklyLeagueWeeklyRewardsTitle;
 
   /// No description provided for @weeklyLeagueTop1Reward.
@@ -3823,7 +3889,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementsProgressTitle.
   ///
   /// In es, this message translates to:
-  /// **'Progreso de Logros'**
+  /// **'Progreso de logros'**
   String get achievementsProgressTitle;
 
   /// No description provided for @achievementsCompletedCount.
@@ -4039,7 +4105,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsEmptyButton.
   ///
   /// In es, this message translates to:
-  /// **'Crear Tema IA'**
+  /// **'Crear tema IA'**
   String get aiTopicsEmptyButton;
 
   /// No description provided for @createAiTopicEnterTopic.
@@ -4123,7 +4189,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicPopularSectionTitle.
   ///
   /// In es, this message translates to:
-  /// **'Temas Populares'**
+  /// **'Temas populares'**
   String get createAiTopicPopularSectionTitle;
 
   /// No description provided for @createAiTopicPopularSectionHint.
@@ -4621,7 +4687,7 @@ abstract class AppLocalizations {
   /// No description provided for @presenceStatusOnline.
   ///
   /// In es, this message translates to:
-  /// **'Online'**
+  /// **'En línea'**
   String get presenceStatusOnline;
 
   /// No description provided for @presenceStatusInMatch.
@@ -4879,7 +4945,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCoinsBody.
   ///
   /// In es, this message translates to:
-  /// **'Gana monedas y XP jugando. Vuelve cada día al Daily Challenge para mantener tu racha y ganar recompensas extra.'**
+  /// **'Gana monedas y XP jugando. Vuelve cada día al reto diario para mantener tu racha y ganar recompensas extra.'**
   String get onboardingCoinsBody;
 
   /// No description provided for @onboardingSkip.
@@ -4897,7 +4963,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingPlayFirstDaily.
   ///
   /// In es, this message translates to:
-  /// **'Jugar mi primer Daily Challenge'**
+  /// **'Jugar mi primer reto diario'**
   String get onboardingPlayFirstDaily;
 
   /// No description provided for @spotlightGotIt.
@@ -4915,7 +4981,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotlightPvpBody.
   ///
   /// In es, this message translates to:
-  /// **'Reta a otros jugadores en tiempo real o de forma asíncrona. Ganar sube tu rating y te acerca a la siguiente liga, con más recompensas.'**
+  /// **'Reta a otros jugadores en tiempo real o por turnos. Ganar sube tu puntuación y te acerca a la siguiente liga, con más recompensas.'**
   String get spotlightPvpBody;
 
   /// No description provided for @spotlightWeeklyTopicTitle.
@@ -4969,7 +5035,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotlightAiTopicsPopularTitle.
   ///
   /// In es, this message translates to:
-  /// **'Temas Populares'**
+  /// **'Temas populares'**
   String get spotlightAiTopicsPopularTitle;
 
   /// No description provided for @spotlightAiTopicsPopularBody.
@@ -5089,7 +5155,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceRankedCooldown.
   ///
   /// In es, this message translates to:
-  /// **'Tienes cooldown de ranked por abandono. Intenta de nuevo en {remaining}.'**
+  /// **'Abandonaste una partida clasificatoria y debes esperar. Intenta de nuevo en {remaining}.'**
   String serviceRankedCooldown(String remaining);
 
   /// No description provided for @serviceRoomNotFound.
@@ -5107,7 +5173,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceMatchNotFound.
   ///
   /// In es, this message translates to:
-  /// **'Match no encontrado'**
+  /// **'Partida no encontrada'**
   String get serviceMatchNotFound;
 
   /// No description provided for @serviceChallengedUidEmpty.
@@ -5311,7 +5377,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementDailyStreak7Description.
   ///
   /// In es, this message translates to:
-  /// **'Alcanza una racha de 7 días en el Daily Challenge.'**
+  /// **'Alcanza una racha de 7 días en el reto diario.'**
   String get achievementDailyStreak7Description;
 
   /// No description provided for @achievementFriends5Title.

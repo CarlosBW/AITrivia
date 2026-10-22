@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../services/economy_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
@@ -99,7 +100,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
       if (!mounted) return;
       setState(() => _purchasingProductId = null);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(content: Text(userFacingError(AppLocalizations.of(context), e))),
       );
     }
   }

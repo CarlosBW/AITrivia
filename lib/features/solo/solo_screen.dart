@@ -10,6 +10,7 @@ import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 
 class SoloScreen extends StatefulWidget {
@@ -162,7 +163,7 @@ class _SoloScreenState extends State<SoloScreen> {
       if (!mounted) return;
 
       setState(() {
-        _error = e.toString();
+        _error = userFacingError(AppLocalizations.of(context), e);
         _loading = false;
       });
     }
@@ -323,6 +324,7 @@ class _SoloScreenState extends State<SoloScreen> {
         MaterialPageRoute(
           builder: (_) => LevelPlayScreen(
             categoryId: item.categoryId,
+            categoryName: item.name,
             levelNumber: item.nextLevel,
           ),
         ),
@@ -741,7 +743,9 @@ class _CategoryCard extends StatelessWidget {
                       label: Text(
                         item.completedAll
                             ? l10n.soloStatusCompleted
-                            : l10n.soloContinueLevel(item.nextLevel),
+                            : item.status == _SoloCategoryStatus.fresh
+                                ? l10n.soloStartButton
+                                : l10n.soloContinueLevel(item.nextLevel),
                       ),
                     ),
                   ),

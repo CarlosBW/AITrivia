@@ -12,6 +12,7 @@ import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
 import '../../widgets/app_bar_title.dart';
@@ -41,6 +42,10 @@ SoloResultAction soloResultAction({
 
 class LevelPlayScreen extends StatefulWidget {
   final String categoryId;
+
+  /// The category's display name for the title; without it the title fell
+  /// back to the raw id ("cine - Nivel 3").
+  final String? categoryName;
   final int levelNumber;
   final bool isAiTopic;
   final String? aiTopicId;
@@ -48,6 +53,7 @@ class LevelPlayScreen extends StatefulWidget {
   const LevelPlayScreen({
     super.key,
     required this.categoryId,
+    this.categoryName,
     required this.levelNumber,
     this.isAiTopic = false,
     this.aiTopicId,
@@ -739,7 +745,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       _lifeChecked = true;
     } catch (e) {
-      _lifeGateError = l10n.levelPlayLifeCheckError(e.toString());
+      _lifeGateError = l10n.levelPlayLifeCheckError(userFacingError(l10n, e));
       _lifeChecked = true;
     } finally {
       if (mounted) {
@@ -779,7 +785,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       appBar: AppBar(
         title: AppBarTitle(
           l10n.levelPlayAppBarTitle(
-            widget.isAiTopic ? l10n.levelPlayAiTopicLabel : widget.categoryId,
+            widget.isAiTopic
+                ? l10n.levelPlayAiTopicLabel
+                : (widget.categoryName ?? widget.categoryId),
             widget.levelNumber,
           ),
         ),
@@ -850,9 +858,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           // FirebaseFunctionsException drags the whole
                           // async stack trace onto the screen, which the
                           // player can neither read nor act on.
-                          _sessionError = e is FirebaseFunctionsException
-                              ? (e.message ?? l10n.levelPlaySessionCreateError)
-                              : l10n.levelPlaySessionCreateError;
+                          _sessionError = userFacingError(
+                            l10n,
+                            e,
+                            fallback: l10n.levelPlaySessionCreateError,
+                          );
                         } finally {
                           if (mounted) {
                             setState(() {
@@ -916,7 +926,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                         children: [
                           const CircularProgressIndicator(),
                           const SizedBox(height: 12),
-                          Text(l10n.levelPlayGeneratingQuestions),
+                          // Only AI topics generate anything; a fixed
+                          // category just loads its bank.
+                          Text(
+                            widget.isAiTopic
+                                ? l10n.levelPlayGeneratingQuestions
+                                : l10n.levelPlayPreparingLevel,
+                          ),
                         ],
                       ),
                     );
@@ -1340,7 +1356,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     } finally {
@@ -1601,7 +1617,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
       _saved = true;
     } catch (e) {
-      _saveError = e.toString();
+      if (mounted) {
+        _saveError = userFacingError(AppLocalizations.of(context), e);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1823,6 +1841,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                                   MaterialPageRoute(
                                     builder: (_) => LevelPlayScreen(
                                       categoryId: widget.categoryId,
+                                      categoryName: widget.categoryName,
                                       levelNumber:
                                           action == SoloResultAction.next
                                               ? nextLevel

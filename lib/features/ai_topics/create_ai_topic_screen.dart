@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../widgets/app_bar_title.dart';
@@ -132,7 +133,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      _showError(e.toString().replaceFirst('Exception: ', ''));
+      _showError(userFacingError(AppLocalizations.of(context), e));
     }
   }
 
@@ -183,7 +184,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      _showError(e.toString().replaceFirst('Exception: ', ''));
+      _showError(userFacingError(AppLocalizations.of(context), e));
     }
   }
 
@@ -220,7 +221,7 @@ class _CreateAiTopicScreenState extends State<CreateAiTopicScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      _showError(e.toString().replaceFirst('Exception: ', ''));
+      _showError(userFacingError(AppLocalizations.of(context), e));
     }
   }
 

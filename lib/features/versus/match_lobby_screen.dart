@@ -431,7 +431,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ] else if (status != 'playing') ...[
                   Center(
                     child: Text(
-                      l10n.matchLobbyRoomStatus(status),
+                      status == 'cancelled' || status == 'expired'
+                          ? l10n.matchLobbyRoomClosed
+                          : l10n.matchLobbyStarting,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),

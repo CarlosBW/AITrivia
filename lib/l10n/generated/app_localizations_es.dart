@@ -30,6 +30,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonCancel => 'Cancelar';
 
   @override
+  String get commonGenericError => 'Algo salió mal. Inténtalo de nuevo.';
+
+  @override
   String get commonConnectionError =>
       'No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.';
 
@@ -38,7 +41,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notificationChannelDescription =>
-      'Recordatorios del Daily Challenge, retos y recompensas';
+      'Recordatorios del reto diario, desafíos y recompensas';
 
   @override
   String get commonRetry => 'Reintentar';
@@ -62,16 +65,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeFreeTopic => 'Tema libre';
 
   @override
-  String get homeAlreadyPlayedDaily => 'Ya jugaste el Daily Challenge de hoy.';
+  String get homeAlreadyPlayedDaily => 'Ya jugaste el reto diario de hoy.';
 
   @override
   String get homeMoreWaysToPlay => 'Más formas de jugar';
 
   @override
-  String get homeWeeklyChallengeReward => 'Weekly Challenge • ¡Recompensa!';
+  String get homeWeeklyChallengeReward => 'Liga semanal • ¡Recompensa!';
 
   @override
-  String get homeWeeklyChallenge => 'Weekly Challenge';
+  String get homeWeeklyChallenge => 'Liga semanal';
 
   @override
   String homeWeeklyResetsIn(String time) {
@@ -80,7 +83,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get homeTabsHint =>
-      'Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.';
+      'Usa las pestañas de abajo para jugar Solo, competir en PvP, retar a tus amigos y visitar la tienda. Tu perfil se abre desde tu avatar, arriba.';
 
   @override
   String get homeStreakUpTitle => '🔥 ¡RACHA!';
@@ -143,20 +146,21 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get homeWeeklyTopicUnavailable => 'Weekly Topic no disponible';
+  String get homeWeeklyTopicUnavailable => 'Tema de la semana no disponible';
 
   @override
-  String get homeWeeklyTopicNoneAvailable => 'No hay Weekly Topic disponible';
+  String get homeWeeklyTopicNoneAvailable =>
+      'No hay tema de la semana disponible';
 
   @override
   String get homeWeeklyTopicCheckBack =>
       'Vuelve pronto para un nuevo reto destacado.';
 
   @override
-  String get homeWeeklyTopicLoading => 'Cargando Weekly Topic...';
+  String get homeWeeklyTopicLoading => 'Cargando el tema de la semana...';
 
   @override
-  String get homeOpenWeeklyTopic => 'Abrir Weekly Topic';
+  String get homeOpenWeeklyTopic => 'Abrir tema de la semana';
 
   @override
   String homeWeeklyTopicRewardCoins(int coins) {
@@ -168,7 +172,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Completa niveles y gana recompensas.';
 
   @override
-  String get homeDailyChallengeTitle => 'Daily Challenge';
+  String get homeDailyChallengeTitle => 'Reto diario';
 
   @override
   String homeDailyChallengeStreak(int days) {
@@ -330,13 +334,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get usernamePickerHaveAccount => 'Ya tengo una cuenta';
 
   @override
-  String get profileLegalSectionTitle => 'Legal';
+  String get profileLegalSectionTitle => 'Información legal';
 
   @override
-  String get profilePrivacyPolicy => 'Política de Privacidad';
+  String get profilePrivacyPolicy => 'Política de privacidad';
 
   @override
-  String get profileTermsOfService => 'Términos de Servicio';
+  String get profileTermsOfService => 'Términos del servicio';
 
   @override
   String get profileLinkOpenFailed => 'No se pudo abrir el enlace.';
@@ -397,7 +401,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileRankedHint =>
-      'Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.';
+      'En clasificatoria se buscan primero rivales de tu liga, y el rango se amplía si no hay jugadores disponibles.';
 
   @override
   String get profile1v1Stats => 'Estadísticas 1 vs 1';
@@ -461,7 +465,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchResultMatch => 'Partida';
 
   @override
-  String get avatarCategoryBase => 'BASE';
+  String get avatarCategoryBase => 'BÁSICOS';
 
   @override
   String get avatarCategoryPvp => 'PVP';
@@ -524,22 +528,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarNamePvpMaster => 'Campeón Maestro';
 
   @override
-  String get avatarUnlockReachBronze => 'Alcanza la Liga Bronce';
+  String get avatarUnlockReachBronze => 'Alcanza la liga Bronce';
 
   @override
-  String get avatarUnlockReachSilver => 'Alcanza la Liga Plata';
+  String get avatarUnlockReachSilver => 'Alcanza la liga Plata';
 
   @override
-  String get avatarUnlockReachGold => 'Alcanza la Liga Oro';
+  String get avatarUnlockReachGold => 'Alcanza la liga Oro';
 
   @override
-  String get avatarUnlockReachPlatinum => 'Alcanza la Liga Platino';
+  String get avatarUnlockReachPlatinum => 'Alcanza la liga Platino';
 
   @override
-  String get avatarUnlockReachDiamond => 'Alcanza la Liga Diamante';
+  String get avatarUnlockReachDiamond => 'Alcanza la liga Diamante';
 
   @override
-  String get avatarUnlockReachMaster => 'Alcanza la Liga Maestro';
+  String get avatarUnlockReachMaster => 'Alcanza la liga Maestro';
 
   @override
   String get avatarNameWeeklyCine => 'Experto en Cine';
@@ -569,34 +573,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarNameWeeklyBooks => 'Ratón de Biblioteca';
 
   @override
-  String get avatarUnlockWeeklyCine => 'Completa un Tema Semanal de Cine';
+  String get avatarUnlockWeeklyCine => 'Completa un tema de la semana de cine';
 
   @override
   String get avatarUnlockWeeklyHistory =>
-      'Completa un Tema Semanal de Historia';
+      'Completa un tema de la semana de historia';
 
   @override
-  String get avatarUnlockWeeklyScience => 'Completa un Tema Semanal de Ciencia';
+  String get avatarUnlockWeeklyScience =>
+      'Completa un tema de la semana de ciencia';
 
   @override
-  String get avatarUnlockWeeklySports => 'Completa un Tema Semanal de Deportes';
+  String get avatarUnlockWeeklySports =>
+      'Completa un tema de la semana de deportes';
 
   @override
-  String get avatarUnlockWeeklyMusic => 'Completa un Tema Semanal de Música';
+  String get avatarUnlockWeeklyMusic =>
+      'Completa un tema de la semana de música';
 
   @override
-  String get avatarUnlockWeeklyArt => 'Completa un Tema Semanal de Arte';
+  String get avatarUnlockWeeklyArt => 'Completa un tema de la semana de arte';
 
   @override
   String get avatarUnlockWeeklyGeography =>
-      'Completa un Tema Semanal de Geografía';
+      'Completa un tema de la semana de geografía';
 
   @override
   String get avatarUnlockWeeklyVideogames =>
-      'Completa un Tema Semanal de Videojuegos';
+      'Completa un tema de la semana de videojuegos';
 
   @override
-  String get avatarUnlockWeeklyBooks => 'Completa un Tema Semanal de Libros';
+  String get avatarUnlockWeeklyBooks =>
+      'Completa un tema de la semana de libros';
 
   @override
   String get avatarName100Questions => '100 Respuestas';
@@ -681,10 +689,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get soloAllCompletedBody =>
-      'Sigue ganando monedas y XP en el Daily Challenge o retando a otros jugadores en PvP.';
+      'Sigue ganando monedas y XP en el reto diario o retando a otros jugadores en PvP.';
 
   @override
-  String get soloAllCompletedDailyButton => 'Ir al Daily Challenge';
+  String get soloAllCompletedDailyButton => 'Ir al reto diario';
 
   @override
   String get soloAllCompletedPvpButton => 'Ir a PvP';
@@ -713,8 +721,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soloStatusNew => 'Nuevo';
 
   @override
+  String get soloStartButton => 'Empezar';
+
+  @override
   String soloContinueLevel(int level) {
-    return 'Continuar N$level';
+    return 'Continuar nivel $level';
   }
 
   @override
@@ -847,6 +858,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelPlaySessionCreateErrorTitle => 'Error creando sesión';
 
   @override
+  String get levelPlayPreparingLevel => 'Preparando el nivel...';
+
+  @override
   String get levelPlayGeneratingQuestions => 'Generando preguntas del nivel...';
 
   @override
@@ -856,7 +870,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelPlaySessionNoQuestions => 'Esta sesión no tiene preguntas.';
 
   @override
-  String get levelPlayLivesMax => 'MAX';
+  String get levelPlayLivesMax => 'MÁX';
 
   @override
   String get levelPlayOutOfLivesTitle => 'Te quedaste sin vidas';
@@ -973,7 +987,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pvpHubSubheading => 'Elige cómo quieres competir.';
 
   @override
-  String get pvpActiveMatchesTitle => 'Partidas Activas';
+  String get pvpActiveMatchesTitle => 'Partidas activas';
 
   @override
   String get pvpActiveMatchesTitleAlert => 'Partidas Activas • ¡Tu turno!';
@@ -987,21 +1001,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tienes partidas pendientes esperando tu jugada.';
 
   @override
-  String get pvpRealtimeInvitesTitle => 'Invitaciones en Vivo';
+  String get pvpRealtimeInvitesTitle => 'Invitaciones en vivo';
 
   @override
   String get pvpRealtimeInvitesTitleAlert => 'Invitaciones en Vivo • ¡Nuevo!';
 
   @override
   String get pvpRealtimeInvitesSubtitle =>
-      'Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Friends.';
+      'Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Amigos.';
 
   @override
   String get pvpRealtimeInvitesSubtitleAlert =>
       'Tienes retos en vivo esperando.';
 
   @override
-  String get pvpFindOpponentTitle => 'Buscar Rival';
+  String get pvpFindOpponentTitle => 'Buscar rival';
 
   @override
   String get pvpFindOpponentSubtitle =>
@@ -1012,10 +1026,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonSubtitle =>
-      'Consulta tu liga ranked, progreso de temporada, leaderboard y recompensas.';
+      'Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.';
 
   @override
-  String get activeMatchesTitle => 'Partidas Activas';
+  String get activeMatchesTitle => 'Partidas activas';
 
   @override
   String get activeMatchesReconnecting => 'Reconectando...';
@@ -1094,6 +1108,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get findOpponentAsyncTab => 'Asíncrono';
 
   @override
+  String get leagueBronze => 'Bronce';
+
+  @override
+  String get leagueSilver => 'Plata';
+
+  @override
+  String get leagueGold => 'Oro';
+
+  @override
+  String get leaguePlatinum => 'Platino';
+
+  @override
+  String get leagueDiamond => 'Diamante';
+
+  @override
+  String get leagueMaster => 'Maestro';
+
+  @override
   String liveMenuLeagueTitle(String name) {
     return 'Liga $name';
   }
@@ -1105,7 +1137,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get liveMenuFixedTopicLabel => 'Tema fijo';
 
   @override
-  String get liveMenuPublicMatchmaking => 'Matchmaking público';
+  String get liveMenuPublicMatchmaking => 'Búsqueda pública de rival';
 
   @override
   String get liveMenuMmrHint2 =>
@@ -1122,7 +1154,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get liveMenuPrivateMatchesHint =>
-      'Las partidas privadas son amistosas y no afectan tu ranking.';
+      'Las partidas privadas son amistosas y no afectan tu clasificación.';
 
   @override
   String get asyncMenuSelectTopicFirst => 'Selecciona un tema fijo primero.';
@@ -1144,10 +1176,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get asyncMenuTip =>
-      'Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.';
+      'Consejo: retas a alguien, juegas de inmediato y tu rival puede jugar después. Revisa tus partidas activas para ver los retos pendientes.';
 
   @override
-  String get createMatchTitle => 'Crear sala (Tiempo real)';
+  String get createMatchTitle => 'Crear sala';
 
   @override
   String get createMatchCategory => 'Categoría';
@@ -1183,10 +1215,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get joinMatchCodeLabel => 'Código de sala (ej: A7KQ2)';
 
   @override
-  String get liveMatchmakingRankedTitle => 'Matchmaking Ranked';
+  String get liveMatchmakingRankedTitle => 'Búsqueda clasificatoria';
 
   @override
-  String get liveMatchmakingCasualTitle => 'Matchmaking Casual';
+  String get liveMatchmakingCasualTitle => 'Búsqueda casual';
 
   @override
   String liveMatchmakingTypeLine(String type) {
@@ -1228,15 +1260,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get liveMatchmakingSearchButton => 'Buscar';
 
   @override
+  String get liveMatchmakingOpponentFound => '¡Rival encontrado!';
+
+  @override
+  String get matchLobbyRoomClosed => 'La sala se cerró.';
+
+  @override
+  String get matchLobbyStarting => 'Empezando la partida…';
+
+  @override
   String get liveMatchmakingSearching => 'Buscando...';
 
   @override
   String get liveMatchmakingSearchingOpponent => 'Buscando rival...';
-
-  @override
-  String liveMatchmakingQueueStatus(String status) {
-    return 'Estado cola: $status';
-  }
 
   @override
   String get liveMatchmakingRankedHint =>
@@ -1244,7 +1280,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get liveMatchmakingCasualHint =>
-      'Casual no afecta tu MMR. Se prioriza encontrar rival rápido.';
+      'La partida casual no afecta tu MMR. Se prioriza encontrar rival rápido.';
 
   @override
   String get liveMatchmakingCancelSearch => 'Cancelar búsqueda';
@@ -1331,10 +1367,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get friendChallengeOnline => 'Online';
+  String get friendChallengeOnline => 'En línea';
 
   @override
-  String get friendChallengeOffline => 'Offline';
+  String get friendChallengeOffline => 'Desconectado';
 
   @override
   String get friendChallengeSendRealtime => 'Enviar reto en tiempo real';
@@ -1350,10 +1386,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get friendChallengeNeedOnlineHint =>
-      'Tu amigo debe estar online para jugar en tiempo real.';
+      'Tu amigo debe estar en línea para jugar en tiempo real.';
 
   @override
-  String get friendChallengeMatchConfig => 'Configuración del match';
+  String get friendChallengeMatchConfig => 'Configuración de la partida';
 
   @override
   String get friendChallengeCategoryRandom => 'Aleatorio';
@@ -1385,7 +1421,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get friendChallengeRealtimeHint =>
-      'Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.';
+      'En tiempo real ambos deben estar en línea. Las partidas con amigos son casuales y no afectan el MMR.';
 
   @override
   String get friendChallengeAsyncHint =>
@@ -1459,11 +1495,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchLobbyCancelReady => 'Cancelar listo';
 
   @override
-  String matchLobbyRoomStatus(String status) {
-    return 'Estado de la sala: $status';
-  }
-
-  @override
   String get matchLobbyPlayer1 => 'Jugador 1';
 
   @override
@@ -1501,10 +1532,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pvpResultVs => 'VS';
 
   @override
-  String get pvpResultMatchSummary => 'Resumen del match';
+  String get pvpResultMatchSummary => 'Resumen de la partida';
 
   @override
-  String get pvpResultYourScore => 'Tu score';
+  String get pvpResultYourScore => 'Tu puntaje';
 
   @override
   String get pvpResultOpponent => 'Rival';
@@ -1535,13 +1566,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchPlayTitle => '1 vs 1';
 
   @override
-  String get matchPlayNotFound => 'Match no encontrado';
+  String get matchPlayNotFound => 'Partida no encontrada';
 
   @override
   String get matchPlayWaitingToStart => 'Esperando que inicie...';
 
   @override
-  String get matchPlayNoQuestions => 'Este match no tiene preguntas.';
+  String get matchPlayNoQuestions => 'Esta partida no tiene preguntas.';
 
   @override
   String get matchPlayYourScoreLabel => 'Tu puntaje';
@@ -1569,7 +1600,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchPlayVictoryRankedSubtitle =>
-      'Buen duelo. Tu rating competitivo fue actualizado.';
+      'Buen duelo. Tu puntuación competitiva se actualizó.';
 
   @override
   String get matchPlayVictoryCasualSubtitle =>
@@ -1580,7 +1611,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchPlayDefeatRankedSubtitle =>
-      'Estuviste cerca. Tu rating competitivo fue actualizado.';
+      'Estuviste cerca. Tu puntuación competitiva se actualizó.';
 
   @override
   String get matchPlayDefeatCasualSubtitle =>
@@ -1609,6 +1640,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get asyncMatchPlayNoQuestions => 'Este reto no tiene preguntas.';
+
+  @override
+  String get commonPlayerFallback => 'Jugador';
 
   @override
   String get asyncMatchPlayYouFallback => 'Tú';
@@ -1683,14 +1717,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonRankedHint =>
-      'Ranked usa matchmaking flexible: primero busca cerca de tu liga, luego amplía el rango para que nadie se quede esperando.';
+      'La búsqueda clasificatoria es flexible: primero busca cerca de tu liga y luego amplía el rango para que nadie se quede esperando.';
 
   @override
-  String get pvpSeasonHowItWorksTitle => 'Cómo funcionan las Temporadas PvP';
+  String get pvpSeasonHowItWorksTitle => 'Cómo funcionan las temporadas PvP';
 
   @override
   String get pvpSeasonHowItWorksBullet1 =>
-      '• Juega partidas Ranked para subir tu MMR.';
+      '• Juega partidas clasificatorias para subir tu MMR.';
 
   @override
   String get pvpSeasonHowItWorksBullet2 =>
@@ -1723,11 +1757,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonNoFriendsEmptyHint =>
-      'Juega partidas Ranked y agrega amigos para comparar tu rating PvP.';
+      'Juega partidas clasificatorias y agrega amigos para comparar tu puntuación PvP.';
 
   @override
   String get pvpSeasonNoFriendsHint =>
-      'Agrega amigos para comparar tu rating PvP con gente que conoces.';
+      'Agrega amigos para comparar tu puntuación PvP con gente que conoces.';
 
   @override
   String pvpSeasonYouSuffix(String name) {
@@ -1751,10 +1785,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonNoRankedPlayers =>
-      'Aún no hay jugadores ranked.\nJuega una partida Ranked para entrar en esta clasificación.';
+      'Aún no hay jugadores en la clasificatoria.\nJuega una partida clasificatoria para entrar en esta clasificación.';
 
   @override
-  String get pvpSeasonRewardsTitle => 'Recompensas de Temporada';
+  String get pvpSeasonRewardsTitle => 'Recompensas de temporada';
 
   @override
   String get pvpSeasonRewardsSubtitle =>
@@ -1780,7 +1814,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonNoRewardYetHint =>
-      'Juega partidas Ranked esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.';
+      'Juega partidas clasificatorias esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.';
 
   @override
   String pvpSeasonPendingSingle(int count) {
@@ -1823,7 +1857,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyResultComplete => '¡Daily Challenge completado!';
+  String get dailyResultComplete => '¡Reto diario completado!';
 
   @override
   String get dailyResultCorrectAnswers => 'Respuestas correctas';
@@ -1859,7 +1893,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyResultBackHome => 'Volver al inicio';
 
   @override
-  String get dailyReminderTitle => '🔥 ¡Daily Challenge listo!';
+  String get dailyReminderTitle => '🔥 ¡Tu reto diario está listo!';
 
   @override
   String get dailyReminderBody => 'Juega hoy y mantén tu racha.';
@@ -1873,7 +1907,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyResultViewLeaderboard => 'Ver ranking de hoy';
+  String get dailyResultViewLeaderboard => 'Ver la clasificación de hoy';
 
   @override
   String get weeklyRewardsTitle => 'Recompensas semanales';
@@ -1897,7 +1931,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get weeklyRewardsKeepPlayingHint =>
-      'Sigue jugando el Weekly Challenge para ganar recompensas semanales.';
+      'Sigue jugando en la liga semanal para ganar recompensas cada semana.';
 
   @override
   String weeklyRewardsPendingSingle(int count) {
@@ -1949,7 +1983,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyLeaderboardTitle => 'Clasificación Diaria';
+  String get dailyLeaderboardTitle => 'Clasificación diaria';
 
   @override
   String dailyLeaderboardErrorLoading(String error) {
@@ -1962,7 +1996,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyLeaderboardNoScoresYet =>
-      'Aún no hay puntajes hoy.\n¡Juega el Daily Challenge primero!';
+      'Aún no hay puntajes hoy.\n¡Juega el reto diario primero!';
 
   @override
   String get dailyLeaderboardRankingTitle => 'Clasificación';
@@ -1986,10 +2020,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyLeaderboardScoreLabel => 'Puntaje';
 
   @override
-  String get dailyChallengeCoinsPopup => '+5 Monedas 🎉';
+  String get dailyChallengeCoinsPopup => '+5 monedas 🎉';
 
   @override
-  String get dailyChallengeLeaveTitle => '¿Salir del Daily Challenge?';
+  String get dailyChallengeLeaveTitle => '¿Salir del reto diario?';
 
   @override
   String get dailyChallengeLeaveBody =>
@@ -2012,13 +2046,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyChallengeCompletedTitle => '¡Daily completado!';
+  String get dailyChallengeCompletedTitle => '¡Reto diario completado!';
 
   @override
   String get dailyChallengeSavingResults => 'Guardando tus resultados...';
 
   @override
-  String get weeklyTopicScreenTitle => 'Weekly Topic';
+  String get weeklyTopicScreenTitle => 'Tema de la semana';
 
   @override
   String weeklyTopicCoinsClaimed(int coins) {
@@ -2039,7 +2073,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get weeklyTopicFeaturedBadge => 'Tema Semanal Destacado';
+  String get weeklyTopicFeaturedBadge => 'Tema de la semana destacado';
 
   @override
   String get weeklyTopicProgressTitle => 'Progreso';
@@ -2063,10 +2097,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get weeklyTopicCategoryMissing =>
-      'Falta la categoría del Weekly Topic.';
+      'Falta la categoría del tema de la semana.';
 
   @override
-  String get weeklyTopicPlayButton => 'Jugar Weekly Topic';
+  String get weeklyTopicPlayButton => 'Jugar tema de la semana';
 
   @override
   String weeklyTopicCorrectAnswersProgress(int correct, int total) {
@@ -2118,23 +2152,23 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get weeklyLeagueScreenTitle => 'Weekly Challenge';
+  String get weeklyLeagueScreenTitle => 'Liga semanal';
 
   @override
   String weeklyLeagueErrorLoading(String error) {
-    return 'Error cargando el desafío semanal:\n$error';
+    return 'Error cargando la liga semanal:\n$error';
   }
 
   @override
   String get weeklyLeagueNoScoresYet =>
-      'Aún no hay puntajes semanales.\nJuega un Daily Challenge para entrar en esta clasificación semanal.';
+      'Aún no hay puntajes semanales.\nJuega un reto diario para entrar en esta clasificación semanal.';
 
   @override
-  String get weeklyLeagueRankingTitle => 'Clasificación Semanal';
+  String get weeklyLeagueRankingTitle => 'Clasificación semanal';
 
   @override
   String weeklyLeagueTierSuffix(String name) {
-    return 'Nivel $name';
+    return 'Liga $name';
   }
 
   @override
@@ -2165,7 +2199,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get weeklyLeagueClaim => 'Reclamar';
 
   @override
-  String get weeklyLeagueWeeklyRewardsTitle => 'Recompensas Semanales';
+  String get weeklyLeagueWeeklyRewardsTitle => 'Recompensas semanales';
 
   @override
   String weeklyLeagueTop1Reward(int coins) {
@@ -2217,7 +2251,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get achievementsProgressTitle => 'Progreso de Logros';
+  String get achievementsProgressTitle => 'Progreso de logros';
 
   @override
   String achievementsCompletedCount(int completed, int total) {
@@ -2346,7 +2380,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Elige cualquier tema que te guste. Las preguntas generadas por IA se conectarán en el siguiente paso.';
 
   @override
-  String get aiTopicsEmptyButton => 'Crear Tema IA';
+  String get aiTopicsEmptyButton => 'Crear tema IA';
 
   @override
   String get createAiTopicEnterTopic => 'Ingresa un tema';
@@ -2396,7 +2430,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createAiTopicCreatingButton => 'Creando...';
 
   @override
-  String get createAiTopicPopularSectionTitle => 'Temas Populares';
+  String get createAiTopicPopularSectionTitle => 'Temas populares';
 
   @override
   String get createAiTopicPopularSectionHint =>
@@ -2691,7 +2725,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationsEmptyState => 'Aún no tienes notificaciones.';
 
   @override
-  String get presenceStatusOnline => 'Online';
+  String get presenceStatusOnline => 'En línea';
 
   @override
   String get presenceStatusInMatch => 'En partida';
@@ -2837,7 +2871,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingCoinsBody =>
-      'Gana monedas y XP jugando. Vuelve cada día al Daily Challenge para mantener tu racha y ganar recompensas extra.';
+      'Gana monedas y XP jugando. Vuelve cada día al reto diario para mantener tu racha y ganar recompensas extra.';
 
   @override
   String get onboardingSkip => 'Saltar';
@@ -2846,7 +2880,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingNext => 'Siguiente';
 
   @override
-  String get onboardingPlayFirstDaily => 'Jugar mi primer Daily Challenge';
+  String get onboardingPlayFirstDaily => 'Jugar mi primer reto diario';
 
   @override
   String get spotlightGotIt => 'Entendido';
@@ -2856,7 +2890,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spotlightPvpBody =>
-      'Reta a otros jugadores en tiempo real o de forma asíncrona. Ganar sube tu rating y te acerca a la siguiente liga, con más recompensas.';
+      'Reta a otros jugadores en tiempo real o por turnos. Ganar sube tu puntuación y te acerca a la siguiente liga, con más recompensas.';
 
   @override
   String get spotlightWeeklyTopicTitle => 'Tema de la semana';
@@ -2887,7 +2921,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.';
 
   @override
-  String get spotlightAiTopicsPopularTitle => 'Temas Populares';
+  String get spotlightAiTopicsPopularTitle => 'Temas populares';
 
   @override
   String get spotlightAiTopicsPopularBody =>
@@ -2956,7 +2990,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String serviceRankedCooldown(String remaining) {
-    return 'Tienes cooldown de ranked por abandono. Intenta de nuevo en $remaining.';
+    return 'Abandonaste una partida clasificatoria y debes esperar. Intenta de nuevo en $remaining.';
   }
 
   @override
@@ -2966,7 +3000,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get serviceNotInRoom => 'No estás dentro de esta sala';
 
   @override
-  String get serviceMatchNotFound => 'Match no encontrado';
+  String get serviceMatchNotFound => 'Partida no encontrada';
 
   @override
   String get serviceChallengedUidEmpty => 'challengedUid vacío';
@@ -3092,7 +3126,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementDailyStreak7Description =>
-      'Alcanza una racha de 7 días en el Daily Challenge.';
+      'Alcanza una racha de 7 días en el reto diario.';
 
   @override
   String get achievementFriends5Title => 'Jugador social';

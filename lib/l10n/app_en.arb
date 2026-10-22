@@ -10,6 +10,7 @@
   "navNewNotificationSubtitle": "Check the bell",
 
   "commonCancel": "Cancel",
+  "commonGenericError": "Something went wrong. Please try again.",
   "commonConnectionError": "We couldn't connect. Check your connection and try again.",
   "notificationChannelName": "TriviaIA notifications",
   "notificationChannelDescription": "Daily Challenge reminders, challenges and rewards",
@@ -26,7 +27,7 @@
   "homeWeeklyChallengeReward": "Weekly Challenge • Reward!",
   "homeWeeklyChallenge": "Weekly Challenge",
   "homeWeeklyResetsIn": "Ends in {time}",
-  "homeTabsHint": "Use the bottom tabs to play SOLO, compete in PvP, challenge friends, and view your profile.",
+  "homeTabsHint": "Use the tabs below to play Solo, compete in PvP, challenge your friends and visit the shop. Your profile opens from your avatar at the top.",
   "homeStreakUpTitle": "🔥 STREAK UP!",
   "homeStreakUpSubtitle": "Keep coming back daily",
   "homeWelcomeBackTitle": "📅 Welcome back!",
@@ -322,6 +323,7 @@
   "soloStatusCompleted": "Completed",
   "soloStatusInProgress": "In progress",
   "soloStatusNew": "New",
+  "soloStartButton": "Start",
   "soloContinueLevel": "Continue L{level}",
   "@soloContinueLevel": {
     "placeholders": {
@@ -394,6 +396,7 @@
   },
   "levelPlaySessionCreateError": "This level could not be prepared. Please try again.",
   "levelPlaySessionCreateErrorTitle": "Error creating session",
+  "levelPlayPreparingLevel": "Getting the level ready...",
   "levelPlayGeneratingQuestions": "Generating level questions...",
   "levelPlaySessionNotFound": "Session not found.",
   "levelPlaySessionNoQuestions": "This session has no questions.",
@@ -557,6 +560,13 @@
   "findOpponentLiveTab": "Live",
   "findOpponentAsyncTab": "Async",
 
+  "leagueBronze": "Bronze",
+  "leagueSilver": "Silver",
+  "leagueGold": "Gold",
+  "leaguePlatinum": "Platinum",
+  "leagueDiamond": "Diamond",
+  "leagueMaster": "Master",
+
   "liveMenuLeagueTitle": "{name} League",
   "@liveMenuLeagueTitle": {
     "placeholders": {
@@ -630,14 +640,11 @@
   "liveMatchmakingNoOpponentFound": "No opponent found right now. Try again.",
   "liveMatchmakingTryAsyncInstead": "Play async instead",
   "liveMatchmakingSearchButton": "Search",
+  "liveMatchmakingOpponentFound": "Opponent found!",
+  "matchLobbyRoomClosed": "The room was closed.",
+  "matchLobbyStarting": "Starting the match…",
   "liveMatchmakingSearching": "Searching...",
   "liveMatchmakingSearchingOpponent": "Searching for opponent...",
-  "liveMatchmakingQueueStatus": "Queue status: {status}",
-  "@liveMatchmakingQueueStatus": {
-    "placeholders": {
-      "status": {"type": "String"}
-    }
-  },
   "liveMatchmakingRankedHint": "First searches for rivals close to your MMR; if it takes too long, it widens the range automatically.",
   "liveMatchmakingCasualHint": "Casual doesn't affect your MMR. Finding an opponent fast is prioritized.",
   "liveMatchmakingCancelSearch": "Cancel search",
@@ -745,12 +752,6 @@
   "matchLobbyWaitingOpponentEllipsis": "Waiting for opponent...",
   "matchLobbyImReady": "I'm ready",
   "matchLobbyCancelReady": "Cancel ready",
-  "matchLobbyRoomStatus": "Room status: {status}",
-  "@matchLobbyRoomStatus": {
-    "placeholders": {
-      "status": {"type": "String"}
-    }
-  },
   "matchLobbyPlayer1": "Player 1",
   "matchLobbyPlayer2": "Player 2",
   "matchLobbyReadyLabel": "Ready",
@@ -823,6 +824,7 @@
   "asyncMatchPlayTitle": "Async Challenge",
   "asyncMatchPlayNotFound": "Challenge not found",
   "asyncMatchPlayNoQuestions": "This challenge has no questions.",
+  "commonPlayerFallback": "Player",
   "asyncMatchPlayYouFallback": "You",
   "asyncMatchPlayOpponentFallback": "Opponent",
   "asyncMatchPlayCorrectLabel": "Correct",

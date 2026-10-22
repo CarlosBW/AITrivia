@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'locale_controller.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
 
 class RealtimeInviteService {
@@ -94,7 +95,7 @@ class RealtimeInviteService {
           .call({'inviteId': inviteId});
       return ((result.data as Map)['matchId'] ?? '').toString();
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceInviteNoLongerAvailable);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceInviteNoLongerAvailable));
     }
   }
 

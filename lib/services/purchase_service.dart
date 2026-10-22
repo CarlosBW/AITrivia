@@ -176,7 +176,9 @@ class PurchaseService {
         PurchaseResult(
           productId: purchase.productID,
           success: false,
-          message: e.toString().replaceFirst('Exception: ', ''),
+          // Left to the shop's own "purchase failed" text: the raw
+          // exception was English, and often a Firebase error code.
+          message: null,
         ),
       );
 

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../services/theme_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_themes.dart';
@@ -143,14 +143,9 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
     } catch (e) {
       if (!mounted) return;
       // The server's own message when it refused the purchase (it writes
-      // them in the player's language); a connection message otherwise,
-      // never the raw exception.
-      final refusal = e is FirebaseFunctionsException &&
-              e.code == 'failed-precondition'
-          ? e.message
-          : null;
+      // them in the player's language), never the raw exception.
       messenger.showSnackBar(
-        SnackBar(content: Text(refusal ?? l10n.commonConnectionError)),
+        SnackBar(content: Text(userFacingError(l10n, e))),
       );
     } finally {
       if (mounted) setState(() => _busyThemeId = null);

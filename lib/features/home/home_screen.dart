@@ -25,6 +25,7 @@ import '../../widgets/section_label.dart';
 import '../../widgets/buy_coins_button.dart';
 import '../../widgets/save_progress_reminder.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -433,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return Padding(
                         padding: const EdgeInsets.all(12),
                         child: Text(
-                          l10n.homeStatsErrorLoading(snap.error.toString()),
+                          l10n.homeStatsErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                           textAlign: TextAlign.center,
                           style: TextStyle(color: context.appColors.danger),
                         ),
@@ -1164,7 +1165,7 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
         if (snap.hasError) {
           return _WeeklyTopicUnavailableCard(
             message: l10n.homeWeeklyTopicUnavailable,
-            detail: snap.error.toString(),
+            detail: userFacingError(AppLocalizations.of(context), snap.error!),
           );
         }
 
@@ -1207,12 +1208,14 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
           );
         }
 
-        final title = (data['title'] ?? 'Weekly Topic').toString();
-
-        // `description` (no language suffix) is the legacy single-language
-        // field older weekly-topic docs were seeded with — kept as a
-        // fallback so those don't regress to the generic default text.
+        // `description` and `title` (no language suffix) are the legacy
+        // single-language fields older weekly-topic docs were seeded with —
+        // kept as a fallback so those don't regress to the generic text.
         final languageCode = Localizations.localeOf(context).languageCode;
+        final title = (data['title_$languageCode'] ??
+                data['title'] ??
+                l10n.weeklyTopicScreenTitle)
+            .toString();
         final description = (data['description_$languageCode'] ??
                 data['description'] ??
                 l10n.homeWeeklyTopicDefaultDescription)

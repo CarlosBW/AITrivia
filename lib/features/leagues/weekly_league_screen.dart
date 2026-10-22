@@ -11,6 +11,8 @@ import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/tier_badge.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
 import '../../widgets/app_bar_title.dart';
@@ -194,7 +196,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
           if (userSnap.hasError) {
             return Center(
               child: Text(
-                l10n.weeklyLeagueErrorLoading(userSnap.error.toString()),
+                l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), userSnap.error!)),
                 textAlign: TextAlign.center,
               ),
             );
@@ -243,7 +245,7 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                         if (snap.hasError) {
                           return Center(
                             child: Text(
-                              l10n.weeklyLeagueErrorLoading(snap.error.toString()),
+                              l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                               textAlign: TextAlign.center,
                             ),
                           );
@@ -294,11 +296,11 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                                           userData['displayName'] ??
                                           data['username'] ??
                                           data['displayName'] ??
-                                          'Player')
+                                          AppLocalizations.of(context).commonPlayerFallback)
                                       .toString()
                                   : (data['username'] ??
                                           data['displayName'] ??
-                                          'Player')
+                                          AppLocalizations.of(context).commonPlayerFallback)
                                       .toString();
 
                               final avatarId = isMe
@@ -482,7 +484,7 @@ class _LeagueHeader extends StatelessWidget {
         children: [
           TierBadge(
             emoji: league.emoji,
-            name: l10n.weeklyLeagueTierSuffix(league.name),
+            name: l10n.weeklyLeagueTierSuffix(l10n.leagueName(league.id)),
             colorValue: league.colorValue,
           ),
           const SizedBox(height: 8),

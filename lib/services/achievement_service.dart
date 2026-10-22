@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'locale_controller.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
 
 class AchievementInfo {
@@ -183,7 +184,7 @@ class AchievementService {
           )
           .call({'achievementId': achievementId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotClaimReward);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotClaimReward));
     }
   }
 }

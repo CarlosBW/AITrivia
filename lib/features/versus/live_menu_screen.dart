@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../services/economy_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import 'create_match_screen.dart';
 import 'join_match_screen.dart';
@@ -109,7 +110,7 @@ class _LiveMenuScreenState extends State<LiveMenuScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.liveMenuLeagueTitle(league.name),
+                  l10n.liveMenuLeagueTitle(l10n.leagueName(league.id)),
                   style: context.heading(
                     18,
                     color: context.readableOnOwnTint(color, wash: 0.10),

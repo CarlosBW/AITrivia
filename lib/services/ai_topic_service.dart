@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'economy_service.dart';
 import 'locale_controller.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
 import 'dart:async';
 
@@ -286,7 +287,7 @@ class AiTopicService {
 
       return (result.data as Map)['topicId'].toString();
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotCreateTopic);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotCreateTopic));
     }
   }
 
@@ -314,7 +315,7 @@ class AiTopicService {
         matches: matches,
       );
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotSearchTopics);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotSearchTopics));
     }
   }
 
@@ -343,7 +344,11 @@ class AiTopicService {
         suggestions: suggestions,
       );
     } on FirebaseFunctionsException catch (e) {
-      final message = e.message ?? _l10n.serviceCouldNotSuggestTopics;
+      final message = userFacingError(
+        _l10n,
+        e,
+        fallback: _l10n.serviceCouldNotSuggestTopics,
+      );
 
       if (isRecoverableSuggestionFailure(e.code)) {
         throw AiTopicSuggestionUnavailable(message);
@@ -440,7 +445,7 @@ class AiTopicService {
 
       return AiTopicRegenerateQuote.fromMap(result.data as Map);
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotRegenerateQuestions);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotRegenerateQuestions));
     }
   }
 
@@ -459,7 +464,7 @@ class AiTopicService {
       )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotRegenerateQuestions);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotRegenerateQuestions));
     }
   }
 
@@ -474,7 +479,7 @@ class AiTopicService {
       )
           .call({'topicId': topicId});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotExpandTopic);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotExpandTopic));
     }
   }
 }

@@ -7,6 +7,8 @@ import '../../services/league_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
+import '../../l10n/league_names.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
@@ -68,7 +70,7 @@ class _DailyLeaderboardScreenState extends State<DailyLeaderboardScreen> {
           if (snap.hasError) {
             return Center(
               child: Text(
-                l10n.dailyLeaderboardErrorLoading(snap.error.toString()),
+                l10n.dailyLeaderboardErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                 textAlign: TextAlign.center,
               ),
             );
@@ -123,7 +125,7 @@ class _DailyLeaderboardScreenState extends State<DailyLeaderboardScreen> {
                 final rank = index + 1;
 
                 final displayName =
-                    (data['username'] ?? data['displayName'] ?? 'Player')
+                    (data['username'] ?? data['displayName'] ?? AppLocalizations.of(context).commonPlayerFallback)
                         .toString();
                 final score = ((data['score'] ?? 0) as num).toInt();
                 final correct = ((data['correct'] ?? 0) as num).toInt();
@@ -246,7 +248,7 @@ class _PodiumPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final data = doc.data();
     final name =
-        (data['username'] ?? data['displayName'] ?? 'Player').toString();
+        (data['username'] ?? data['displayName'] ?? AppLocalizations.of(context).commonPlayerFallback).toString();
     final score = ((data['score'] ?? 0) as num).toInt();
     final league = leagueBuilder(data);
 
@@ -287,7 +289,7 @@ class _PodiumPlayer extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            '${league.emoji} ${league.name}',
+            '${league.emoji} ${AppLocalizations.of(context).leagueName(league.id)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -405,7 +407,7 @@ class _LeaderboardTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${league.emoji} ${l10n.liveMenuLeagueTitle(league.name)}',
+                  '${league.emoji} ${l10n.liveMenuLeagueTitle(l10n.leagueName(league.id))}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

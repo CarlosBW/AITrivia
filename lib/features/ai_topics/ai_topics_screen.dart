@@ -6,6 +6,7 @@ import '../../services/economy_service.dart';
 import 'create_ai_topic_screen.dart';
 import '../solo/level_select_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
@@ -136,7 +137,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
         ),
       );
     }
@@ -172,7 +173,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(userFacingError(AppLocalizations.of(context), e)),
           ),
         );
         return;
@@ -296,7 +297,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      l10n.aiTopicsErrorLoading(snap.error.toString()),
+                      l10n.aiTopicsErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
                       textAlign: TextAlign.center,
                     ),
                   ),

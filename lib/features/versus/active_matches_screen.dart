@@ -8,6 +8,7 @@ import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class ActiveMatchesScreen extends StatefulWidget {
@@ -295,15 +296,15 @@ class _AsyncMatchTile extends StatelessWidget {
     required this.mode,
   });
 
-  String _opponentName() {
+  String _opponentName(AppLocalizations l10n) {
     final challengerUid = (data['challengerUid'] ?? '').toString();
     final isChallenger = challengerUid == uid;
 
     if (isChallenger) {
-      return (data['challengedDisplayName'] ?? 'Player').toString();
+      return (data['challengedDisplayName'] ?? l10n.commonPlayerFallback).toString();
     }
 
-    return (data['challengerDisplayName'] ?? 'Player').toString();
+    return (data['challengerDisplayName'] ?? l10n.commonPlayerFallback).toString();
   }
 
   String _category() {
@@ -320,13 +321,13 @@ class _AsyncMatchTile extends StatelessWidget {
     return raw is num ? raw.toInt() : 0;
   }
 
-  String _subtitle(AppLocalizations l10n) {
+  String _subtitle(AppLocalizations l10n, String categoryName) {
     final challengerScore = _challengerScore();
     final challengedScore = _challengedScore();
 
     switch (mode) {
       case _AsyncSectionMode.yourTurn:
-        return l10n.activeMatchesYourTurnSubtitle(_category());
+        return l10n.activeMatchesYourTurnSubtitle(categoryName);
       case _AsyncSectionMode.waitingOpponent:
         return l10n.activeMatchesWaitingSubtitle(challengerScore);
       case _AsyncSectionMode.finished:
@@ -380,7 +381,7 @@ class _AsyncMatchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final opponent = _opponentName();
+    final opponent = _opponentName(l10n);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -396,7 +397,10 @@ class _AsyncMatchTile extends StatelessWidget {
           l10n.profileVsOpponent(opponent),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(_subtitle(l10n)),
+        subtitle: CategoryNameBuilder(
+          categoryId: _category(),
+          builder: (context, name) => Text(_subtitle(l10n, name)),
+        ),
         trailing: FilledButton.tonal(
           onPressed: () {
             Navigator.push(

@@ -10,9 +10,10 @@
   "navNewNotificationSubtitle": "Revisa la campana",
 
   "commonCancel": "Cancelar",
+  "commonGenericError": "Algo salió mal. Inténtalo de nuevo.",
   "commonConnectionError": "No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.",
   "notificationChannelName": "Notificaciones de TriviaIA",
-  "notificationChannelDescription": "Recordatorios del Daily Challenge, retos y recompensas",
+  "notificationChannelDescription": "Recordatorios del reto diario, desafíos y recompensas",
   "commonRetry": "Reintentar",
   "commonLoading": "Cargando...",
   "commonSaving": "Guardando...",
@@ -21,17 +22,17 @@
   "homeCoins": "Monedas",
   "homeXp": "XP",
   "homeFreeTopic": "Tema libre",
-  "homeAlreadyPlayedDaily": "Ya jugaste el Daily Challenge de hoy.",
+  "homeAlreadyPlayedDaily": "Ya jugaste el reto diario de hoy.",
   "homeMoreWaysToPlay": "Más formas de jugar",
-  "homeWeeklyChallengeReward": "Weekly Challenge • ¡Recompensa!",
-  "homeWeeklyChallenge": "Weekly Challenge",
+  "homeWeeklyChallengeReward": "Liga semanal • ¡Recompensa!",
+  "homeWeeklyChallenge": "Liga semanal",
   "homeWeeklyResetsIn": "Termina en {time}",
   "@homeWeeklyResetsIn": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "homeTabsHint": "Usa las pestañas inferiores para jugar SOLO, competir en PvP, retar amigos y ver tu perfil.",
+  "homeTabsHint": "Usa las pestañas de abajo para jugar Solo, competir en PvP, retar a tus amigos y visitar la tienda. Tu perfil se abre desde tu avatar, arriba.",
   "homeStreakUpTitle": "🔥 ¡RACHA!",
   "homeStreakUpSubtitle": "Sigue volviendo cada día",
   "homeWelcomeBackTitle": "📅 ¡Volviste!",
@@ -85,11 +86,11 @@
       "error": {"type": "String"}
     }
   },
-  "homeWeeklyTopicUnavailable": "Weekly Topic no disponible",
-  "homeWeeklyTopicNoneAvailable": "No hay Weekly Topic disponible",
+  "homeWeeklyTopicUnavailable": "Tema de la semana no disponible",
+  "homeWeeklyTopicNoneAvailable": "No hay tema de la semana disponible",
   "homeWeeklyTopicCheckBack": "Vuelve pronto para un nuevo reto destacado.",
-  "homeWeeklyTopicLoading": "Cargando Weekly Topic...",
-  "homeOpenWeeklyTopic": "Abrir Weekly Topic",
+  "homeWeeklyTopicLoading": "Cargando el tema de la semana...",
+  "homeOpenWeeklyTopic": "Abrir tema de la semana",
   "homeWeeklyTopicRewardCoins": "+{coins} monedas",
   "@homeWeeklyTopicRewardCoins": {
     "placeholders": {
@@ -97,7 +98,7 @@
     }
   },
   "homeWeeklyTopicDefaultDescription": "Completa niveles y gana recompensas.",
-  "homeDailyChallengeTitle": "Daily Challenge",
+  "homeDailyChallengeTitle": "Reto diario",
   "homeDailyChallengeStreak": "Racha: {days} días",
   "@homeDailyChallengeStreak": {
     "placeholders": {
@@ -183,9 +184,9 @@
   "profileAccountSavedGoogle": "Progreso guardado con Google",
   "profileAccountSavedApple": "Progreso guardado con Apple",
   "usernamePickerHaveAccount": "Ya tengo una cuenta",
-  "profileLegalSectionTitle": "Legal",
-  "profilePrivacyPolicy": "Política de Privacidad",
-  "profileTermsOfService": "Términos de Servicio",
+  "profileLegalSectionTitle": "Información legal",
+  "profilePrivacyPolicy": "Política de privacidad",
+  "profileTermsOfService": "Términos del servicio",
   "profileLinkOpenFailed": "No se pudo abrir el enlace.",
   "profileDangerZoneTitle": "Zona peligrosa",
   "profileDeleteAccount": "Eliminar cuenta",
@@ -209,7 +210,7 @@
       "league": {"type": "String"}
     }
   },
-  "profileRankedHint": "Ranked busca primero rivales de tu liga y amplía el rango si no hay jugadores disponibles.",
+  "profileRankedHint": "En clasificatoria se buscan primero rivales de tu liga, y el rango se amplía si no hay jugadores disponibles.",
   "profile1v1Stats": "Estadísticas 1 vs 1",
   "profileRankedMmr": "MMR clasificado",
   "profileVictories": "Victorias",
@@ -241,7 +242,7 @@
   "matchResultDraw": "Empate",
   "matchResultMatch": "Partida",
 
-  "avatarCategoryBase": "BASE",
+  "avatarCategoryBase": "BÁSICOS",
   "avatarCategoryPvp": "PVP",
   "avatarCategoryWeekly": "SEMANAL",
   "avatarCategoryAchievement": "LOGRO",
@@ -264,12 +265,12 @@
   "avatarNamePvpPlatinum": "Élite de Platino",
   "avatarNamePvpDiamond": "Élite de Diamante",
   "avatarNamePvpMaster": "Campeón Maestro",
-  "avatarUnlockReachBronze": "Alcanza la Liga Bronce",
-  "avatarUnlockReachSilver": "Alcanza la Liga Plata",
-  "avatarUnlockReachGold": "Alcanza la Liga Oro",
-  "avatarUnlockReachPlatinum": "Alcanza la Liga Platino",
-  "avatarUnlockReachDiamond": "Alcanza la Liga Diamante",
-  "avatarUnlockReachMaster": "Alcanza la Liga Maestro",
+  "avatarUnlockReachBronze": "Alcanza la liga Bronce",
+  "avatarUnlockReachSilver": "Alcanza la liga Plata",
+  "avatarUnlockReachGold": "Alcanza la liga Oro",
+  "avatarUnlockReachPlatinum": "Alcanza la liga Platino",
+  "avatarUnlockReachDiamond": "Alcanza la liga Diamante",
+  "avatarUnlockReachMaster": "Alcanza la liga Maestro",
 
   "avatarNameWeeklyCine": "Experto en Cine",
   "avatarNameWeeklyHistory": "Erudito de Historia",
@@ -280,15 +281,15 @@
   "avatarNameWeeklyGeography": "Trotamundos",
   "avatarNameWeeklyVideogames": "Maestro de Juegos",
   "avatarNameWeeklyBooks": "Ratón de Biblioteca",
-  "avatarUnlockWeeklyCine": "Completa un Tema Semanal de Cine",
-  "avatarUnlockWeeklyHistory": "Completa un Tema Semanal de Historia",
-  "avatarUnlockWeeklyScience": "Completa un Tema Semanal de Ciencia",
-  "avatarUnlockWeeklySports": "Completa un Tema Semanal de Deportes",
-  "avatarUnlockWeeklyMusic": "Completa un Tema Semanal de Música",
-  "avatarUnlockWeeklyArt": "Completa un Tema Semanal de Arte",
-  "avatarUnlockWeeklyGeography": "Completa un Tema Semanal de Geografía",
-  "avatarUnlockWeeklyVideogames": "Completa un Tema Semanal de Videojuegos",
-  "avatarUnlockWeeklyBooks": "Completa un Tema Semanal de Libros",
+  "avatarUnlockWeeklyCine": "Completa un tema de la semana de cine",
+  "avatarUnlockWeeklyHistory": "Completa un tema de la semana de historia",
+  "avatarUnlockWeeklyScience": "Completa un tema de la semana de ciencia",
+  "avatarUnlockWeeklySports": "Completa un tema de la semana de deportes",
+  "avatarUnlockWeeklyMusic": "Completa un tema de la semana de música",
+  "avatarUnlockWeeklyArt": "Completa un tema de la semana de arte",
+  "avatarUnlockWeeklyGeography": "Completa un tema de la semana de geografía",
+  "avatarUnlockWeeklyVideogames": "Completa un tema de la semana de videojuegos",
+  "avatarUnlockWeeklyBooks": "Completa un tema de la semana de libros",
 
   "avatarName100Questions": "100 Respuestas",
   "avatarUnlock100Questions": "Responde 100 preguntas",
@@ -329,8 +330,8 @@
   "soloNoCategoriesAvailable": "No hay categorías activas en Firestore.",
   "soloFixedTopics": "Temas fijos",
   "soloAllCompletedTitle": "¡Completaste todo el modo Solo!",
-  "soloAllCompletedBody": "Sigue ganando monedas y XP en el Daily Challenge o retando a otros jugadores en PvP.",
-  "soloAllCompletedDailyButton": "Ir al Daily Challenge",
+  "soloAllCompletedBody": "Sigue ganando monedas y XP en el reto diario o retando a otros jugadores en PvP.",
+  "soloAllCompletedDailyButton": "Ir al reto diario",
   "soloAllCompletedPvpButton": "Ir a PvP",
   "soloLifeRecovered": "❤️ Vida recuperada",
   "soloNotEnoughCoins": "❌ No tienes suficientes monedas",
@@ -345,7 +346,8 @@
   "soloStatusCompleted": "Completado",
   "soloStatusInProgress": "En curso",
   "soloStatusNew": "Nuevo",
-  "soloContinueLevel": "Continuar N{level}",
+  "soloStartButton": "Empezar",
+  "soloContinueLevel": "Continuar nivel {level}",
   "@soloContinueLevel": {
     "placeholders": {
       "level": {"type": "int"}
@@ -417,10 +419,11 @@
   },
   "levelPlaySessionCreateError": "No se pudo preparar el nivel. Intenta de nuevo.",
   "levelPlaySessionCreateErrorTitle": "Error creando sesión",
+  "levelPlayPreparingLevel": "Preparando el nivel...",
   "levelPlayGeneratingQuestions": "Generando preguntas del nivel...",
   "levelPlaySessionNotFound": "Sesión no encontrada.",
   "levelPlaySessionNoQuestions": "Esta sesión no tiene preguntas.",
-  "levelPlayLivesMax": "MAX",
+  "levelPlayLivesMax": "MÁX",
   "levelPlayOutOfLivesTitle": "Te quedaste sin vidas",
   "levelPlayOutOfLivesMessage": "No puedes continuar este nivel hasta recuperar vidas.",
   "levelPlayLivesHeader": "Vidas: {lives}",
@@ -515,20 +518,20 @@
   "pvpHubTitle": "PvP",
   "pvpHubHeading": "Centro competitivo",
   "pvpHubSubheading": "Elige cómo quieres competir.",
-  "pvpActiveMatchesTitle": "Partidas Activas",
+  "pvpActiveMatchesTitle": "Partidas activas",
   "pvpActiveMatchesTitleAlert": "Partidas Activas • ¡Tu turno!",
   "pvpActiveMatchesSubtitle": "Turnos pendientes, partidas en vivo y resultados recientes.",
   "pvpActiveMatchesSubtitleAlert": "Tienes partidas pendientes esperando tu jugada.",
-  "pvpRealtimeInvitesTitle": "Invitaciones en Vivo",
+  "pvpRealtimeInvitesTitle": "Invitaciones en vivo",
   "pvpRealtimeInvitesTitleAlert": "Invitaciones en Vivo • ¡Nuevo!",
-  "pvpRealtimeInvitesSubtitle": "Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Friends.",
+  "pvpRealtimeInvitesSubtitle": "Acepta o rechaza retos en vivo. Para retar a un amigo, ve a la pestaña Amigos.",
   "pvpRealtimeInvitesSubtitleAlert": "Tienes retos en vivo esperando.",
-  "pvpFindOpponentTitle": "Buscar Rival",
+  "pvpFindOpponentTitle": "Buscar rival",
   "pvpFindOpponentSubtitle": "Juega contra cualquier retador disponible.",
   "pvpSeasonTitle": "Temporada PvP",
-  "pvpSeasonSubtitle": "Consulta tu liga ranked, progreso de temporada, leaderboard y recompensas.",
+  "pvpSeasonSubtitle": "Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.",
 
-  "activeMatchesTitle": "Partidas Activas",
+  "activeMatchesTitle": "Partidas activas",
   "activeMatchesReconnecting": "Reconectando...",
   "activeMatchesYourTurn": "Tu turno",
   "activeMatchesLoadingYourMatches": "Cargando tus partidas...",
@@ -580,6 +583,13 @@
   "findOpponentLiveTab": "Tiempo real",
   "findOpponentAsyncTab": "Asíncrono",
 
+  "leagueBronze": "Bronce",
+  "leagueSilver": "Plata",
+  "leagueGold": "Oro",
+  "leaguePlatinum": "Platino",
+  "leagueDiamond": "Diamante",
+  "leagueMaster": "Maestro",
+
   "liveMenuLeagueTitle": "Liga {name}",
   "@liveMenuLeagueTitle": {
     "placeholders": {
@@ -588,12 +598,12 @@
   },
   "liveMenuMmrHint1": "Buscar rival afecta tu MMR y tu liga PvP.",
   "liveMenuFixedTopicLabel": "Tema fijo",
-  "liveMenuPublicMatchmaking": "Matchmaking público",
+  "liveMenuPublicMatchmaking": "Búsqueda pública de rival",
   "liveMenuMmrHint2": "Buscar rival afecta tu MMR, liga y estadísticas PvP.",
   "liveMenuPrivateMatches": "Partidas privadas",
   "liveMenuCreatePrivateRoom": "Crear sala privada",
   "liveMenuJoinWithCode": "Unirme con código",
-  "liveMenuPrivateMatchesHint": "Las partidas privadas son amistosas y no afectan tu ranking.",
+  "liveMenuPrivateMatchesHint": "Las partidas privadas son amistosas y no afectan tu clasificación.",
 
   "asyncMenuSelectTopicFirst": "Selecciona un tema fijo primero.",
   "asyncMenuConfigTitle": "Configuración",
@@ -601,9 +611,9 @@
   "asyncMenuNoActiveCategories": "No hay categorías activas.",
   "asyncMenuSelectTopicLabel": "Selecciona un tema fijo",
   "asyncMenuFindPlayerButton": "Buscar jugador para retar",
-  "asyncMenuTip": "Tip: Retas a alguien, juegas inmediatamente y tu rival puede jugar luego. Revisa Active Matches para ver tus retos pendientes.",
+  "asyncMenuTip": "Consejo: retas a alguien, juegas de inmediato y tu rival puede jugar después. Revisa tus partidas activas para ver los retos pendientes.",
 
-  "createMatchTitle": "Crear sala (Tiempo real)",
+  "createMatchTitle": "Crear sala",
   "createMatchCategory": "Categoría",
   "createMatchDifficulty": "Dificultad",
   "createMatchDiffEasy": "1 (Fácil)",
@@ -617,8 +627,8 @@
   "joinMatchTitle": "Unirme",
   "joinMatchCodeLabel": "Código de sala (ej: A7KQ2)",
 
-  "liveMatchmakingRankedTitle": "Matchmaking Ranked",
-  "liveMatchmakingCasualTitle": "Matchmaking Casual",
+  "liveMatchmakingRankedTitle": "Búsqueda clasificatoria",
+  "liveMatchmakingCasualTitle": "Búsqueda casual",
   "liveMatchmakingTypeLine": "Tipo: {type}",
   "@liveMatchmakingTypeLine": {
     "placeholders": {
@@ -653,16 +663,13 @@
   "liveMatchmakingNoOpponentFound": "No se encontró rival por ahora. Intenta nuevamente.",
   "liveMatchmakingTryAsyncInstead": "Jugar asíncrono en su lugar",
   "liveMatchmakingSearchButton": "Buscar",
+  "liveMatchmakingOpponentFound": "¡Rival encontrado!",
+  "matchLobbyRoomClosed": "La sala se cerró.",
+  "matchLobbyStarting": "Empezando la partida…",
   "liveMatchmakingSearching": "Buscando...",
   "liveMatchmakingSearchingOpponent": "Buscando rival...",
-  "liveMatchmakingQueueStatus": "Estado cola: {status}",
-  "@liveMatchmakingQueueStatus": {
-    "placeholders": {
-      "status": {"type": "String"}
-    }
-  },
   "liveMatchmakingRankedHint": "Primero busca rivales cercanos a tu MMR; si tarda, amplía el rango automáticamente.",
-  "liveMatchmakingCasualHint": "Casual no afecta tu MMR. Se prioriza encontrar rival rápido.",
+  "liveMatchmakingCasualHint": "La partida casual no afecta tu MMR. Se prioriza encontrar rival rápido.",
   "liveMatchmakingCancelSearch": "Cancelar búsqueda",
 
   "asyncFindPlayersCannotChallengeSelf": "No puedes retarte a ti mismo.",
@@ -714,14 +721,14 @@
       "name": {"type": "String"}
     }
   },
-  "friendChallengeOnline": "Online",
-  "friendChallengeOffline": "Offline",
+  "friendChallengeOnline": "En línea",
+  "friendChallengeOffline": "Desconectado",
   "friendChallengeSendRealtime": "Enviar reto en tiempo real",
   "friendChallengeCreateAsync": "Crear reto asíncrono",
   "friendChallengeTitle": "Configurar reto",
   "friendChallengeTypeLabel": "Tipo de reto",
-  "friendChallengeNeedOnlineHint": "Tu amigo debe estar online para jugar en tiempo real.",
-  "friendChallengeMatchConfig": "Configuración del match",
+  "friendChallengeNeedOnlineHint": "Tu amigo debe estar en línea para jugar en tiempo real.",
+  "friendChallengeMatchConfig": "Configuración de la partida",
   "friendChallengeCategoryRandom": "Aleatorio",
   "friendChallengeDiffEasy": "Fácil",
   "friendChallengeDiffMedium": "Media",
@@ -740,7 +747,7 @@
       "seconds": {"type": "int"}
     }
   },
-  "friendChallengeRealtimeHint": "Tiempo real requiere que ambos estén online. Las partidas con amigos son casuales y no afectan MMR.",
+  "friendChallengeRealtimeHint": "En tiempo real ambos deben estar en línea. Las partidas con amigos son casuales y no afectan el MMR.",
   "friendChallengeAsyncHint": "Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.",
 
   "matchLobbyWaitingFriendJoin": "Esperando que tu amigo se una a la sala.",
@@ -768,12 +775,6 @@
   "matchLobbyWaitingOpponentEllipsis": "Esperando rival...",
   "matchLobbyImReady": "Estoy listo",
   "matchLobbyCancelReady": "Cancelar listo",
-  "matchLobbyRoomStatus": "Estado de la sala: {status}",
-  "@matchLobbyRoomStatus": {
-    "placeholders": {
-      "status": {"type": "String"}
-    }
-  },
   "matchLobbyPlayer1": "Jugador 1",
   "matchLobbyPlayer2": "Jugador 2",
   "matchLobbyReadyLabel": "Listo",
@@ -796,8 +797,8 @@
   },
   "pvpResultFinalResult": "Resultado final",
   "pvpResultVs": "VS",
-  "pvpResultMatchSummary": "Resumen del match",
-  "pvpResultYourScore": "Tu score",
+  "pvpResultMatchSummary": "Resumen de la partida",
+  "pvpResultYourScore": "Tu puntaje",
   "pvpResultOpponent": "Rival",
   "pvpResultPerformance": "Rendimiento",
   "pvpResultBefore": "Antes",
@@ -817,9 +818,9 @@
     }
   },
   "matchPlayTitle": "1 vs 1",
-  "matchPlayNotFound": "Match no encontrado",
+  "matchPlayNotFound": "Partida no encontrada",
   "matchPlayWaitingToStart": "Esperando que inicie...",
-  "matchPlayNoQuestions": "Este match no tiene preguntas.",
+  "matchPlayNoQuestions": "Esta partida no tiene preguntas.",
   "matchPlayYourScoreLabel": "Tu puntaje",
   "matchPlayWaitingFinalResult": "Esperando resultado final...",
   "matchPlayOpponentStillAnswering": "Tu rival todavía está respondiendo preguntas.",
@@ -832,10 +833,10 @@
   "matchPlayDrawTitle": "Empate",
   "matchPlayDrawSubtitle": "Ambos terminaron con el mismo puntaje.",
   "matchPlayVictoryTitle": "¡Ganaste!",
-  "matchPlayVictoryRankedSubtitle": "Buen duelo. Tu rating competitivo fue actualizado.",
+  "matchPlayVictoryRankedSubtitle": "Buen duelo. Tu puntuación competitiva se actualizó.",
   "matchPlayVictoryCasualSubtitle": "Buen duelo. Sumaste una victoria 1 vs 1.",
   "matchPlayDefeatTitle": "Perdiste",
-  "matchPlayDefeatRankedSubtitle": "Estuviste cerca. Tu rating competitivo fue actualizado.",
+  "matchPlayDefeatRankedSubtitle": "Estuviste cerca. Tu puntuación competitiva se actualizó.",
   "matchPlayDefeatCasualSubtitle": "Estuviste cerca. Intenta una revancha.",
   "matchPlayRematch": "Revancha",
   "matchPlaySendingRequest": "Enviando solicitud...",
@@ -846,6 +847,7 @@
   "asyncMatchPlayTitle": "Reto asíncrono",
   "asyncMatchPlayNotFound": "Reto no encontrado",
   "asyncMatchPlayNoQuestions": "Este reto no tiene preguntas.",
+  "commonPlayerFallback": "Jugador",
   "asyncMatchPlayYouFallback": "Tú",
   "asyncMatchPlayOpponentFallback": "Rival",
   "asyncMatchPlayCorrectLabel": "Aciertos",
@@ -882,9 +884,9 @@
       "coins": {"type": "int"}
     }
   },
-  "pvpSeasonRankedHint": "Ranked usa matchmaking flexible: primero busca cerca de tu liga, luego amplía el rango para que nadie se quede esperando.",
-  "pvpSeasonHowItWorksTitle": "Cómo funcionan las Temporadas PvP",
-  "pvpSeasonHowItWorksBullet1": "• Juega partidas Ranked para subir tu MMR.",
+  "pvpSeasonRankedHint": "La búsqueda clasificatoria es flexible: primero busca cerca de tu liga y luego amplía el rango para que nadie se quede esperando.",
+  "pvpSeasonHowItWorksTitle": "Cómo funcionan las temporadas PvP",
+  "pvpSeasonHowItWorksBullet1": "• Juega partidas clasificatorias para subir tu MMR.",
   "pvpSeasonHowItWorksBullet2": "• Tu liga se calcula según tu MMR actual.",
   "pvpSeasonHowItWorksBullet3": "• Las clasificaciones ordenan a los jugadores por MMR.",
   "pvpSeasonHowItWorksBullet4": "• Las recompensas se basan en tu liga final cuando termina la temporada.",
@@ -898,8 +900,8 @@
     }
   },
   "pvpSeasonNoFriendsTitle": "Aún no hay amigos en la clasificación",
-  "pvpSeasonNoFriendsEmptyHint": "Juega partidas Ranked y agrega amigos para comparar tu rating PvP.",
-  "pvpSeasonNoFriendsHint": "Agrega amigos para comparar tu rating PvP con gente que conoces.",
+  "pvpSeasonNoFriendsEmptyHint": "Juega partidas clasificatorias y agrega amigos para comparar tu puntuación PvP.",
+  "pvpSeasonNoFriendsHint": "Agrega amigos para comparar tu puntuación PvP con gente que conoces.",
   "pvpSeasonYouSuffix": "{name} (Tú)",
   "@pvpSeasonYouSuffix": {
     "placeholders": {
@@ -926,8 +928,8 @@
       "error": {"type": "String"}
     }
   },
-  "pvpSeasonNoRankedPlayers": "Aún no hay jugadores ranked.\nJuega una partida Ranked para entrar en esta clasificación.",
-  "pvpSeasonRewardsTitle": "Recompensas de Temporada",
+  "pvpSeasonNoRankedPlayers": "Aún no hay jugadores en la clasificatoria.\nJuega una partida clasificatoria para entrar en esta clasificación.",
+  "pvpSeasonRewardsTitle": "Recompensas de temporada",
   "pvpSeasonRewardsSubtitle": "Las recompensas se basan en tu mejor liga PvP de cada temporada finalizada.",
   "pvpSeasonCurrentProjectedReward": "Recompensa proyectada actual",
   "pvpSeasonEndsInLine": "La temporada termina en {time}",
@@ -939,7 +941,7 @@
   "pvpSeasonCheckingRewards": "Verificando recompensas de temporada PvP pendientes...",
   "pvpSeasonCouldNotLoad": "No se pudieron cargar las recompensas",
   "pvpSeasonNoRewardYetTitle": "Aún no hay recompensa disponible",
-  "pvpSeasonNoRewardYetHint": "Juega partidas Ranked esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.",
+  "pvpSeasonNoRewardYetHint": "Juega partidas clasificatorias esta temporada. Cuando termine, tu recompensa PvP aparecerá aquí.",
   "pvpSeasonPendingSingle": "{count} recompensa de temporada pendiente",
   "@pvpSeasonPendingSingle": {
     "placeholders": {
@@ -983,7 +985,7 @@
     }
   },
 
-  "dailyResultComplete": "¡Daily Challenge completado!",
+  "dailyResultComplete": "¡Reto diario completado!",
   "dailyResultCorrectAnswers": "Respuestas correctas",
   "dailyResultTotalAnswered": "Total respondidas",
   "dailyResultCoinsEarned": "Monedas ganadas",
@@ -997,7 +999,7 @@
   "dailyResultStreakBonus": "Bono de racha",
   "dailyResultAlreadyPlayed": "Ya jugaste hoy. No se otorgaron monedas nuevamente.",
   "dailyResultBackHome": "Volver al inicio",
-  "dailyReminderTitle": "🔥 ¡Daily Challenge listo!",
+  "dailyReminderTitle": "🔥 ¡Tu reto diario está listo!",
   "dailyReminderBody": "Juega hoy y mantén tu racha.",
   "soloPerfectBadge": "¡PERFECTO!",
   "dailyResultNextChallengeIn": "Próximo desafío en {time}",
@@ -1006,7 +1008,7 @@
       "time": {"type": "String"}
     }
   },
-  "dailyResultViewLeaderboard": "Ver ranking de hoy",
+  "dailyResultViewLeaderboard": "Ver la clasificación de hoy",
 
   "weeklyRewardsTitle": "Recompensas semanales",
   "weeklyRewardsNoPending": "No hay recompensas semanales pendientes.",
@@ -1019,7 +1021,7 @@
   },
   "weeklyRewardsChecking": "Verificando recompensas semanales pendientes...",
   "weeklyRewardsNoPendingTitle": "No hay recompensas semanales pendientes",
-  "weeklyRewardsKeepPlayingHint": "Sigue jugando el Weekly Challenge para ganar recompensas semanales.",
+  "weeklyRewardsKeepPlayingHint": "Sigue jugando en la liga semanal para ganar recompensas cada semana.",
   "weeklyRewardsPendingSingle": "{count} recompensa pendiente",
   "@weeklyRewardsPendingSingle": {
     "placeholders": {
@@ -1073,7 +1075,7 @@
     }
   },
 
-  "dailyLeaderboardTitle": "Clasificación Diaria",
+  "dailyLeaderboardTitle": "Clasificación diaria",
   "dailyLeaderboardErrorLoading": "Error cargando clasificación:\n{error}",
   "@dailyLeaderboardErrorLoading": {
     "placeholders": {
@@ -1081,7 +1083,7 @@
     }
   },
   "dailyLeaderboardNoData": "No hay datos de clasificación disponibles.",
-  "dailyLeaderboardNoScoresYet": "Aún no hay puntajes hoy.\n¡Juega el Daily Challenge primero!",
+  "dailyLeaderboardNoScoresYet": "Aún no hay puntajes hoy.\n¡Juega el reto diario primero!",
   "dailyLeaderboardRankingTitle": "Clasificación",
   "dailyLeaderboardPtsSuffix": "{score} pts",
   "@dailyLeaderboardPtsSuffix": {
@@ -1105,8 +1107,8 @@
   },
   "dailyLeaderboardScoreLabel": "Puntaje",
 
-  "dailyChallengeCoinsPopup": "+5 Monedas 🎉",
-  "dailyChallengeLeaveTitle": "¿Salir del Daily Challenge?",
+  "dailyChallengeCoinsPopup": "+5 monedas 🎉",
+  "dailyChallengeLeaveTitle": "¿Salir del reto diario?",
   "dailyChallengeLeaveBody": "El reloj sigue corriendo mientras no estás. Tus respuestas se guardan, pero el tiempo que pases fuera no vuelve.",
   "dailyChallengeNoQuestions": "No hay preguntas disponibles",
   "dailyChallengeTimeLabel": "Tiempo",
@@ -1122,10 +1124,10 @@
       "count": {"type": "int"}
     }
   },
-  "dailyChallengeCompletedTitle": "¡Daily completado!",
+  "dailyChallengeCompletedTitle": "¡Reto diario completado!",
   "dailyChallengeSavingResults": "Guardando tus resultados...",
 
-  "weeklyTopicScreenTitle": "Weekly Topic",
+  "weeklyTopicScreenTitle": "Tema de la semana",
   "weeklyTopicCoinsClaimed": "¡{coins} monedas reclamadas!",
   "@weeklyTopicCoinsClaimed": {
     "placeholders": {
@@ -1141,15 +1143,15 @@
       "name": {"type": "String"}
     }
   },
-  "weeklyTopicFeaturedBadge": "Tema Semanal Destacado",
+  "weeklyTopicFeaturedBadge": "Tema de la semana destacado",
   "weeklyTopicProgressTitle": "Progreso",
   "weeklyTopicRewardsTitle": "Recompensas",
   "weeklyTopicCoinRewardClaimed": "Recompensa de monedas reclamada",
   "weeklyTopicExclusiveClaimed": "Recompensa exclusiva reclamada.",
   "weeklyTopicExclusiveReady": "Recompensa exclusiva lista para reclamar.",
   "weeklyTopicExclusiveClaimedButton": "Recompensa exclusiva reclamada",
-  "weeklyTopicCategoryMissing": "Falta la categoría del Weekly Topic.",
-  "weeklyTopicPlayButton": "Jugar Weekly Topic",
+  "weeklyTopicCategoryMissing": "Falta la categoría del tema de la semana.",
+  "weeklyTopicPlayButton": "Jugar tema de la semana",
   "weeklyTopicCorrectAnswersProgress": "{correct} / {total} respuestas correctas",
   "@weeklyTopicCorrectAnswersProgress": {
     "placeholders": {
@@ -1203,16 +1205,16 @@
     }
   },
 
-  "weeklyLeagueScreenTitle": "Weekly Challenge",
-  "weeklyLeagueErrorLoading": "Error cargando el desafío semanal:\n{error}",
+  "weeklyLeagueScreenTitle": "Liga semanal",
+  "weeklyLeagueErrorLoading": "Error cargando la liga semanal:\n{error}",
   "@weeklyLeagueErrorLoading": {
     "placeholders": {
       "error": {"type": "String"}
     }
   },
-  "weeklyLeagueNoScoresYet": "Aún no hay puntajes semanales.\nJuega un Daily Challenge para entrar en esta clasificación semanal.",
-  "weeklyLeagueRankingTitle": "Clasificación Semanal",
-  "weeklyLeagueTierSuffix": "Nivel {name}",
+  "weeklyLeagueNoScoresYet": "Aún no hay puntajes semanales.\nJuega un reto diario para entrar en esta clasificación semanal.",
+  "weeklyLeagueRankingTitle": "Clasificación semanal",
+  "weeklyLeagueTierSuffix": "Liga {name}",
   "@weeklyLeagueTierSuffix": {
     "placeholders": {
       "name": {"type": "String"}
@@ -1235,7 +1237,7 @@
   "weeklyLeagueOpenToSeeDetails": "Abre Recompensas Semanales para ver tu puesto y monedas exactas.",
   "weeklyLeagueViewDetails": "Ver detalles",
   "weeklyLeagueClaim": "Reclamar",
-  "weeklyLeagueWeeklyRewardsTitle": "Recompensas Semanales",
+  "weeklyLeagueWeeklyRewardsTitle": "Recompensas semanales",
   "weeklyLeagueTop1Reward": "Top 1: {coins} monedas + bono de ascenso",
   "@weeklyLeagueTop1Reward": {
     "placeholders": {
@@ -1287,7 +1289,7 @@
       "error": {"type": "String"}
     }
   },
-  "achievementsProgressTitle": "Progreso de Logros",
+  "achievementsProgressTitle": "Progreso de logros",
   "achievementsCompletedCount": "{completed} / {total} completados",
   "@achievementsCompletedCount": {
     "placeholders": {
@@ -1375,7 +1377,7 @@
   "aiTopicsConfirm": "Confirmar",
   "aiTopicsEmptyTitle": "Crea tu propio tema de trivia",
   "aiTopicsEmptySubtitle": "Elige cualquier tema que te guste. Las preguntas generadas por IA se conectarán en el siguiente paso.",
-  "aiTopicsEmptyButton": "Crear Tema IA",
+  "aiTopicsEmptyButton": "Crear tema IA",
 
   "createAiTopicEnterTopic": "Ingresa un tema",
   "createAiTopicCreated": "Tema IA creado",
@@ -1405,7 +1407,7 @@
   },
   "createAiTopicIncludesHint": "Incluye 10 niveles con 10 preguntas cada uno, preparados de a poco mientras juegas.",
   "createAiTopicCreatingButton": "Creando...",
-  "createAiTopicPopularSectionTitle": "Temas Populares",
+  "createAiTopicPopularSectionTitle": "Temas populares",
   "createAiTopicPopularSectionHint": "Elige un tema ya creado por otros jugadores y ahorra monedas",
   "createAiTopicPopularUsedCount": "Usado {count} veces",
   "@createAiTopicPopularUsedCount": {
@@ -1558,7 +1560,7 @@
   },
   "notificationsEmptyState": "Aún no tienes notificaciones.",
 
-  "presenceStatusOnline": "Online",
+  "presenceStatusOnline": "En línea",
   "presenceStatusInMatch": "En partida",
   "presenceStatusSearching": "Buscando partida",
 
@@ -1632,13 +1634,13 @@
   "onboardingLivesTitle": "Tus vidas",
   "onboardingLivesBody": "Tienes 10 vidas. Cada una se recupera sola cada 3 minutos, o puedes comprarla al instante con monedas si no quieres esperar.",
   "onboardingCoinsTitle": "Monedas y racha diaria",
-  "onboardingCoinsBody": "Gana monedas y XP jugando. Vuelve cada día al Daily Challenge para mantener tu racha y ganar recompensas extra.",
+  "onboardingCoinsBody": "Gana monedas y XP jugando. Vuelve cada día al reto diario para mantener tu racha y ganar recompensas extra.",
   "onboardingSkip": "Saltar",
   "onboardingNext": "Siguiente",
-  "onboardingPlayFirstDaily": "Jugar mi primer Daily Challenge",
+  "onboardingPlayFirstDaily": "Jugar mi primer reto diario",
   "spotlightGotIt": "Entendido",
   "spotlightPvpTitle": "Duelos 1 vs 1",
-  "spotlightPvpBody": "Reta a otros jugadores en tiempo real o de forma asíncrona. Ganar sube tu rating y te acerca a la siguiente liga, con más recompensas.",
+  "spotlightPvpBody": "Reta a otros jugadores en tiempo real o por turnos. Ganar sube tu puntuación y te acerca a la siguiente liga, con más recompensas.",
   "spotlightWeeklyTopicTitle": "Tema de la semana",
   "spotlightWeeklyTopicBody": "Cada semana rota una categoría especial. Responde rondas para ganar monedas y un avatar exclusivo antes de que termine la semana.",
   "spotlightAchievementsTitle": "Logros",
@@ -1647,7 +1649,7 @@
   "spotlightFramesBody": "Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.",
   "spotlightAiTopicsGuidedTitle": "Buscamos antes de generar",
   "spotlightAiTopicsGuidedBody": "Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.",
-  "spotlightAiTopicsPopularTitle": "Temas Populares",
+  "spotlightAiTopicsPopularTitle": "Temas populares",
   "spotlightAiTopicsPopularBody": "Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.",
   "notificationBellTooltip": "Notificaciones",
   "buyCoinsButtonLabel": "Comprar monedas",
@@ -1677,7 +1679,7 @@
       "name": {"type": "String"}
     }
   },
-  "serviceRankedCooldown": "Tienes cooldown de ranked por abandono. Intenta de nuevo en {remaining}.",
+  "serviceRankedCooldown": "Abandonaste una partida clasificatoria y debes esperar. Intenta de nuevo en {remaining}.",
   "@serviceRankedCooldown": {
     "placeholders": {
       "remaining": {"type": "String"}
@@ -1685,7 +1687,7 @@
   },
   "serviceRoomNotFound": "Sala no existe",
   "serviceNotInRoom": "No estás dentro de esta sala",
-  "serviceMatchNotFound": "Match no encontrado",
+  "serviceMatchNotFound": "Partida no encontrada",
   "serviceChallengedUidEmpty": "challengedUid vacío",
   "serviceCannotChallengeSelfNoPeriod": "No puedes retarte a ti mismo",
   "serviceChallengeNotFound": "Reto no encontrado",
@@ -1749,7 +1751,7 @@
   "achievementSoloLevels10Title": "Explorador solitario",
   "achievementSoloLevels10Description": "Completa 10 niveles en solitario.",
   "achievementDailyStreak7Title": "Hábito semanal",
-  "achievementDailyStreak7Description": "Alcanza una racha de 7 días en el Daily Challenge.",
+  "achievementDailyStreak7Description": "Alcanza una racha de 7 días en el reto diario.",
   "achievementFriends5Title": "Jugador social",
   "achievementFriends5Description": "Agrega 5 amigos.",
   "achievementPvpWins25Title": "Veterano de duelos",

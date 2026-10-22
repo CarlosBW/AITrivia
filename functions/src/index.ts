@@ -146,7 +146,11 @@ function localizedError(
   es: string,
   en: string
 ): HttpsError {
-  return new HttpsError(code, pickText(languageCode, es, en));
+  // `localized` tells the app this message was written for the player;
+  // it shows only those, and its own text for anything else.
+  return new HttpsError(
+    code, pickText(languageCode, es, en), {localized: true}
+  );
 }
 
 /**
@@ -1336,7 +1340,11 @@ export const joinMatchByCode = onCall(async (request) => {
     .get();
 
   if (matchesQuery.empty) {
-    throw new HttpsError("not-found", "Code not found.");
+    throw await localizedErrorFor(
+      uid, "not-found",
+      "No hay ninguna sala abierta con ese código.",
+      "No open room has that code."
+    );
   }
 
   const matchRef = matchesQuery.docs[0].ref;
@@ -1351,7 +1359,11 @@ export const joinMatchByCode = onCall(async (request) => {
     const data = snap.data();
 
     if (!data) {
-      throw new HttpsError("not-found", "Room not found.");
+      throw await localizedErrorFor(
+        uid, "not-found",
+        "Esa sala ya no está disponible.",
+        "That room is no longer available."
+      );
     }
 
     const status = String(data.status || "waiting");
@@ -1893,7 +1905,7 @@ export const createPrivateLiveMatch = onCall({timeoutSeconds: 60},
           cooldown.toMillis() > Date.now()) {
         throw await localizedErrorFor(
           uid, "failed-precondition",
-          "Estás en espera por abandonar una partida ranked.",
+          "Abandonaste una partida clasificatoria y debes esperar.",
           "You're on a cooldown for leaving a ranked match."
         );
       }
@@ -2377,7 +2389,11 @@ export const createRealtimeInvite = onCall(async (request) => {
     return {inviteId: pendingForFriend.docs[0].id};
   }
   if (pendingCount.data().count >= MAX_PENDING_REALTIME_INVITES) {
-    throw new HttpsError("resource-exhausted", "Too many pending invites.");
+    throw await localizedErrorFor(
+      uid, "resource-exhausted",
+      "Tienes demasiados retos pendientes. Espera a que respondan.",
+      "You have too many pending challenges. Wait for them to answer."
+    );
   }
 
   const me = meSnap.data() || {};
@@ -2439,7 +2455,11 @@ export const acceptRealtimeInvite = onCall({timeoutSeconds: 60},
         tx.get(db.collection("users").doc(uid)),
       ]);
       if (inviteSnap.data()?.status !== "pending") {
-        throw new HttpsError("failed-precondition", "Invite not pending.");
+        throw await localizedErrorFor(
+          uid, "failed-precondition",
+          "Ese reto ya no está disponible.",
+          "That challenge is no longer available."
+        );
       }
       writeLiveMatch(tx, matchRef, {
         hostUid: fromUid,
@@ -2915,7 +2935,11 @@ export const createAsyncPvpMatch = onCall({
   );
 
   if (!challengedSnap.exists) {
-    throw new HttpsError("not-found", "That player no longer exists.");
+    throw await localizedErrorFor(
+      uid, "not-found",
+      "Ese jugador ya no existe.",
+      "That player no longer exists."
+    );
   }
 
   // Each challenge pushes a notification to the challenged player, and an
@@ -5086,8 +5110,8 @@ export const notifyStreakAtRisk = onSchedule(
           ),
           body: pickText(
             data.languageCode,
-            `Tienes una racha de ${streak} días. Juega el Daily ` +
-              "Challenge de hoy antes de perderla.",
+            `Tienes una racha de ${streak} días. Juega el reto ` +
+              "diario de hoy antes de perderla.",
             `You have a ${streak}-day streak. Play today's Daily ` +
               "Challenge before you lose it."
           ),
@@ -5635,7 +5659,11 @@ export const ensureSoloLevelSession = onCall({
     const topicData = topicSnap.data();
 
     if (!topicData) {
-      throw new HttpsError("not-found", "This topic no longer exists.");
+      throw await localizedErrorFor(
+        uid, "not-found",
+        "Este tema ya no existe.",
+        "This topic no longer exists."
+      );
     }
 
     const ownerSnap = await userRef.get();
@@ -7951,7 +7979,11 @@ export const suggestAiTopicTitles = onCall({
   // The meter counts calls, not tokens: an unbounded title made each
   // metered call as large a paid prompt as the caller liked.
   if (cleanTitle.length > AI_TOPIC_TITLE_MAX_LENGTH) {
-    throw new HttpsError("invalid-argument", "Title too long.");
+    throw await localizedErrorFor(
+      uid, "invalid-argument",
+      "El título es demasiado largo.",
+      "The title is too long."
+    );
   }
 
   const moderationKey = normalizeForModeration(cleanTitle);
@@ -8292,8 +8324,10 @@ export const createAiTopic = onCall({
     );
 
     if (freshActiveTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
-      throw new HttpsError(
-        "resource-exhausted",
+      throw await localizedErrorFor(
+        uid, "resource-exhausted",
+        `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas de IA. ` +
+        "Borra uno para crear otro.",
         `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
         "Delete one to create another."
       );
@@ -9198,61 +9232,71 @@ export const reportAiQuestion = onCall(async (request) => {
 // lib/services/avatar_service.dart's weeklyAvatars list.
 const WEEKLY_TOPIC_CATEGORIES: {
   categoryId: string;
-  title: string;
+  titleEs: string;
+  titleEn: string;
   descriptionEs: string;
   descriptionEn: string;
   rewardAvatarId: string;
 }[] = [
   {
-    categoryId: "cine", title: "Cine Week",
+    categoryId: "cine",
+    titleEs: "Semana del cine", titleEn: "Movie Week",
     descriptionEs: "Completa niveles de cine y gana recompensas.",
     descriptionEn: "Complete cinema levels and earn rewards.",
     rewardAvatarId: "weekly_cine",
   },
   {
-    categoryId: "historia", title: "History Week",
+    categoryId: "historia",
+    titleEs: "Semana de la historia", titleEn: "History Week",
     descriptionEs: "Completa niveles de historia y gana recompensas.",
     descriptionEn: "Complete history levels and earn rewards.",
     rewardAvatarId: "weekly_history",
   },
   {
-    categoryId: "ciencia", title: "Science Week",
+    categoryId: "ciencia",
+    titleEs: "Semana de la ciencia", titleEn: "Science Week",
     descriptionEs: "Completa niveles de ciencia y gana recompensas.",
     descriptionEn: "Complete science levels and earn rewards.",
     rewardAvatarId: "weekly_science",
   },
   {
-    categoryId: "musica", title: "Music Week",
+    categoryId: "musica",
+    titleEs: "Semana de la música", titleEn: "Music Week",
     descriptionEs: "Completa niveles de música y gana recompensas.",
     descriptionEn: "Complete music levels and earn rewards.",
     rewardAvatarId: "weekly_music",
   },
   {
-    categoryId: "arte", title: "Art Week",
+    categoryId: "arte",
+    titleEs: "Semana del arte", titleEn: "Art Week",
     descriptionEs: "Completa niveles de arte y gana recompensas.",
     descriptionEn: "Complete art levels and earn rewards.",
     rewardAvatarId: "weekly_art",
   },
   {
-    categoryId: "geografia", title: "Geography Week",
+    categoryId: "geografia",
+    titleEs: "Semana de la geografía", titleEn: "Geography Week",
     descriptionEs: "Completa niveles de geografía y gana recompensas.",
     descriptionEn: "Complete geography levels and earn rewards.",
     rewardAvatarId: "weekly_geography",
   },
   {
-    categoryId: "deportes", title: "Sports Week",
+    categoryId: "deportes",
+    titleEs: "Semana del deporte", titleEn: "Sports Week",
     descriptionEs: "Completa niveles de deportes y gana recompensas.",
     descriptionEn: "Complete sports levels and earn rewards.",
     rewardAvatarId: "weekly_sports",
   },
   {
-    categoryId: "videojuegos", title: "Gaming Week",
+    categoryId: "videojuegos",
+    titleEs: "Semana de los videojuegos", titleEn: "Gaming Week",
     descriptionEs: "Completa niveles de videojuegos y gana recompensas.",
     descriptionEn: "Complete video game levels and earn rewards.",
     rewardAvatarId: "weekly_videogames",
   },
   {
-    categoryId: "libros", title: "Books Week",
+    categoryId: "libros",
+    titleEs: "Semana de los libros", titleEn: "Books Week",
     descriptionEs: "Completa niveles de libros y gana recompensas.",
     descriptionEn: "Complete book levels and earn rewards.",
     rewardAvatarId: "weekly_books",
@@ -9315,7 +9359,10 @@ export const rotateWeeklyTopic = onSchedule(
     await topicRef.set({
       active: true,
       weekId,
-      title: chosen.title,
+      // `title` stays for app versions that only read that field.
+      title: chosen.titleEn,
+      title_es: chosen.titleEs,
+      title_en: chosen.titleEn,
       description_es: chosen.descriptionEs,
       description_en: chosen.descriptionEn,
       categoryId: chosen.categoryId,
@@ -9360,8 +9407,10 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
     !topicData || String(topicData.weekId || "") !== weekId ||
     String(topicData.categoryId || "") !== categoryId
   ) {
-    throw new HttpsError(
-      "failed-precondition", "This weekly topic is no longer active."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Este tema de la semana ya terminó.",
+      "This weekly topic has ended."
     );
   }
 
@@ -9460,8 +9509,10 @@ export const claimWeeklyTopicCoinReward = onCall(async (request) => {
     throw new HttpsError("not-found", "No active weekly topic.");
   }
   if (String(topicData.weekId || "") !== weekId) {
-    throw new HttpsError(
-      "failed-precondition", "This weekly topic is no longer active."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Este tema de la semana ya terminó.",
+      "This weekly topic has ended."
     );
   }
 
@@ -9526,8 +9577,10 @@ export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
     throw new HttpsError("not-found", "No active weekly topic.");
   }
   if (String(topicData.weekId || "") !== weekId) {
-    throw new HttpsError(
-      "failed-precondition", "This weekly topic is no longer active."
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Este tema de la semana ya terminó.",
+      "This weekly topic has ended."
     );
   }
 
@@ -9699,7 +9752,11 @@ export const acceptFriendRequest = onCall(async (request) => {
     }
 
     if (!requesterSnap.exists) {
-      throw new HttpsError("not-found", "That player no longer exists.");
+      throw await localizedErrorFor(
+        uid, "not-found",
+        "Ese jugador ya no existe.",
+        "That player no longer exists."
+      );
     }
 
     const myData = mySnap.data() || {};

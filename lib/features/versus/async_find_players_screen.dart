@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../../services/match_service.dart';
 import 'async_match_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 
@@ -77,7 +79,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
 
   String _safeDisplayName(Map<String, dynamic> data) {
     final v = (data['displayName'] ?? '').toString().trim();
-    return v.isEmpty ? 'Player' : v;
+    return v.isEmpty ? AppLocalizations.of(context).commonPlayerFallback : v;
   }
 
   Future<void> _challenge({
@@ -119,7 +121,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = userFacingError(AppLocalizations.of(context), e));
     } finally {
       if (mounted) setState(() => _loadingUid = null);
     }
@@ -144,7 +146,11 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.liveMatchmakingCategoryLine(widget.categoryId)),
+                  CategoryNameBuilder(
+                    categoryId: widget.categoryId,
+                    builder: (context, name) =>
+                        Text(l10n.liveMatchmakingCategoryLine(name)),
+                  ),
                   Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
                   Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
                   Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'locale_controller.dart';
 import 'notification_service.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
 
 class FriendService {
@@ -235,7 +236,7 @@ class FriendService {
           )
           .call({'requesterUid': requesterUid});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotAcceptRequest);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotAcceptRequest));
     }
   }
 
@@ -258,7 +259,7 @@ class FriendService {
           )
           .call({'requesterUid': requesterUid});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotRejectRequest);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotRejectRequest));
     }
   }
 
@@ -277,7 +278,7 @@ class FriendService {
           )
           .call({'friendUid': friendUid});
     } on FirebaseFunctionsException catch (e) {
-      throw Exception(e.message ?? _l10n.serviceCouldNotRemoveFriend);
+      throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotRemoveFriend));
     }
   }
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -269,8 +271,36 @@ Future<void> _setupCrashlytics() async {
   }
 }
 
+/// The licenses of the bundled fonts (SIL OFL, and Apache 2.0 for
+/// Mountains of Christmas), which they require shipping alongside them;
+/// they show in the app's license page.
+void _registerFontLicenses() {
+  const families = {
+    'Baloo 2': 'OFL-baloo2.txt',
+    'Black Ops One': 'OFL-blackopsone.txt',
+    'Chakra Petch': 'OFL-chakrapetch.txt',
+    'Cinzel': 'OFL-cinzel.txt',
+    'Manrope': 'OFL-manrope.txt',
+    'Mountains of Christmas': 'LICENSE-mountainsofchristmas.txt',
+    'Playfair Display': 'OFL-playfairdisplay.txt',
+  };
+  LicenseRegistry.addLicense(() async* {
+    for (final entry in families.entries) {
+      final text =
+          await rootBundle.loadString('assets/google_fonts/${entry.value}');
+      yield LicenseEntryWithLineBreaks([entry.key], text);
+    }
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // The fonts ship inside the app (assets/google_fonts/). Fetched on first
+  // launch, an offline first run showed the system font, and each fetch
+  // was a request to Google the privacy policy didn't mention.
+  GoogleFonts.config.allowRuntimeFetching = false;
+  _registerFontLicenses();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

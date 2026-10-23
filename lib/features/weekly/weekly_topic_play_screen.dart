@@ -10,6 +10,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../review/question_review_screen.dart';
 
@@ -320,6 +321,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       ),
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
+        // The whole body, not just the content: the flash used to stop
+        // where the last button did.
+        width: double.infinity,
+        height: double.infinity,
         color: _flashColor,
         child: AbsorbPointer(
           absorbing: _submitting,
@@ -392,9 +397,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                   );
                 }),
                 const SizedBox(height: 24),
-                Text(
-                  l10n.weeklyTopicRoundCorrectCount(_correct),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                CountPill(
+                  icon: Icons.check_circle_rounded,
+                  label: l10n.playCorrectCount(_correct),
+                  color: context.appColors.success,
                 ),
                 if (_submitFailed) ...[
                   const SizedBox(height: 16),

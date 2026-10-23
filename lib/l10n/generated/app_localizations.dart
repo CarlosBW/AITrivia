@@ -3790,11 +3790,11 @@ abstract class AppLocalizations {
   /// **'Pregunta {current} de {total}'**
   String weeklyTopicRoundQuestionCount(int current, int total);
 
-  /// No description provided for @weeklyTopicRoundCorrectCount.
+  /// No description provided for @playCorrectCount.
   ///
   /// In es, this message translates to:
   /// **'Correctas: {correct}'**
-  String weeklyTopicRoundCorrectCount(int correct);
+  String playCorrectCount(int correct);
 
   /// No description provided for @weeklyLeagueScreenTitle.
   ///

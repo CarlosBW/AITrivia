@@ -2177,7 +2177,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String weeklyTopicRoundCorrectCount(int correct) {
+  String playCorrectCount(int correct) {
     return 'Correctas: $correct';
   }
 

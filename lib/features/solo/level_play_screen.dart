@@ -19,6 +19,7 @@ import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 /// What the result screen's primary button does.
@@ -1259,103 +1260,127 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             ? context.appColors.reward
             : context.appColors.danger;
 
-    return AbsorbPointer(
+    // The whole screen tints with the answer, as in the Daily Challenge
+    // and the Weekly Topic: green when it was right, red when it wasn't
+    // or the clock ran out.
+    final answeredWrong =
+        _timedOut || (_selected != null && _selected != answerIndex);
+    final flashColor = !_locked
+        ? Colors.transparent
+        : (answeredWrong ? context.appColors.danger : context.appColors.success)
+            .withValues(alpha: 0.18);
+
+    return AnimatedContainer(
       key: key,
-      absorbing: absorbing,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildLivesHeader(),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.levelPlayQuestionOfTotal(_index + 1, total),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurfaceVariant,
+      duration: const Duration(milliseconds: 180),
+      width: double.infinity,
+      height: double.infinity,
+      color: flashColor,
+      child: AbsorbPointer(
+        absorbing: absorbing,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildLivesHeader(),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.levelPlayQuestionOfTotal(_index + 1, total),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(context.radii.pill),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 8,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                          valueColor:
-                              AlwaysStoppedAnimation(colorScheme.primary),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(context.radii.pill),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            backgroundColor: colorScheme.surfaceContainerHighest,
+                            valueColor:
+                                AlwaysStoppedAnimation(colorScheme.primary),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 14),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: timerColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(context.radii.pill),
-                    border: Border.all(color: timerColor.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.timer_outlined, size: 16, color: timerColor),
-                      const SizedBox(width: 5),
-                      Text(
-                        '${_secondsLeft}s',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: timerColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            QuestionAnswerCard(
-              qText: qText,
-              options: options,
-              answerIndex: answerIndex,
-              selectedIndex: _selected,
-              locked: _locked,
-              timedOut: _timedOut,
-              timeoutAnswerIndex: _timeoutAnswerIndex,
-              onTapAnswer: (i) => _onTapAnswer(
-                tappedIndex: i,
-                answerIndex: answerIndex,
-              ),
-            ),
-            SizedBox(
-              height: 22,
-              child: _statusMsg == null
-                  ? const SizedBox.shrink()
-                  : Center(
-                      child: Text(
-                        _statusMsg!,
-                        style: TextStyle(
-                          color: context.appColors.reward,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      ],
                     ),
-            ),
-          ],
+                  ),
+                  const SizedBox(width: 14),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: timerColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(context.radii.pill),
+                      border: Border.all(color: timerColor.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.timer_outlined, size: 16, color: timerColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${_secondsLeft}s',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: timerColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              QuestionAnswerCard(
+                qText: qText,
+                options: options,
+                answerIndex: answerIndex,
+                selectedIndex: _selected,
+                locked: _locked,
+                timedOut: _timedOut,
+                timeoutAnswerIndex: _timeoutAnswerIndex,
+                onTapAnswer: (i) => _onTapAnswer(
+                  tappedIndex: i,
+                  answerIndex: answerIndex,
+                ),
+              ),
+              SizedBox(
+                height: 22,
+                child: _statusMsg == null
+                    ? const SizedBox.shrink()
+                    : Center(
+                        child: Text(
+                          _statusMsg!,
+                          style: TextStyle(
+                            color: context.appColors.reward,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: CountPill(
+                  icon: Icons.check_circle_rounded,
+                  label: l10n.playCorrectCount(_correct),
+                  color: context.appColors.success,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

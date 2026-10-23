@@ -11,6 +11,7 @@ import '../../l10n/localized_content.dart';
 import '../../widgets/question_answer_card.dart';
 import 'daily_challenge_result_screen.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class DailyChallengeScreen extends StatefulWidget {
@@ -462,59 +463,64 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
             children: [
               AbsorbPointer(
                 absorbing: _savingResults,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _HeaderCard(
-                              icon: Icons.timer_outlined,
-                              label: l10n.dailyChallengeTimeLabel,
-                              value: _formatTime(_timeLeft),
+                // SafeArea keeps the answered count off the gesture bar.
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _HeaderCard(
+                                icon: Icons.timer_outlined,
+                                label: l10n.dailyChallengeTimeLabel,
+                                value: _formatTime(_timeLeft),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _HeaderCard(
-                              icon: Icons.star_border,
-                              label: l10n.dailyLeaderboardScoreLabel,
-                              value: '$_correct',
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _HeaderCard(
+                                icon: Icons.star_border,
+                                label: l10n.dailyLeaderboardScoreLabel,
+                                value: '$_correct',
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _HeaderCard(
-                              icon: Icons.monetization_on_outlined,
-                              label: l10n.homeCoins,
-                              value: '+$_liveCoinsEarned',
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _HeaderCard(
+                                icon: Icons.monetization_on_outlined,
+                                label: l10n.homeCoins,
+                                value: '+$_liveCoinsEarned',
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.dailyChallengeDifficultyLine(_difficultyLabel()),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      QuestionAnswerCard(
-                        qText: _questionText(q),
-                        options: options,
-                        answerIndex: correctIndex,
-                        selectedIndex: _selectedIndex,
-                        locked: _selectedIndex != null,
-                        onTapAnswer: (i) => _answer(i, correctIndex),
-                      ),
-                      const Spacer(),
-                      Text(
-                        l10n.dailyChallengeAnsweredCount(_totalAnswered),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.dailyChallengeDifficultyLine(_difficultyLabel()),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        QuestionAnswerCard(
+                          qText: _questionText(q),
+                          options: options,
+                          answerIndex: correctIndex,
+                          selectedIndex: _selectedIndex,
+                          locked: _selectedIndex != null,
+                          onTapAnswer: (i) => _answer(i, correctIndex),
+                        ),
+                        const Spacer(),
+                        CountPill(
+                          icon: Icons.quiz_rounded,
+                          label: l10n.dailyChallengeAnsweredCount(_totalAnswered),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

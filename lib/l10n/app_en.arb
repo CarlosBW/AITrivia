@@ -1184,8 +1184,8 @@
       "total": {"type": "int"}
     }
   },
-  "weeklyTopicRoundCorrectCount": "Correct: {correct}",
-  "@weeklyTopicRoundCorrectCount": {
+  "playCorrectCount": "Correct: {correct}",
+  "@playCorrectCount": {
     "placeholders": {
       "correct": {"type": "int"}
     }

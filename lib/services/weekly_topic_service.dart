@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -8,7 +6,6 @@ class WeeklyTopicService {
 
   static final WeeklyTopicService instance = WeeklyTopicService._();
 
-  static const int roundSize = 10;
   static const int coinRewardThreshold = 25;
   static const int completionRewardThreshold = 50;
 
@@ -44,77 +41,29 @@ class WeeklyTopicService {
     return userParticipationRef(uid: uid, weekId: weekId).snapshots();
   }
 
-  /// Question ids already used by this player for this week's topic
-  /// (any category), so [loadRandomRound] can avoid repeating them within
-  /// the same weekly cycle — resets naturally every week since it's keyed
-  /// per `weekId`.
-  Future<Set<String>> _usedQuestionIdsThisWeek({
-    required String uid,
-    required String weekId,
-  }) async {
-    final snap = await userParticipationRef(uid: uid, weekId: weekId).get();
-    final raw = snap.data()?['usedQuestionIds'] as List<dynamic>? ?? [];
-    return raw.map((e) => e.toString()).toSet();
-  }
-
-  /// Draws a fresh round of questions straight from the category's
-  /// difficulty pools (same source as Daily Challenge) instead of Solo's
-  /// static levels — a repeat occurrence of this category won't show the
-  /// exact same question sets a player already played in Solo, and
-  /// [_usedQuestionIdsThisWeek] keeps a single week's rounds from repeating
-  /// each other too.
+  /// Draws a round of questions from the category's difficulty pools
+  /// (same source as Daily Challenge) instead of Solo's static levels.
+  ///
+  /// The server draws it (`drawWeeklyTopicRound`): the bank is closed to
+  /// the client, since every question carries its answer. It also keeps a
+  /// week's rounds from repeating each other, using the player's
+  /// `usedQuestionIds` for the week.
   Future<List<Map<String, dynamic>>> loadRandomRound({
     required String uid,
     required String weekId,
     required String categoryId,
-    int limit = roundSize,
   }) async {
-    final excludeIds = await _usedQuestionIdsThisWeek(
-      uid: uid,
-      weekId: weekId,
-    );
+    final result = await FirebaseFunctions.instance
+        .httpsCallable(
+          'drawWeeklyTopicRound',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({'weekId': weekId, 'categoryId': categoryId});
 
-    final all = <Map<String, dynamic>>[];
-
-    for (final difficulty in [1, 2, 3]) {
-      final snap = await _db
-          .collection('fixed_pools')
-          .doc(categoryId)
-          .collection('difficulty_$difficulty')
-          .doc('pool')
-          .collection('questions')
-          .get();
-
-      for (final doc in snap.docs) {
-        all.add({
-          ...doc.data(),
-          'sourceDifficulty': difficulty,
-          'sourceQuestionId': doc.id,
-        });
-      }
-    }
-
-    if (all.isEmpty) {
-      throw Exception('No questions available for this category.');
-    }
-
-    all.shuffle(Random());
-
-    final fresh = <Map<String, dynamic>>[];
-    final recentlyUsed = <Map<String, dynamic>>[];
-    for (final q in all) {
-      if (excludeIds.contains(q['sourceQuestionId'])) {
-        recentlyUsed.add(q);
-      } else {
-        fresh.add(q);
-      }
-    }
-
-    final selected = fresh.take(limit).toList();
-    if (selected.length < limit) {
-      selected.addAll(recentlyUsed.take(limit - selected.length));
-    }
-    return selected;
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return (data['questions'] as List? ?? [])
+        .map((q) => Map<String, dynamic>.from(q as Map))
+        .toList();
   }
 
   /// Grants the round result via the `submitWeeklyTopicRound` Cloud

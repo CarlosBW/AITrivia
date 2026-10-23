@@ -304,13 +304,16 @@ test("contadores y contenido del servidor", async (t) => {
     );
   });
 
-  await t.test("el banco de preguntas es de solo lectura", async () => {
+  await t.test("el banco de preguntas no se lee ni se escribe", async () => {
     await sembrar(
       ["fixed_pools", "ciencia", "difficulty_1", "pool", "questions", "q1"],
       {q: "¿?", options: ["a", "b", "c", "d"], answerIndex: 2}
     );
 
-    await assertSucceeds(
+    // Cada pregunta lleva su answerIndex: leer el banco era descargar
+    // todas las respuestas. Las partidas reciben solo sus preguntas desde
+    // el servidor.
+    await assertFails(
       getDoc(
         doc(
           como(YO),
@@ -328,6 +331,25 @@ test("contadores y contenido del servidor", async (t) => {
           "fixed_pools", "ciencia", "difficulty_1", "pool", "questions", "q1"
         ),
         {q: "¿?", options: ["a", "b", "c", "d"], answerIndex: 0}
+      )
+    );
+  });
+
+  await t.test("las preguntas de los temas IA no se leen", async () => {
+    await sembrar(["ai_topic_pool", "pool1"], {status: "ready", usageCount: 9});
+    await sembrar(
+      ["ai_topic_pool", "pool1", "levels", "level_1", "questions", "q1"],
+      {q: "¿?", options: ["a", "b", "c", "d"], answerIndex: 1}
+    );
+
+    // El tema en sí sí: la lista de temas populares lo muestra.
+    await assertSucceeds(getDoc(doc(como(YO), "ai_topic_pool", "pool1")));
+    await assertFails(
+      getDoc(
+        doc(
+          como(YO),
+          "ai_topic_pool", "pool1", "levels", "level_1", "questions", "q1"
+        )
       )
     );
   });

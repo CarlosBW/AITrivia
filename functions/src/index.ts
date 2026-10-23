@@ -132,6 +132,20 @@ function pickText(languageCode: unknown, es: string, en: string): string {
 }
 
 /**
+ * A document id from a callable's input. `doc("")` throws on its own, and
+ * that surfaced as a bare INTERNAL error instead of a bad request.
+ * @param {unknown} raw What the client sent.
+ * @return {string} The id.
+ */
+function requiredDocId(raw: unknown): string {
+  const id = typeof raw === "string" ? raw.trim() : "";
+  if (!id || id.includes("/")) {
+    throw new HttpsError("invalid-argument", "Missing or invalid id.");
+  }
+  return id;
+}
+
+/**
  * Builds an HttpsError whose message is in the caller's own language.
  *
  * A callable's error message is surfaced verbatim to the player (the
@@ -2009,7 +2023,7 @@ export const cancelLiveMatch = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const matchRef = db.collection("matches")
-    .doc(String(request.data?.matchId || ""));
+    .doc(requiredDocId(request.data?.matchId));
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
@@ -2055,7 +2069,7 @@ export const openLiveMatchTurn = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const matchRef = db.collection("matches")
-    .doc(String(request.data?.matchId || ""));
+    .doc(requiredDocId(request.data?.matchId));
 
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
@@ -2111,7 +2125,7 @@ export const submitLiveMatchAnswer = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const matchRef = db.collection("matches")
-    .doc(String(request.data?.matchId || ""));
+    .doc(requiredDocId(request.data?.matchId));
   const questionIndex = safeInt(request.data?.questionIndex, -1);
   const selectedIndex = safeInt(request.data?.selectedIndex, TIMED_OUT_ANSWER);
 
@@ -2182,7 +2196,7 @@ export const finishLiveMatch = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const matchRef = db.collection("matches")
-    .doc(String(request.data?.matchId || ""));
+    .doc(requiredDocId(request.data?.matchId));
 
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
@@ -2436,7 +2450,7 @@ export const acceptRealtimeInvite = onCall({timeoutSeconds: 60},
       throw new HttpsError("unauthenticated", "Sign-in required.");
     }
     const inviteRef = db.collection("realtime_invites")
-      .doc(String(request.data?.inviteId || ""));
+      .doc(requiredDocId(request.data?.inviteId));
 
     const first = (await inviteRef.get()).data();
     if (!first || first.toUid !== uid || first.status !== "pending") {
@@ -2503,7 +2517,7 @@ export const closeRealtimeInvite = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
   const inviteRef = db.collection("realtime_invites")
-    .doc(String(request.data?.inviteId || ""));
+    .doc(requiredDocId(request.data?.inviteId));
 
   await db.runTransaction(async (tx) => {
     const data = (await tx.get(inviteRef)).data();
@@ -9193,7 +9207,8 @@ async function recordAiQuestionReport(uid: string, report: {
         reportRef,
         {
           reason,
-          details,
+          // An empty comment keeps the earlier one rather than erasing it.
+          ...(details ? {details} : {}),
           questionText,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
@@ -9350,7 +9365,8 @@ export const reportQuestion = onCall(async (request) => {
     if (existing.exists) {
       tx.set(reportRef, {
         reason,
-        details,
+        // An empty comment keeps the earlier one rather than erasing it.
+        ...(details ? {details} : {}),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
       return true;
@@ -9561,6 +9577,97 @@ export const rotateWeeklyTopic = onSchedule(
     });
   }
 );
+
+/**
+ * Draws one Weekly Topic round for the caller.
+ *
+ * The client used to draw it itself, which meant reading every question
+ * of the category — answers included — on each round: 300 reads per
+ * round, and the reason the fixed bank had to be readable at all. Now the
+ * bank is closed (firestore.rules) and only the round's own questions
+ * leave the server. Questions this player already got this week go to the
+ * back, as the client did (see selectDailyEntries).
+ */
+export const drawWeeklyTopicRound = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const weekId = String(request.data?.weekId || "");
+  const categoryId = String(request.data?.categoryId || "");
+  if (!weekId || !categoryId) {
+    throw new HttpsError("invalid-argument", "Invalid round request.");
+  }
+
+  const [topicSnap, participationSnap] = await Promise.all([
+    db.collection("weekly_topics").doc("current").get(),
+    db.collection("users").doc(uid)
+      .collection("weekly_participation").doc(weekId).get(),
+  ]);
+  const topicData = topicSnap.data();
+  if (
+    !topicData || String(topicData.weekId || "") !== weekId ||
+    String(topicData.categoryId || "") !== categoryId
+  ) {
+    throw await localizedErrorFor(
+      uid, "failed-precondition",
+      "Este tema de la semana ya terminó.",
+      "This weekly topic has ended."
+    );
+  }
+
+  const used = new Set<string>(
+    ((participationSnap.data()?.usedQuestionIds as unknown[]) || [])
+      .map((id) => String(id))
+  );
+
+  // The daily index already lists every question's location; only a
+  // category it doesn't fully cover needs the pool listed.
+  const index = await loadDailyQuestionIndex()
+    .catch(() => ({entries: [], completeCategories: []} as DailyQuestionIndex));
+  let entries: DailyPoolEntry[];
+  if (index.completeCategories.includes(categoryId)) {
+    entries = index.entries.filter((entry) => entry.c === categoryId);
+  } else {
+    entries = [];
+    for (const d of [1, 2, 3]) {
+      const snap = await fixedPoolQuestions(categoryId, d).select().get();
+      snap.forEach((doc) => entries.push({c: categoryId, d, q: doc.id}));
+    }
+  }
+
+  if (entries.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions available.");
+  }
+
+  const order = seededShuffleIndices(
+    entries.length, crypto.randomBytes(4).readUInt32LE(0)
+  );
+  const picked = selectDailyEntries(
+    order.map((i) => entries[i]), used, WEEKLY_TOPIC_ROUND_SIZE
+  );
+
+  const docs = await db.getAll(...picked.map((entry) =>
+    fixedPoolQuestions(entry.c, entry.d).doc(entry.q)
+  ));
+
+  const questions: Record<string, unknown>[] = [];
+  docs.forEach((doc, i) => {
+    if (!doc.exists) return;
+    questions.push({
+      ...doc.data(),
+      sourceDifficulty: picked[i].d,
+      sourceQuestionId: picked[i].q,
+    });
+  });
+
+  if (questions.length === 0) {
+    throw new HttpsError("failed-precondition", "No questions available.");
+  }
+
+  return {questions};
+});
 
 /**
  * Server-authoritative Weekly Topic round grant. Draws for the round come

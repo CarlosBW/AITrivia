@@ -10262,6 +10262,34 @@ export const deleteMyAccount = onCall(async (request) => {
   // mirror pointing at a ghost).
   await db.collection("live_search").doc(uid).delete();
 
+  // Question reports carry the reporter's uid in their id and fields;
+  // they go with the account (the reported question itself is unaffected).
+  const reports = await db.collection("question_reports")
+    .where("uid", "==", uid).get();
+  const reportRefs = [
+    ...reports.docs.map((doc) => doc.ref),
+    db.collection("question_report_quotas").doc(uid),
+  ];
+
+  // Topics this player created stay in the shared pool for whoever already
+  // plays them, but no longer point back at the account.
+  const createdPools = await db.collection("ai_topic_pool")
+    .where("createdByUid", "==", uid).get();
+  for (let i = 0; i < createdPools.docs.length; i += 400) {
+    const batch = db.batch();
+    createdPools.docs.slice(i, i + 400).forEach((doc) =>
+      batch.update(doc.ref, {
+        createdByUid: admin.firestore.FieldValue.delete(),
+      })
+    );
+    await batch.commit();
+  }
+  for (let i = 0; i < reportRefs.length; i += 400) {
+    const batch = db.batch();
+    reportRefs.slice(i, i + 400).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+
   // Best-effort: by this point the account's own data is already gone, so
   // failing here would leave the caller with a live Auth record pointing at
   // nothing — deleted in every way except the one that lets them sign in

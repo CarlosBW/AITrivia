@@ -2982,19 +2982,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get serviceCannotAddSelf => 'No puedes agregarte a ti mismo.';
 
   @override
-  String get serviceUserNotFound => 'El usuario no existe.';
-
-  @override
-  String get serviceAlreadyFriends => 'Ya son amigos.';
-
-  @override
-  String get serviceRequestAlreadySent => 'Solicitud ya enviada.';
-
-  @override
-  String get serviceRequestAlreadyReceived =>
-      'Ese jugador ya te envió una solicitud — revisa tus solicitudes recibidas.';
-
-  @override
   String get serviceInvalidRequest => 'Solicitud inválida.';
 
   @override

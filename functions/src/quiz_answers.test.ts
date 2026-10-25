@@ -130,6 +130,17 @@ describe("sessionAfterSubmit", () => {
     );
   });
 
+  // The server's verdicts on the last run would show a replay as already
+  // judged.
+  test("drops the last run's verdicts too", () => {
+    const reopened = sessionAfterSubmit({
+      questions,
+      answers: {"0": 1},
+      results: {"0": {correct: false, correctIndex: 0}},
+    });
+    assert.equal(reopened.results, undefined);
+  });
+
   test("keeps the slate and everything else about the session", () => {
     const reopened = sessionAfterSubmit({
       categoryId: "cine",

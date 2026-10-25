@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,13 +17,74 @@ class DailyChallengeSession {
   final bool played;
   final DateTime? startedAt;
 
+  /// Answers the server already judged, `{questionIndex, selectedIndex}`.
+  final List<Map<String, dynamic>> answers;
+
+  /// How many of those were right.
+  final int correct;
+
+  /// Each judged question's right option, by question index.
+  final Map<int, int> correctIndexByQuestion;
+
   const DailyChallengeSession({
     required this.dateId,
     required this.durationSeconds,
     required this.questions,
     required this.played,
     this.startedAt,
+    this.answers = const [],
+    this.correct = 0,
+    this.correctIndexByQuestion = const {},
   });
+
+  /// Reads a session doc. Its `answers` and `results` are what the server
+  /// judged so far, so a player who leaves and comes back resumes where
+  /// they were.
+  factory DailyChallengeSession.fromData(
+    String dateId,
+    Map<String, dynamic> data, {
+    required int defaultDurationSeconds,
+  }) {
+    final questions = (data['questions'] as List<dynamic>? ?? [])
+        .whereType<Map>()
+        .map((q) => Map<String, dynamic>.from(q))
+        .toList();
+    final banked = Map<String, dynamic>.from(data['answers'] as Map? ?? {});
+    final results = Map<String, dynamic>.from(data['results'] as Map? ?? {});
+
+    final answers = <Map<String, dynamic>>[];
+    final correctIndexByQuestion = <int, int>{};
+    var correct = 0;
+    banked.forEach((key, value) {
+      final index = int.tryParse(key);
+      if (index == null || value is! num) return;
+      answers.add({'questionIndex': index, 'selectedIndex': value.toInt()});
+      final verdict = results[key];
+      if (verdict is Map) {
+        if (verdict['correct'] == true) correct++;
+        final correctIndex = verdict['correctIndex'];
+        if (correctIndex is num) {
+          correctIndexByQuestion[index] = correctIndex.toInt();
+        }
+      }
+    });
+    answers.sort(
+      (a, b) => (a['questionIndex'] as int).compareTo(b['questionIndex'] as int),
+    );
+
+    final startedAtRaw = data['startedAt'];
+    return DailyChallengeSession(
+      dateId: dateId,
+      durationSeconds:
+          ((data['durationSeconds'] ?? defaultDurationSeconds) as num).toInt(),
+      questions: questions,
+      played: data['played'] == true,
+      startedAt: startedAtRaw is Timestamp ? startedAtRaw.toDate() : null,
+      answers: answers,
+      correct: correct,
+      correctIndexByQuestion: correctIndexByQuestion,
+    );
+  }
 
   int get remainingSeconds {
     if (startedAt == null) return durationSeconds;
@@ -82,10 +142,6 @@ class DailyChallengeService {
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
-  // The run's answers, kept on the device as they are given. They used to
-  // live only in the screen's memory: leaving mid-run lost them while the
-  // server clock kept going, and coming back after it ran out submitted
-  // an empty run — a score of zero for a day already played.
   static const String _lastPlayedKey = 'daily_last_played_date';
 
   /// Called once today's challenge is saved — main.dart uses it to move the
@@ -100,50 +156,6 @@ class DailyChallengeService {
     } catch (_) {
       return false;
     }
-  }
-
-  static String _progressKey(String uid, String dateId) =>
-      'daily_progress_${uid}_$dateId';
-
-  Future<void> saveLocalProgress({
-    required String uid,
-    required String dateId,
-    required List<Map<String, dynamic>> answers,
-    required int correct,
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _progressKey(uid, dateId),
-        jsonEncode({'answers': answers, 'correct': correct}),
-      );
-    } catch (_) {
-      // Best effort: losing this only loses the protection it adds.
-    }
-  }
-
-  /// The answers saved for [dateId]'s run, or null if there are none.
-  Future<({List<Map<String, dynamic>> answers, int correct})?>
-      loadLocalProgress({required String uid, required String dateId}) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_progressKey(uid, dateId));
-      if (raw == null) return null;
-      final data = jsonDecode(raw) as Map<String, dynamic>;
-      final answers = (data['answers'] as List)
-          .map((a) => Map<String, dynamic>.from(a as Map))
-          .toList();
-      return (answers: answers, correct: (data['correct'] as num).toInt());
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _clearLocalProgress(String uid, String dateId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_progressKey(uid, dateId));
-    } catch (_) {}
   }
 
   String todayDateId([DateTime? now]) {
@@ -225,22 +237,10 @@ class DailyChallengeService {
     final data = snap.data();
     if (data == null) return null;
 
-    final rawQuestions = data['questions'] as List<dynamic>? ?? [];
-    final questions = rawQuestions
-        .whereType<Map>()
-        .map((q) => Map<String, dynamic>.from(q))
-        .toList();
-
-    final startedAtRaw = data['startedAt'];
-    final startedAt = startedAtRaw is Timestamp ? startedAtRaw.toDate() : null;
-
-    return DailyChallengeSession(
-      dateId: dateId,
-      durationSeconds:
-          ((data['durationSeconds'] ?? defaultDurationSeconds) as num).toInt(),
-      questions: questions,
-      played: data['played'] == true,
-      startedAt: startedAt,
+    return DailyChallengeSession.fromData(
+      dateId,
+      data,
+      defaultDurationSeconds: defaultDurationSeconds,
     );
   }
 
@@ -290,7 +290,6 @@ class DailyChallengeService {
     required String uid,
     required int correct,
     required int totalAnswered,
-    required List<Map<String, dynamic>> answers,
   }) async {
     final dateId = todayDateId();
     final weekId = WeeklyLeagueService.instance.currentWeekId();
@@ -302,7 +301,6 @@ class DailyChallengeService {
     final response = await callable.call({
       'correct': correct,
       'totalAnswered': totalAnswered,
-      'answers': answers,
       'dateId': dateId,
       'weekId': weekId,
     });
@@ -323,9 +321,6 @@ class DailyChallengeService {
       newLevel: ((data['newLevel'] ?? 1) as num).toInt(),
       xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
     );
-
-    // Settled on the server, saved or already played: nothing to restore.
-    await _clearLocalProgress(uid, dateId);
 
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -4,12 +4,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 /// What a life-spending call did, plus the life state the server was left
 /// holding.
 ///
-/// The two are bundled because `consumeLevelEntryLife` /
-/// `consumeWrongAnswerLife` already return the post-action state alongside
-/// their result. Callers used to throw that away and immediately call
-/// `refreshLives`, paying for a second callable and a second Firestore
-/// transaction to learn what the first one had just told them — on every
-/// wrong answer, which is the most frequent action in the game.
+/// The two are bundled because `consumeLevelEntryLife` already returns the
+/// post-action state alongside its result. Callers used to throw that away
+/// and immediately call `refreshLives`, paying for a second callable and a
+/// second Firestore transaction to learn what the first one had just told
+/// them.
 class LifeActionResult {
   const LifeActionResult({required this.applied, required this.state});
 
@@ -166,7 +165,7 @@ class LifeService {
     return _stateFromData(snap.data() ?? {});
   }
 
-  Map<String, dynamic> _stateFromCallableResponse(Map response) {
+  Map<String, dynamic> stateFromCallableResponse(Map response) {
     final lastTickMs = ((response['lastLifeTickAtMs'] ?? 0) as num).toInt();
 
     return {
@@ -196,7 +195,7 @@ class LifeService {
         )
         .call();
 
-    return _stateFromCallableResponse(Map<String, dynamic>.from(result.data as Map));
+    return stateFromCallableResponse(Map<String, dynamic>.from(result.data as Map));
   }
 
   Future<bool> hasEnoughLifeToEnterLevel(String uid) async {
@@ -240,22 +239,7 @@ class LifeService {
     return LifeEntryResult(
       applied: data['ok'] == true,
       replayFree: data['replayFree'] == true,
-      state: _stateFromCallableResponse(data),
-    );
-  }
-
-  Future<LifeActionResult> tryConsumeWrongAnswer(String uid) async {
-    final result = await FirebaseFunctions.instance
-        .httpsCallable(
-          'consumeWrongAnswerLife',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-        )
-        .call();
-
-    final data = Map<String, dynamic>.from(result.data as Map);
-    return LifeActionResult(
-      applied: data['lifeLost'] == true,
-      state: _stateFromCallableResponse(data),
+      state: stateFromCallableResponse(data),
     );
   }
 

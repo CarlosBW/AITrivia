@@ -187,3 +187,31 @@ export function calculateRatings(params: {
 
   return {newA, newB};
 }
+
+/**
+ * Rating after winning because the opponent left a ranked match.
+ *
+ * It was a flat bonus, so a player could win by default against an idle
+ * second account over and over and climb without limit. Now it is never
+ * more than winning the match by playing would have given (Elo), capped
+ * at [maxBonus]: beating a much lower-rated account by default is worth
+ * as little as beating it outright.
+ * @param {number} rating The winner's rating.
+ * @param {number} opponentRating The leaver's rating.
+ * @param {number} maxBonus Most a default win can add.
+ * @return {number} The winner's new rating.
+ */
+export function disconnectWinRating(
+  rating: number, opponentRating: number, maxBonus: number
+): number {
+  const {newA} = calculateRatings({
+    playerARating: rating,
+    playerBRating: opponentRating,
+    playerAScore: 1,
+    playerBScore: 0,
+  });
+  return Math.max(
+    RATING_FLOOR,
+    Math.min(RATING_CEILING, newA, rating + maxBonus)
+  );
+}

@@ -81,6 +81,7 @@ export function sessionAfterSubmit(
 ): Record<string, unknown> {
   const rest = {...session};
   delete rest.answers;
+  delete rest.results;
   delete rest.runStartedAtMs;
   return rest;
 }

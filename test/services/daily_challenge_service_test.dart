@@ -77,46 +77,43 @@ void main() {
   // The run's answers used to live only in the screen: leaving mid-run
   // lost them, and coming back after the clock ran out submitted an empty
   // run, a zero for a day already played.
-  group('respuestas guardadas en el teléfono', () {
-    setUp(() => SharedPreferences.setMockInitialValues({}));
+  // The run is resumed from what the server already judged: answers on
+  // the device could be lost, and on the server they are final anyway.
+  group('retomar el reto desde el servidor', () {
+    DailyChallengeSession read(Map<String, dynamic> data) =>
+        DailyChallengeSession.fromData(
+          '2026-10-21',
+          data,
+          defaultDurationSeconds: 120,
+        );
 
-    final answers = [
-      {'questionIndex': 0, 'selectedIndex': 2},
-      {'questionIndex': 3, 'selectedIndex': 1},
-    ];
+    test('recupera las respuestas y cuántas fueron correctas', () {
+      final session = read({
+        'questions': [
+          {'q': 'a', 'options': ['x', 'y']},
+          {'q': 'b', 'options': ['x', 'y']},
+          {'q': 'c', 'options': ['x', 'y']},
+        ],
+        'answers': {'2': 1, '0': 0},
+        'results': {
+          '0': {'correct': true, 'correctIndex': 0},
+          '2': {'correct': false, 'correctIndex': 0},
+        },
+      });
 
-    test('se recuperan al volver', () async {
-      await service.saveLocalProgress(
-        uid: 'u1', dateId: '2026-10-21', answers: answers, correct: 1,
-      );
-      final saved =
-          await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-21');
-
-      expect(saved, isNotNull);
-      expect(saved!.answers, answers);
-      expect(saved.correct, 1);
+      expect(session.answers, [
+        {'questionIndex': 0, 'selectedIndex': 0},
+        {'questionIndex': 2, 'selectedIndex': 1},
+      ]);
+      expect(session.correct, 1);
+      expect(session.correctIndexByQuestion, {0: 0, 2: 0});
     });
 
-    test('son de un día y una cuenta', () async {
-      await service.saveLocalProgress(
-        uid: 'u1', dateId: '2026-10-21', answers: answers, correct: 1,
-      );
-
-      expect(
-        await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-22'),
-        isNull,
-      );
-      expect(
-        await service.loadLocalProgress(uid: 'u2', dateId: '2026-10-21'),
-        isNull,
-      );
-    });
-
-    test('sin nada guardado no hay nada que recuperar', () async {
-      expect(
-        await service.loadLocalProgress(uid: 'u1', dateId: '2026-10-21'),
-        isNull,
-      );
+    test('sin respuestas empieza de cero', () {
+      final session = read({'questions': const []});
+      expect(session.answers, isEmpty);
+      expect(session.correct, 0);
+      expect(session.durationSeconds, 120);
     });
   });
 

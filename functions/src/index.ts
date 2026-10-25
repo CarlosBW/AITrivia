@@ -23,6 +23,7 @@ import {
   leagueForRating,
   bestLeaguePatch,
   calculateRatings,
+  disconnectWinRating,
 } from "./pvp_rating";
 import {
   levelForXp,
@@ -33,9 +34,11 @@ import {
   calculateDailyStreakBonusCoins,
 } from "./rewards";
 import {
+  dailySubmissionCheck,
   dateIdInTimeZone,
   isPlausibleDateId,
   isStreakAtRisk,
+  isWeekClaimable,
   loginStreakStep,
   weekIdForDateId,
 } from "./daily_challenge_dates";
@@ -71,7 +74,7 @@ import {
   openTurn,
   resolveAnswer,
 } from "./async_pvp_turns";
-import {resolveWrongAnswerSpend} from "./life_costs";
+import {answerCharge} from "./life_costs";
 import {
   MAX_QUESTION_REPORTS_PER_DAY,
   QUESTION_REPORT_REASONS,
@@ -129,6 +132,24 @@ const AI_SECRETS = [anthropicApiKey];
  */
 function pickText(languageCode: unknown, es: string, en: string): string {
   return languageCode === "en" ? en : es;
+}
+
+/**
+ * A client-sent id that will become part of a document path, or "" if it
+ * can't be one. "/" would change the path's depth, "." and ".." aren't
+ * valid ids, and an over-long id fails the write; "" lets each callable's
+ * own "missing id" check reject it as a bad request instead of an
+ * INTERNAL error.
+ * @param {unknown} raw What the client sent.
+ * @return {string} The id, or "".
+ */
+function cleanDocId(raw: unknown): string {
+  const id = typeof raw === "string" ? raw.trim() : "";
+  if (!id || id.includes("/") || id === "." || id === ".." ||
+      id.length > 200) {
+    return "";
+  }
+  return id;
 }
 
 /**
@@ -406,12 +427,48 @@ function serverDateId(): string {
  * Rejects a client-supplied `dateId` that isn't a real date close enough
  * to the server's own to have come from a real device — see
  * `isPlausibleDateId` for why the window exists and what it prevents.
+ *
+ * In the player's language and pointing at the cause: a phone whose date
+ * is off by more than a day can't play the Daily at all, and a generic
+ * error gave them nothing to fix.
+ * @param {string} uid The caller.
  * @param {string} dateId Client-supplied date id.
+ * @return {Promise<void>} Resolves if the date is plausible.
  */
-function assertPlausibleDateId(dateId: string): void {
+async function assertPlausibleDateId(
+  uid: string, dateId: string
+): Promise<void> {
   if (!isPlausibleDateId(dateId, serverDateId())) {
-    throw new HttpsError("invalid-argument", "Invalid dateId.");
+    throw await wrongDeviceDateError(uid);
   }
+}
+
+/**
+ * The error for a device whose date is too far from the server's.
+ * @param {string} uid The caller.
+ * @return {Promise<HttpsError>} The localized error.
+ */
+function wrongDeviceDateError(uid: string): Promise<HttpsError> {
+  return localizedErrorFor(
+    uid, "invalid-argument",
+    "La fecha de tu teléfono no coincide con la de hoy. Activa la fecha y " +
+      "hora automáticas e inténtalo de nuevo.",
+    "Your phone's date doesn't match today's. Turn on automatic date and " +
+      "time and try again."
+  );
+}
+
+/**
+ * The error for a level with no questions to serve right now.
+ * @param {string} uid The caller.
+ * @return {Promise<HttpsError>} The localized error.
+ */
+function noLevelQuestionsError(uid: string): Promise<HttpsError> {
+  return localizedErrorFor(
+    uid, "not-found",
+    "Este nivel no tiene preguntas disponibles ahora. Inténtalo más tarde.",
+    "This level has no questions available right now. Please try later."
+  );
 }
 
 /**
@@ -721,10 +778,7 @@ function computeRankedReward(params: {
     const bonus = RANKED_DISCONNECT_WINNER_BONUS;
     const penalty = RANKED_ABANDON_RATING_PENALTY;
     newRating = params.won ?
-      Math.max(
-        RATING_FLOOR,
-        Math.min(RATING_CEILING, params.oldRating + bonus)
-      ) :
+      disconnectWinRating(params.oldRating, params.opponentOldRating, bonus) :
       Math.max(
         RATING_FLOOR,
         Math.min(RATING_CEILING, params.oldRating - penalty)
@@ -1252,7 +1306,7 @@ export const claimOpponentDisconnected = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const matchId = String(request.data?.matchId || "");
+  const matchId = cleanDocId(request.data?.matchId);
   if (!matchId) {
     throw new HttpsError("invalid-argument", "Missing matchId.");
   }
@@ -1916,23 +1970,15 @@ export const createPrivateLiveMatch = onCall({timeoutSeconds: 60},
     }
 
     const params = clampLiveMatchParams(request.data);
-    const ranked = request.data?.ranked === true;
+    // Private rooms are always casual. A ranked one let a player host a
+    // room, join it with a second account and win by default, over and
+    // over; ranked play only comes from public matchmaking, which pairs
+    // by rating.
+    const ranked = false;
     await assertActiveCategory(params.categoryId);
 
     const userSnap = await db.collection("users").doc(uid).get();
     const user = userSnap.data() || {};
-
-    if (ranked) {
-      const cooldown = user.pvpCooldownUntil;
-      if (cooldown instanceof admin.firestore.Timestamp &&
-          cooldown.toMillis() > Date.now()) {
-        throw await localizedErrorFor(
-          uid, "failed-precondition",
-          "Abandonaste una partida clasificatoria y debes esperar.",
-          "You're on a cooldown for leaving a ranked match."
-        );
-      }
-    }
 
     const questions = await selectFixedMatchQuestions(
       params.categoryId, params.difficulty, params.totalQuestions
@@ -1987,7 +2033,7 @@ export const setLiveMatchReady = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
-  const matchId = String(request.data?.matchId || "");
+  const matchId = cleanDocId(request.data?.matchId);
   const ready = request.data?.ready === true;
   const matchRef = db.collection("matches").doc(matchId);
 
@@ -2248,7 +2294,7 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
     if (!uid) {
       throw new HttpsError("unauthenticated", "Sign-in required.");
     }
-    const matchId = String(request.data?.matchId || "");
+    const matchId = cleanDocId(request.data?.matchId);
     const oldRef = db.collection("matches").doc(matchId);
 
     const first = await oldRef.get();
@@ -2259,7 +2305,9 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
     if (old.rematchMatchId) return {rematchMatchId: old.rematchMatchId};
 
     const params = clampLiveMatchParams(old);
-    const ranked = old.ranked === true;
+    // A rematch is casual even after a ranked match: the same two players
+    // trading ranked wins back and forth was a way to farm rating.
+    const ranked = false;
     // Chosen up front so the rematch can be written in the same
     // transaction that decides it, with nothing left half-done.
     const questions = old.rematchRequests?.[opponentUid] === true ?
@@ -2381,7 +2429,7 @@ export const createRealtimeInvite = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
-  const toUid = String(request.data?.toUid || "");
+  const toUid = cleanDocId(request.data?.toUid);
   if (!toUid || toUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid player.");
   }
@@ -2926,7 +2974,7 @@ export const createAsyncPvpMatch = onCall({
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const challengedUid = String(request.data?.challengedUid || "");
+  const challengedUid = cleanDocId(request.data?.challengedUid);
 
   if (!challengedUid) {
     throw new HttpsError("invalid-argument", "Missing challengedUid.");
@@ -3127,7 +3175,7 @@ function asyncMatchContextFor(
   }
 
   const challengerUid = String(data.challengerUid || "");
-  const challengedUid = String(data.challengedUid || "");
+  const challengedUid = cleanDocId(data.challengedUid);
 
   if (uid !== challengerUid && uid !== challengedUid) {
     throw new HttpsError("permission-denied", "Not your match.");
@@ -3174,7 +3222,7 @@ export const openAsyncPvpTurn = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const matchId = String(request.data?.matchId || "");
+  const matchId = cleanDocId(request.data?.matchId);
   if (!matchId) {
     throw new HttpsError("invalid-argument", "Missing matchId.");
   }
@@ -3217,6 +3265,9 @@ export const openAsyncPvpTurn = onCall(async (request) => {
     }
 
     if (Object.keys(patch).length > 0) {
+      // Playing counts as activity, so the stale-match sweep doesn't
+      // forfeit a player who is still answering.
+      patch.lastUpdatedAt = admin.firestore.FieldValue.serverTimestamp();
       tx.update(matchRef, patch);
     }
 
@@ -3248,7 +3299,7 @@ export const submitAsyncPvpAnswer = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const matchId = String(request.data?.matchId || "");
+  const matchId = cleanDocId(request.data?.matchId);
   if (!matchId) {
     throw new HttpsError("invalid-argument", "Missing matchId.");
   }
@@ -3288,6 +3339,9 @@ export const submitAsyncPvpAnswer = onCall(async (request) => {
 
     const patch: Record<string, unknown> = {
       [`${ctx.role}.answers.${questionIndex}`]: resolution.storedIndex,
+      // Activity, so the stale-match sweep doesn't forfeit a player who is
+      // still answering.
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     if (resolution.nextDeadlineMs !== null) {
@@ -3324,7 +3378,7 @@ export const finishAsyncPvpMatch = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const matchId = String(request.data?.matchId || "");
+  const matchId = cleanDocId(request.data?.matchId);
   if (!matchId) {
     throw new HttpsError("invalid-argument", "Missing matchId.");
   }
@@ -3441,7 +3495,14 @@ async function forfeitStaleAsyncMatch(
       data.status === "declined" ||
       challengerFinished === challengedFinished
     ) {
-      tx.update(matchRef, {rewarded: true});
+      // A never-played challenge is also closed as expired: left as
+      // `waiting_challenged` it still counted against the challenger's
+      // open challenges, so they could never re-challenge that player, and
+      // ten of them blocked new challenges for good.
+      tx.update(matchRef, {
+        rewarded: true,
+        ...(data.status === "declined" ? {} : {status: "expired"}),
+      });
       return;
     }
 
@@ -3835,29 +3896,6 @@ function isYesterday(dateId: string, today: string): boolean {
 type QuestionAnswer = { questionIndex: number; selectedIndex: number };
 
 /**
- * Parses client-submitted per-question answers (Daily Challenge and Solo
- * Levels both use this exact shape), dropping anything malformed rather
- * than throwing — an invalid/missing entry for a given question just
- * never counts toward correct or totalAnswered below.
- * @param {unknown} raw The raw `request.data.answers` value.
- * @return {QuestionAnswer[]} The well-formed entries.
- */
-function parseQuestionAnswers(raw: unknown): QuestionAnswer[] {
-  if (!Array.isArray(raw)) return [];
-
-  const out: QuestionAnswer[] = [];
-  for (const entry of raw) {
-    if (!entry || typeof entry !== "object") continue;
-    const e = entry as Record<string, unknown>;
-    const questionIndex = safeInt(e.questionIndex, -1);
-    const selectedIndex = safeInt(e.selectedIndex, -1);
-    if (questionIndex < 0 || selectedIndex < 0) continue;
-    out.push({questionIndex, selectedIndex});
-  }
-  return out;
-}
-
-/**
  * Recomputes a player's real correct/totalAnswered from their actual
  * submitted per-question answers, ignoring the `correct`/`totalAnswered`
  * a client reports directly. `questions` lives on the same session doc
@@ -3914,12 +3952,11 @@ export const submitDailyChallengeResult = onCall(async (request) => {
 
   // `correct`/`totalAnswered` are only used for a fast request-shape
   // check here — the real, reward-determining values are recomputed
-  // below from `answers` against the session's own stored `questions`.
+  // below from the answers the server banked as they were given.
   const reportedCorrect = safeInt(request.data?.correct, -1);
   const reportedTotalAnswered = safeInt(request.data?.totalAnswered, -1);
-  const answers = parseQuestionAnswers(request.data?.answers);
   const dateId = String(request.data?.dateId || "");
-  const weekId = String(request.data?.weekId || "");
+  const weekId = cleanDocId(request.data?.weekId);
 
   if (
     reportedCorrect < 0 || reportedTotalAnswered < 0 ||
@@ -3932,7 +3969,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
   // Both ids are client-supplied and decide which documents this write
   // lands in, so neither may be taken on trust: the date has to be a real
   // one near now, and the week has to be the one that date falls in.
-  assertPlausibleDateId(dateId);
+  await assertPlausibleDateId(uid, dateId);
   if (weekId !== weekIdForDateId(dateId)) {
     throw new HttpsError("invalid-argument", "Invalid dateId/weekId.");
   }
@@ -3982,6 +4019,18 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       };
     }
 
+    // A date at or before the last one scored would be an extra daily —
+    // see dailySubmissionCheck, which already guards starting one.
+    const lastScored = userSnap.data()?.lastDailyPlayed;
+    if (lastScored && dateId <= String(lastScored)) {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Ya jugaste el reto diario. Vuelve mañana por el siguiente.",
+        "You've already played the Daily Challenge. Come back tomorrow " +
+          "for the next one."
+      );
+    }
+
     // No session document means this player never started today's
     // challenge through ensureDailyChallengeSession — there are no stored
     // `questions` to score against, so scoring would silently yield 0
@@ -4001,9 +4050,14 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       Date.now() - startedAt.toMillis(), DAILY_QUESTION_LIMIT
     ) : DAILY_QUESTION_LIMIT;
 
+    // Scored from the answers the server judged as they came in
+    // (answerDailyQuestion), not from a list the client sends at the end.
+    const banked = mergeRecordedAnswers(
+      dailySnap.data()?.answers as Record<string, unknown> | undefined, []
+    );
+    const keyed = await keyedQuestions(dailyRef, dailySnap.data() || {}, tx);
     const {correct, totalAnswered} = computeVerifiedQuizResult(
-      dailySnap.data()?.questions, answers.slice(0, answerCap),
-      DAILY_QUESTION_LIMIT
+      keyed, banked.slice(0, answerCap), DAILY_QUESTION_LIMIT
     );
     const coinsEarned = calculateDailyCoinsEarned(correct);
 
@@ -4094,7 +4148,11 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       displayName: username,
       avatarId,
       dailyStreak: newStreak,
-      maxDailyStreak: Math.max(previousStreak, newStreak),
+      // Against the stored record, not the streak this one continued: a
+      // broken streak used to overwrite a 30-day record with 2.
+      maxDailyStreak: Math.max(
+        safeInt(userData.maxDailyStreak, 0), previousStreak, newStreak
+      ),
       lastDailyPlayed: dateId,
       gamesPlayed: admin.firestore.FieldValue.increment(1),
       correctAnswers: admin.firestore.FieldValue.increment(correct),
@@ -4596,6 +4654,77 @@ async function loadFixedLevelQuestions(
   return {questions: [], difficulty: 0, seed: seedFor(preferred)};
 }
 
+// How long after the round started an answer is still accepted. The app
+// pauses its own 120-second clock while it waits for each verdict, so the
+// round can run a little longer in real time than its nominal length.
+const DAILY_ANSWER_GRACE_MS = 30_000;
+
+/**
+ * Judges one Daily Challenge answer and banks it.
+ *
+ * The day's questions reach the app without their answers (the key is in
+ * the session's `secret/answers`), so this is how it learns whether an
+ * answer was right; the first answer per question is final, and only
+ * banked answers are scored at the end. The Daily Challenge costs no
+ * lives.
+ */
+export const answerDailyQuestion = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const dateId = String(request.data?.dateId || "");
+  const questionIndex = safeInt(request.data?.questionIndex, -1);
+  const selectedIndex = safeInt(
+    request.data?.selectedIndex, TIMED_OUT_ANSWER
+  );
+  await assertPlausibleDateId(uid, dateId);
+  if (questionIndex < 0) {
+    throw new HttpsError("invalid-argument", "Invalid answer.");
+  }
+
+  const dailyRef = db.collection("users").doc(uid)
+    .collection("daily_challenges").doc(dateId);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(dailyRef);
+    const data = snap.data();
+    if (!data || data.played === true) {
+      throw new HttpsError("failed-precondition", "No open daily.");
+    }
+    const keyed = await keyedQuestions(dailyRef, data, tx);
+    if (questionIndex >= keyed.length) {
+      throw new HttpsError("invalid-argument", "Question out of range.");
+    }
+    const correctIndex = safeInt(keyed[questionIndex]?.answerIndex, -1);
+
+    const banked = (data.answers && typeof data.answers === "object") ?
+      data.answers as Record<string, unknown> : {};
+    const key = String(questionIndex);
+    if (Object.prototype.hasOwnProperty.call(banked, key)) {
+      const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
+      return {correct: stored === correctIndex, correctIndex};
+    }
+
+    const startedAt = data.startedAt as admin.firestore.Timestamp | undefined;
+    const durationMs = safeInt(data.durationSeconds, DAILY_DURATION_SECONDS) *
+      1000;
+    if (startedAt &&
+        Date.now() > startedAt.toMillis() + durationMs +
+          DAILY_ANSWER_GRACE_MS) {
+      throw new HttpsError("failed-precondition", "Time is up.");
+    }
+
+    const correct = selectedIndex === correctIndex;
+    tx.set(dailyRef, {
+      answers: {[key]: selectedIndex},
+      results: {[key]: {correct, correctIndex}},
+    }, {merge: true});
+    return {correct, correctIndex};
+  });
+});
+
 /**
  * Server-authoritative replacement for daily_challenge_service.dart's
  * `createTodaySession` — a client used to read the real fixed-pool
@@ -4620,28 +4749,55 @@ export const ensureDailyChallengeSession = onCall(async (request) => {
   // submission scoreable, so letting one be opened for an arbitrary date
   // would hand back the streak-farming path submitDailyChallengeResult
   // now refuses.
-  assertPlausibleDateId(dateId);
+  await assertPlausibleDateId(uid, dateId);
 
   const userRef = db.collection("users").doc(uid);
   const dailyRef = userRef.collection("daily_challenges").doc(dateId);
 
   const existing = await dailyRef.get();
   if (existing.exists) {
+    await moveSessionKeyOut(dailyRef, existing.data() || {});
     return {created: false};
   }
 
   // Everyone who plays today gets this same set, in this same order.
   const questions = await loadSharedDailyQuestions(dateId);
 
+  // Server-only (no rule matches users/{uid}/server): the player can't
+  // reset their own count.
+  const limitsRef = userRef.collection("server").doc("daily_limits");
+
   await db.runTransaction(async (tx) => {
-    const snap = await tx.get(dailyRef);
+    const [snap, userSnap, limitsSnap] = await Promise.all([
+      tx.get(dailyRef),
+      tx.get(userRef),
+      tx.get(limitsRef),
+    ]);
     if (snap.exists) return;
 
+    const lastPlayed = userSnap.data()?.lastDailyPlayed;
+    const recent = ((limitsSnap.data()?.startsMs as unknown[]) || [])
+      .map((ms) => Number(ms));
+    const check = dailySubmissionCheck(
+      lastPlayed ? String(lastPlayed) : undefined, recent, dateId, Date.now()
+    );
+    if (!check.ok) {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Ya jugaste el reto diario. Vuelve mañana por el siguiente.",
+        "You've already played the Daily Challenge. Come back tomorrow " +
+          "for the next one."
+      );
+    }
+    tx.set(limitsRef, {startsMs: check.recentMs});
+
+    const split = splitAnswerKey(questions);
+    tx.set(answerKeyRef(dailyRef), {answerIndices: split.answerIndices});
     tx.set(dailyRef, {
       dateId,
       played: false,
       durationSeconds: DAILY_DURATION_SECONDS,
-      questions,
+      questions: split.publicQuestions,
       correct: 0,
       totalAnswered: 0,
       coinsEarned: 0,
@@ -4716,7 +4872,6 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
   }
 
   const userRef = db.collection("users").doc(uid);
-  const currentSeasonId = currentWeekId();
 
   const userSnap = await userRef.get();
   const languageCode = userSnap.data()?.languageCode;
@@ -4752,7 +4907,7 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
     const data = doc.data();
     const seasonId = String(data.weekId || doc.id);
 
-    if (seasonId === currentSeasonId) continue;
+    if (!isWeekClaimable(seasonId, serverDateId())) continue;
     if (claimedSeasonIds.has(seasonId)) continue;
 
     const leagueId = String(data.leagueId || "bronze");
@@ -4925,8 +5080,9 @@ async function mayNotify(
   }
 
   if (type === "rematch_request") {
-    const snap = await db.collection("matches")
-      .doc(String(data.matchId || "")).get();
+    const id = cleanDocId(data.matchId);
+    if (!id) return false;
+    const snap = await db.collection("matches").doc(id).get();
     const m = snap.data();
     if (!m) return false;
     const uids = [m.hostUid, m.guestUid];
@@ -4934,8 +5090,9 @@ async function mayNotify(
   }
 
   if (type === "match_invite" || type === "match_turn") {
-    const snap = await db.collection("async_matches")
-      .doc(String(data.matchId || "")).get();
+    const id = cleanDocId(data.matchId);
+    if (!id) return false;
+    const snap = await db.collection("async_matches").doc(id).get();
     const m = snap.data();
     if (!m) return false;
     const uids = [m.challengerUid, m.challengedUid];
@@ -4943,8 +5100,9 @@ async function mayNotify(
   }
 
   if (type === "realtime_invite_accepted") {
-    const snap = await db.collection("realtime_invites")
-      .doc(String(data.inviteId || "")).get();
+    const id = cleanDocId(data.inviteId);
+    if (!id) return false;
+    const snap = await db.collection("realtime_invites").doc(id).get();
     const i = snap.data();
     // Only the invited player tells the inviter it was accepted.
     return !!i && i.toUid === uid && i.fromUid === targetUid;
@@ -4967,7 +5125,7 @@ export const sendUserNotification = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const targetUid = String(request.data?.targetUid || "");
+  const targetUid = cleanDocId(request.data?.targetUid);
   const type = String(request.data?.type || "");
   const data = (request.data?.data ?? {}) as Record<string, unknown>;
 
@@ -5048,17 +5206,13 @@ export const sendPushOnNotificationCreated = onDocumentCreated(
     const uid = event.params.uid;
 
     // The token lives in a private subcollection rather than on the user
-    // doc, which any signed-in user may read (that read is what the
-    // friends list, leaderboards and profile views rely on). The user doc
-    // is still checked as a fallback so devices that haven't opened the
-    // app since the move keep receiving pushes; that branch can go once
-    // the old field has aged out.
-    const [pushSnap, userSnap] = await db.getAll(
-      db.collection("users").doc(uid).collection("private").doc("push"),
-      db.collection("users").doc(uid)
-    );
+    // doc, which any signed-in user may read. There is no fallback to the
+    // old field on the user doc: it kept stale tokens readable by
+    // everyone, and the app removes it each time it saves the token.
+    const pushSnap = await db.collection("users").doc(uid)
+      .collection("private").doc("push").get();
 
-    const token = pushSnap.data()?.fcmToken ?? userSnap.data()?.fcmToken;
+    const token = pushSnap.data()?.fcmToken;
 
     if (!token || typeof token !== "string") return;
 
@@ -5189,7 +5343,7 @@ export const claimLoginStreakBonus = onCall(async (request) => {
 
   const todayDateId = String(request.data?.todayDateId || "");
   if (!isPlausibleDateId(todayDateId, serverDateId())) {
-    throw new HttpsError("invalid-argument", "Invalid todayDateId.");
+    throw await wrongDeviceDateError(uid);
   }
 
   const userRef = db.collection("users").doc(uid);
@@ -5206,7 +5360,7 @@ export const claimLoginStreakBonus = onCall(async (request) => {
       lastLoginDate, previousStreak, todayDateId, serverDateId()
     );
     if (step.status === "invalid") {
-      throw new HttpsError("invalid-argument", "Invalid todayDateId.");
+      throw await wrongDeviceDateError(uid);
     }
     if (step.status === "already") {
       return {
@@ -5296,16 +5450,14 @@ export const submitSoloLevelResult = onCall(async (request) => {
   }
 
   const isAiTopic = request.data?.isAiTopic === true;
-  const categoryId = String(request.data?.categoryId || "");
-  const aiTopicId = request.data?.aiTopicId ?
-    String(request.data.aiTopicId) : null;
+  const categoryId = cleanDocId(request.data?.categoryId);
+  const aiTopicId = cleanDocId(request.data?.aiTopicId) || null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
   // `correct`/`total` are only used for a fast request-shape check here —
-  // the real, reward-determining values are recomputed below from
-  // `answers` against the level session's own stored `questions`.
+  // the real, reward-determining values are recomputed below from the
+  // answers the server banked as they were given.
   const reportedCorrect = safeInt(request.data?.correct, -1);
   const reportedTotal = safeInt(request.data?.total, -1);
-  const answers = parseQuestionAnswers(request.data?.answers);
 
   if (
     levelNumber < 1 || reportedCorrect < 0 || reportedTotal < 0 ||
@@ -5375,21 +5527,27 @@ export const submitSoloLevelResult = onCall(async (request) => {
       sessionData?.runStartedAtMs as number | undefined,
       Date.now()
     )) {
-      throw new HttpsError("failed-precondition", "No run to submit.");
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "No pudimos guardar este nivel: tus respuestas no llegaron al " +
+          "servidor. Juégalo de nuevo.",
+        "We couldn't save this level: your answers didn't reach the " +
+          "server. Please play it again."
+      );
     }
 
-    // Answers banked by `recordSoloLevelAnswer` as the player went beat
-    // whatever the client reports now — that is what stops a player from
-    // backing out, looking the answers up and re-entering to the same
-    // questions. The submission still fills in anything that never got
-    // banked, so a run with a dropped call is scored on what was played.
+    // Only answers the server judged as they were given
+    // (answerSoloQuestion) count. The client's list used to fill in any
+    // that weren't banked, which now would score answers that never paid
+    // their life.
     const scoredAnswers = mergeRecordedAnswers(
       sessionData?.answers as Record<string, unknown> | undefined,
-      answers
+      []
     );
+    const keyed = await keyedQuestions(sessionRef, sessionData || {}, tx);
 
     const {correct} = computeVerifiedQuizResult(
-      sessionQuestions, scoredAnswers, total
+      keyed, scoredAnswers, total
     );
 
     const percent = total === 0 ? 0 : correct / total;
@@ -5592,6 +5750,8 @@ export const submitSoloLevelResult = onCall(async (request) => {
       userTotalXp: prevUserXp + grantedXp,
       completedAll,
       shouldEnsureAiBuffer,
+      // The whole key, for the end-of-level review: the level is over.
+      answerKey: keyed.map((q) => safeInt(q.answerIndex, -1)),
     };
   });
 });
@@ -5626,9 +5786,8 @@ export const ensureSoloLevelSession = onCall({
   }
 
   const isAiTopic = request.data?.isAiTopic === true;
-  const categoryId = String(request.data?.categoryId || "");
-  const aiTopicId = request.data?.aiTopicId ?
-    String(request.data.aiTopicId) : null;
+  const categoryId = cleanDocId(request.data?.categoryId);
+  const aiTopicId = cleanDocId(request.data?.aiTopicId) || null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
 
   if (levelNumber < 1) {
@@ -5649,6 +5808,7 @@ export const ensureSoloLevelSession = onCall({
 
   const existing = await sessionRef.get();
   if (existing.exists) {
+    await moveSessionKeyOut(sessionRef, existing.data() || {});
     return {created: false};
   }
 
@@ -5811,9 +5971,7 @@ export const ensureSoloLevelSession = onCall({
     );
 
     if (draw.questionIds.length === 0) {
-      throw new HttpsError(
-        "not-found", "No questions found for this level."
-      );
+      throw await noLevelQuestionsError(uid);
     }
 
     const questionDocs = await db.getAll(...draw.questionIds.map((id) =>
@@ -5830,23 +5988,23 @@ export const ensureSoloLevelSession = onCall({
     });
 
     if (chosen.length === 0) {
-      throw new HttpsError(
-        "not-found", "No questions found for this level."
-      );
+      throw await noLevelQuestionsError(uid);
     }
 
     await db.runTransaction(async (tx) => {
       const sesSnap = await tx.get(sessionRef);
       if (sesSnap.exists) return;
 
+      const split = splitAnswerKey(chosen);
       tx.set(sessionRef, {
         categoryId: aiTopicId,
         levelNumber,
         difficulty: 1,
         total: chosen.length,
-        questions: chosen,
+        questions: split.publicQuestions,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      tx.set(answerKeyRef(sessionRef), {answerIndices: split.answerIndices});
 
       // Only the genuinely new ones count as seen — questions served as
       // filler for an exhausted bank are already in the set, and adding
@@ -5869,60 +6027,56 @@ export const ensureSoloLevelSession = onCall({
     await loadFixedLevelQuestions(uid, categoryId, levelNumber);
 
   if (chosen.length === 0) {
-    throw new HttpsError(
-      "not-found", `No questions available for ${categoryId}.`
-    );
+    throw await noLevelQuestionsError(uid);
   }
 
   await db.runTransaction(async (tx) => {
     const sesSnap = await tx.get(sessionRef);
     if (sesSnap.exists) return;
 
+    const split = splitAnswerKey(chosen);
     tx.set(sessionRef, {
       categoryId,
       levelNumber,
       difficulty: usedDifficulty,
       total: chosen.length,
       seed,
-      questions: chosen,
+      questions: split.publicQuestions,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    tx.set(answerKeyRef(sessionRef), {answerIndices: split.answerIndices});
   });
 
   return {created: true};
 });
 
 /**
- * Banks one Solo/AI-topic answer the moment it is given.
+ * Judges one Solo / AI-topic answer the moment it is given, banks it, and
+ * charges for it.
  *
- * Solo levels were scored purely from the list the client sent when the
- * level ended, and nothing was written before that — so backing out
- * mid-level threw the run away, and re-entering served the same questions
- * with a clean slate. The only cost was a life, which is not much of a
- * deterrent against stepping out to look an answer up. Banking each answer
- * here makes the first one final: `submitSoloLevelResult` scores from
- * these (see `mergeRecordedAnswers`), so a replay can re-see a question
- * but not change what it scored.
+ * The session no longer carries the answers (they live in its
+ * `secret/answers`, which no client can read), so this is the only way to
+ * learn whether an answer was right — and it only tells once: the first
+ * answer per question is final. The first answer of a paid run also pays
+ * the level's entry, and a wrong one pays its half life, in the same
+ * transaction; those used to be separate calls a modified client could
+ * leave out.
  *
- * First write per question index wins; later ones are accepted and
- * ignored, so a client retrying a dropped call is not an error. Sessions
- * are client-read-only (`firestore.rules` denies update on
- * sessions_fixed/sessions_ai), which is why this has to be a callable.
+ * -1 (TIMED_OUT_ANSWER) closes a question the clock ran out on.
+ * Fails with failed-precondition and `details.reason = "no_lives"` when
+ * the player can't afford to answer.
  */
-export const recordSoloLevelAnswer = onCall(async (request) => {
+export const answerSoloQuestion = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
   const isAiTopic = request.data?.isAiTopic === true;
-  const categoryId = String(request.data?.categoryId || "");
-  const aiTopicId = request.data?.aiTopicId ?
-    String(request.data.aiTopicId) : null;
+  const categoryId = cleanDocId(request.data?.categoryId);
+  const aiTopicId = cleanDocId(request.data?.aiTopicId) || null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
   const questionIndex = safeInt(request.data?.questionIndex, -1);
-  // TIMED_OUT_ANSWER (-1) is a legitimate value: it closes the question as
-  // wrong so running the clock out isn't a way to keep it open.
   const selectedIndex = safeInt(
     request.data?.selectedIndex, TIMED_OUT_ANSWER
   );
@@ -5930,51 +6084,143 @@ export const recordSoloLevelAnswer = onCall(async (request) => {
   if (levelNumber < 1 || questionIndex < 0) {
     throw new HttpsError("invalid-argument", "Invalid answer.");
   }
-  if (isAiTopic && !aiTopicId) {
-    throw new HttpsError("invalid-argument", "Missing aiTopicId.");
-  }
-  if (!isAiTopic && !categoryId) {
-    throw new HttpsError("invalid-argument", "Missing categoryId.");
+  if (isAiTopic ? !aiTopicId : !categoryId) {
+    throw new HttpsError("invalid-argument", "Missing topic.");
   }
 
+  const userRef = db.collection("users").doc(uid);
   const sessionId = isAiTopic ?
     `${aiTopicId}_${levelNumber}` : `${categoryId}_${levelNumber}`;
-  const sessionRef = db.collection("users").doc(uid)
+  const sessionRef = userRef
     .collection(isAiTopic ? "sessions_ai" : "sessions_fixed").doc(sessionId);
+  const progressRef = isAiTopic ?
+    userRef.collection("progress_ai").doc(aiTopicId as string) :
+    userRef.collection("progress_fixed").doc(categoryId);
 
   return db.runTransaction(async (tx) => {
-    const snap = await tx.get(sessionRef);
-    if (!snap.exists) {
+    const [sessionSnap, userSnap, progressSnap] = await tx.getAll(
+      sessionRef, userRef, progressRef
+    );
+    const session = sessionSnap.data();
+    if (!session) {
       throw new HttpsError("failed-precondition", "No open session.");
     }
-
-    const data = snap.data() || {};
-    const banked = (data.answers && typeof data.answers === "object") ?
-      data.answers as Record<string, unknown> : {};
-
-    const key = String(questionIndex);
-    if (Object.prototype.hasOwnProperty.call(banked, key)) {
-      return {answers: banked};
-    }
-
-    // Bounded by the session's own question count so a client can't grow
-    // the doc with indices that don't exist.
-    const questionCount = Array.isArray(data.questions) ?
-      data.questions.length : 0;
-    if (questionIndex >= questionCount) {
+    const keyed = await keyedQuestions(sessionRef, session, tx);
+    if (questionIndex >= keyed.length) {
       throw new HttpsError("invalid-argument", "Question out of range.");
     }
 
-    // The first answer of a run starts its clock — see isSoloRunSubmittable.
-    const startsRun = Object.keys(banked).length === 0;
+    const correctIndex = safeInt(keyed[questionIndex]?.answerIndex, -1);
+    const banked = (session.answers && typeof session.answers === "object") ?
+      session.answers as Record<string, unknown> : {};
+    const key = String(questionIndex);
+    const userData = userSnap.data() || {};
+    const nowMs = Date.now();
+    const state = computeLifeState(userData, nowMs);
+
+    // Already answered: the same verdict again (a retried call), and
+    // nothing charged twice.
+    if (Object.prototype.hasOwnProperty.call(banked, key)) {
+      const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
+      return {
+        correct: stored === correctIndex,
+        correctIndex,
+        alreadyAnswered: true,
+        entryCharged: false,
+        lifeLost: false,
+        ...lifeStateResponse(state),
+      };
+    }
+
+    const firstOfRun = Object.keys(banked).length === 0;
+    const passed = ((progressSnap.data()?.passedLevels as unknown[]) || [])
+      .map((entry) => safeInt(entry, 0));
+    const replayFree = passed.includes(levelNumber);
+    const correct = selectedIndex === correctIndex;
+
+    const charge = answerCharge({
+      chargeEntry: firstOfRun && !replayFree,
+      lifeUnits: state.lifeUnits,
+      entryCost: LEVEL_ENTRY_COST_UNITS,
+      wrongCost: WRONG_ANSWER_COST_UNITS,
+      gamesPlayed: safeInt(userData.gamesPlayed, 0),
+      graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      correct,
+    });
+    if (charge.refused) {
+      throw noLivesError(userData.languageCode);
+    }
+
     tx.set(sessionRef, {
       answers: {[key]: selectedIndex},
-      ...(startsRun ? {runStartedAtMs: Date.now()} : {}),
+      results: {[key]: {correct, correctIndex}},
+      ...(firstOfRun ? {runStartedAtMs: nowMs} : {}),
     }, {merge: true});
 
-    return {answers: {...banked, [key]: selectedIndex}};
+    const after = writeLifeUnits(tx, userRef, state, charge.newUnits, nowMs);
+
+    return {
+      correct,
+      correctIndex,
+      alreadyAnswered: false,
+      replayFree,
+      entryCharged: charge.entryCharged,
+      lifeLost: charge.lifeLost,
+      ...lifeStateResponse(after),
+    };
   });
 });
+
+/**
+ * The error for answering without the life to pay for it. The app reads
+ * `details.reason` to show its no-lives screen.
+ * @param {unknown} languageCode The player's language.
+ * @return {HttpsError} The error.
+ */
+function noLivesError(languageCode: unknown): HttpsError {
+  return new HttpsError(
+    "failed-precondition",
+    pickText(languageCode,
+      "No tienes vidas suficientes.", "You don't have enough lives."),
+    {localized: true, reason: "no_lives"}
+  );
+}
+
+/**
+ * Moves a session's inline answer key into its `secret/answers`, for
+ * sessions written before the key moved out. Their already-banked answers
+ * get their verdicts, so a resumed run shows them as judged.
+ * @param {FirebaseFirestore.DocumentReference} sessionRef The session.
+ * @param {FirebaseFirestore.DocumentData} data Its data.
+ * @return {Promise<void>} Resolves once moved (or if nothing to move).
+ */
+async function moveSessionKeyOut(
+  sessionRef: FirebaseFirestore.DocumentReference,
+  data: FirebaseFirestore.DocumentData
+): Promise<void> {
+  const questions = data.questions;
+  const inline = Array.isArray(questions) && questions.some(
+    (q) => typeof (q as Record<string, unknown>)?.answerIndex === "number"
+  );
+  if (!inline) return;
+
+  const split = splitAnswerKey(questions as Record<string, unknown>[]);
+  const banked = (data.answers && typeof data.answers === "object") ?
+    data.answers as Record<string, unknown> : {};
+  const results: Record<string, unknown> = {};
+  for (const [index, selected] of Object.entries(banked)) {
+    const correctIndex = split.answerIndices[safeInt(index, -1)] ?? -1;
+    results[index] = {
+      correct: safeInt(selected, TIMED_OUT_ANSWER) === correctIndex,
+      correctIndex,
+    };
+  }
+
+  const batch = db.batch();
+  batch.set(answerKeyRef(sessionRef), {answerIndices: split.answerIndices});
+  batch.update(sessionRef, {questions: split.publicQuestions, results});
+  await batch.commit();
+}
 
 // ============================================================
 // ACHIEVEMENTS
@@ -6273,9 +6519,8 @@ export const consumeLevelEntryLife = onCall(async (request) => {
   // Level context is optional: Weekly Topic rounds have no level to have
   // passed, so calls without it are charged the normal way.
   const isAiTopic = request.data?.isAiTopic === true;
-  const categoryId = String(request.data?.categoryId || "");
-  const aiTopicId = request.data?.aiTopicId ?
-    String(request.data.aiTopicId) : null;
+  const categoryId = cleanDocId(request.data?.categoryId);
+  const aiTopicId = cleanDocId(request.data?.aiTopicId) || null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
 
   // Answers "would this cost a life?" without spending one. The play screen
@@ -6339,53 +6584,6 @@ export const consumeLevelEntryLife = onCall(async (request) => {
 
     return {ok: true, replayFree: false,
       ...lifeStateResponse(stateAfterSpend(state, newUnits, newTickMs))};
-  });
-});
-
-export const consumeWrongAnswerLife = onCall(async (request) => {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError("unauthenticated", "Sign-in required.");
-  }
-
-  const userRef = db.collection("users").doc(uid);
-
-  return db.runTransaction(async (tx) => {
-    const snap = await tx.get(userRef);
-    const data = snap.data() || {};
-    const nowMs = Date.now();
-
-    const gamesPlayed = safeInt(data.gamesPlayed, 0);
-    const state = computeLifeState(data, nowMs);
-
-    const spend = resolveWrongAnswerSpend(
-      state.lifeUnits, WRONG_ANSWER_COST_UNITS,
-      gamesPlayed, NEW_PLAYER_GRACE_LEVELS
-    );
-
-    // Covers the grace window and, previously missed, a player already at
-    // zero: the deduction clamped to zero but this still answered
-    // `lifeLost: true`, so a wrong answer that cost them nothing was
-    // reported as one that did — and the "no life lost" message it
-    // suppresses is exactly the one that case should show. Skipping the
-    // write too, since it would only rewrite the values it just read.
-    if (!spend.lifeLost) {
-      return {lifeLost: false, ...lifeStateResponse(state)};
-    }
-
-    const wasFull = state.lifeUnits >= state.maxLifeUnits;
-    const newTickMs = (wasFull && spend.newUnits < state.maxLifeUnits) ?
-      nowMs : state.lastTickMs;
-
-    tx.set(userRef, {
-      lifeUnits: spend.newUnits,
-      maxLifeUnits: state.maxLifeUnits,
-      lifeRegenSeconds: state.lifeRegenSeconds,
-      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
-    }, {merge: true});
-
-    return {lifeLost: true, ...lifeStateResponse(stateAfterSpend(state,
-      spend.newUnits, newTickMs))};
   });
 });
 
@@ -6824,12 +7022,19 @@ function normalizeTopicTitle(title: string): string {
  * @return {string} Normalized title for moderation matching.
  */
 function normalizeForModeration(title: string): string {
-  return title
+  const ascii = title
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+  if (ascii) return ascii;
+  // A title with no Latin letters or digits (emoji, other scripts,
+  // "¿¡?!") reduced to "", which was then used as a doc id and failed
+  // every AI-topic call with INTERNAL. It keys on a digest of the title
+  // instead, so it still has its own blocklist entry.
+  return "u " + crypto.createHash("sha256")
+    .update(title.trim().toLowerCase()).digest("hex").slice(0, 32);
 }
 
 // Deliberately narrow to bright-line categories where a plain keyword
@@ -8424,7 +8629,7 @@ export const regenerateAiTopicQuestions = onCall({
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
@@ -8604,7 +8809,7 @@ export const getAiTopicRegenerateQuote = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
@@ -8655,7 +8860,7 @@ export const expandAiTopic = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
@@ -8888,7 +9093,7 @@ export const ensureAiTopicLevelsGenerated = onCall({
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
@@ -9048,7 +9253,7 @@ export const refundAiTopicCost = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
@@ -9119,10 +9324,10 @@ export const reportAiQuestion = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const topicId = String(request.data?.topicId || "");
+  const topicId = cleanDocId(request.data?.topicId);
   const levelNumber = safeInt(request.data?.levelNumber, -1);
-  const questionId = String(request.data?.questionId || "");
-  const questionText = String(request.data?.questionText || "");
+  const questionId = cleanDocId(request.data?.questionId);
+  const questionText = String(request.data?.questionText || "").slice(0, 500);
   const reason = String(request.data?.reason || "");
   const details = String(request.data?.details || "").slice(0, 500);
 
@@ -9188,11 +9393,22 @@ async function recordAiQuestionReport(uid: string, report: {
   const reportRef = db.collection("ai_question_reports")
     .doc(`${uid}__${poolId}__${levelNumber}__${questionId}`);
 
+  const quotaRef = db.collection("question_report_quotas").doc(uid);
+
   return db.runTransaction(async (tx) => {
-    const [levelSnap, existingReportSnap] = await Promise.all([
+    const [levelSnap, existingReportSnap, quotaSnap] = await Promise.all([
       tx.get(levelRef),
       tx.get(reportRef),
+      tx.get(quotaRef),
     ]);
+
+    // Only a question that is really in this level: the count lives on the
+    // shared level doc, and made-up ids grew it until no write to that
+    // level could succeed for anyone.
+    const levelQuestionIds = (levelSnap.data()?.questionIds as unknown[]) || [];
+    if (!levelQuestionIds.map(String).includes(questionId)) {
+      throw new HttpsError("not-found", "Question not found.");
+    }
 
     const reportedCounts: Record<string, number> = {
       ...(levelSnap.data()?.reportedQuestionCounts || {}),
@@ -9221,6 +9437,20 @@ async function recordAiQuestionReport(uid: string, report: {
         alreadyReported: true,
       };
     }
+
+    // Same daily allowance as fixed-bank reports (reportQuestion).
+    const quota = reportQuotaAfter(
+      quotaSnap.data(), serverDateId(), MAX_QUESTION_REPORTS_PER_DAY
+    );
+    if (!quota.allowed) {
+      throw await localizedErrorFor(
+        uid, "resource-exhausted",
+        "Ya enviaste muchos reportes hoy. Gracias; puedes seguir mañana.",
+        "You've sent a lot of reports today. Thanks — you can send more " +
+          "tomorrow."
+      );
+    }
+    tx.set(quotaRef, quota.next);
 
     const newCount = currentCount + 1;
     reportedCounts[questionId] = newCount;
@@ -9280,9 +9510,9 @@ export const reportQuestion = onCall(async (request) => {
   }
 
   if (mode === "ai") {
-    const topicId = String(data.topicId || "");
+    const topicId = cleanDocId(data.topicId);
     const levelNumber = safeInt(data.levelNumber, -1);
-    const questionId = String(data.questionId || "");
+    const questionId = cleanDocId(data.questionId);
     if (!topicId || levelNumber < 1 || !questionId) {
       throw new HttpsError("invalid-argument", "Invalid report.");
     }
@@ -9299,7 +9529,7 @@ export const reportQuestion = onCall(async (request) => {
   let docId = "";
 
   if (mode === "solo") {
-    categoryId = String(data.categoryId || "");
+    categoryId = cleanDocId(data.categoryId);
     const levelNumber = safeInt(data.levelNumber, -1);
     if (!categoryId || levelNumber < 1) {
       throw new HttpsError("invalid-argument", "Invalid report.");
@@ -9307,24 +9537,26 @@ export const reportQuestion = onCall(async (request) => {
     const snap = await userRef.collection("sessions_fixed")
       .doc(`${categoryId}_${levelNumber}`).get();
     question = questionAt(
-      snap.data()?.questions, safeInt(data.questionIndex, -1)
+      snap.exists ? await keyedQuestions(snap.ref, snap.data() || {}) : [],
+      safeInt(data.questionIndex, -1)
     );
     difficulty = safeInt(snap.data()?.difficulty, 0);
   } else if (mode === "daily") {
     const dateId = String(data.dateId || "");
-    assertPlausibleDateId(dateId);
+    await assertPlausibleDateId(uid, dateId);
     const snap = await userRef.collection("daily_challenges")
       .doc(dateId).get();
     question = questionAt(
-      snap.data()?.questions, safeInt(data.questionIndex, -1)
+      snap.exists ? await keyedQuestions(snap.ref, snap.data() || {}) : [],
+      safeInt(data.questionIndex, -1)
     );
     categoryId = String(question?.raw.sourceCategoryId || "");
     difficulty = safeInt(question?.raw.sourceDifficulty, 0);
     docId = String(question?.raw.sourceQuestionId || "");
   } else if (mode === "weekly") {
-    categoryId = String(data.categoryId || "");
+    categoryId = cleanDocId(data.categoryId);
     difficulty = safeInt(data.difficulty, 0);
-    docId = String(data.questionId || "");
+    docId = cleanDocId(data.questionId);
     if (!categoryId || difficulty < 1 || !docId) {
       throw new HttpsError("invalid-argument", "Invalid report.");
     }
@@ -9594,8 +9826,8 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const weekId = String(request.data?.weekId || "");
-  const categoryId = String(request.data?.categoryId || "");
+  const weekId = cleanDocId(request.data?.weekId);
+  const categoryId = cleanDocId(request.data?.categoryId);
   if (!weekId || !categoryId) {
     throw new HttpsError("invalid-argument", "Invalid round request.");
   }
@@ -9666,7 +9898,157 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "No questions available.");
   }
 
-  return {questions};
+  // The round is kept here, with its answers in `secret/answers`: the app
+  // gets the questions without them and learns each verdict from
+  // answerWeeklyQuestion. Drawing pays the entry, as opening a Solo level
+  // does on its first answer.
+  const userRef = db.collection("users").doc(uid);
+  const roundRef = weeklyRoundRef(uid);
+  const split = splitAnswerKey(questions);
+
+  const lives = await db.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef);
+    const userData = userSnap.data() || {};
+    const nowMs = Date.now();
+    const state = computeLifeState(userData, nowMs);
+    const charge = answerCharge({
+      chargeEntry: true,
+      lifeUnits: state.lifeUnits,
+      entryCost: LEVEL_ENTRY_COST_UNITS,
+      wrongCost: WRONG_ANSWER_COST_UNITS,
+      gamesPlayed: safeInt(userData.gamesPlayed, 0),
+      graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      correct: true,
+    });
+    if (charge.refused) throw noLivesError(userData.languageCode);
+
+    const after = writeLifeUnits(tx, userRef, state, charge.newUnits, nowMs);
+    tx.set(answerKeyRef(roundRef), {answerIndices: split.answerIndices});
+    tx.set(roundRef, {
+      weekId,
+      categoryId,
+      questions: split.publicQuestions,
+      answers: {},
+      results: {},
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return lifeStateResponse(after);
+  });
+
+  return {questions: split.publicQuestions, ...lives};
+});
+
+/**
+ * The player's Weekly Topic round in progress. Server-only: no rule
+ * matches it, so the app can't read its answers or write its own.
+ * @param {string} uid The player.
+ * @return {FirebaseFirestore.DocumentReference} The round doc.
+ */
+function weeklyRoundRef(uid: string): FirebaseFirestore.DocumentReference {
+  return db.collection("users").doc(uid)
+    .collection("weekly_rounds").doc("current");
+}
+
+/**
+ * Stores a new life balance, starting the regen clock if it just left
+ * full.
+ * @param {FirebaseFirestore.Transaction} tx The transaction.
+ * @param {FirebaseFirestore.DocumentReference} userRef The player.
+ * @param {LifeState} state The balance before.
+ * @param {number} newUnits The balance after.
+ * @param {number} nowMs Now.
+ * @return {LifeState} The state after the change.
+ */
+function writeLifeUnits(
+  tx: FirebaseFirestore.Transaction,
+  userRef: FirebaseFirestore.DocumentReference,
+  state: LifeState,
+  newUnits: number,
+  nowMs: number
+): LifeState {
+  if (newUnits === state.lifeUnits) return state;
+  const wasFull = state.lifeUnits >= state.maxLifeUnits;
+  const newTickMs = (wasFull && newUnits < state.maxLifeUnits) ?
+    nowMs : state.lastTickMs;
+  tx.set(userRef, {
+    lifeUnits: newUnits,
+    maxLifeUnits: state.maxLifeUnits,
+    lifeRegenSeconds: state.lifeRegenSeconds,
+    lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
+  }, {merge: true});
+  return stateAfterSpend(state, newUnits, newTickMs);
+}
+
+/**
+ * Judges one Weekly Topic answer, banks it and charges a wrong one, like
+ * answerSoloQuestion does for a level.
+ */
+export const answerWeeklyQuestion = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const questionIndex = safeInt(request.data?.questionIndex, -1);
+  const selectedIndex = safeInt(
+    request.data?.selectedIndex, TIMED_OUT_ANSWER
+  );
+  if (questionIndex < 0) {
+    throw new HttpsError("invalid-argument", "Invalid answer.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  const roundRef = weeklyRoundRef(uid);
+
+  return db.runTransaction(async (tx) => {
+    const [roundSnap, userSnap] = await tx.getAll(roundRef, userRef);
+    const round = roundSnap.data();
+    if (!round) {
+      throw new HttpsError("failed-precondition", "No open round.");
+    }
+    const keyed = await keyedQuestions(roundRef, round, tx);
+    if (questionIndex >= keyed.length) {
+      throw new HttpsError("invalid-argument", "Question out of range.");
+    }
+    const correctIndex = safeInt(keyed[questionIndex]?.answerIndex, -1);
+    const userData = userSnap.data() || {};
+    const nowMs = Date.now();
+    const state = computeLifeState(userData, nowMs);
+
+    const banked = (round.answers && typeof round.answers === "object") ?
+      round.answers as Record<string, unknown> : {};
+    const key = String(questionIndex);
+    if (Object.prototype.hasOwnProperty.call(banked, key)) {
+      const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
+      return {
+        correct: stored === correctIndex, correctIndex, lifeLost: false,
+        ...lifeStateResponse(state),
+      };
+    }
+
+    const correct = selectedIndex === correctIndex;
+    const charge = answerCharge({
+      chargeEntry: false,
+      lifeUnits: state.lifeUnits,
+      entryCost: LEVEL_ENTRY_COST_UNITS,
+      wrongCost: WRONG_ANSWER_COST_UNITS,
+      gamesPlayed: safeInt(userData.gamesPlayed, 0),
+      graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      correct,
+    });
+    if (charge.refused) throw noLivesError(userData.languageCode);
+
+    tx.set(roundRef, {
+      answers: {[key]: selectedIndex},
+      results: {[key]: {correct, correctIndex}},
+    }, {merge: true});
+    const after = writeLifeUnits(tx, userRef, state, charge.newUnits, nowMs);
+
+    return {
+      correct, correctIndex, lifeLost: charge.lifeLost,
+      ...lifeStateResponse(after),
+    };
+  });
 });
 
 /**
@@ -9684,15 +10066,9 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const weekId = String(request.data?.weekId || "");
-  const categoryId = String(request.data?.categoryId || "");
-  const rawAnswers = Array.isArray(request.data?.answers) ?
-    request.data.answers : [];
-
-  if (
-    !weekId || !categoryId || rawAnswers.length === 0 ||
-    rawAnswers.length > WEEKLY_TOPIC_ROUND_SIZE
-  ) {
+  const weekId = cleanDocId(request.data?.weekId);
+  const categoryId = cleanDocId(request.data?.categoryId);
+  if (!weekId || !categoryId) {
     throw new HttpsError("invalid-argument", "Invalid round submission.");
   }
 
@@ -9709,50 +10085,36 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
     );
   }
 
-  type RoundAnswer = {
-    difficulty: number; questionId: string; selectedIndex: number;
-  };
-
-  const answers: RoundAnswer[] = rawAnswers.map(
-    (a: Record<string, unknown>): RoundAnswer => ({
-      difficulty: safeInt(a?.sourceDifficulty, 0),
-      questionId: String(a?.sourceQuestionId || ""),
-      selectedIndex: safeInt(a?.selectedIndex, -1),
-    })
-  ).filter((a: RoundAnswer) =>
-    a.questionId && [1, 2, 3].includes(a.difficulty)
-  );
-
-  if (answers.length === 0) {
-    throw new HttpsError("invalid-argument", "No valid answers submitted.");
-  }
-
-  const questionSnaps = await Promise.all(answers.map((a) =>
-    db.collection("fixed_pools").doc(categoryId)
-      .collection(`difficulty_${a.difficulty}`).doc("pool")
-      .collection("questions").doc(a.questionId).get()
-  ));
-
-  const judged: {questionId: string; correct: boolean}[] = [];
-
-  answers.forEach((a, i) => {
-    const data = questionSnaps[i].data();
-    if (!data) return;
-
-    const correctIndex = safeInt(data.answerIndex ?? data.correctIndex, -1);
-    judged.push({
-      questionId: a.questionId,
-      correct: a.selectedIndex === correctIndex,
-    });
-  });
-
   const userRef = db.collection("users").doc(uid);
   const participationRef = userRef
     .collection("weekly_participation").doc(weekId);
 
+  const roundRef = weeklyRoundRef(uid);
+
   return db.runTransaction(async (tx) => {
-    const snap = await tx.get(participationRef);
+    const [snap, roundSnap] = await tx.getAll(participationRef, roundRef);
     const data = snap.data() || {};
+
+    // Scored from the round the server drew and judged, not from a list
+    // of answers the client sends.
+    const roundData = roundSnap.data();
+    if (!roundData || roundData.weekId !== weekId ||
+        roundData.categoryId !== categoryId) {
+      throw new HttpsError("failed-precondition", "No open round.");
+    }
+    const roundQuestions = Array.isArray(roundData.questions) ?
+      roundData.questions as Record<string, unknown>[] : [];
+    const results = (roundData.results &&
+      typeof roundData.results === "object") ?
+      roundData.results as Record<string, {correct?: unknown}> : {};
+    const judged = Object.entries(results).map(([index, verdict]) => ({
+      questionId: String(
+        roundQuestions[safeInt(index, -1)]?.sourceQuestionId || ""
+      ),
+      correct: verdict?.correct === true,
+    })).filter((entry) => entry.questionId);
+    tx.delete(answerKeyRef(roundRef));
+    tx.delete(roundRef);
 
     const usedQuestionIds = new Set<string>(
       ((data.usedQuestionIds as unknown[]) || []).map((e) => String(e))
@@ -9792,7 +10154,7 @@ export const claimWeeklyTopicCoinReward = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const weekId = String(request.data?.weekId || "");
+  const weekId = cleanDocId(request.data?.weekId);
   if (!weekId) {
     throw new HttpsError("invalid-argument", "Missing weekId.");
   }
@@ -9860,7 +10222,7 @@ export const claimWeeklyTopicCompletionReward = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const weekId = String(request.data?.weekId || "");
+  const weekId = cleanDocId(request.data?.weekId);
   if (!weekId) {
     throw new HttpsError("invalid-argument", "Missing weekId.");
   }
@@ -10003,13 +10365,124 @@ async function syncFriendsAchievementProgress(uid: string): Promise<void> {
   });
 }
 
+// A player can have this many requests waiting for an answer.
+const MAX_PENDING_FRIEND_REQUESTS = 50;
+// A rejected request can't be sent again for this long.
+const FRIEND_REQUEST_RESEND_DAYS = 7;
+
+/**
+ * Sends a friend request. Cloud-Function-only, like accepting and
+ * rejecting: the client used to write the request straight into the other
+ * player's inbox, with any name it liked on it, and could flip a rejected
+ * request back to pending to notify them again and again.
+ */
+export const sendFriendRequest = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const targetUid = cleanDocId(request.data?.targetUid);
+  if (!targetUid || targetUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid player.");
+  }
+
+  const myRef = db.collection("users").doc(uid);
+  const targetRef = db.collection("users").doc(targetUid);
+  const requestRef = targetRef.collection("friend_requests").doc(uid);
+  const sentRef = myRef.collection("sent_friend_requests").doc(targetUid);
+  const reverseRef = myRef.collection("friend_requests").doc(targetUid);
+
+  const pendingCount = await myRef.collection("sent_friend_requests")
+    .where("status", "==", "pending").count().get();
+
+  await db.runTransaction(async (tx) => {
+    const [mySnap, targetSnap, friendSnap, requestSnap, reverseSnap] =
+      await tx.getAll(
+        myRef, targetRef, myRef.collection("friends").doc(targetUid),
+        requestRef, reverseRef
+      );
+    const lang = mySnap.data()?.languageCode;
+
+    if (!targetSnap.exists) {
+      throw localizedError(lang, "not-found",
+        "Ese jugador ya no existe.", "That player no longer exists.");
+    }
+    if (friendSnap.exists) {
+      throw localizedError(lang, "already-exists",
+        "Ya son amigos.", "You're already friends.");
+    }
+    if (reverseSnap.data()?.status === "pending") {
+      throw localizedError(lang, "already-exists",
+        "Ese jugador ya te envió una solicitud. Revísala en Recibidas.",
+        "That player already sent you a request. Check Received.");
+    }
+
+    const existing = requestSnap.data();
+    if (existing?.status === "pending") {
+      throw localizedError(lang, "already-exists",
+        "Ya le enviaste una solicitud.", "You already sent them a request.");
+    }
+    if (existing?.status === "rejected") {
+      const at = existing.updatedAt as admin.firestore.Timestamp | undefined;
+      const waitMs = FRIEND_REQUEST_RESEND_DAYS * 86400000;
+      if (at && Date.now() - at.toMillis() < waitMs) {
+        throw localizedError(lang, "failed-precondition",
+          "Ese jugador rechazó tu solicitud. Podrás volver a enviarla en " +
+            "unos días.",
+          "That player declined your request. You can send it again in " +
+            "a few days.");
+      }
+    }
+    if ((pendingCount.data().count || 0) >= MAX_PENDING_FRIEND_REQUESTS) {
+      throw localizedError(lang, "resource-exhausted",
+        "Tienes demasiadas solicitudes sin respuesta.",
+        "You have too many unanswered requests.");
+    }
+
+    const me = mySnap.data() || {};
+    const them = targetSnap.data() || {};
+    const myName = String(me.displayName || me.username || "");
+    const theirName = String(them.displayName || them.username || "");
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    tx.set(requestRef, {
+      requesterUid: uid,
+      requesterDisplayName: myName,
+      requesterUsername: String(me.username || myName),
+      requesterAvatarId: String(me.avatarId || "avatar_1"),
+      requesterEquippedFrame: String(me.equippedFrame || "bronze"),
+      requesterBestLeagueId: String(me.bestLeagueId || "bronze"),
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+    tx.set(sentRef, {
+      targetUid,
+      targetDisplayName: theirName,
+      targetUsername: String(them.username || theirName),
+      targetAvatarId: String(them.avatarId || "avatar_1"),
+      targetEquippedFrame: String(them.equippedFrame || "bronze"),
+      targetBestLeagueId: String(them.bestLeagueId || "bronze"),
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+
+  // One notification per sender, ever (notifyOnce): re-sending after a
+  // rejection doesn't push again.
+  await notifyOnce(targetUid, uid, "friend_request", {});
+  return {sent: true};
+});
+
 export const acceptFriendRequest = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const requesterUid = String(request.data?.requesterUid || "");
+  const requesterUid = cleanDocId(request.data?.requesterUid);
   if (!requesterUid || requesterUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid request.");
   }
@@ -10123,7 +10596,7 @@ export const rejectFriendRequest = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const requesterUid = String(request.data?.requesterUid || "");
+  const requesterUid = cleanDocId(request.data?.requesterUid);
   if (!requesterUid || requesterUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid request.");
   }
@@ -10169,7 +10642,7 @@ export const removeFriend = onCall(async (request) => {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
 
-  const friendUid = String(request.data?.friendUid || "");
+  const friendUid = cleanDocId(request.data?.friendUid);
   if (!friendUid || friendUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid friend.");
   }

@@ -10,6 +10,7 @@ import {
   leagueForRating,
   leagueRank,
   bestLeaguePatch,
+  disconnectWinRating,
   calculateRatings,
 } from "./pvp_rating";
 
@@ -210,5 +211,24 @@ test("bestLeaguePatch: cae a pvpLeagueId si no hay bestLeagueId", () => {
   assert.deepStrictEqual(
     bestLeaguePatch({pvpLeagueId: "diamond"}, leagueForRating(1250)),
     {}
+  );
+});
+
+test("disconnectWinRating: entre iguales da el máximo de la victoria", () => {
+  // Elo entre iguales da +16; el tope de la desconexión es 12.
+  assert.strictEqual(disconnectWinRating(1000, 1000, 12), 1012);
+});
+
+test("disconnectWinRating: contra alguien mucho más bajo casi no da nada",
+  () => {
+    // Ganarle por abandono a una cuenta nueva no puede valer más que
+    // ganarle jugando: así no se sube con cuentas secundarias.
+    assert.strictEqual(disconnectWinRating(1900, 1000, 12), 1900);
+    assert.ok(disconnectWinRating(1400, 1000, 12) - 1400 <= 3);
+  });
+
+test("disconnectWinRating: respeta el techo de puntuación", () => {
+  assert.strictEqual(
+    disconnectWinRating(RATING_CEILING, RATING_CEILING, 12), RATING_CEILING
   );
 });

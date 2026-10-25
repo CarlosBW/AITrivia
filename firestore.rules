@@ -490,16 +490,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // `create`/`update` used to also allow `auth.uid == userId` (the
-      // inbox owner, i.e. the request's target) — that let a client write
-      // an arbitrary `requesterId` into their own inbox with no real
-      // request ever sent, then `acceptFriendRequest` it to fabricate a
-      // friendship and farm the friends_5/friends_10 achievements. Only
-      // the real requester may write their own entry now (still covers
-      // the legitimate "resend after rejection" case, since that's an
-      // update by the same requester); accepting/rejecting is
-      // Cloud-Function-only (acceptFriendRequest/rejectFriendRequest,
-      // Admin SDK — bypasses this rule).
+      // A friend request in its target's inbox. The inbox owner could once
+      // write a fake request to accept it and farm the friends
+      // achievements; then the requester could still write it with any
+      // name. Sending, accepting and rejecting are all Cloud Functions now
+      // (sendFriendRequest / acceptFriendRequest / rejectFriendRequest);
+      // both sides may only read it.
       match /friend_requests/{requesterId} {
         allow read: if request.auth != null
           && (
@@ -507,26 +503,22 @@ service cloud.firestore {
             request.auth.uid == requesterId
           );
 
-        allow create, update: if request.auth != null
-          && request.auth.uid == requesterId;
-
-        allow delete: if false;
+        // Written only by sendFriendRequest / acceptFriendRequest /
+        // rejectFriendRequest. The requester used to write it directly,
+        // into a stranger's inbox, with any name and as often as they
+        // liked (re-opening a rejected request re-notified them).
+        allow create, update, delete: if false;
       }
 
-      // Same reasoning as /friend_requests above — `create`/`update` used
-      // to also allow `auth.uid == targetId` (needed when accept/reject
-      // still wrote both mirror docs directly from the client), but that
-      // let a client write into a *stranger's* outgoing-requests list.
-      // Now only the collection owner (the actual sender) writes here;
-      // the target's side of accept/reject is Cloud-Function-only.
+      // The sender's own list of requests. It used to be client-written
+      // (first by either side, then by the sender); every write is now
+      // Cloud-Function-only, together with /friend_requests above.
       match /sent_friend_requests/{targetId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
 
-        allow create, update: if request.auth != null
-          && request.auth.uid == userId;
-
-        allow delete: if false;
+        // Server-only too, written alongside the request above.
+        allow create, update, delete: if false;
       }
 
       // `create` used to be open to any signed-in user, because notifying
@@ -684,11 +676,15 @@ service cloud.firestore {
 
       allow create: if false;
 
+      // Only the challenged player may decline, and only before starting:
+      // either side could decline at any time, so a player who saw they
+      // were losing mid-match declined it and the loss never counted.
       allow update: if request.auth != null
-        && (
-          request.auth.uid == resource.data.challengerUid ||
-          request.auth.uid == resource.data.challengedUid
-        )
+        && request.auth.uid == resource.data.challengedUid
+        && resource.data.status == 'waiting_challenged'
+        && resource.data.challengedStatus == 'pending'
+        && !('answers' in resource.data.get('challenged', {}))
+        && !('deadlines' in resource.data.get('challenged', {}))
         && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['status', 'declinedByUid', 'declinedAt', 'lastUpdatedAt'])
         && request.resource.data.status == 'declined'

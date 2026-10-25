@@ -20,7 +20,9 @@ const {
   assertSucceeds,
   assertFails,
 } = require("@firebase/rules-unit-testing");
-const {doc, getDoc, setDoc, deleteDoc} = require("firebase/firestore");
+const {
+  doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp,
+} = require("firebase/firestore");
 
 const YO = "jugador";
 const RIVAL = "rival";
@@ -397,5 +399,129 @@ test("invitaciones en vivo", async (t) => {
     await sembrar(["realtime_invites", "i1"], invitacion());
     await assertFails(setDoc(doc(como(RIVAL), "realtime_invites", "i1"),
       {status: "accepted", toUid: AJENO}, {merge: true}));
+  });
+});
+
+test("rechazar un reto por turnos", async (t) => {
+  /** Un reto que YO lancé a RIVAL y que RIVAL todavía no empezó. */
+  function reto(extra = {}) {
+    return {
+      challengerUid: YO,
+      challengedUid: RIVAL,
+      status: "waiting_challenged",
+      challengerStatus: "finished",
+      challengedStatus: "pending",
+      challenger: {score: 3, answers: {"0": 1}},
+      challenged: {score: 0},
+      ...extra,
+    };
+  }
+  const rechazo = (uid) => ({
+    status: "declined",
+    declinedByUid: uid,
+    declinedAt: serverTimestamp(),
+    lastUpdatedAt: serverTimestamp(),
+  });
+
+  await t.test("el retado puede rechazarlo antes de jugar", async () => {
+    await sembrar(["async_matches", "r1"], reto());
+    await assertSucceeds(
+      updateDoc(doc(como(RIVAL), "async_matches", "r1"), rechazo(RIVAL))
+    );
+  });
+
+  // Rechazar a mitad de partida era una forma de esquivar una derrota.
+  await t.test("no una vez que empezó a jugar", async () => {
+    await sembrar(["async_matches", "r1"], reto({
+      challenged: {score: 0, deadlines: {"0": 123}},
+    }));
+    await assertFails(
+      updateDoc(doc(como(RIVAL), "async_matches", "r1"), rechazo(RIVAL))
+    );
+  });
+
+  // El que lanzó el reto ya jugó: anularlo sería borrar su derrota.
+  await t.test("quien lanzó el reto no puede anularlo", async () => {
+    await sembrar(["async_matches", "r1"], reto());
+    await assertFails(
+      updateDoc(doc(como(YO), "async_matches", "r1"), rechazo(YO))
+    );
+  });
+
+  await t.test("no uno que ya terminó", async () => {
+    await sembrar(["async_matches", "r1"], reto({
+      status: "completed", challengedStatus: "finished",
+    }));
+    await assertFails(
+      updateDoc(doc(como(RIVAL), "async_matches", "r1"), rechazo(RIVAL))
+    );
+  });
+});
+
+test("solicitudes de amistad", async (t) => {
+  // El cliente escribía la solicitud directo en la bandeja del otro: con
+  // cualquier nombre, y podía devolver una rechazada a "pending" para
+  // volver a notificarle. Ahora solo lo hace sendFriendRequest.
+  await t.test("no se escribe en la bandeja de otro jugador", async () => {
+    await assertFails(
+      setDoc(doc(como(YO), "users", RIVAL, "friend_requests", YO), {
+        requesterUid: YO, requesterDisplayName: "Cualquier cosa",
+        status: "pending",
+      })
+    );
+  });
+
+  await t.test("no se reabre una solicitud rechazada", async () => {
+    await sembrar(["users", RIVAL, "friend_requests", YO],
+      {requesterUid: YO, status: "rejected"});
+    await assertFails(
+      updateDoc(doc(como(YO), "users", RIVAL, "friend_requests", YO),
+        {status: "pending"})
+    );
+  });
+
+  await t.test("tampoco la lista propia de enviadas", async () => {
+    await assertFails(
+      setDoc(doc(como(YO), "users", YO, "sent_friend_requests", RIVAL),
+        {targetUid: RIVAL, status: "pending"})
+    );
+  });
+
+  await t.test("ambos pueden leer la solicitud", async () => {
+    await sembrar(["users", RIVAL, "friend_requests", YO],
+      {requesterUid: YO, status: "pending"});
+    await assertSucceeds(
+      getDoc(doc(como(YO), "users", RIVAL, "friend_requests", YO))
+    );
+    await assertSucceeds(
+      getDoc(doc(como(RIVAL), "users", RIVAL, "friend_requests", YO))
+    );
+  });
+});
+
+test("las respuestas de los modos individuales", async (t) => {
+  // Las preguntas de Solo, Reto diario y Tema de la semana llegan sin la
+  // respuesta; la clave vive aparte y solo la lee el servidor, que juzga
+  // cada respuesta.
+  const claves = [
+    ["users", YO, "sessions_fixed", "cine_1", "secret", "answers"],
+    ["users", YO, "sessions_ai", "t1_1", "secret", "answers"],
+    ["users", YO, "daily_challenges", "2026-10-22", "secret", "answers"],
+    ["users", YO, "weekly_rounds", "current", "secret", "answers"],
+    ["users", YO, "weekly_rounds", "current"],
+  ];
+  for (const ruta of claves) {
+    await t.test(`no se lee ${ruta.slice(2).join("/")}`, async () => {
+      await sembrar(ruta, {answerIndices: [1, 2, 0]});
+      await assertFails(getDoc(doc(como(YO), ...ruta)));
+    });
+  }
+
+  await t.test("la sesión propia sí se lee", async () => {
+    await sembrar(["users", YO, "sessions_fixed", "cine_1"],
+      {questions: [{q: "¿?", options: ["a", "b"]}]});
+    await assertSucceeds(
+      getDoc(doc(como(YO), "users", YO, "sessions_fixed", "cine_1"))
+    );
   });
 });

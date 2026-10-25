@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import 'answer_service.dart';
+
 class WeeklyTopicService {
   WeeklyTopicService._();
 
@@ -48,32 +50,47 @@ class WeeklyTopicService {
   /// the client, since every question carries its answer. It also keeps a
   /// week's rounds from repeating each other, using the player's
   /// `usedQuestionIds` for the week.
-  Future<List<Map<String, dynamic>>> loadRandomRound({
+  ///
+  /// Drawing the round pays its entry life, so it also returns the life
+  /// balance after it; throws [NoLivesException] when there isn't enough.
+  /// The questions come without their answers: each one is judged by
+  /// [AnswerService.answerWeekly].
+  Future<({List<Map<String, dynamic>> questions, int lifeUnits})>
+      loadRandomRound({
     required String uid,
     required String weekId,
     required String categoryId,
   }) async {
-    final result = await FirebaseFunctions.instance
-        .httpsCallable(
-          'drawWeeklyTopicRound',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-        )
-        .call({'weekId': weekId, 'categoryId': categoryId});
+    final Map<String, dynamic> data;
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable(
+            'drawWeeklyTopicRound',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'weekId': weekId, 'categoryId': categoryId});
+      data = Map<String, dynamic>.from(result.data as Map);
+    } on FirebaseFunctionsException catch (e) {
+      final details = e.details;
+      if (details is Map && details['reason'] == 'no_lives') {
+        throw const NoLivesException();
+      }
+      rethrow;
+    }
 
-    final data = Map<String, dynamic>.from(result.data as Map);
-    return (data['questions'] as List? ?? [])
-        .map((q) => Map<String, dynamic>.from(q as Map))
-        .toList();
+    return (
+      questions: (data['questions'] as List? ?? [])
+          .map((q) => Map<String, dynamic>.from(q as Map))
+          .toList(),
+      lifeUnits: ((data['lifeUnits'] ?? 0) as num).toInt(),
+    );
   }
 
   /// Grants the round result via the `submitWeeklyTopicRound` Cloud
-  /// Function — correct/totalAnswered are recomputed server-side from the
-  /// submitted answers against the pool's own stored questions, never
-  /// trusted from the client.
+  /// Function, which scores the answers it judged as they were given.
   Future<Map<String, dynamic>> submitRound({
     required String weekId,
     required String categoryId,
-    required List<Map<String, dynamic>> answers,
   }) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
@@ -83,7 +100,6 @@ class WeeklyTopicService {
         .call({
       'weekId': weekId,
       'categoryId': categoryId,
-      'answers': answers,
     });
 
     return Map<String, dynamic>.from(result.data as Map);

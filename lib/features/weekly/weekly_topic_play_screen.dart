@@ -2,11 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/answer_service.dart';
 import '../../services/life_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
@@ -45,6 +47,11 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
   int _correct = 0;
 
   int? _selectedIndex;
+
+  /// The current question's right option once the server has judged it.
+  int? _revealedIndex;
+  bool _awaitingVerdict = false;
+  final Map<int, int> _correctIndexByQuestion = {};
   bool? _lastCorrect;
   Color _flashColor = Colors.transparent;
 
@@ -73,26 +80,22 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     });
 
     try {
-      final questions = await WeeklyTopicService.instance.loadRandomRound(
+      // Drawing the round also pays its entry, on the server.
+      final round = await WeeklyTopicService.instance.loadRandomRound(
         uid: _uid,
         weekId: widget.weekId,
         categoryId: widget.categoryId,
       );
 
-      final entry = await LifeService.instance.tryConsumeLevelEntry(_uid);
-
       if (!mounted) return;
 
-      if (!entry.applied) {
-        Navigator.pop(context);
-        return;
-      }
-
       setState(() {
-        _questions = questions;
-        _lifeUnits = (entry.state['lifeUnits'] ?? 0) as int;
+        _questions = round.questions;
+        _lifeUnits = round.lifeUnits;
         _loading = false;
       });
+    } on NoLivesException {
+      if (mounted) Navigator.pop(context);
     } catch (_) {
       if (!mounted) return;
 
@@ -112,16 +115,49 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     return localizedQuestion(q, Localizations.localeOf(context).languageCode).options;
   }
 
-  int _answerIndex(Map<String, dynamic> q) {
-    return ((q['answerIndex'] ?? q['correctIndex'] ?? 0) as num).toInt();
-  }
+  Future<void> _answer(int index) async {
+    if (_submitting || _selectedIndex != null || _awaitingVerdict) return;
 
-  Future<void> _answer(int index, int correctIndex) async {
-    if (_submitting || _selectedIndex != null) return;
+    final questionIndex = _index;
+    final q = _questions[questionIndex];
 
-    final isCorrect = index == correctIndex;
-    final q = _questions[_index];
+    setState(() {
+      _selectedIndex = index;
+      _awaitingVerdict = true;
+    });
 
+    final AnswerVerdict verdict;
+    try {
+      verdict = await AnswerService.instance.answerWeekly(
+        questionIndex: questionIndex,
+        selectedIndex: index,
+      );
+    } on NoLivesException {
+      if (!mounted) return;
+      setState(() {
+        _awaitingVerdict = false;
+        _endedByNoLives = true;
+      });
+      await _finish();
+      return;
+    } catch (e) {
+      if (!mounted) return;
+      // The tap can be tried again; one the server did get comes back with
+      // the same verdict.
+      setState(() {
+        _awaitingVerdict = false;
+        _selectedIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final isCorrect = verdict.correct;
     if (isCorrect) {
       HapticFeedback.lightImpact();
       SfxService.instance.playCorrect();
@@ -130,12 +166,20 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       SfxService.instance.playWrong();
     }
 
+    final lifeUnits = verdict.lifeState == null
+        ? _lifeUnits
+        : (verdict.lifeState!['lifeUnits'] ?? _lifeUnits) as int;
+
     setState(() {
+      _awaitingVerdict = false;
+      _revealedIndex = verdict.correctIndex;
+      _correctIndexByQuestion[questionIndex] = verdict.correctIndex;
       _flashColor = isCorrect
           ? context.appColors.success.withValues(alpha: 0.18)
           : context.appColors.danger.withValues(alpha: 0.18);
-      _selectedIndex = index;
       _lastCorrect = isCorrect;
+      _lifeUnits = lifeUnits;
+      if (lifeUnits <= 0 && !isCorrect) _endedByNoLives = true;
 
       if (isCorrect) _correct++;
 
@@ -145,24 +189,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         'selectedIndex': index,
       });
     });
-
-    if (!isCorrect) {
-      // A failed call never stops the round: it used to throw here, with
-      // the options already disabled, and leave the player on a locked
-      // question.
-      try {
-        final life = await LifeService.instance.tryConsumeWrongAnswer(_uid);
-
-        if (!mounted) return;
-
-        final newLifeUnits = (life.state['lifeUnits'] ?? 0) as int;
-
-        setState(() {
-          _lifeUnits = newLifeUnits;
-          if (life.applied && newLifeUnits <= 0) _endedByNoLives = true;
-        });
-      } catch (_) {}
-    }
 
     await Future.delayed(const Duration(milliseconds: 700));
     if (!mounted) return;
@@ -175,6 +201,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     setState(() {
       _index++;
       _selectedIndex = null;
+      _revealedIndex = null;
       _lastCorrect = null;
       _flashColor = Colors.transparent;
     });
@@ -190,7 +217,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       final result = await WeeklyTopicService.instance.submitRound(
         weekId: widget.weekId,
         categoryId: widget.categoryId,
-        answers: _answers,
       );
 
       if (!mounted) return;
@@ -201,7 +227,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
       // Answers go in question order, so each one's position is its index.
       final review = reviewedQuestions(
-        questions: _questions,
+        questions: [
+          for (var i = 0; i < _questions.length; i++)
+            {..._questions[i], 'answerIndex': _correctIndexByQuestion[i]},
+        ],
         answers: [
           for (var i = 0; i < _answers.length; i++)
             {'questionIndex': i, 'selectedIndex': _answers[i]['selectedIndex']},
@@ -255,18 +284,25 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     }
   }
 
-  Color _buttonColor(int index, int correctIndex) {
-    if (_selectedIndex == null) return Theme.of(context).colorScheme.primary;
-    if (index == correctIndex) return context.appColors.success;
+  Color _buttonColor(int index) {
+    final primary = Theme.of(context).colorScheme.primary;
+    if (_selectedIndex == null) return primary;
+    // Picked, waiting for the verdict: only the pick stands out.
+    if (_revealedIndex == null) {
+      return index == _selectedIndex
+          ? Color.lerp(primary, Colors.black, 0.3)!
+          : primary;
+    }
+    if (index == _revealedIndex) return context.appColors.success;
     if (index == _selectedIndex) {
       return _lastCorrect == true ? context.appColors.success : context.appColors.danger;
     }
     return Theme.of(context).colorScheme.surfaceContainerHighest;
   }
 
-  Color _buttonTextColor(int index, int correctIndex) {
-    if (_selectedIndex != null &&
-        index != correctIndex &&
+  Color _buttonTextColor(int index) {
+    if (_revealedIndex != null &&
+        index != _revealedIndex &&
         index != _selectedIndex) {
       return Theme.of(context).colorScheme.onSurfaceVariant;
     }
@@ -311,7 +347,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
     final q = _questions[_index];
     final options = _options(q);
-    final correctIndex = _answerIndex(q);
 
     return Scaffold(
       appBar: AppBar(
@@ -377,12 +412,12 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                         // button ignores backgroundColor, so the right and
                         // wrong answers were never shown.
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _buttonColor(i, correctIndex),
-                          foregroundColor: _buttonTextColor(i, correctIndex),
+                          backgroundColor: _buttonColor(i),
+                          foregroundColor: _buttonTextColor(i),
                           disabledBackgroundColor:
-                              _buttonColor(i, correctIndex),
+                              _buttonColor(i),
                           disabledForegroundColor:
-                              _buttonTextColor(i, correctIndex),
+                              _buttonTextColor(i),
                           padding: const EdgeInsets.symmetric(
                             vertical: 14,
                             horizontal: 16,
@@ -390,7 +425,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                         ),
                         onPressed: _selectedIndex != null || _submitting
                             ? null
-                            : () => _answer(i, correctIndex),
+                            : () => _answer(i),
                         child: Text(options[i], textAlign: TextAlign.center),
                       ),
                     ),

@@ -11,6 +11,7 @@ import '../../services/player_level_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
+import '../../services/answer_service.dart';
 import '../../services/question_report_service.dart';
 import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -78,9 +79,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   bool _resumeApplied = false;
   bool _resuming = true;
 
-  /// True once this level's entry cost has actually been taken, so it is
-  /// taken once per level and only refunded when it really happened.
-  bool _entryCharged = false;
+  /// The current question's right option, in its shuffled order, once the
+  /// server has judged the answer; -1 until then. Questions reach the app
+  /// without their answers.
+  int _revealedAnswerIndex = -1;
+
+  /// Waiting for the server's verdict on the current question. The clock
+  /// stands still meanwhile, so the round trip costs the player nothing.
+  bool _awaitingVerdict = false;
+
+  /// Each judged question's right option, in stored order, for the review.
+  final Map<int, int> _correctIndexByQuestion = {};
+
+  /// The whole key, which the server sends back once the level is saved.
+  List<int>? _answerKey;
 
   /// True when the player already passed this level, so entering is free.
   bool _entryFree = false;
@@ -378,11 +390,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         ),
       );
 
+      // The answer that emptied the bar was judged and banked, so play goes
+      // on from the next question; a question that was never answered is
+      // played again.
+      final answeredCurrent = _answers.any((a) => a['questionIndex'] == _index);
       setState(() {
         _endedByNoLives = false;
-        _locked = false;
-        _answerSubmitting = false;
+        if (answeredCurrent) _index++;
         _timerForIndex = -1;
+        _timer = null;
+        _resetPerQuestion();
       });
     } finally {
       if (mounted) {
@@ -401,6 +418,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   void _resetPerQuestion() {
     _locked = false;
     _selected = null;
+    _revealedAnswerIndex = -1;
+    _awaitingVerdict = false;
     _timedOut = false;
     _timeoutAnswerIndex = null;
     _autoNextScheduled = false;
@@ -408,7 +427,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     _answerSubmitting = false;
   }
 
-  void _startTimerForQuestion(int seconds, int questionIndex, int answerIndex) {
+  void _startTimerForQuestion(int seconds, int questionIndex) {
     _timer?.cancel();
 
     _timerForIndex = questionIndex;
@@ -417,104 +436,164 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
+      if (_locked || _endedByNoLives) {
+        t.cancel();
+        return;
+      }
+      // Paused while the server judges an answer.
+      if (_awaitingVerdict) return;
 
-      setState(() {
-        if (_locked || _endedByNoLives) {
-          t.cancel();
-          return;
-        }
+      final next = _secondsLeft - 1;
+      if (next > 0) {
+        setState(() => _secondsLeft = next);
+        return;
+      }
 
-        final next = _secondsLeft - 1;
-
-        if (next <= 0) {
-          _secondsLeft = 0;
-          t.cancel();
-
-          _locked = true;
-          _timedOut = true;
-          _timeoutAnswerIndex = answerIndex;
-          _statusMsg = AppLocalizations.of(context).levelPlayTimeUp;
-
-          SfxService.instance.playTimeout();
-
-          final uid = FirebaseAuth.instance.currentUser!.uid;
-
-          Future.microtask(() async {
-            // Igual que una respuesta tocada: dejar correr el reloj es
-            // comprometerse con la pregunta, así que aquí se cobra la
-            // entrada si aún no se había cobrado.
-            if (!await _chargeLevelEntryIfNeeded(uid)) return;
-
-            final lifeLost = await _spendWrongAnswerLife(uid);
-
-            if (!mounted) return;
-
-            final l10n = AppLocalizations.of(context);
-
-            setState(() {
-              _statusMsg = _endedByNoLives
-                  ? l10n.levelPlayTimeUpNoLives
-                  : lifeLost == null
-                      ? l10n.levelPlayTimeUp
-                      : lifeLost
-                          ? l10n.levelPlayTimeUpLostHalfLife
-                          : l10n.levelPlayTimeUpNoLifeLoss;
-            });
-
-            // Same rule as a wrong tap: banked as -1 so letting the clock
-            // run out doesn't keep the question open, unless the level just
-            // ended for lack of lives and a paid retry is still on offer.
-            if (!_endedByNoLives) {
-              unawaited(_recordAnswer(questionIndex, -1));
-            }
-
-            if (_endedByNoLives) return;
-
-            if (!_autoNextScheduled) {
-              _autoNextScheduled = true;
-              Future.delayed(_revealDelay, () {
-                if (!mounted) return;
-                if (_index == questionIndex) _goNextQuestion();
-              });
-            }
-          });
-        } else {
-          _secondsLeft = next;
-        }
-      });
+      t.cancel();
+      setState(() => _secondsLeft = 0);
+      SfxService.instance.playTimeout();
+      // Letting the clock run out commits to the question like a wrong
+      // tap: the server banks it as -1, charges for it, and reveals the
+      // right option.
+      unawaited(_judgeAnswer(questionIndex: questionIndex, selectedIndex: -1));
     });
   }
 
-  /// Banks one answer server-side (`recordSoloLevelAnswer`) the moment it
-  /// is given, so backing out of the level can't rewind it.
-  ///
-  /// Best-effort: the answer is already in `_answers` and `_saveProgress`
-  /// sends those too, so a failure here costs the protection for that one
-  /// question rather than the run. -1 means the question timed out.
-  Future<void> _recordAnswer(int questionIndex, int selectedIndex) async {
+  /// Where a stored-order option sits among this question's shuffled ones.
+  int _shuffledIndexOf(int questionIndex, int originalIndex) {
+    final order =
+        (_shuffledCache[questionIndex]?['originalIndexByShuffled'] as List?)
+            ?.cast<int>();
+    if (order == null) return originalIndex;
+    return order.indexOf(originalIndex);
+  }
+
+  /// Sends one answer (stored order; -1 when the clock ran out) to the
+  /// server, which judges it, banks it — the first answer is final — and
+  /// charges the entry and any wrong-answer life in the same step.
+  Future<void> _judgeAnswer({
+    required int questionIndex,
+    required int selectedIndex,
+  }) async {
+    final timedOut = selectedIndex < 0;
+
+    setState(() {
+      _awaitingVerdict = true;
+      _answerSubmitting = true;
+      _statusMsg = null;
+    });
+
     try {
-      await FirebaseFunctions.instance
-          .httpsCallable(
-            'recordSoloLevelAnswer',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
-          .call({
-        'isAiTopic': widget.isAiTopic,
-        'categoryId': widget.categoryId,
-        'aiTopicId': widget.aiTopicId,
-        'levelNumber': widget.levelNumber,
+      final verdict = await AnswerService.instance.answerSolo(
+        isAiTopic: widget.isAiTopic,
+        categoryId: widget.categoryId,
+        aiTopicId: widget.aiTopicId,
+        levelNumber: widget.levelNumber,
+        questionIndex: questionIndex,
+        selectedIndex: selectedIndex,
+      );
+      if (!mounted || _index != questionIndex) return;
+
+      _timer?.cancel();
+      _correctIndexByQuestion[questionIndex] = verdict.correctIndex;
+      _answers.removeWhere((a) => a['questionIndex'] == questionIndex);
+      _answers.add({
         'questionIndex': questionIndex,
         'selectedIndex': selectedIndex,
       });
-    } on FirebaseFunctionsException {
-      // Sin ruido en la UI: la respuesta ya cuenta localmente.
+
+      final revealed = _shuffledIndexOf(questionIndex, verdict.correctIndex);
+      setState(() {
+        _awaitingVerdict = false;
+        _locked = true;
+        _revealedAnswerIndex = revealed;
+        if (timedOut) {
+          _timedOut = true;
+          _timeoutAnswerIndex = revealed;
+        }
+        if (verdict.correct) _correct++;
+      });
+
+      if (verdict.correct) {
+        SfxService.instance.playCorrect();
+      } else if (!timedOut) {
+        SfxService.instance.playWrong();
+      }
+
+      if (verdict.lifeState != null) {
+        await _refreshLivesAndStopIfEmpty(knownState: verdict.lifeState);
+      }
+      if (!mounted) return;
+
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _statusMsg = timedOut
+            ? (_endedByNoLives
+                ? l10n.levelPlayTimeUpNoLives
+                : verdict.lifeLost
+                    ? l10n.levelPlayTimeUpLostHalfLife
+                    : l10n.levelPlayTimeUpNoLifeLoss)
+            : verdict.correct
+                ? null
+                : (_endedByNoLives
+                    ? l10n.levelPlayWrongNoLives
+                    : verdict.lifeLost
+                        ? l10n.levelPlayWrongLostHalfLife
+                        : l10n.levelPlayWrongNoLifeLoss);
+      });
+
+      if (_endedByNoLives) return;
+      _scheduleNextQuestion(questionIndex);
+    } on NoLivesException {
+      if (!mounted) return;
+      _timer?.cancel();
+      setState(() {
+        _awaitingVerdict = false;
+        _answerSubmitting = false;
+        _endedByNoLives = true;
+        _locked = true;
+      });
+      await _syncLivesUiFromFirestore();
+    } catch (e) {
+      if (!mounted || _index != questionIndex) return;
+      final l10n = AppLocalizations.of(context);
+      if (timedOut) {
+        // Couldn't reach the server: the question counts as unanswered,
+        // and the level moves on rather than stalling on it.
+        setState(() {
+          _awaitingVerdict = false;
+          _locked = true;
+          _timedOut = true;
+          _statusMsg = l10n.levelPlayTimeUp;
+        });
+        _scheduleNextQuestion(questionIndex);
+      } else {
+        // The tap can be tried again; a retried answer the server did get
+        // comes back with the same verdict.
+        setState(() {
+          _awaitingVerdict = false;
+          _answerSubmitting = false;
+          _selected = null;
+          _statusMsg = userFacingError(l10n, e);
+        });
+      }
     }
+  }
+
+  void _scheduleNextQuestion(int questionIndex) {
+    if (_autoNextScheduled) return;
+    _autoNextScheduled = true;
+    Future.delayed(_revealDelay, () {
+      if (!mounted) return;
+      if (_index == questionIndex) _goNextQuestion();
+    });
   }
 
   /// Puts the player back on the question after the deepest one already
   /// banked, instead of restarting the level from the first question.
   void _applyBankedAnswers(
     Map<String, dynamic> banked,
+    Map<String, dynamic> results,
     List<dynamic> questions,
   ) {
     var correct = 0;
@@ -527,10 +606,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       if (value is! num) return;
 
       final selected = value.toInt();
-      final question = questions[index] as Map<String, dynamic>;
-      final answerIndex = ((question['answerIndex'] ?? -1) as num).toInt();
-
-      if (selected == answerIndex) correct++;
+      // The server's verdict, stored with each banked answer.
+      final verdict = results[key];
+      if (verdict is Map) {
+        if (verdict['correct'] == true) correct++;
+        final correctIndex = verdict['correctIndex'];
+        if (correctIndex is num) {
+          _correctIndexByQuestion[index] = correctIndex.toInt();
+        }
+      }
       if (index + 1 > nextIndex) nextIndex = index + 1;
 
       restored.add({'questionIndex': index, 'selectedIndex': selected});
@@ -551,63 +635,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
-  /// Takes the entry cost the first time the player commits to an answer.
-  ///
-  /// Deferred to here rather than charged on open so that opening a level and
-  /// leaving costs nothing. A free replay never charges at all. Returns false
-  /// only if the charge was refused, which means the player ran out of life
-  /// between opening the level and answering.
-  Future<bool> _chargeLevelEntryIfNeeded(String uid) async {
-    if (_entryCharged || _entryFree) return true;
-
-    try {
-      final entry = await LifeService.instance.tryConsumeLevelEntry(
-        uid,
-        isAiTopic: widget.isAiTopic,
-        categoryId: widget.categoryId,
-        aiTopicId: widget.aiTopicId,
-        levelNumber: widget.levelNumber,
-      );
-
-      if (entry.replayFree) {
-        _entryFree = true;
-        return true;
-      }
-
-      if (!entry.applied) {
-        await _refreshLivesAndStopIfEmpty(knownState: entry.state);
-        return false;
-      }
-
-      _entryCharged = true;
-      await _syncLivesUiFromFirestore(knownState: entry.state);
-      return true;
-    } catch (_) {
-      // La partida sigue: cobrar es responsabilidad del servidor y un fallo
-      // de red aquí no debería costarle el nivel al jugador.
-      return true;
-    }
-  }
-
-  /// Charges the half life a wrong answer or a timeout costs, and stops
-  /// the level if that was the last one. Returns whether a life was taken,
-  /// or null when the call failed.
-  ///
-  /// A failure (offline, a slow server) never stops the run: this used to
-  /// throw before the move to the next question was scheduled, and there is
-  /// no manual "next" button, so the player was left on a locked question.
-  /// A half life that goes uncharged this way is a smaller loss than a
-  /// level the player can't finish.
-  Future<bool?> _spendWrongAnswerLife(String uid) async {
-    try {
-      final life = await LifeService.instance.tryConsumeWrongAnswer(uid);
-      await _refreshLivesAndStopIfEmpty(knownState: life.state);
-      return life.applied;
-    } catch (_) {
-      return null;
-    }
-  }
-
   void _goNextQuestion() {
     if (!mounted || _endedByNoLives) return;
     setState(() {
@@ -618,99 +645,27 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     });
   }
 
-  Future<void> _onTapAnswer({
-    required int tappedIndex,
-    required int answerIndex,
-  }) async {
+  Future<void> _onTapAnswer({required int tappedIndex}) async {
     if (_endedByNoLives) return;
     if (_answerSubmitting) return;
     if (_locked) return;
     if (_secondsLeft <= 0) return;
 
-    setState(() {
-      _answerSubmitting = true;
-      _selected = tappedIndex;
-      _locked = true;
-      _timedOut = false;
-      _timeoutAnswerIndex = null;
-      _statusMsg = null;
-    });
+    setState(() => _selected = tappedIndex);
 
-    _timer?.cancel();
-
-    // El costo de entrada se cobra aquí, en la primera respuesta, no al
-    // abrir el nivel. Si se rechaza, el jugador se quedó sin vidas entre
-    // abrir y responder y el nivel termina como cualquier otro caso de
-    // vidas agotadas.
-    final uidForEntry = FirebaseAuth.instance.currentUser!.uid;
-    if (!await _chargeLevelEntryIfNeeded(uidForEntry)) return;
-
-    final correct = tappedIndex == answerIndex;
-
-    // `tappedIndex` refers to the locally-shuffled options order, but the
-    // server only knows the original (pre-shuffle) answerIndex stored in
-    // the session doc — map back through `originalIndexByShuffled` so
-    // submitSoloLevelResult can verify this selection independently.
+    // The server only knows the stored (pre-shuffle) order of the options.
     final originalIndexByShuffled =
         (_shuffledCache[_index]?['originalIndexByShuffled'] as List?)
             ?.cast<int>();
-    final originalSelectedIndex =
-        (originalIndexByShuffled != null && tappedIndex < originalIndexByShuffled.length)
-            ? originalIndexByShuffled[tappedIndex]
-            : tappedIndex;
+    final originalSelectedIndex = (originalIndexByShuffled != null &&
+            tappedIndex < originalIndexByShuffled.length)
+        ? originalIndexByShuffled[tappedIndex]
+        : tappedIndex;
 
-    // A mid-level life refill can bring the player back to the same
-    // question (see _buyLifeMidLevel) — replace any earlier attempt at
-    // this questionIndex instead of appending a second entry, or the
-    // server-side scoring in submitSoloLevelResult would see two answers
-    // for one question and could drop the legitimate retry.
-    _answers.removeWhere((a) => a['questionIndex'] == _index);
-    _answers.add({
-      'questionIndex': _index,
-      'selectedIndex': originalSelectedIndex,
-    });
-
-    if (correct) {
-      SfxService.instance.playCorrect();
-      setState(() => _correct++);
-    } else {
-      SfxService.instance.playWrong();
-
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      final lifeLost = await _spendWrongAnswerLife(uid);
-
-      if (mounted) {
-        final l10n = AppLocalizations.of(context);
-
-        setState(() {
-          _statusMsg = _endedByNoLives
-              ? l10n.levelPlayWrongNoLives
-              : lifeLost == null
-                  ? null
-                  : lifeLost
-                      ? l10n.levelPlayWrongLostHalfLife
-                      : l10n.levelPlayWrongNoLifeLoss;
-        });
-      }
-    }
-
-    // Deliberately not banked when the level just ended for lack of lives:
-    // buying a life mid-level returns the player to this very question as a
-    // paid retry (see _buyLifeMidLevel), and a banked answer is final — it
-    // would make that purchase unable to change the score.
-    if (!_endedByNoLives) {
-      unawaited(_recordAnswer(_index, originalSelectedIndex));
-    }
-
-    if (_endedByNoLives) return;
-
-    if (!_autoNextScheduled) {
-      _autoNextScheduled = true;
-      Future.delayed(_revealDelay, () {
-        if (!mounted) return;
-        _goNextQuestion();
-      });
-    }
+    await _judgeAnswer(
+      questionIndex: _index,
+      selectedIndex: originalSelectedIndex,
+    );
   }
 
   /// Checks the player can afford this level without spending anything yet.
@@ -975,8 +930,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           final banked = Map<String, dynamic>.from(
                             data['answers'] as Map? ?? {},
                           );
+                          final results = Map<String, dynamic>.from(
+                            data['results'] as Map? ?? {},
+                          );
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _applyBankedAnswers(banked, questions);
+                            _applyBankedAnswers(banked, results, questions);
                           });
                         }
                         return const Center(
@@ -1016,52 +974,24 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                       final qText = localized.text;
 
                       List<String> options;
-                      int answerIndex;
-                      List<int> originalIndexByShuffled;
 
                       final cached = _shuffledCache[_index];
                       if (cached != null) {
                         options = (cached['options'] as List).cast<String>();
-                        answerIndex = cached['answerIndex'] as int;
-                        originalIndexByShuffled =
-                            (cached['originalIndexByShuffled'] as List)
-                                .cast<int>();
                       } else {
                         final rawOptions = localized.options;
-                        final rawAnswerIndex =
-                            (qMap['answerIndex'] ?? 0) as int;
-
-                        final paired = List.generate(rawOptions.length, (i) {
-                          return {
-                            'text': rawOptions[i],
-                            'isCorrect': i == rawAnswerIndex,
-                            'originalIndex': i,
-                          };
-                        });
-
-                        paired.shuffle();
-
-                        options =
-                            paired.map((e) => e['text'] as String).toList();
-                        answerIndex =
-                            paired.indexWhere((e) => e['isCorrect'] == true);
-                        originalIndexByShuffled = paired
-                            .map((e) => e['originalIndex'] as int)
-                            .toList();
-
+                        final order =
+                            List.generate(rawOptions.length, (i) => i)
+                              ..shuffle();
+                        options = [for (final i in order) rawOptions[i]];
                         _shuffledCache[_index] = {
                           'options': options,
-                          'answerIndex': answerIndex,
-                          'originalIndexByShuffled': originalIndexByShuffled,
+                          'originalIndexByShuffled': order,
                         };
                       }
 
                       if (_timerForIndex != _index) {
-                        _startTimerForQuestion(
-                          _defaultTimePerQ,
-                          _index,
-                          answerIndex,
-                        );
+                        _startTimerForQuestion(_defaultTimePerQ, _index);
                       }
 
                       return AnimatedSwitcher(
@@ -1085,7 +1015,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           key: ValueKey('q_$_index'),
                           qText: qText,
                           options: options,
-                          answerIndex: answerIndex,
+                          answerIndex: _revealedAnswerIndex,
                           total: questions.length,
                         ),
                       );
@@ -1352,10 +1282,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                 locked: _locked,
                 timedOut: _timedOut,
                 timeoutAnswerIndex: _timeoutAnswerIndex,
-                onTapAnswer: (i) => _onTapAnswer(
-                  tappedIndex: i,
-                  answerIndex: answerIndex,
-                ),
+                onTapAnswer: (i) => _onTapAnswer(tappedIndex: i),
               ),
               SizedBox(
                 height: 22,
@@ -1466,7 +1393,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         'levelNumber': widget.levelNumber,
         'correct': _correct,
         'total': total,
-        'answers': _answers,
       });
 
       final data = Map<String, dynamic>.from(response.data as Map);
@@ -1474,6 +1400,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       final grantedXp = ((data['grantedXp'] ?? 0) as num).toInt();
       final grantedCoins = ((data['grantedCoins'] ?? 0) as num).toInt();
       final shouldEnsureAiBuffer = data['shouldEnsureAiBuffer'] == true;
+      final key = data['answerKey'];
+      if (key is List) {
+        _answerKey = [for (final k in key) k is num ? k.toInt() : -1];
+      }
 
       setState(() {
         _earnedXp = grantedXp;
@@ -1757,8 +1687,17 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   }
 
   void _openReview() {
+    final keyed = [
+      for (var i = 0; i < _finishedQuestions.length; i++)
+        {
+          ...Map<String, dynamic>.from(_finishedQuestions[i] as Map),
+          'answerIndex': (_answerKey != null && i < _answerKey!.length)
+              ? _answerKey![i]
+              : _correctIndexByQuestion[i],
+        },
+    ];
     final review = reviewedQuestions(
-      questions: _finishedQuestions,
+      questions: keyed,
       answers: _answers,
       languageCode: Localizations.localeOf(context).languageCode,
       targetFor: (index, q) => widget.isAiTopic

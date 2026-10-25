@@ -5,6 +5,8 @@ import {
   MAX_CLIENT_DATE_SKEW_DAYS,
   dateIdInTimeZone,
   isPlausibleDateId,
+  isWeekClaimable,
+  dailySubmissionCheck,
   isStreakAtRisk,
   loginStreakStep,
   parseDateId,
@@ -201,5 +203,82 @@ describe("isStreakAtRisk", () => {
   test("not when the streak is already lost", () => {
     assert.equal(isStreakAtRisk("2026-10-18", today), false);
     assert.equal(isStreakAtRisk(undefined, today), false);
+  });
+});
+
+describe("isWeekClaimable", () => {
+  // Week of Monday 2026-10-19, which runs to Sunday 2026-10-25.
+  const week = "2026-10-19";
+
+  test("not while the week is still running", () => {
+    assert.equal(isWeekClaimable(week, "2026-10-22"), false);
+  });
+
+  // Monday (UTC) the week is still Sunday somewhere, and the server accepts
+  // a date one day off: a daily for that Sunday can still come in.
+  test("not on the Monday after, either", () => {
+    assert.equal(isWeekClaimable(week, "2026-10-26"), false);
+  });
+
+  test("from the Tuesday after on", () => {
+    assert.equal(isWeekClaimable(week, "2026-10-27"), true);
+    assert.equal(isWeekClaimable(week, "2026-11-30"), true);
+  });
+
+  test("never a week that hasn't started", () => {
+    assert.equal(isWeekClaimable("2026-10-26", "2026-10-22"), false);
+  });
+});
+
+describe("dailySubmissionCheck", () => {
+  const H = 3600000;
+  const now = Date.UTC(2026, 9, 22, 12);
+
+  test("the first daily ever is fine", () => {
+    const check = dailySubmissionCheck(undefined, [], "2026-10-22", now);
+    assert.equal(check.ok, true);
+    assert.deepEqual(check.recentMs, [now]);
+  });
+
+  test("a later date after the last one is fine", () => {
+    const check = dailySubmissionCheck(
+      "2026-10-21", [now - 20 * H], "2026-10-22", now
+    );
+    assert.equal(check.ok, true);
+  });
+
+  // Playing yesterday's date after today's was a way to get an extra one.
+  test("not a date before or equal to the last one played", () => {
+    assert.equal(
+      dailySubmissionCheck("2026-10-22", [], "2026-10-21", now).ok, false
+    );
+    assert.equal(
+      dailySubmissionCheck("2026-10-22", [], "2026-10-22", now).ok, false
+    );
+  });
+
+  // Just before and just after midnight is two in a few minutes: fine.
+  test("two in 24 hours is fine", () => {
+    const check = dailySubmissionCheck(
+      "2026-10-21", [now - 10 * 60000], "2026-10-22", now
+    );
+    assert.equal(check.ok, true);
+    assert.deepEqual(check.recentMs, [now - 10 * 60000, now]);
+  });
+
+  // Yesterday, today and tomorrow in one sitting.
+  test("a third in 24 hours is refused", () => {
+    const check = dailySubmissionCheck(
+      "2026-10-22", [now - 2 * H, now - H], "2026-10-23", now
+    );
+    assert.equal(check.ok, false);
+  });
+
+  test("older plays fall out of the window", () => {
+    const check = dailySubmissionCheck(
+      "2026-10-21", [now - 30 * H, now - 25 * H], "2026-10-22", now
+    );
+    assert.equal(check.ok, true);
+    assert.deepEqual(check.recentMs, [now]);
   });
 });

@@ -68,8 +68,8 @@ void main() {
 
     test('muestra sin el prefijo el mensaje que ya tradujo un servicio', () {
       expect(
-        userFacingError(es, Exception(es.serviceAlreadyFriends)),
-        es.serviceAlreadyFriends,
+        userFacingError(es, Exception(es.serviceInvalidUser)),
+        es.serviceInvalidUser,
       );
     });
 

@@ -5140,30 +5140,6 @@ abstract class AppLocalizations {
   /// **'No puedes agregarte a ti mismo.'**
   String get serviceCannotAddSelf;
 
-  /// No description provided for @serviceUserNotFound.
-  ///
-  /// In es, this message translates to:
-  /// **'El usuario no existe.'**
-  String get serviceUserNotFound;
-
-  /// No description provided for @serviceAlreadyFriends.
-  ///
-  /// In es, this message translates to:
-  /// **'Ya son amigos.'**
-  String get serviceAlreadyFriends;
-
-  /// No description provided for @serviceRequestAlreadySent.
-  ///
-  /// In es, this message translates to:
-  /// **'Solicitud ya enviada.'**
-  String get serviceRequestAlreadySent;
-
-  /// No description provided for @serviceRequestAlreadyReceived.
-  ///
-  /// In es, this message translates to:
-  /// **'Ese jugador ya te envió una solicitud — revisa tus solicitudes recibidas.'**
-  String get serviceRequestAlreadyReceived;
-
   /// No description provided for @serviceInvalidRequest.
   ///
   /// In es, this message translates to:

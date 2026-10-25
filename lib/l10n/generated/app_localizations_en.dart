@@ -2961,19 +2961,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceCannotAddSelf => 'You can\'t add yourself.';
 
   @override
-  String get serviceUserNotFound => 'The user doesn\'t exist.';
-
-  @override
-  String get serviceAlreadyFriends => 'You\'re already friends.';
-
-  @override
-  String get serviceRequestAlreadySent => 'Request already sent.';
-
-  @override
-  String get serviceRequestAlreadyReceived =>
-      'That player already sent you a request — check your incoming requests.';
-
-  @override
   String get serviceInvalidRequest => 'Invalid request.';
 
   @override

@@ -3,7 +3,6 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'locale_controller.dart';
-import 'notification_service.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../l10n/user_facing_error.dart';
 import '../l10n/l10n_for.dart';
@@ -15,7 +14,6 @@ class FriendService {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final _notificationService = NotificationService.instance;
 
   String get uid => _auth.currentUser!.uid;
 
@@ -91,6 +89,10 @@ class FriendService {
         );
   }
 
+  /// Sends a friend request through the `sendFriendRequest` Cloud
+  /// Function, which writes both sides and notifies the other player.
+  /// It used to be written here straight into their inbox, which let a
+  /// modified client put any name on it or re-open a rejected request.
   Future<void> sendFriendRequest({
     required String targetUid,
   }) async {
@@ -102,118 +104,16 @@ class FriendService {
       throw Exception(_l10n.serviceCannotAddSelf);
     }
 
-    final myRef = _userRef(uid);
-    final targetRef = _userRef(targetUid);
-
-    final myFriendRef = _friendsCol(uid).doc(targetUid);
-    final targetFriendRef = _friendsCol(targetUid).doc(uid);
-
-    final requestRef = _requestsCol(targetUid).doc(uid);
-    final sentRequestRef = _sentRequestsCol(uid).doc(targetUid);
-    // The other direction — did they already request me? Search results
-    // are a point-in-time snapshot, so it's possible for their request to
-    // land in the window between rendering the "Add" button and tapping
-    // it; without this check that would create a second, opposite-facing
-    // pending request instead of surfacing the one already waiting.
-    final reverseRequestRef = _requestsCol(uid).doc(targetUid);
-
-    await _db.runTransaction((tx) async {
-      final mySnap = await tx.get(myRef);
-      final targetSnap = await tx.get(targetRef);
-      final myFriendSnap = await tx.get(myFriendRef);
-      final targetFriendSnap = await tx.get(targetFriendRef);
-      final requestSnap = await tx.get(requestRef);
-      final reverseRequestSnap = await tx.get(reverseRequestRef);
-
-      if (!targetSnap.exists) {
-        throw Exception(_l10n.serviceUserNotFound);
-      }
-
-      if (myFriendSnap.exists || targetFriendSnap.exists) {
-        throw Exception(_l10n.serviceAlreadyFriends);
-      }
-
-      if (requestSnap.exists &&
-          (requestSnap.data()?['status'] ?? 'pending') == 'pending') {
-        throw Exception(_l10n.serviceRequestAlreadySent);
-      }
-
-      if (reverseRequestSnap.exists &&
-          (reverseRequestSnap.data()?['status'] ?? 'pending') == 'pending') {
-        throw Exception(_l10n.serviceRequestAlreadyReceived);
-      }
-
-      final myData = mySnap.data() ?? {};
-      final targetData = targetSnap.data() ?? {};
-
-      final displayName = (myData['displayName'] ??
-              myData['username'] ??
-              'Player${uid.substring(0, 4)}')
-          .toString();
-
-      final username = (myData['username'] ?? displayName).toString();
-      final avatarId = (myData['avatarId'] ?? 'avatar_1').toString();
-      final equippedFrame = (myData['equippedFrame'] ?? 'bronze').toString();
-
-      final bestLeagueId = (myData['bestLeagueId'] ?? 'bronze').toString();
-
-      final targetDisplayName = (targetData['displayName'] ??
-              targetData['username'] ??
-              'Player${targetUid.substring(0, 4)}')
-          .toString();
-
-      final targetUsername =
-          (targetData['username'] ?? targetDisplayName).toString();
-
-      final targetAvatarId = (targetData['avatarId'] ?? 'avatar_1').toString();
-      final targetEquippedFrame =
-          (targetData['equippedFrame'] ?? 'bronze').toString();
-
-      final targetBestLeagueId =
-          (targetData['bestLeagueId'] ?? 'bronze').toString();
-
-      final now = FieldValue.serverTimestamp();
-
-      tx.set(
-        requestRef,
-        {
-          'requesterUid': uid,
-          'requesterDisplayName': displayName,
-          'requesterUsername': username,
-          'requesterAvatarId': avatarId,
-          'requesterEquippedFrame': equippedFrame,
-          'requesterBestLeagueId': bestLeagueId,
-          'status': 'pending',
-          'createdAt': now,
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-
-      tx.set(
-        sentRequestRef,
-        {
-          'targetUid': targetUid,
-          'targetDisplayName': targetDisplayName,
-          'targetUsername': targetUsername,
-          'targetAvatarId': targetAvatarId,
-          'targetEquippedFrame': targetEquippedFrame,
-          'targetBestLeagueId': targetBestLeagueId,
-          'status': 'pending',
-          'createdAt': now,
-          'updatedAt': now,
-        },
-        SetOptions(merge: true),
-      );
-    });
-
-    // Wording and the recipient's language are resolved server-side now —
-    // the request doc written just above is what proves this notification
-    // was earned.
-    await _notificationService.notifyUser(
-      targetUid: targetUid,
-      type: 'friend_request',
-    );
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            'sendFriendRequest',
+            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+          )
+          .call({'targetUid': targetUid});
+    } catch (e) {
+      throw Exception(userFacingError(_l10n, e));
+    }
   }
 
   // The actual friendship write (both mirror docs) is now Cloud-Function

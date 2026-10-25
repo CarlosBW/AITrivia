@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/answer_service.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../l10n/localized_content.dart';
 import '../../widgets/question_answer_card.dart';
 import 'daily_challenge_result_screen.dart';
@@ -45,6 +47,16 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   String _dateId = '';
 
   int? _selectedIndex;
+
+  /// The current question's right option once the server has judged it.
+  int? _revealedIndex;
+
+  /// Waiting for the server's verdict. The clock stands still meanwhile,
+  /// so the round trip costs the player nothing.
+  bool _awaitingVerdict = false;
+
+  /// Each judged question's right option, for the review.
+  final Map<int, int> _correctIndexByQuestion = {};
   Color _flashColor = Colors.transparent;
 
   String? _coinPopupText;
@@ -72,9 +84,20 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       return difficulty == targetDifficulty;
     }).toList();
 
-    final pool = filtered.isNotEmpty ? filtered : _questions;
+    // Never one already answered: the first answer is final on the
+    // server, so a repeat would only be counted twice here.
+    final answered = {for (final a in _answers) a['questionIndex']};
+    bool open(Map<String, dynamic> q) =>
+        !answered.contains(_questions.indexOf(q));
+    final fresh = filtered.where(open).toList();
+    final pool = fresh.isNotEmpty
+        ? fresh
+        : _questions.where(open).toList();
+    if (pool.isEmpty) return _questions.first;
     return pool[_currentIndex % pool.length];
   }
+
+  bool get _allAnswered => _answers.length >= _questions.length;
 
   void _checkCoinMilestone() {
     final milestone = _correct ~/ 10;
@@ -123,27 +146,24 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       return;
     }
 
-    // Answers already given today, if the player left and came back.
-    final saved = await _service.loadLocalProgress(
-      uid: widget.uid,
-      dateId: session.dateId,
-    );
-
     if (!mounted) return;
 
+    // Answers the server already judged today, if the player left and came
+    // back.
     setState(() {
       _dateId = session.dateId;
       _questions = session.questions;
       _timeLeft = session.remainingSeconds;
-      if (saved != null) {
-        _answers
-          ..clear()
-          ..addAll(saved.answers);
-        _correct = saved.correct;
-        _totalAnswered = saved.answers.length;
-        _currentIndex = saved.answers.length;
-        _lastCoinMilestone = _correct ~/ 10;
-      }
+      _answers
+        ..clear()
+        ..addAll(session.answers);
+      _correctIndexByQuestion
+        ..clear()
+        ..addAll(session.correctIndexByQuestion);
+      _correct = session.correct;
+      _totalAnswered = session.answers.length;
+      _currentIndex = session.answers.length;
+      _lastCoinMilestone = _correct ~/ 10;
       _loading = false;
     });
 
@@ -161,17 +181,49 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
         _finish();
       } else {
         if (!mounted || _finishing) return;
+        // Paused while the server judges an answer.
+        if (_awaitingVerdict) return;
         setState(() => _timeLeft--);
       }
     });
   }
 
-  Future<void> _answer(int index, int correctIndex) async {
+  Future<void> _answer(int index) async {
     if (_finishing || _savingResults || _selectedIndex != null) return;
+    if (_awaitingVerdict) return;
 
-    final isCorrect = index == correctIndex;
     final questionIndex = _questions.indexOf(_currentQuestion());
 
+    setState(() {
+      _selectedIndex = index;
+      _awaitingVerdict = true;
+    });
+
+    final AnswerVerdict verdict;
+    try {
+      verdict = await AnswerService.instance.answerDaily(
+        dateId: _dateId,
+        questionIndex: questionIndex,
+        selectedIndex: index,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // The tap can be tried again; one the server did get comes back with
+      // the same verdict.
+      setState(() {
+        _selectedIndex = null;
+        _awaitingVerdict = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    final isCorrect = verdict.correct;
     if (isCorrect) {
       HapticFeedback.lightImpact();
     } else {
@@ -179,10 +231,12 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     }
 
     setState(() {
+      _awaitingVerdict = false;
+      _revealedIndex = verdict.correctIndex;
+      _correctIndexByQuestion[questionIndex] = verdict.correctIndex;
       _flashColor = isCorrect
           ? context.appColors.success.withValues(alpha: 0.18)
           : context.appColors.danger.withValues(alpha: 0.18);
-      _selectedIndex = index;
       _totalAnswered++;
 
       if (isCorrect) {
@@ -199,20 +253,19 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       _checkCoinMilestone();
     }
 
-    unawaited(_service.saveLocalProgress(
-      uid: widget.uid,
-      dateId: _dateId,
-      answers: _answers,
-      correct: _correct,
-    ));
-
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted || _finishing) return;
 
+    if (_allAnswered) {
+      await _finish();
+      return;
+    }
+
     setState(() {
       _currentIndex++;
       _selectedIndex = null;
+      _revealedIndex = null;
       _flashColor = Colors.transparent;
     });
   }
@@ -238,7 +291,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
         uid: widget.uid,
         correct: _correct,
         totalAnswered: _totalAnswered,
-        answers: _answers,
       );
 
       if (!mounted) return;
@@ -251,7 +303,13 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
             // Only the questions this run reached: the day's set is larger
             // than what fits in the clock.
             reviewQuestions: reviewedQuestions(
-              questions: _questions,
+              questions: [
+                for (var i = 0; i < _questions.length; i++)
+                  {
+                    ..._questions[i],
+                    'answerIndex': _correctIndexByQuestion[i],
+                  },
+              ],
               answers: _answers,
               onlyAnswered: true,
               languageCode: Localizations.localeOf(context).languageCode,
@@ -318,10 +376,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   List<String> _options(Map<String, dynamic> q) {
     return localizedQuestion(q, Localizations.localeOf(context).languageCode).options;
-  }
-
-  int _answerIndex(Map<String, dynamic> q) {
-    return ((q['answerIndex'] ?? q['correctIndex'] ?? 0) as num).toInt();
   }
 
   String _formatTime(int seconds) {
@@ -441,7 +495,6 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     final q = _currentQuestion();
     final options = _options(q);
-    final correctIndex = _answerIndex(q);
 
     // Every way back goes through the warning: the clock keeps running
     // while the player is away.
@@ -508,10 +561,11 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                         QuestionAnswerCard(
                           qText: _questionText(q),
                           options: options,
-                          answerIndex: correctIndex,
+                          // -1 until the server's verdict reveals it.
+                          answerIndex: _revealedIndex ?? -1,
                           selectedIndex: _selectedIndex,
-                          locked: _selectedIndex != null,
-                          onTapAnswer: (i) => _answer(i, correctIndex),
+                          locked: _revealedIndex != null,
+                          onTapAnswer: _answer,
                         ),
                         const Spacer(),
                         CountPill(

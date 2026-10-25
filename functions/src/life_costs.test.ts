@@ -1,7 +1,7 @@
 import {test, describe} from "node:test";
 import assert from "node:assert/strict";
 
-import {resolveWrongAnswerSpend} from "./life_costs";
+import {answerCharge, resolveWrongAnswerSpend} from "./life_costs";
 
 // Mirrors index.ts: WRONG_ANSWER_COST_UNITS / NEW_PLAYER_GRACE_LEVELS.
 const COST = 1;
@@ -78,5 +78,59 @@ describe("resolveWrongAnswerSpend", () => {
 
     assert.equal(spend.newUnits, 6);
     assert.equal(spend.lifeLost, false);
+  });
+});
+
+describe("answerCharge", () => {
+  const base = {
+    chargeEntry: true,
+    lifeUnits: 10,
+    entryCost: 2,
+    wrongCost: 1,
+    gamesPlayed: PAST_GRACE,
+    graceLevels: GRACE_LEVELS,
+  };
+
+  test("the first answer of a run pays the entry", () => {
+    const out = answerCharge({...base, correct: true});
+    assert.deepEqual(out, {
+      refused: false, newUnits: 8, entryCharged: true, lifeLost: false,
+    });
+  });
+
+  test("a wrong first answer pays the entry and the half life", () => {
+    const out = answerCharge({...base, correct: false});
+    assert.equal(out.newUnits, 7);
+    assert.equal(out.entryCharged, true);
+    assert.equal(out.lifeLost, true);
+  });
+
+  test("a free replay pays no entry", () => {
+    const out = answerCharge({...base, chargeEntry: false, correct: true});
+    assert.equal(out.newUnits, 10);
+    assert.equal(out.entryCharged, false);
+  });
+
+  // Answering is where lives are enforced now: a client that skipped the
+  // old separate charge calls played for free.
+  test("no answer without enough life for the entry", () => {
+    const out = answerCharge({...base, lifeUnits: 1, correct: true});
+    assert.equal(out.refused, true);
+    assert.equal(out.newUnits, 1);
+  });
+
+  test("no answer at all once out of lives", () => {
+    const out = answerCharge({
+      ...base, chargeEntry: false, lifeUnits: 0, correct: true,
+    });
+    assert.equal(out.refused, true);
+  });
+
+  test("the new-player grace still makes a wrong answer free", () => {
+    const out = answerCharge({
+      ...base, chargeEntry: false, gamesPlayed: 0, correct: false,
+    });
+    assert.equal(out.newUnits, 10);
+    assert.equal(out.lifeLost, false);
   });
 });

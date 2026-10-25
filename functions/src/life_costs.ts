@@ -55,3 +55,58 @@ export function resolveWrongAnswerSpend(
 
   return {newUnits, lifeLost: newUnits < held};
 }
+
+/** What answering one question does to the player's lives. */
+export interface AnswerCharge {
+  /** Not allowed: too little life for the entry, or none left at all. */
+  refused: boolean;
+  newUnits: number;
+  /** The level's entry was paid with this answer. */
+  entryCharged: boolean;
+  /** This (wrong) answer took life. */
+  lifeLost: boolean;
+}
+
+/**
+ * Charges one answer: the entry on the first answer of a paid run, then
+ * the wrong-answer cost.
+ *
+ * Both used to be separate calls the client chose to make, so a modified
+ * client simply didn't, and played without lives. Answering is judged on
+ * the server now, and this is charged in the same step.
+ * @param {object} params The run and the answer.
+ * @return {AnswerCharge} What to store and tell the player.
+ */
+export function answerCharge(params: {
+  chargeEntry: boolean;
+  lifeUnits: number;
+  entryCost: number;
+  wrongCost: number;
+  gamesPlayed: number;
+  graceLevels: number;
+  correct: boolean;
+}): AnswerCharge {
+  const held = Math.max(0, Math.floor(params.lifeUnits));
+  const refused = {
+    refused: true, newUnits: held, entryCharged: false, lifeLost: false,
+  };
+
+  if (params.chargeEntry && held < params.entryCost) return refused;
+  if (!params.chargeEntry && held <= 0) return refused;
+
+  const afterEntry = params.chargeEntry ? held - params.entryCost : held;
+  if (params.correct) {
+    return {
+      refused: false, newUnits: afterEntry,
+      entryCharged: params.chargeEntry, lifeLost: false,
+    };
+  }
+
+  const spend = resolveWrongAnswerSpend(
+    afterEntry, params.wrongCost, params.gamesPlayed, params.graceLevels
+  );
+  return {
+    refused: false, newUnits: spend.newUnits,
+    entryCharged: params.chargeEntry, lifeLost: spend.lifeLost,
+  };
+}

@@ -152,3 +152,58 @@ export function isStreakAtRisk(
   if (Number.isNaN(last) || Number.isNaN(now)) return false;
   return Math.round((now - last) / 86400000) === 1;
 }
+
+/**
+ * Whether the week [weekId] has ended for everyone, so its league rewards
+ * can be paid.
+ *
+ * Waiting for the server's own week to roll over wasn't enough: west of
+ * UTC it is still Sunday then, and the server accepts a daily for a date
+ * one day off, so scores for that week could still come in — and paying
+ * early locked the player out of the real result. From the Tuesday after
+ * (server date) nothing can change it any more.
+ * @param {string} weekId The week's Monday, `YYYY-MM-DD`.
+ * @param {string} serverToday The server's date, `YYYY-MM-DD`.
+ * @return {boolean} Whether the week can be paid now.
+ */
+export function isWeekClaimable(weekId: string, serverToday: string): boolean {
+  const today = parseDateId(serverToday);
+  if (Number.isNaN(today)) return false;
+  const yesterday = new Date(today - 86400000).toISOString().slice(0, 10);
+  return weekId < weekIdForDateId(yesterday);
+}
+
+/** Daily Challenges a player may start within [DAILY_WINDOW_MS]. */
+export const MAX_DAILIES_PER_WINDOW = 2;
+const DAILY_WINDOW_MS = 24 * 3600000;
+
+/**
+ * Whether a player may play a new Daily Challenge for [dateId] now.
+ *
+ * The server accepts a date one day off either way (devices in any time
+ * zone), which let a player play yesterday's, today's and tomorrow's
+ * challenge in one sitting: three payouts and +3 streak in a day. Now a
+ * new daily must be for a later date than the last one, and at most two
+ * start in any 24 hours — enough for one just before midnight and one
+ * just after.
+ * @param {string|undefined} lastPlayed The last daily date played.
+ * @param {number[]} recentMs When the recent ones were started.
+ * @param {string} dateId The daily being started.
+ * @param {number} nowMs Now.
+ * @return {object} `ok`, and the start times to store if it is.
+ */
+export function dailySubmissionCheck(
+  lastPlayed: string | undefined,
+  recentMs: number[],
+  dateId: string,
+  nowMs: number
+): {ok: boolean; recentMs: number[]} {
+  const recent = recentMs.filter(
+    (ms) => Number.isFinite(ms) && nowMs - ms < DAILY_WINDOW_MS
+  );
+  if (lastPlayed && dateId <= lastPlayed) return {ok: false, recentMs: recent};
+  if (recent.length >= MAX_DAILIES_PER_WINDOW) {
+    return {ok: false, recentMs: recent};
+  }
+  return {ok: true, recentMs: [...recent, nowMs]};
+}

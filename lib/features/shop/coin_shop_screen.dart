@@ -54,10 +54,18 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   }
 
   Future<void> _load() async {
-    final available = await PurchaseService.instance.isAvailable;
-    final products = available
-        ? await PurchaseService.instance.queryCoinPackProducts()
-        : <ProductDetails>[];
+    var available = false;
+    var products = <ProductDetails>[];
+    // A store that can't be reached shows the packs as unavailable; before
+    // this an error left the whole tab, themes included, on a spinner.
+    try {
+      available = await PurchaseService.instance.isAvailable;
+      if (available) {
+        products = await PurchaseService.instance.queryCoinPackProducts();
+      }
+    } catch (_) {
+      available = false;
+    }
 
     if (!mounted) return;
 

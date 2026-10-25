@@ -782,7 +782,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: Stack(
         children: [
           ListView(
-            padding: const EdgeInsets.all(18),
+            // Clear of the gesture bar: "Delete account" is the last row.
+            padding: EdgeInsets.fromLTRB(
+              18,
+              18,
+              18,
+              18 + MediaQuery.paddingOf(context).bottom,
+            ),
             children: [
               Container(
                 width: double.infinity,
@@ -1221,6 +1227,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                 icon: Icons.description_outlined,
                 label: l10n.profileTermsOfService,
                 onTap: () => _openLegalUrl(_kTermsOfServiceUrl),
+              ),
+              _LegalLinkTile(
+                icon: Icons.article_outlined,
+                label: l10n.profileLicenses,
+                onTap: () => showLicensePage(
+                  context: context,
+                  applicationName: 'TriviaIA',
+                ),
               ),
               const SizedBox(height: 24),
               Text(

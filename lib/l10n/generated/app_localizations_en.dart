@@ -343,6 +343,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileTermsOfService => 'Terms of Service';
 
   @override
+  String get profileLicenses => 'Open-source licenses';
+
+  @override
   String get profileLinkOpenFailed => 'Couldn\'t open the link.';
 
   @override

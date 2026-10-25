@@ -9,6 +9,7 @@ import '../../l10n/user_facing_error.dart';
 import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
@@ -103,6 +104,15 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
                 return const _LoadingCard();
               }
 
+              // Not "no rewards pending": a failed lookup says nothing
+              // about whether there are any.
+              if (snap.hasError) {
+                return LoadErrorView(
+                  message: userFacingError(l10n, snap.error!),
+                  onRetry: () => setState(() => _reload(uid)),
+                );
+              }
+
               final pending = snap.data ?? [];
 
               if (pending.isEmpty) {
@@ -136,9 +146,9 @@ class _SeasonRewardsScreenState extends State<SeasonRewardsScreen> {
             future: _historyFuture,
             builder: (context, snap) {
               if (snap.hasError) {
-                return Text(
-                  l10n.weeklyRewardsErrorLoadingHistory(userFacingError(AppLocalizations.of(context), snap.error!)),
-                  textAlign: TextAlign.center,
+                return LoadErrorView(
+                  message: l10n.weeklyRewardsErrorLoadingHistory(userFacingError(AppLocalizations.of(context), snap.error!)),
+                  onRetry: () => setState(() => _reload(uid)),
                 );
               }
 

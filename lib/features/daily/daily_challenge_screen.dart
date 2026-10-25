@@ -14,6 +14,7 @@ import '../../widgets/question_answer_card.dart';
 import 'daily_challenge_result_screen.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/count_pill.dart';
+import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class DailyChallengeScreen extends StatefulWidget {
@@ -40,7 +41,9 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   int _timeLeft = 120;
   Timer? _timer;
   bool _loading = true;
-  bool _loadFailed = false;
+  /// Why today's challenge couldn't be opened, e.g. the device's date is
+  /// off or two challenges were already started in the last day.
+  String? _loadError;
   bool _finishing = false;
   bool _savingResults = false;
   bool _saveFailed = false;
@@ -137,18 +140,18 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   Future<void> _init() async {
     setState(() {
       _loading = true;
-      _loadFailed = false;
+      _loadError = null;
     });
 
     final DailyChallengeSession session;
     try {
       session = await _service.createTodaySession(uid: widget.uid);
-    } catch (_) {
+    } catch (e) {
       // Used to have no handling at all: the spinner never stopped.
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _loadFailed = true;
+        _loadError = userFacingError(AppLocalizations.of(context), e);
       });
       return;
     }
@@ -337,7 +340,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
       // The clock is already over, so nothing would ever call this again:
       // the run stays on screen with a way to send it again. The answers
-      // are kept on the device too, in case the player leaves instead.
+      // are banked on the server too, in case the player leaves instead.
       setState(() {
         _saveFailed = true;
         _finishing = false;
@@ -347,7 +350,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   /// Confirms leaving while the clock is still running.
   Future<void> _confirmLeave() async {
-    if (_loading || _loadFailed || _savingResults || _timeLeft <= 0) {
+    if (_loading || _loadError != null || _savingResults || _timeLeft <= 0) {
       Navigator.of(context).pop();
       return;
     }
@@ -474,25 +477,10 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       );
     }
 
-    if (_loadFailed) {
+    if (_loadError != null) {
       return Scaffold(
         appBar: AppBar(),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.commonConnectionError,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                FilledButton(onPressed: _init, child: Text(l10n.commonRetry)),
-              ],
-            ),
-          ),
-        ),
+        body: LoadErrorView(message: _loadError!, onRetry: _init),
       );
     }
 
@@ -568,16 +556,22 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        QuestionAnswerCard(
-                          qText: _questionText(q),
-                          options: options,
-                          // -1 until the server's verdict reveals it.
-                          answerIndex: _revealedIndex ?? -1,
-                          selectedIndex: _selectedIndex,
-                          locked: _revealedIndex != null,
-                          onTapAnswer: _answer,
+                        // Scrolls on a small phone rather than overflowing
+                        // a long question into the count below.
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: QuestionAnswerCard(
+                              qText: _questionText(q),
+                              options: options,
+                              // -1 until the server's verdict reveals it.
+                              answerIndex: _revealedIndex ?? -1,
+                              selectedIndex: _selectedIndex,
+                              locked: _revealedIndex != null,
+                              onTapAnswer: _answer,
+                            ),
+                          ),
                         ),
-                        const Spacer(),
+                        const SizedBox(height: 12),
                         CountPill(
                           icon: Icons.quiz_rounded,
                           label: l10n.dailyChallengeAnsweredCount(_totalAnswered),

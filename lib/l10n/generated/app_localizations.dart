@@ -668,6 +668,12 @@ abstract class AppLocalizations {
   /// **'Términos del servicio'**
   String get profileTermsOfService;
 
+  /// No description provided for @profileLicenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Licencias de código abierto'**
+  String get profileLicenses;
+
   /// No description provided for @profileLinkOpenFailed.
   ///
   /// In es, this message translates to:

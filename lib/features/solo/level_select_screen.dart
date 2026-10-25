@@ -11,6 +11,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class LevelSelectScreen extends StatefulWidget {
@@ -341,8 +342,9 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           if (_loading)
             const Center(child: CircularProgressIndicator())
           else if (_loadError != null)
-            _LoadErrorView(
-              error: _loadError!,
+            LoadErrorView(
+              title: l10n.levelSelectLoadFailedTitle,
+              message: _loadError!,
               onRetry: () => _loadScreenData(),
             )
           else
@@ -659,51 +661,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     if (percent >= 0.9) return 3;
     if (percent >= 0.7) return 2;
     return 1;
-  }
-}
-
-class _LoadErrorView extends StatelessWidget {
-  final String error;
-  final VoidCallback onRetry;
-
-  const _LoadErrorView({
-    required this.error,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 44),
-            const SizedBox(height: 12),
-            Text(
-              l10n.levelSelectLoadFailedTitle,
-              textAlign: TextAlign.center,
-              style: context.heading(18),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: context.appColors.danger),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.commonRetry),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

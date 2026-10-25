@@ -20,6 +20,7 @@ import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/load_error_view.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
 
@@ -759,6 +760,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: _categoryDoc(categoryRef),
             builder: (context, catSnap) {
+              if (catSnap.hasError) {
+                return LoadErrorView(
+                  message: userFacingError(l10n, catSnap.error!),
+                  onRetry: () => setState(() => _category = null),
+                );
+              }
               if (!catSnap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -792,6 +799,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 future: _sessionDoc(sessionRef),
                 builder: (context, sesGetSnap) {
+                  if (sesGetSnap.hasError) {
+                    return LoadErrorView(
+                      message: userFacingError(l10n, sesGetSnap.error!),
+                      onRetry: () => setState(_recheckSession),
+                    );
+                  }
                   if (!sesGetSnap.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -902,6 +915,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                   return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                     stream: _sessionStream(sessionRef),
                     builder: (context, snap) {
+                      if (snap.hasError) {
+                        return LoadErrorView(
+                          message: userFacingError(l10n, snap.error!),
+                          onRetry: () => setState(() => _session = null),
+                        );
+                      }
                       if (!snap.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
@@ -1405,12 +1424,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
         _answerKey = [for (final k in key) k is num ? k.toInt() : -1];
       }
 
-      setState(() {
-        _earnedXp = grantedXp;
-        _earnedCoins = grantedCoins;
-        _rewardGrantedForLevel = grantedXp > 0 || grantedCoins > 0;
-        _userTotalXp = ((data['userTotalXp'] ?? 0) as num).toInt();
-      });
+      // Guarded: a player who backs out mid-save would otherwise throw here
+      // and skip the AI buffer below.
+      if (mounted) {
+        setState(() {
+          _earnedXp = grantedXp;
+          _earnedCoins = grantedCoins;
+          _rewardGrantedForLevel = grantedXp > 0 || grantedCoins > 0;
+          _userTotalXp = ((data['userTotalXp'] ?? 0) as num).toInt();
+        });
+      }
 
       // The solo_levels_10 achievement's progress is now granted
       // server-side, inside submitSoloLevelResult, since completed/

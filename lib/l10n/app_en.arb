@@ -164,6 +164,7 @@
   "profileLegalSectionTitle": "Legal",
   "profilePrivacyPolicy": "Privacy Policy",
   "profileTermsOfService": "Terms of Service",
+  "profileLicenses": "Open-source licenses",
   "profileLinkOpenFailed": "Couldn't open the link.",
   "profileDangerZoneTitle": "Danger zone",
   "profileDeleteAccount": "Delete account",

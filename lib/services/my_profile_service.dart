@@ -16,6 +16,11 @@ class MyProfileService {
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _stream;
   String? _streamUid;
 
+  /// The last document seen. A broadcast stream doesn't replay it, so
+  /// without this a screen opened after the first snapshot showed an empty
+  /// avatar until the document next changed.
+  DocumentSnapshot<Map<String, dynamic>>? _latest;
+
   /// Emits the current user's document as it changes. Returns an empty
   /// stream when nobody is signed in — callers render their placeholder
   /// rather than having to null-check auth themselves.
@@ -27,14 +32,16 @@ class MyProfileService {
     // previous uid and would keep serving their avatar after a sign-out.
     if (_stream == null || _streamUid != uid) {
       _streamUid = uid;
+      _latest = null;
       _stream = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .snapshots()
+          .map((snap) => _latest = snap)
           .asBroadcastStream();
     }
 
-    return _stream!;
+    return withLatest(_stream!, _latest);
   }
 
   /// Drops the cached stream — call on sign-out so the next reader starts
@@ -42,5 +49,20 @@ class MyProfileService {
   void reset() {
     _stream = null;
     _streamUid = null;
+    _latest = null;
   }
+}
+
+/// Listens to [shared], first handing the new listener [latest] when there
+/// is one — what a broadcast stream alone doesn't do for late subscribers.
+Stream<T> withLatest<T>(Stream<T> shared, T? latest) {
+  return Stream.multi((controller) {
+    if (latest != null) controller.add(latest);
+    final sub = shared.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller.onCancel = sub.cancel;
+  });
 }

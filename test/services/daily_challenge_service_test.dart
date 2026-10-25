@@ -2,7 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trivia_ia_flutter/services/daily_challenge_service.dart';
 
-/// The pure helpers and the on-device run progress are covered here — the
+/// The pure helpers and resuming a run from the server's session doc are
+/// covered here — the
 /// rest of the service talks to Firestore. `todayDateId` is the one that matters most: it names
 /// the document a day's challenge lives in, and the server refuses a
 /// submission whose date id it doesn't consider plausible, so a formatting

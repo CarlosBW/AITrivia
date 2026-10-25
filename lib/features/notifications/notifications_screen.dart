@@ -221,7 +221,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await _service.deleteNotification(notificationId: notificationId);
   }
 
+  /// Set while a tapped notification's screen is open, so a double tap
+  /// doesn't push it twice.
+  bool _openingNotification = false;
+
   Future<void> _handleNotificationTap({
+    required String notificationId,
+    required String type,
+    required Map<String, dynamic> data,
+  }) async {
+    if (_openingNotification) return;
+    _openingNotification = true;
+    try {
+      await _openForNotification(
+        notificationId: notificationId,
+        type: type,
+        data: data,
+      );
+    } finally {
+      _openingNotification = false;
+    }
+  }
+
+  Future<void> _openForNotification({
     required String notificationId,
     required String type,
     required Map<String, dynamic> data,

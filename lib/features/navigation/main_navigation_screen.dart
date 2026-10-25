@@ -58,7 +58,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _pushTaps = NotificationService.instance.pushTaps().listen((_) {
-      if (mounted) _openNotifications();
+      // Only from the tabs themselves: on top of a live match or a level
+      // in progress the list would cover the game the player came back to.
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        _openNotifications();
+      }
     });
   }
 

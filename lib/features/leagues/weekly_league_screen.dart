@@ -16,6 +16,7 @@ import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import 'season_rewards_screen.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
 
 class WeeklyLeagueScreen extends StatefulWidget {
@@ -194,11 +195,9 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
           }
 
           if (userSnap.hasError) {
-            return Center(
-              child: Text(
-                l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), userSnap.error!)),
-                textAlign: TextAlign.center,
-              ),
+            return LoadErrorView(
+              message: l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), userSnap.error!)),
+              onRetry: () => setState(_loadInitialData),
             );
           }
 
@@ -243,11 +242,10 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                       ),
                       builder: (context, snap) {
                         if (snap.hasError) {
-                          return Center(
-                            child: Text(
-                              l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
-                              textAlign: TextAlign.center,
-                            ),
+                          return LoadErrorView(
+                            message: l10n.weeklyLeagueErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
+                            onRetry: () =>
+                                setState(() => _leaderboardFuture = null),
                           );
                         }
 

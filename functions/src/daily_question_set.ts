@@ -69,3 +69,33 @@ export function orderByAscendingDifficulty(
 ): DailyPoolEntry[] {
   return [...entries].sort((a, b) => a.d - b.d);
 }
+
+/**
+ * The index entries a PvP match can draw its questions from.
+ *
+ * Matches used to list a whole pool to keep ten questions — and "random"
+ * listed one pool per question — when the index already says where every
+ * question is. `null` means the index can't answer for this category: the
+ * scan that built it stopped before covering it, and drawing from part of
+ * a pool would skew every match in it, so the caller lists the pool.
+ * @param {DailyPoolEntry[]} entries The question index.
+ * @param {string[]} completeCategories Categories the index fully covers.
+ * @param {string} categoryId The match's category, or "random".
+ * @param {number} difficulty The match's difficulty tier.
+ * @return {DailyPoolEntry[]|null} The candidates, or null to list the pool.
+ */
+export function matchCandidates(
+  entries: DailyPoolEntry[],
+  completeCategories: string[],
+  categoryId: string,
+  difficulty: number
+): DailyPoolEntry[] | null {
+  if (categoryId !== "random" && !completeCategories.includes(categoryId)) {
+    return null;
+  }
+  const candidates = entries.filter((entry) =>
+    entry.d === difficulty &&
+    (categoryId === "random" || entry.c === categoryId)
+  );
+  return candidates.length > 0 ? candidates : null;
+}

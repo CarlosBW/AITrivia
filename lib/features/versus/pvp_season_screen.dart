@@ -620,16 +620,18 @@ class _LeaderboardList extends StatefulWidget {
   State<_LeaderboardList> createState() => _LeaderboardListState();
 }
 
-// Stateful only to keep the leaderboard subscription across rebuilds.
+// Stateful only to keep the leaderboard read across rebuilds.
 class _LeaderboardListState extends State<_LeaderboardList> {
-  late final _results = widget.query.snapshots();
+  // Read once per visit, like the weekly league's: a live listener on the
+  // top 100 was re-billed every time any of them played a ranked match.
+  late final _results = widget.query.get();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _results,
+    return FutureBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      future: _results,
       builder: (context, snap) {
         if (snap.hasError) {
           return Center(

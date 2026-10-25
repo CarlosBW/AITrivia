@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   DailyPoolEntry,
+  matchCandidates,
   orderByAscendingDifficulty,
   selectDailyEntries,
 } from "./daily_question_set";
@@ -106,5 +107,42 @@ describe("orderByAscendingDifficulty", () => {
 
   test("handles an empty day", () => {
     assert.deepEqual(orderByAscendingDifficulty([]), []);
+  });
+});
+
+describe("matchCandidates", () => {
+  const index: DailyPoolEntry[] = [
+    {c: "cine", d: 1, q: "c1"},
+    {c: "cine", d: 2, q: "c2"},
+    {c: "musica", d: 1, q: "m1"},
+    {c: "historia", d: 1, q: "h1"},
+  ];
+  // The scan stopped inside "historia": its entries are real questions,
+  // but not all of them.
+  const complete = ["cine", "musica"];
+
+  test("a category's questions at the match difficulty", () => {
+    const picked = matchCandidates(index, complete, "cine", 1);
+    assert.deepEqual(picked?.map((e) => e.q), ["c1"]);
+  });
+
+  // Picking from part of a pool would skew every match in it, so the
+  // caller lists the pool itself instead.
+  test("nothing for a category the index doesn't fully cover", () => {
+    assert.equal(matchCandidates(index, complete, "historia", 1), null);
+    assert.equal(matchCandidates(index, complete, "ciencia", 1), null);
+  });
+
+  test("nothing when the category has no questions at that difficulty", () => {
+    assert.equal(matchCandidates(index, complete, "musica", 3), null);
+  });
+
+  test("random draws from every indexed category at that difficulty", () => {
+    const picked = matchCandidates(index, complete, "random", 1);
+    assert.deepEqual(picked?.map((e) => e.q), ["c1", "m1", "h1"]);
+  });
+
+  test("random with nothing at that difficulty", () => {
+    assert.equal(matchCandidates(index, complete, "random", 3), null);
   });
 });

@@ -167,10 +167,20 @@ export function isStreakAtRisk(
  * @return {boolean} Whether the week can be paid now.
  */
 export function isWeekClaimable(weekId: string, serverToday: string): boolean {
-  const today = parseDateId(serverToday);
-  if (Number.isNaN(today)) return false;
-  const yesterday = new Date(today - 86400000).toISOString().slice(0, 10);
+  const yesterday = previousDateId(serverToday);
+  if (!yesterday) return false;
   return weekId < weekIdForDateId(yesterday);
+}
+
+/**
+ * The day before [dateId].
+ * @param {string} dateId A date, `YYYY-MM-DD`.
+ * @return {string} The previous date, or "" when [dateId] doesn't parse.
+ */
+export function previousDateId(dateId: string): string {
+  const day = parseDateId(dateId);
+  if (Number.isNaN(day)) return "";
+  return new Date(day - 86400000).toISOString().slice(0, 10);
 }
 
 /** Daily Challenges a player may start within [DAILY_WINDOW_MS]. */

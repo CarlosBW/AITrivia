@@ -10,6 +10,7 @@ import {
   isStreakAtRisk,
   loginStreakStep,
   parseDateId,
+  previousDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
 
@@ -203,6 +204,24 @@ describe("isStreakAtRisk", () => {
   test("not when the streak is already lost", () => {
     assert.equal(isStreakAtRisk("2026-10-18", today), false);
     assert.equal(isStreakAtRisk(undefined, today), false);
+  });
+});
+
+describe("previousDateId", () => {
+  test("the day before", () => {
+    assert.equal(previousDateId("2026-10-21"), "2026-10-20");
+  });
+
+  test("across a month, a leap February and a year", () => {
+    assert.equal(previousDateId("2026-03-01"), "2026-02-28");
+    assert.equal(previousDateId("2028-03-01"), "2028-02-29");
+    assert.equal(previousDateId("2027-01-01"), "2026-12-31");
+  });
+
+  // It names the players the streak job queries for, so a bad date must
+  // match nobody rather than throw.
+  test("empty for a date that doesn't parse", () => {
+    assert.equal(previousDateId("ayer"), "");
   });
 });
 

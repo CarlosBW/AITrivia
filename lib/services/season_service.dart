@@ -151,15 +151,11 @@ class SeasonService {
         .collection(leagueId)
         .where('weeklyScore', isGreaterThan: weeklyScore);
 
-    try {
-      final aggregate = await betterPlayersQuery.count().get();
-      return (aggregate.count ?? 0) + 1;
-    } catch (_) {
-      // Fallback for older Firebase SDKs or aggregation issues.
-      // Kept as a safety net, but normal builds should use count().
-      final betterPlayersSnap = await betterPlayersQuery.get();
-      return betterPlayersSnap.docs.length + 1;
-    }
+    // No fallback to reading the players themselves: when the count fails
+    // (offline, mostly) that read every player ranked above, one billed
+    // read each. The caller shows the error with a retry instead.
+    final aggregate = await betterPlayersQuery.count().get();
+    return (aggregate.count ?? 0) + 1;
   }
 
   LeagueInfo _leagueById(String leagueId) {

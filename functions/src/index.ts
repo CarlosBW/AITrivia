@@ -40,6 +40,7 @@ import {
   isStreakAtRisk,
   isWeekClaimable,
   loginStreakStep,
+  previousDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
 import {
@@ -91,6 +92,7 @@ import {
 } from "./pvp_answer_key";
 import {
   DailyPoolEntry,
+  matchCandidates,
   orderByAscendingDifficulty,
   selectDailyEntries,
 } from "./daily_question_set";
@@ -1594,6 +1596,28 @@ async function selectFixedMatchQuestions(
   difficulty: number,
   total: number
 ): Promise<Record<string, unknown>[]> {
+  // The question index says where every question is, so a match reads the
+  // ten it serves instead of listing a whole pool (one pool per question,
+  // for "random"). The listing below stays for what the index doesn't
+  // cover.
+  const index = await loadDailyQuestionIndex()
+    .catch(() => ({entries: [], completeCategories: []} as DailyQuestionIndex));
+  const candidates = matchCandidates(
+    index.entries, index.completeCategories, categoryId, difficulty
+  );
+  if (candidates) {
+    const order = seededShuffleIndices(
+      candidates.length, crypto.randomBytes(4).readUInt32LE(0)
+    );
+    const picked = order.slice(0, total).map((i) => candidates[i]);
+    const docs = await db.getAll(...picked.map((entry) =>
+      fixedPoolQuestions(entry.c, entry.d).doc(entry.q)
+    ));
+    const questions = docs.filter((doc) => doc.exists)
+      .map((doc) => doc.data() as Record<string, unknown>);
+    if (questions.length > 0) return questions;
+  }
+
   if (categoryId === "random") {
     return selectRandomAcrossCategories(difficulty, total);
   }
@@ -4457,6 +4481,30 @@ async function buildDailyQuestionIndex(): Promise<DailyQuestionIndex> {
  * covers completely.
  */
 async function loadDailyQuestionIndex(): Promise<DailyQuestionIndex> {
+  // Every match and weekly round now reads it, so a warm instance keeps it
+  // for a few minutes rather than reading the document each time.
+  if (memoQuestionIndex && Date.now() < memoQuestionIndex.untilMs) {
+    return memoQuestionIndex.index;
+  }
+  const index = await readDailyQuestionIndex();
+  if (index.entries.length > 0) {
+    memoQuestionIndex = {index, untilMs: Date.now() + QUESTION_INDEX_MEMO_MS};
+  }
+  return index;
+}
+
+/** How long a warm instance reuses the question index it read. */
+const QUESTION_INDEX_MEMO_MS = 10 * 60 * 1000;
+let memoQuestionIndex: {index: DailyQuestionIndex; untilMs: number} | null =
+  null;
+
+/**
+ * The cached question index from Firestore, rebuilt when it's missing or
+ * past its TTL.
+ * @return {Promise<DailyQuestionIndex>} Index, and which categories it
+ * covers completely.
+ */
+async function readDailyQuestionIndex(): Promise<DailyQuestionIndex> {
   const ref = db.collection("caches").doc("daily_question_index");
   const snap = await ref.get();
   const data = snap.data();
@@ -5258,10 +5306,12 @@ export const notifyStreakAtRisk = onSchedule(
     let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
 
     for (;;) {
+      // Only the players whose streak is at risk — last played yesterday —
+      // rather than every player with a streak, most of whom already
+      // played today.
       let page = db
         .collection("users")
-        .where("dailyStreak", ">", 0)
-        .orderBy("dailyStreak")
+        .where("lastDailyPlayed", "==", previousDateId(dateId))
         .limit(STREAK_NOTIFY_PAGE_SIZE);
 
       if (cursor) page = page.startAfter(cursor);

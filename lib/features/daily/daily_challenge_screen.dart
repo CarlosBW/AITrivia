@@ -48,6 +48,10 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
   int? _selectedIndex;
 
+  /// The question being answered, held on screen until the next one: once
+  /// its answer is counted the pick below would move on to another.
+  int? _shownQuestionIndex;
+
   /// The current question's right option once the server has judged it.
   int? _revealedIndex;
 
@@ -73,6 +77,9 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   }
 
   Map<String, dynamic> _currentQuestion() {
+    final shown = _shownQuestionIndex;
+    if (shown != null) return _questions[shown];
+
     final targetDifficulty = _getTargetDifficulty();
 
     final filtered = _questions.where((q) {
@@ -195,6 +202,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     final questionIndex = _questions.indexOf(_currentQuestion());
 
     setState(() {
+      _shownQuestionIndex = questionIndex;
       _selectedIndex = index;
       _awaitingVerdict = true;
     });
@@ -211,6 +219,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       // The tap can be tried again; one the server did get comes back with
       // the same verdict.
       setState(() {
+        _shownQuestionIndex = null;
         _selectedIndex = null;
         _awaitingVerdict = false;
       });
@@ -264,6 +273,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     setState(() {
       _currentIndex++;
+      _shownQuestionIndex = null;
       _selectedIndex = null;
       _revealedIndex = null;
       _flashColor = Colors.transparent;

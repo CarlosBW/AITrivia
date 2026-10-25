@@ -18,6 +18,7 @@ import '../../l10n/l10n_for.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/season_labels.dart';
 
 class LiveMatchmakingScreen extends StatefulWidget {
   final String categoryId;
@@ -358,7 +359,7 @@ class _LiveMatchmakingScreenState extends State<LiveMatchmakingScreen>
                     );
                   },
                 ),
-                Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
+                Text(l10n.liveMatchmakingDifficultyLine(l10n.difficultyLabel(widget.difficulty))),
                 Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
                 Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),
                 // Matchmaking pairs on category/difficulty/ranked only, and

@@ -263,7 +263,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeLoginStreakLabel.
   ///
   /// In es, this message translates to:
-  /// **'Racha de sesión: {days} días'**
+  /// **'{days, plural, =1{Racha de sesión: 1 día} other{Racha de sesión: {days} días}}'**
   String homeLoginStreakLabel(int days);
 
   /// No description provided for @homeAchievementUnlockedTitle.
@@ -305,7 +305,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeLivesSuffix.
   ///
   /// In es, this message translates to:
-  /// **'{lives} vidas'**
+  /// **'{lives, select, 1{1 vida} other{{lives} vidas}}'**
   String homeLivesSuffix(String lives);
 
   /// No description provided for @homeLivesFull.
@@ -383,7 +383,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeDailyChallengeStreak.
   ///
   /// In es, this message translates to:
-  /// **'Racha: {days} días'**
+  /// **'{days, plural, =1{Racha: 1 día} other{Racha: {days} días}}'**
   String homeDailyChallengeStreak(int days);
 
   /// No description provided for @homeReward.
@@ -1307,7 +1307,7 @@ abstract class AppLocalizations {
   /// No description provided for @soloNoCategoriesAvailable.
   ///
   /// In es, this message translates to:
-  /// **'No hay categorías activas en Firestore.'**
+  /// **'Todavía no hay categorías disponibles.'**
   String get soloNoCategoriesAvailable;
 
   /// No description provided for @soloFixedTopics.
@@ -1721,7 +1721,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelPlayHalfLifeIn.
   ///
   /// In es, this message translates to:
-  /// **'+0.5 en {time}'**
+  /// **'+0,5 en {time}'**
   String levelPlayHalfLifeIn(String time);
 
   /// No description provided for @levelPlayQuestionOfTotal.
@@ -2310,7 +2310,7 @@ abstract class AppLocalizations {
   ///
   /// In es, this message translates to:
   /// **'Dificultad: {difficulty}'**
-  String liveMatchmakingDifficultyLine(int difficulty);
+  String liveMatchmakingDifficultyLine(String difficulty);
 
   /// No description provided for @liveMatchmakingQuestionsLine.
   ///
@@ -2801,13 +2801,13 @@ abstract class AppLocalizations {
   /// No description provided for @pvpResultWonByPoints.
   ///
   /// In es, this message translates to:
-  /// **'Ganaste por +{diff} puntos'**
+  /// **'{diff, plural, =1{Ganaste por +1 punto} other{Ganaste por +{diff} puntos}}'**
   String pvpResultWonByPoints(int diff);
 
   /// No description provided for @pvpResultLostByPoints.
   ///
   /// In es, this message translates to:
-  /// **'Perdiste por {diff} puntos'**
+  /// **'{diff, plural, =1{Perdiste por 1 punto} other{Perdiste por {diff} puntos}}'**
   String pvpResultLostByPoints(int diff);
 
   /// No description provided for @pvpResultFinalResult.
@@ -2861,7 +2861,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpResultCurrentStreak.
   ///
   /// In es, this message translates to:
-  /// **'🔥 Racha actual: {count} victorias'**
+  /// **'{count, plural, =1{🔥 Racha actual: 1 victoria} other{🔥 Racha actual: {count} victorias}}'**
   String pvpResultCurrentStreak(int count);
 
   /// No description provided for @matchPlayRematchRequestTitle.
@@ -3179,7 +3179,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonHowItWorksBullet4.
   ///
   /// In es, this message translates to:
-  /// **'• Las recompensas se basan en tu liga final cuando termina la temporada.'**
+  /// **'• Las recompensas se basan en la mejor liga que alcanzaste en la temporada.'**
   String get pvpSeasonHowItWorksBullet4;
 
   /// No description provided for @pvpSeasonFriendsTab.
@@ -3233,7 +3233,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonMatchesCount.
   ///
   /// In es, this message translates to:
-  /// **'{count} partidas'**
+  /// **'{count, plural, =1{1 partida} other{{count} partidas}}'**
   String pvpSeasonMatchesCount(int count);
 
   /// No description provided for @pvpSeasonWinLossDraw.
@@ -3353,7 +3353,7 @@ abstract class AppLocalizations {
   /// No description provided for @pvpSeasonClaimedRewards.
   ///
   /// In es, this message translates to:
-  /// **'¡Reclamaste {count} recompensa(s) de temporada PvP: +{coins} monedas!'**
+  /// **'{count, plural, =1{¡Reclamaste 1 recompensa de temporada PvP: +{coins} monedas!} other{¡Reclamaste {count} recompensas de temporada PvP: +{coins} monedas!}}'**
   String pvpSeasonClaimedRewards(int count, int coins);
 
   /// No description provided for @dailyResultComplete.
@@ -3455,7 +3455,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyRewardsClaimed.
   ///
   /// In es, this message translates to:
-  /// **'¡Reclamaste {count} recompensa(s): +{coins} monedas!'**
+  /// **'{count, plural, =1{¡Reclamaste 1 recompensa: +{coins} monedas!} other{¡Reclamaste {count} recompensas: +{coins} monedas!}}'**
   String weeklyRewardsClaimed(int count, int coins);
 
   /// No description provided for @weeklyRewardsChecking.
@@ -3510,7 +3510,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyRewardsNoHistory.
   ///
   /// In es, this message translates to:
-  /// **'Aún no has reclamado recompensas de temporada.'**
+  /// **'Aún no has reclamado recompensas semanales.'**
   String get weeklyRewardsNoHistory;
 
   /// No description provided for @weeklyRewardsHistoryTitleLine.
@@ -3518,6 +3518,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{seasonId} • {leagueName}'**
   String weeklyRewardsHistoryTitleLine(String seasonId, String leagueName);
+
+  /// No description provided for @weekOfLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Semana del {date}'**
+  String weekOfLabel(String date);
+
+  /// No description provided for @pvpLeagueRatingFrom.
+  ///
+  /// In es, this message translates to:
+  /// **'{min}+ MMR'**
+  String pvpLeagueRatingFrom(int min);
 
   /// No description provided for @weeklyRewardsHistorySubtitle.
   ///
@@ -3853,7 +3865,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyLeaguePendingSeasonRewards.
   ///
   /// In es, this message translates to:
-  /// **'Recompensas de temporada pendientes'**
+  /// **'Recompensas semanales pendientes'**
   String get weeklyLeaguePendingSeasonRewards;
 
   /// No description provided for @weeklyLeagueOpenToSeeDetails.
@@ -3919,7 +3931,7 @@ abstract class AppLocalizations {
   /// No description provided for @weeklyLeagueClaimedRewards.
   ///
   /// In es, this message translates to:
-  /// **'¡Reclamaste {count} recompensas: +{coins} monedas!'**
+  /// **'{count, plural, =1{¡Reclamaste 1 recompensa: +{coins} monedas!} other{¡Reclamaste {count} recompensas: +{coins} monedas!}}'**
   String weeklyLeagueClaimedRewards(int count, int coins);
 
   /// No description provided for @authGateConnectionError.
@@ -4159,7 +4171,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsEmptySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Elige cualquier tema que te guste. Las preguntas generadas por IA se conectarán en el siguiente paso.'**
+  /// **'Elige cualquier tema que te guste y la IA preparará preguntas sobre él.'**
   String get aiTopicsEmptySubtitle;
 
   /// No description provided for @aiTopicsEmptyButton.
@@ -4231,7 +4243,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicMissingCoins.
   ///
   /// In es, this message translates to:
-  /// **'Te faltan {amount} monedas'**
+  /// **'{amount, plural, =1{Te falta 1 moneda} other{Te faltan {amount} monedas}}'**
   String createAiTopicMissingCoins(int amount);
 
   /// No description provided for @createAiTopicIncludesHint.
@@ -4261,7 +4273,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicPopularUsedCount.
   ///
   /// In es, this message translates to:
-  /// **'Usado {count} veces'**
+  /// **'{count, plural, =1{Usado 1 vez} other{Usado {count} veces}}'**
   String createAiTopicPopularUsedCount(int count);
 
   /// No description provided for @createAiTopicPopularCostLabel.
@@ -4903,7 +4915,7 @@ abstract class AppLocalizations {
   /// No description provided for @friendsNoSentRequests.
   ///
   /// In es, this message translates to:
-  /// **'No tienes solicitudes pendientes por responder.'**
+  /// **'No tienes solicitudes enviadas pendientes.'**
   String get friendsNoSentRequests;
 
   /// No description provided for @friendsPending.
@@ -5221,7 +5233,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceChallengedUidEmpty.
   ///
   /// In es, this message translates to:
-  /// **'challengedUid vacío'**
+  /// **'No se pudo elegir a ese jugador.'**
   String get serviceChallengedUidEmpty;
 
   /// No description provided for @serviceCannotChallengeSelfNoPeriod.

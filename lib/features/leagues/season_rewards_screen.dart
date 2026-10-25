@@ -11,6 +11,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../l10n/season_labels.dart';
 
 class SeasonRewardsScreen extends StatefulWidget {
   const SeasonRewardsScreen({super.key});
@@ -367,7 +368,7 @@ class _PendingRewardMiniTile extends StatelessWidget {
           Expanded(
             child: Text(
               AppLocalizations.of(context).weeklyRewardsMiniTile(
-                reward.seasonId,
+                AppLocalizations.of(context).weekLabel(reward.seasonId),
                 AppLocalizations.of(context).leagueName(reward.leagueName),
                 reward.rank,
                 seasonRewardMessageFor(
@@ -472,7 +473,7 @@ class _HistoryTile extends StatelessWidget {
               children: [
                 Text(
                   l10n.weeklyRewardsHistoryTitleLine(
-                    seasonId,
+                    l10n.weekLabel(seasonId),
                     l10n.leagueName(leagueName),
                   ),
                   style: context.headingFace,

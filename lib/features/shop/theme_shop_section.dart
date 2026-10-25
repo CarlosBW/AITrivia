@@ -196,6 +196,7 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
                 owned: owned.contains(spec.id),
                 equipped: equipped == spec.id,
                 busy: _busyThemeId == spec.id,
+                affordable: coins >= spec.price,
                 onEquip: () => _equip(spec.id),
                 onBuy: () => _buy(spec, coins),
               ),
@@ -261,6 +262,7 @@ class _ThemeCard extends StatelessWidget {
     required this.owned,
     required this.equipped,
     required this.busy,
+    required this.affordable,
     required this.onEquip,
     required this.onBuy,
   });
@@ -271,6 +273,7 @@ class _ThemeCard extends StatelessWidget {
   final bool owned;
   final bool equipped;
   final bool busy;
+  final bool affordable;
   final VoidCallback onEquip;
   final VoidCallback onBuy;
 
@@ -325,6 +328,7 @@ class _ThemeCard extends StatelessWidget {
             owned: owned,
             equipped: equipped,
             busy: busy,
+            affordable: affordable,
             onEquip: onEquip,
             onBuy: onBuy,
           ),
@@ -366,6 +370,7 @@ class _Action extends StatelessWidget {
     required this.owned,
     required this.equipped,
     required this.busy,
+    required this.affordable,
     required this.onEquip,
     required this.onBuy,
   });
@@ -375,6 +380,10 @@ class _Action extends StatelessWidget {
   final bool owned;
   final bool equipped;
   final bool busy;
+
+  /// Whether the balance covers the price. When it doesn't the button
+  /// stays tappable (it says why) but no longer looks like a buy.
+  final bool affordable;
   final VoidCallback onEquip;
   final VoidCallback onBuy;
 
@@ -413,6 +422,14 @@ class _Action extends StatelessWidget {
       return OutlinedButton(
         onPressed: onEquip,
         child: Text(l10n.themeShopEquip),
+      );
+    }
+
+    if (!affordable) {
+      return OutlinedButton.icon(
+        onPressed: onBuy,
+        icon: const Text('🪙', style: TextStyle(fontSize: 14)),
+        label: Text(l10n.themeShopPriceButton(spec.price)),
       );
     }
 

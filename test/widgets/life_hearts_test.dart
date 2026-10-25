@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trivia_ia_flutter/l10n/generated/app_localizations.dart';
 import 'package:trivia_ia_flutter/services/life_service.dart';
 import 'package:trivia_ia_flutter/widgets/life_hearts.dart';
 
@@ -15,6 +16,10 @@ void main() {
   }) {
     return tester.pumpWidget(
       MaterialApp(
+        // The screen-reader label writes lives in the app's language.
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: LifeHearts(
             lifeUnits: units,

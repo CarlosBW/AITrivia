@@ -31,7 +31,7 @@
   "homeStreakUpTitle": "🔥 STREAK UP!",
   "homeStreakUpSubtitle": "Keep coming back daily",
   "homeWelcomeBackTitle": "📅 Welcome back!",
-  "homeLoginStreakLabel": "Login streak: {days} days",
+  "homeLoginStreakLabel": "{days, plural, =1{Login streak: 1 day} other{Login streak: {days} days}}",
   "@homeLoginStreakLabel": {
     "placeholders": {
       "days": {"type": "int"}
@@ -48,7 +48,7 @@
       "coins": {"type": "int"}
     }
   },
-  "homeLivesSuffix": "{lives} lives",
+  "homeLivesSuffix": "{lives, select, 1{1 life} other{{lives} lives}}",
   "@homeLivesSuffix": {
     "placeholders": {
       "lives": {"type": "String"}
@@ -76,7 +76,7 @@
   },
   "homeWeeklyTopicDefaultDescription": "Complete levels and earn rewards.",
   "homeDailyChallengeTitle": "Daily Challenge",
-  "homeDailyChallengeStreak": "Streak: {days} days",
+  "homeDailyChallengeStreak": "{days, plural, =1{Streak: 1 day} other{Streak: {days} days}}",
   "@homeDailyChallengeStreak": {
     "placeholders": {
       "days": {"type": "int"}
@@ -305,7 +305,7 @@
       "error": {"type": "String"}
     }
   },
-  "soloNoCategoriesAvailable": "No active categories in Firestore.",
+  "soloNoCategoriesAvailable": "No categories available yet.",
   "soloFixedTopics": "Fixed Topics",
   "soloAllCompletedTitle": "You completed all of Solo mode!",
   "soloAllCompletedBody": "Keep earning coins and XP in the Daily Challenge or by challenging other players in PvP.",
@@ -511,7 +511,7 @@
   "pvpHubHeading": "Competitive hub",
   "pvpHubSubheading": "Choose how you want to compete.",
   "pvpActiveMatchesTitle": "Active Matches",
-  "pvpActiveMatchesTitleAlert": "Active Matches • Your Turn!",
+  "pvpActiveMatchesTitleAlert": "Active matches • Your turn!",
   "pvpActiveMatchesSubtitle": "Pending turns, live games, and recent results.",
   "pvpActiveMatchesSubtitleAlert": "You have pending matches waiting for your move.",
   "pvpRealtimeInvitesTitle": "Realtime Invites",
@@ -528,7 +528,7 @@
   "activeMatchesYourTurn": "Your Turn",
   "activeMatchesLoadingYourMatches": "Loading your matches...",
   "activeMatchesNoneWaitingForYou": "No async matches waiting for you.",
-  "activeMatchesWaitingForOpponent": "Waiting For Opponent",
+  "activeMatchesWaitingForOpponent": "Waiting for opponent",
   "activeMatchesLoadingMatches": "Loading matches...",
   "activeMatchesNoneWaitingForOpponent": "No matches waiting for your opponent.",
   "activeMatchesRecentlyFinished": "Recently Finished",
@@ -636,7 +636,7 @@
   "liveMatchmakingDifficultyLine": "Difficulty: {difficulty}",
   "@liveMatchmakingDifficultyLine": {
     "placeholders": {
-      "difficulty": {"type": "int"}
+      "difficulty": {"type": "String"}
     }
   },
   "liveMatchmakingQuestionsLine": "Questions: {total}",
@@ -703,7 +703,7 @@
   },
   "realtimeInvitesWaitingResponse": "Waiting for response...",
   "realtimeInvitesCancel": "Cancel",
-  "realtimeInvitesCancelled": "Invite cancelled",
+  "realtimeInvitesCancelled": "Invite canceled",
   "realtimeInvitesSentEmpty": "You haven't sent any invites right now.",
 
   "friendChallengeNotOnline": "Your friend isn't connected to play in real time.",
@@ -775,13 +775,13 @@
   "matchLobbyCopyCodeButton": "Copy code",
 
   "pvpResultPerfectDraw": "Perfect draw",
-  "pvpResultWonByPoints": "You won by +{diff} points",
+  "pvpResultWonByPoints": "{diff, plural, =1{You won by +1 point} other{You won by +{diff} points}}",
   "@pvpResultWonByPoints": {
     "placeholders": {
       "diff": {"type": "int"}
     }
   },
-  "pvpResultLostByPoints": "You lost by {diff} points",
+  "pvpResultLostByPoints": "{diff, plural, =1{You lost by 1 point} other{You lost by {diff} points}}",
   "@pvpResultLostByPoints": {
     "placeholders": {
       "diff": {"type": "int"}
@@ -795,7 +795,7 @@
   "pvpResultPerformance": "Performance",
   "pvpResultBefore": "Before",
   "pvpResultNow": "Now",
-  "pvpResultCurrentStreak": "🔥 Current streak: {count} wins",
+  "pvpResultCurrentStreak": "{count, plural, =1{🔥 Current streak: 1 win} other{🔥 Current streak: {count} wins}}",
   "@pvpResultCurrentStreak": {
     "placeholders": {
       "count": {"type": "int"}
@@ -881,7 +881,7 @@
   "pvpSeasonHowItWorksBullet1": "• Play Ranked Matches to increase your MMR.",
   "pvpSeasonHowItWorksBullet2": "• Your league is calculated from your current MMR.",
   "pvpSeasonHowItWorksBullet3": "• Leaderboards rank players by MMR.",
-  "pvpSeasonHowItWorksBullet4": "• Rewards are based on your final league when the season ends.",
+  "pvpSeasonHowItWorksBullet4": "• Rewards are based on the best league you reached during the season.",
   "pvpSeasonFriendsTab": "Friends",
   "pvpSeasonGlobalTab": "Global",
   "pvpSeasonAllTab": "All",
@@ -900,7 +900,7 @@
       "name": {"type": "String"}
     }
   },
-  "pvpSeasonMatchesCount": "{count} matches",
+  "pvpSeasonMatchesCount": "{count, plural, =1{1 match} other{{count} matches}}",
   "@pvpSeasonMatchesCount": {
     "placeholders": {
       "count": {"type": "int"}
@@ -967,9 +967,9 @@
     }
   },
   "pvpSeasonClaiming": "Claiming...",
-  "pvpSeasonClaimAllButton": "Claim All Rewards",
+  "pvpSeasonClaimAllButton": "Claim all rewards",
   "pvpSeasonNoPendingRewards": "No pending PvP season rewards available.",
-  "pvpSeasonClaimedRewards": "Claimed {count} PvP season reward(s): +{coins} coins!",
+  "pvpSeasonClaimedRewards": "{count, plural, =1{Claimed 1 PvP season reward: +{coins} coins!} other{Claimed {count} PvP season rewards: +{coins} coins!}}",
   "@pvpSeasonClaimedRewards": {
     "placeholders": {
       "count": {"type": "int"},
@@ -999,7 +999,7 @@
 
   "weeklyRewardsTitle": "Weekly Rewards",
   "weeklyRewardsNoPending": "No pending weekly rewards.",
-  "weeklyRewardsClaimed": "Claimed {count} reward(s): +{coins} coins!",
+  "weeklyRewardsClaimed": "{count, plural, =1{Claimed 1 reward: +{coins} coins!} other{Claimed {count} rewards: +{coins} coins!}}",
   "@weeklyRewardsClaimed": {
     "placeholders": {
       "count": {"type": "int"},
@@ -1036,13 +1036,25 @@
       "message": {"type": "String"}
     }
   },
-  "weeklyRewardsHistoryTitle": "Weekly Rewards History",
-  "weeklyRewardsNoHistory": "No season rewards claimed yet.",
+  "weeklyRewardsHistoryTitle": "Weekly rewards history",
+  "weeklyRewardsNoHistory": "No weekly rewards claimed yet.",
   "weeklyRewardsHistoryTitleLine": "{seasonId} • {leagueName}",
   "@weeklyRewardsHistoryTitleLine": {
     "placeholders": {
       "seasonId": {"type": "String"},
       "leagueName": {"type": "String"}
+    }
+  },
+  "weekOfLabel": "Week of {date}",
+  "@weekOfLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "pvpLeagueRatingFrom": "{min}+ MMR",
+  "@pvpLeagueRatingFrom": {
+    "placeholders": {
+      "min": {"type": "int"}
     }
   },
   "weeklyRewardsHistorySubtitle": "Rank #{rank} • Score {score} • {message}",
@@ -1220,7 +1232,7 @@
     }
   },
   "weeklyLeagueRewardHistoryButton": "Reward history",
-  "weeklyLeaguePendingSeasonRewards": "Pending season rewards",
+  "weeklyLeaguePendingSeasonRewards": "Pending weekly rewards",
   "weeklyLeagueOpenToSeeDetails": "Open Weekly Rewards to see exact rank and coins.",
   "weeklyLeagueViewDetails": "View details",
   "weeklyLeagueClaim": "Claim",
@@ -1252,7 +1264,7 @@
     }
   },
   "weeklyLeagueWeeklyLabel": "Weekly",
-  "weeklyLeagueClaimedRewards": "Claimed {count} rewards: +{coins} coins!",
+  "weeklyLeagueClaimedRewards": "{count, plural, =1{Claimed 1 reward: +{coins} coins!} other{Claimed {count} rewards: +{coins} coins!}}",
   "@weeklyLeagueClaimedRewards": {
     "placeholders": {
       "count": {"type": "int"},
@@ -1363,7 +1375,7 @@
   "aiTopicsExpandSuccess": "Topic expanded",
   "aiTopicsConfirm": "Confirm",
   "aiTopicsEmptyTitle": "Create your own trivia topic",
-  "aiTopicsEmptySubtitle": "Choose any topic you like. AI-generated questions will be connected in the next step.",
+  "aiTopicsEmptySubtitle": "Pick any topic you like and the AI will write questions about it.",
   "aiTopicsEmptyButton": "Create AI Topic",
 
   "createAiTopicEnterTopic": "Enter a topic",
@@ -1386,7 +1398,7 @@
       "cost": {"type": "int"}
     }
   },
-  "createAiTopicMissingCoins": "You're missing {amount} coins",
+  "createAiTopicMissingCoins": "{amount, plural, =1{You're missing 1 coin} other{You're missing {amount} coins}}",
   "@createAiTopicMissingCoins": {
     "placeholders": {
       "amount": {"type": "int"}
@@ -1396,7 +1408,7 @@
   "createAiTopicCreatingButton": "Creating...",
   "createAiTopicPopularSectionTitle": "Popular Topics",
   "createAiTopicPopularSectionHint": "Pick a topic other players already created and save coins",
-  "createAiTopicPopularUsedCount": "Used {count} times",
+  "createAiTopicPopularUsedCount": "{count, plural, =1{Used once} other{Used {count} times}}",
   "@createAiTopicPopularUsedCount": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1492,7 +1504,7 @@
   "themeNameForest": "Forest",
   "themeDescriptionForest": "Green and gold on a soft background.",
   "themeNameNight": "Night",
-  "themeDescriptionNight": "A dark background with the usual colours, for playing at night without the glare.",
+  "themeDescriptionNight": "A dark background with the usual colors, for playing at night without the glare.",
   "themeNameSpace": "Space",
   "themeDescriptionSpace": "A starry sky behind every screen, space icons and panels with a neon glow.",
   "themeNameVintage": "Vintage",
@@ -1594,7 +1606,7 @@
     }
   },
   "friendsLoadingSent": "Loading sent requests...",
-  "friendsNoSentRequests": "You don't have any pending requests to answer.",
+  "friendsNoSentRequests": "You have no pending sent requests.",
   "friendsPending": "Pending",
   "friendsSentStatus": "Sent",
   "friendsErrorLoadingReceived": "Error loading requests:\n{error}",
@@ -1667,7 +1679,7 @@
   "serviceRoomNotFound": "Room doesn't exist",
   "serviceNotInRoom": "You're not in this room",
   "serviceMatchNotFound": "Match not found",
-  "serviceChallengedUidEmpty": "challengedUid empty",
+  "serviceChallengedUidEmpty": "Couldn't pick that player.",
   "serviceCannotChallengeSelfNoPeriod": "You can't challenge yourself",
   "serviceChallengeNotFound": "Challenge not found",
   "serviceNotYourChallenge": "This challenge isn't yours",

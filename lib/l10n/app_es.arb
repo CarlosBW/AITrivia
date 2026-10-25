@@ -36,7 +36,7 @@
   "homeStreakUpTitle": "🔥 ¡RACHA!",
   "homeStreakUpSubtitle": "Sigue volviendo cada día",
   "homeWelcomeBackTitle": "📅 ¡Volviste!",
-  "homeLoginStreakLabel": "Racha de sesión: {days} días",
+  "homeLoginStreakLabel": "{days, plural, =1{Racha de sesión: 1 día} other{Racha de sesión: {days} días}}",
   "@homeLoginStreakLabel": {
     "placeholders": {
       "days": {"type": "int"}
@@ -71,7 +71,7 @@
       "coins": {"type": "int"}
     }
   },
-  "homeLivesSuffix": "{lives} vidas",
+  "homeLivesSuffix": "{lives, select, 1{1 vida} other{{lives} vidas}}",
   "@homeLivesSuffix": {
     "placeholders": {
       "lives": {"type": "String"}
@@ -99,7 +99,7 @@
   },
   "homeWeeklyTopicDefaultDescription": "Completa niveles y gana recompensas.",
   "homeDailyChallengeTitle": "Reto diario",
-  "homeDailyChallengeStreak": "Racha: {days} días",
+  "homeDailyChallengeStreak": "{days, plural, =1{Racha: 1 día} other{Racha: {days} días}}",
   "@homeDailyChallengeStreak": {
     "placeholders": {
       "days": {"type": "int"}
@@ -328,7 +328,7 @@
       "error": {"type": "String"}
     }
   },
-  "soloNoCategoriesAvailable": "No hay categorías activas en Firestore.",
+  "soloNoCategoriesAvailable": "Todavía no hay categorías disponibles.",
   "soloFixedTopics": "Temas fijos",
   "soloAllCompletedTitle": "¡Completaste todo el modo Solo!",
   "soloAllCompletedBody": "Sigue ganando monedas y XP en el reto diario o retando a otros jugadores en PvP.",
@@ -447,7 +447,7 @@
       "lives": {"type": "String"}
     }
   },
-  "levelPlayHalfLifeIn": "+0.5 en {time}",
+  "levelPlayHalfLifeIn": "+0,5 en {time}",
   "@levelPlayHalfLifeIn": {
     "placeholders": {
       "time": {"type": "String"}
@@ -659,7 +659,7 @@
   "liveMatchmakingDifficultyLine": "Dificultad: {difficulty}",
   "@liveMatchmakingDifficultyLine": {
     "placeholders": {
-      "difficulty": {"type": "int"}
+      "difficulty": {"type": "String"}
     }
   },
   "liveMatchmakingQuestionsLine": "Preguntas: {total}",
@@ -798,13 +798,13 @@
   "matchLobbyCopyCodeButton": "Copiar código",
 
   "pvpResultPerfectDraw": "Empate perfecto",
-  "pvpResultWonByPoints": "Ganaste por +{diff} puntos",
+  "pvpResultWonByPoints": "{diff, plural, =1{Ganaste por +1 punto} other{Ganaste por +{diff} puntos}}",
   "@pvpResultWonByPoints": {
     "placeholders": {
       "diff": {"type": "int"}
     }
   },
-  "pvpResultLostByPoints": "Perdiste por {diff} puntos",
+  "pvpResultLostByPoints": "{diff, plural, =1{Perdiste por 1 punto} other{Perdiste por {diff} puntos}}",
   "@pvpResultLostByPoints": {
     "placeholders": {
       "diff": {"type": "int"}
@@ -818,7 +818,7 @@
   "pvpResultPerformance": "Rendimiento",
   "pvpResultBefore": "Antes",
   "pvpResultNow": "Ahora",
-  "pvpResultCurrentStreak": "🔥 Racha actual: {count} victorias",
+  "pvpResultCurrentStreak": "{count, plural, =1{🔥 Racha actual: 1 victoria} other{🔥 Racha actual: {count} victorias}}",
   "@pvpResultCurrentStreak": {
     "placeholders": {
       "count": {"type": "int"}
@@ -904,7 +904,7 @@
   "pvpSeasonHowItWorksBullet1": "• Juega partidas clasificatorias para subir tu MMR.",
   "pvpSeasonHowItWorksBullet2": "• Tu liga se calcula según tu MMR actual.",
   "pvpSeasonHowItWorksBullet3": "• Las clasificaciones ordenan a los jugadores por MMR.",
-  "pvpSeasonHowItWorksBullet4": "• Las recompensas se basan en tu liga final cuando termina la temporada.",
+  "pvpSeasonHowItWorksBullet4": "• Las recompensas se basan en la mejor liga que alcanzaste en la temporada.",
   "pvpSeasonFriendsTab": "Amigos",
   "pvpSeasonGlobalTab": "Global",
   "pvpSeasonAllTab": "Todas",
@@ -923,7 +923,7 @@
       "name": {"type": "String"}
     }
   },
-  "pvpSeasonMatchesCount": "{count} partidas",
+  "pvpSeasonMatchesCount": "{count, plural, =1{1 partida} other{{count} partidas}}",
   "@pvpSeasonMatchesCount": {
     "placeholders": {
       "count": {"type": "int"}
@@ -992,7 +992,7 @@
   "pvpSeasonClaiming": "Reclamando...",
   "pvpSeasonClaimAllButton": "Reclamar todas las recompensas",
   "pvpSeasonNoPendingRewards": "No hay recompensas de temporada PvP pendientes.",
-  "pvpSeasonClaimedRewards": "¡Reclamaste {count} recompensa(s) de temporada PvP: +{coins} monedas!",
+  "pvpSeasonClaimedRewards": "{count, plural, =1{¡Reclamaste 1 recompensa de temporada PvP: +{coins} monedas!} other{¡Reclamaste {count} recompensas de temporada PvP: +{coins} monedas!}}",
   "@pvpSeasonClaimedRewards": {
     "placeholders": {
       "count": {"type": "int"},
@@ -1027,7 +1027,7 @@
 
   "weeklyRewardsTitle": "Recompensas semanales",
   "weeklyRewardsNoPending": "No hay recompensas semanales pendientes.",
-  "weeklyRewardsClaimed": "¡Reclamaste {count} recompensa(s): +{coins} monedas!",
+  "weeklyRewardsClaimed": "{count, plural, =1{¡Reclamaste 1 recompensa: +{coins} monedas!} other{¡Reclamaste {count} recompensas: +{coins} monedas!}}",
   "@weeklyRewardsClaimed": {
     "placeholders": {
       "count": {"type": "int"},
@@ -1065,12 +1065,24 @@
     }
   },
   "weeklyRewardsHistoryTitle": "Historial de recompensas semanales",
-  "weeklyRewardsNoHistory": "Aún no has reclamado recompensas de temporada.",
+  "weeklyRewardsNoHistory": "Aún no has reclamado recompensas semanales.",
   "weeklyRewardsHistoryTitleLine": "{seasonId} • {leagueName}",
   "@weeklyRewardsHistoryTitleLine": {
     "placeholders": {
       "seasonId": {"type": "String"},
       "leagueName": {"type": "String"}
+    }
+  },
+  "weekOfLabel": "Semana del {date}",
+  "@weekOfLabel": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "pvpLeagueRatingFrom": "{min}+ MMR",
+  "@pvpLeagueRatingFrom": {
+    "placeholders": {
+      "min": {"type": "int"}
     }
   },
   "weeklyRewardsHistorySubtitle": "Puesto #{rank} • Puntaje {score} • {message}",
@@ -1248,7 +1260,7 @@
     }
   },
   "weeklyLeagueRewardHistoryButton": "Historial de recompensas",
-  "weeklyLeaguePendingSeasonRewards": "Recompensas de temporada pendientes",
+  "weeklyLeaguePendingSeasonRewards": "Recompensas semanales pendientes",
   "weeklyLeagueOpenToSeeDetails": "Abre Recompensas Semanales para ver tu puesto y monedas exactas.",
   "weeklyLeagueViewDetails": "Ver detalles",
   "weeklyLeagueClaim": "Reclamar",
@@ -1280,7 +1292,7 @@
     }
   },
   "weeklyLeagueWeeklyLabel": "Semanal",
-  "weeklyLeagueClaimedRewards": "¡Reclamaste {count} recompensas: +{coins} monedas!",
+  "weeklyLeagueClaimedRewards": "{count, plural, =1{¡Reclamaste 1 recompensa: +{coins} monedas!} other{¡Reclamaste {count} recompensas: +{coins} monedas!}}",
   "@weeklyLeagueClaimedRewards": {
     "placeholders": {
       "count": {"type": "int"},
@@ -1391,7 +1403,7 @@
   "aiTopicsExpandSuccess": "Tema ampliado",
   "aiTopicsConfirm": "Confirmar",
   "aiTopicsEmptyTitle": "Crea tu propio tema de trivia",
-  "aiTopicsEmptySubtitle": "Elige cualquier tema que te guste. Las preguntas generadas por IA se conectarán en el siguiente paso.",
+  "aiTopicsEmptySubtitle": "Elige cualquier tema que te guste y la IA preparará preguntas sobre él.",
   "aiTopicsEmptyButton": "Crear tema IA",
 
   "createAiTopicEnterTopic": "Ingresa un tema",
@@ -1414,7 +1426,7 @@
       "cost": {"type": "int"}
     }
   },
-  "createAiTopicMissingCoins": "Te faltan {amount} monedas",
+  "createAiTopicMissingCoins": "{amount, plural, =1{Te falta 1 moneda} other{Te faltan {amount} monedas}}",
   "@createAiTopicMissingCoins": {
     "placeholders": {
       "amount": {"type": "int"}
@@ -1424,7 +1436,7 @@
   "createAiTopicCreatingButton": "Creando...",
   "createAiTopicPopularSectionTitle": "Temas populares",
   "createAiTopicPopularSectionHint": "Elige un tema ya creado por otros jugadores y ahorra monedas",
-  "createAiTopicPopularUsedCount": "Usado {count} veces",
+  "createAiTopicPopularUsedCount": "{count, plural, =1{Usado 1 vez} other{Usado {count} veces}}",
   "@createAiTopicPopularUsedCount": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1627,7 +1639,7 @@
     }
   },
   "friendsLoadingSent": "Cargando solicitudes enviadas...",
-  "friendsNoSentRequests": "No tienes solicitudes pendientes por responder.",
+  "friendsNoSentRequests": "No tienes solicitudes enviadas pendientes.",
   "friendsPending": "Pendiente",
   "friendsSentStatus": "Enviado",
   "friendsErrorLoadingReceived": "Error cargando solicitudes:\n{error}",
@@ -1700,7 +1712,7 @@
   "serviceRoomNotFound": "Sala no existe",
   "serviceNotInRoom": "No estás dentro de esta sala",
   "serviceMatchNotFound": "Partida no encontrada",
-  "serviceChallengedUidEmpty": "challengedUid vacío",
+  "serviceChallengedUidEmpty": "No se pudo elegir a ese jugador.",
   "serviceCannotChallengeSelfNoPeriod": "No puedes retarte a ti mismo",
   "serviceChallengeNotFound": "Reto no encontrado",
   "serviceNotYourChallenge": "No perteneces a este reto",

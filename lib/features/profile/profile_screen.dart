@@ -1753,12 +1753,9 @@ class _WideStatTile extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon),
         title: Text(label),
-        trailing: Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        // A heading-sized number: as plain trailing text it came out
+        // smaller than its own label.
+        trailing: Text(value, style: context.heading(18)),
       ),
     );
   }

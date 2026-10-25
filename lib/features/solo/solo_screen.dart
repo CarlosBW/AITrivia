@@ -14,6 +14,7 @@ import '../../services/locale_controller.dart';
 import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/lives_format.dart';
 
 class SoloScreen extends StatefulWidget {
   const SoloScreen({super.key});
@@ -232,7 +233,7 @@ class _SoloScreenState extends State<SoloScreen> {
     required int? secondsToNextHalfLife,
   }) async {
     final currentLivesText =
-        '${LifeService.instance.formatLives(lifeUnits)} / ${LifeService.instance.formatLives(maxLifeUnits)}';
+        '${AppLocalizations.of(context).lives(lifeUnits)} / ${AppLocalizations.of(context).lives(maxLifeUnits)}';
 
     final nextHalfLifeText = secondsToNextHalfLife == null
         ? '--:--'

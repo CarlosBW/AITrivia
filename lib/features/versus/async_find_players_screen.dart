@@ -10,6 +10,7 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
+import '../../l10n/season_labels.dart';
 
 class AsyncFindPlayersScreen extends StatefulWidget {
   final String categoryId;
@@ -151,7 +152,7 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                     builder: (context, name) =>
                         Text(l10n.liveMatchmakingCategoryLine(name)),
                   ),
-                  Text(l10n.liveMatchmakingDifficultyLine(widget.difficulty)),
+                  Text(l10n.liveMatchmakingDifficultyLine(l10n.difficultyLabel(widget.difficulty))),
                   Text(l10n.liveMatchmakingQuestionsLine(widget.totalQuestions)),
                   Text(l10n.liveMatchmakingTimePerQuestionLine(widget.timePerQuestionSec)),
                 ],
@@ -227,7 +228,6 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
 
                       return ListTile(
                         title: Text(name),
-                        subtitle: Text(doc.id),
                         trailing: isLoadingThis
                             ? const SizedBox(
                                 height: 18,

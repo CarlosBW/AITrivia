@@ -74,6 +74,12 @@ void main() {
       expect(service.formatLives(1), '0.5');
       expect(service.formatLives(0), '0');
     });
+
+    // Spanish writes 8,5: "8.5 vidas" read as a typo there.
+    test('uses the given decimal separator for a half life', () {
+      expect(service.formatLives(17, decimalSeparator: ','), '8,5');
+      expect(service.formatLives(16, decimalSeparator: ','), '8');
+    });
   });
 
   group('LifeService.unitsToLives', () {

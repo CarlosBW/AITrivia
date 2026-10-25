@@ -12,6 +12,7 @@ import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../l10n/season_labels.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
   const PvpSeasonScreen({super.key});
@@ -201,7 +202,7 @@ class _SeasonOverviewTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Text(l10n.pvpSeasonLabel(season.id)),
+              Text(l10n.pvpSeasonLabel(l10n.pvpSeasonName(season.id))),
               Text(l10n.pvpSeasonEndsIn(seasonService.formatTimeLeft(season.timeLeft))),
               const SizedBox(height: 12),
               Text(
@@ -919,7 +920,11 @@ class _RewardsTabState extends State<_RewardsTab> {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '${league.minRating}-${league.maxRating} MMR',
+                          // The top league has no real ceiling: its stored
+                          // maximum (5000) read as a cap nobody reaches.
+                          league == PvpLeagueService.leagues.last
+                              ? l10n.pvpLeagueRatingFrom(league.minRating)
+                              : '${league.minRating}-${league.maxRating} MMR',
                           style: const TextStyle(fontSize: 12),
                         ),
                         if (isCurrent)
@@ -1213,7 +1218,7 @@ class _PendingRewardsCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           l10n.pvpSeasonPendingRewardLine(
-                            reward.seasonId,
+                            l10n.pvpSeasonName(reward.seasonId),
                             l10n.leagueName(reward.leagueName),
                             reward.bestRating,
                           ),

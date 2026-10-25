@@ -13,6 +13,7 @@ import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../l10n/lives_format.dart';
 
 class WeeklyTopicScreen extends StatefulWidget {
   const WeeklyTopicScreen({super.key});
@@ -70,8 +71,8 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
         barrierDismissible: true,
         builder: (dialogContext) => NoLivesDialog(
           currentLivesText:
-              '${LifeService.instance.formatLives(lifeUnits)} / '
-              '${LifeService.instance.formatLives(maxLifeUnits)}',
+              '${AppLocalizations.of(context).lives(lifeUnits)} / '
+              '${AppLocalizations.of(context).lives(maxLifeUnits)}',
           nextHalfLifeText: nextHalfLifeText,
           nextFullLifeText: '--:--',
         ),

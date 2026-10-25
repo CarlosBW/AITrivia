@@ -61,12 +61,14 @@ class LifeService {
 
   double unitsToLives(int units) => units / unitsPerLife;
 
-  String formatLives(int units) {
+  /// [units] as lives: '4' or '4.5'. Screens go through
+  /// `AppLocalizations.lives`, which passes the language's separator.
+  String formatLives(int units, {String decimalSeparator = '.'}) {
     final whole = units ~/ 2;
     final half = units % 2;
 
     if (half == 0) return '$whole';
-    return '$whole.5';
+    return '$whole${decimalSeparator}5';
   }
 
   // lifeUnits/maxLifeUnits/lifeRegenSeconds/lastLifeTickAt are protected

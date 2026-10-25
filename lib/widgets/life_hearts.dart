@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/life_service.dart';
+import '../l10n/lives_format.dart';
+import '../l10n/generated/app_localizations.dart';
 
 /// A row of hearts standing in for the "8/10 lives" text.
 ///
@@ -38,8 +40,8 @@ class LifeHearts extends StatelessWidget {
     return Semantics(
       // The hearts are the display; this is what a screen reader gets, and
       // it stays the precise number the text used to show.
-      label: '${LifeService.instance.formatLives(units)}'
-          '/${LifeService.instance.formatLives(maxLifeUnits)}',
+      label: '${AppLocalizations.of(context).lives(units)}'
+          '/${AppLocalizations.of(context).lives(maxLifeUnits)}',
       excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,

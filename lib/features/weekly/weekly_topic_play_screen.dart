@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/answer_service.dart';
-import '../../services/life_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
@@ -15,6 +14,7 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../review/question_review_screen.dart';
+import '../../l10n/lives_format.dart';
 
 /// A single round (fixed-size, freshly drawn from the category's pools —
 /// see WeeklyTopicService.loadRandomRound) of Weekly Topic questions. This
@@ -378,7 +378,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      LifeService.instance.formatLives(_lifeUnits),
+                      AppLocalizations.of(context).lives(_lifeUnits),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),

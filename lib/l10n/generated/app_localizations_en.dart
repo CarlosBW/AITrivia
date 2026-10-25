@@ -97,7 +97,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeLoginStreakLabel(int days) {
-    return 'Login streak: $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Login streak: $days days',
+      one: 'Login streak: 1 day',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -128,7 +134,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeLivesSuffix(String lives) {
-    return '$lives lives';
+    String _temp0 = intl.Intl.selectLogic(
+      lives,
+      {
+        '1': '1 life',
+        'other': '$lives lives',
+      },
+    );
+    return '$_temp0';
   }
 
   @override
@@ -176,7 +189,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeDailyChallengeStreak(int days) {
-    return 'Streak: $days days';
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Streak: $days days',
+      one: 'Streak: 1 day',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -674,7 +693,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get soloNoCategoriesAvailable => 'No active categories in Firestore.';
+  String get soloNoCategoriesAvailable => 'No categories available yet.';
 
   @override
   String get soloFixedTopics => 'Fixed Topics';
@@ -1014,7 +1033,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pvpActiveMatchesTitle => 'Active Matches';
 
   @override
-  String get pvpActiveMatchesTitleAlert => 'Active Matches • Your Turn!';
+  String get pvpActiveMatchesTitleAlert => 'Active matches • Your turn!';
 
   @override
   String get pvpActiveMatchesSubtitle =>
@@ -1069,7 +1088,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No async matches waiting for you.';
 
   @override
-  String get activeMatchesWaitingForOpponent => 'Waiting For Opponent';
+  String get activeMatchesWaitingForOpponent => 'Waiting for opponent';
 
   @override
   String get activeMatchesLoadingMatches => 'Loading matches...';
@@ -1255,7 +1274,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String liveMatchmakingDifficultyLine(int difficulty) {
+  String liveMatchmakingDifficultyLine(String difficulty) {
     return 'Difficulty: $difficulty';
   }
 
@@ -1374,7 +1393,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get realtimeInvitesCancel => 'Cancel';
 
   @override
-  String get realtimeInvitesCancelled => 'Invite cancelled';
+  String get realtimeInvitesCancelled => 'Invite canceled';
 
   @override
   String get realtimeInvitesSentEmpty =>
@@ -1539,12 +1558,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pvpResultWonByPoints(int diff) {
-    return 'You won by +$diff points';
+    String _temp0 = intl.Intl.pluralLogic(
+      diff,
+      locale: localeName,
+      other: 'You won by +$diff points',
+      one: 'You won by +1 point',
+    );
+    return '$_temp0';
   }
 
   @override
   String pvpResultLostByPoints(int diff) {
-    return 'You lost by $diff points';
+    String _temp0 = intl.Intl.pluralLogic(
+      diff,
+      locale: localeName,
+      other: 'You lost by $diff points',
+      one: 'You lost by 1 point',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1573,7 +1604,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pvpResultCurrentStreak(int count) {
-    return '🔥 Current streak: $count wins';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '🔥 Current streak: $count wins',
+      one: '🔥 Current streak: 1 win',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1758,7 +1795,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pvpSeasonHowItWorksBullet4 =>
-      '• Rewards are based on your final league when the season ends.';
+      '• Rewards are based on the best league you reached during the season.';
 
   @override
   String get pvpSeasonFriendsTab => 'Friends';
@@ -1792,7 +1829,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pvpSeasonMatchesCount(int count) {
-    return '$count matches';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count matches',
+      one: '1 match',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1867,7 +1910,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pvpSeasonClaiming => 'Claiming...';
 
   @override
-  String get pvpSeasonClaimAllButton => 'Claim All Rewards';
+  String get pvpSeasonClaimAllButton => 'Claim all rewards';
 
   @override
   String get pvpSeasonNoPendingRewards =>
@@ -1875,7 +1918,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pvpSeasonClaimedRewards(int count, int coins) {
-    return 'Claimed $count PvP season reward(s): +$coins coins!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Claimed $count PvP season rewards: +$coins coins!',
+      one: 'Claimed 1 PvP season reward: +$coins coins!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1939,7 +1988,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String weeklyRewardsClaimed(int count, int coins) {
-    return 'Claimed $count reward(s): +$coins coins!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Claimed $count rewards: +$coins coins!',
+      one: 'Claimed 1 reward: +$coins coins!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1974,14 +2029,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get weeklyRewardsHistoryTitle => 'Weekly Rewards History';
+  String get weeklyRewardsHistoryTitle => 'Weekly rewards history';
 
   @override
-  String get weeklyRewardsNoHistory => 'No season rewards claimed yet.';
+  String get weeklyRewardsNoHistory => 'No weekly rewards claimed yet.';
 
   @override
   String weeklyRewardsHistoryTitleLine(String seasonId, String leagueName) {
     return '$seasonId • $leagueName';
+  }
+
+  @override
+  String weekOfLabel(String date) {
+    return 'Week of $date';
+  }
+
+  @override
+  String pvpLeagueRatingFrom(int min) {
+    return '$min+ MMR';
   }
 
   @override
@@ -2198,7 +2263,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get weeklyLeagueRewardHistoryButton => 'Reward history';
 
   @override
-  String get weeklyLeaguePendingSeasonRewards => 'Pending season rewards';
+  String get weeklyLeaguePendingSeasonRewards => 'Pending weekly rewards';
 
   @override
   String get weeklyLeagueOpenToSeeDetails =>
@@ -2242,7 +2307,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String weeklyLeagueClaimedRewards(int count, int coins) {
-    return 'Claimed $count rewards: +$coins coins!';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Claimed $count rewards: +$coins coins!',
+      one: 'Claimed 1 reward: +$coins coins!',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2389,7 +2460,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTopicsEmptySubtitle =>
-      'Choose any topic you like. AI-generated questions will be connected in the next step.';
+      'Pick any topic you like and the AI will write questions about it.';
 
   @override
   String get aiTopicsEmptyButton => 'Create AI Topic';
@@ -2431,7 +2502,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String createAiTopicMissingCoins(int amount) {
-    return 'You\'re missing $amount coins';
+    String _temp0 = intl.Intl.pluralLogic(
+      amount,
+      locale: localeName,
+      other: 'You\'re missing $amount coins',
+      one: 'You\'re missing 1 coin',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2450,7 +2527,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String createAiTopicPopularUsedCount(int count) {
-    return 'Used $count times';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Used $count times',
+      one: 'Used once',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -2638,7 +2721,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDescriptionNight =>
-      'A dark background with the usual colours, for playing at night without the glare.';
+      'A dark background with the usual colors, for playing at night without the glare.';
 
   @override
   String get themeNameSpace => 'Space';
@@ -2826,8 +2909,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get friendsLoadingSent => 'Loading sent requests...';
 
   @override
-  String get friendsNoSentRequests =>
-      'You don\'t have any pending requests to answer.';
+  String get friendsNoSentRequests => 'You have no pending sent requests.';
 
   @override
   String get friendsPending => 'Pending';
@@ -3005,7 +3087,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceMatchNotFound => 'Match not found';
 
   @override
-  String get serviceChallengedUidEmpty => 'challengedUid empty';
+  String get serviceChallengedUidEmpty => 'Couldn\'t pick that player.';
 
   @override
   String get serviceCannotChallengeSelfNoPeriod =>

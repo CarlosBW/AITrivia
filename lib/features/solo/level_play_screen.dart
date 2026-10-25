@@ -23,6 +23,7 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../l10n/lives_format.dart';
 
 /// What the result screen's primary button does.
 enum SoloResultAction { next, retry, back }
@@ -1072,7 +1073,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Widget _buildNoLivesGate(BuildContext context, String uid) {
     final l10n = AppLocalizations.of(context);
     final lifeText =
-        '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
+        '${AppLocalizations.of(context).lives(_lifeUnits)} / ${AppLocalizations.of(context).lives(_maxLifeUnits)}';
 
     final nextFullLifeSeconds = _lifeUnits == 1
         ? _secondsToNextHalfLife
@@ -1103,7 +1104,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Widget _buildNoLivesMidLevel(BuildContext context, String uid) {
     final l10n = AppLocalizations.of(context);
     final lifeText =
-        '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
+        '${AppLocalizations.of(context).lives(_lifeUnits)} / ${AppLocalizations.of(context).lives(_maxLifeUnits)}';
 
     final nextFullLifeSeconds = _lifeUnits == 1
         ? _secondsToNextHalfLife
@@ -1134,7 +1135,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   Widget _buildLivesHeader() {
     final l10n = AppLocalizations.of(context);
     final lifeText =
-        '${LifeService.instance.formatLives(_lifeUnits)} / ${LifeService.instance.formatLives(_maxLifeUnits)}';
+        '${AppLocalizations.of(context).lives(_lifeUnits)} / ${AppLocalizations.of(context).lives(_maxLifeUnits)}';
     final isFull = _lifeUnits >= _maxLifeUnits;
 
     const iconColor = Color(0xFFFF6B5B);

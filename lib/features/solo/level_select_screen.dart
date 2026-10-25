@@ -13,6 +13,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../l10n/lives_format.dart';
 
 class LevelSelectScreen extends StatefulWidget {
   final String categoryId;
@@ -223,7 +224,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     required int? secondsToNextHalfLife,
   }) async {
     final currentLivesText =
-        '${LifeService.instance.formatLives(lifeUnits)} / ${LifeService.instance.formatLives(maxLifeUnits)}';
+        '${AppLocalizations.of(context).lives(lifeUnits)} / ${AppLocalizations.of(context).lives(maxLifeUnits)}';
 
     final nextHalfLifeText = secondsToNextHalfLife == null
         ? '--:--'

@@ -389,7 +389,9 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          color: color,
+          // Darkened until it reads: the reward yellow of "In progress"
+          // was too pale on its own wash.
+          color: readableInk(color, Theme.of(context).colorScheme.surface),
           fontWeight: FontWeight.bold,
         ),
       ),

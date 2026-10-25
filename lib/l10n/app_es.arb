@@ -1466,8 +1466,9 @@
   },
   "coinShopPurchaseFailed": "La compra no se completó.",
   "coinShopPurchaseCanceled": "Compra cancelada.",
-  "coinShopComingSoonTitle": "Próximamente",
-  "coinShopComingSoonBody": "La compra de monedas todavía no está disponible en esta versión.",
+  "coinShopUnavailableTitle": "Tienda no disponible",
+  "coinShopUnavailableBody": "No pudimos conectar con la tienda de tu teléfono. Inténtalo más tarde.",
+  "coinShopPurchasePending": "Tu pago está pendiente. Recibirás las monedas cuando se confirme.",
   "coinShopCoinsAmount": "{coins} monedas",
   "@coinShopCoinsAmount": {
     "placeholders": {

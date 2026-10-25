@@ -72,6 +72,10 @@ import {
   purchaseLedgerId,
 } from "./coin_purchases";
 import {
+  APPLE_ROOT_CA_G3_SHA256,
+  verifyAppStoreTransaction,
+} from "./app_store_jws";
+import {
   openTurn,
   resolveAnswer,
 } from "./async_pvp_turns";
@@ -6790,6 +6794,8 @@ export const purchaseTheme = onCall(async (request) => {
 // ============================================================
 
 const PLAY_PACKAGE_NAME = "pe.massivedynamics.triviaia";
+/** The iOS bundle id, the same as the Android package. */
+const APP_BUNDLE_ID = PLAY_PACKAGE_NAME;
 
 /**
  * An access token for the Play Developer API, from this function's own
@@ -6913,40 +6919,71 @@ export const verifyCoinPurchase = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Missing verification data.");
   }
 
-  if (source !== "google_play") {
-    // App Store verification needs the App Store Server API key, which
-    // only exists with the Apple Developer membership. Until then iOS
-    // purchases stay pending rather than being trusted.
-    throw await localizedErrorFor(
-      uid, "failed-precondition",
-      "Las compras de monedas todavía no están habilitadas en este " +
-        "dispositivo.",
-      "Coin purchases aren't enabled on this device yet."
-    );
-  }
+  let verdict: {
+    ok: true;
+    orderId: string | null;
+    purchaseTimeMillis: number | null;
+    consumed: boolean;
+    test: boolean;
+  };
+  let ledgerKey: string;
 
-  // On Android, serverVerificationData is the purchase token.
-  const purchaseToken = verificationData;
-  const verdict = judgePlayProductPurchase(
-    await fetchPlayProductPurchase(uid, productId, purchaseToken)
-  );
-
-  if (!verdict.ok) {
-    throw await localizedErrorFor(
-      uid, "failed-precondition",
-      verdict.reason === "pending" ?
-        "El pago todavía está pendiente. Las monedas llegarán cuando se " +
-          "confirme." :
+  if (source === "app_store") {
+    // StoreKit 2: serverVerificationData is the transaction's signed JWS,
+    // checked here against Apple's pinned root rather than by calling
+    // Apple. The ledger is keyed on Apple's transaction id: the same
+    // transaction comes back re-signed, so its JWS isn't a stable key.
+    const apple = verifyAppStoreTransaction(verificationData, {
+      rootFingerprint256: APPLE_ROOT_CA_G3_SHA256,
+      bundleId: APP_BUNDLE_ID,
+      productId,
+      nowMs: Date.now(),
+    });
+    if (!apple.ok) {
+      console.warn("Refused an App Store purchase", apple.reason, uid);
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
         "Esta compra no se completó.",
-      verdict.reason === "pending" ?
-        "The payment is still pending. The coins will arrive once it " +
-          "clears." :
         "This purchase wasn't completed."
+      );
+    }
+    verdict = {
+      ok: true,
+      orderId: apple.transactionId,
+      purchaseTimeMillis: apple.purchaseTimeMillis,
+      // Apple has no "consumed" state to replay from: finishing a
+      // transaction only stops StoreKit re-delivering it.
+      consumed: false,
+      test: apple.test,
+    };
+    ledgerKey = `app_store:${apple.transactionId}`;
+  } else if (source === "google_play") {
+    // On Android, serverVerificationData is the purchase token.
+    const play = judgePlayProductPurchase(
+      await fetchPlayProductPurchase(uid, productId, verificationData)
     );
+
+    if (!play.ok) {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        play.reason === "pending" ?
+          "El pago todavía está pendiente. Las monedas llegarán cuando se " +
+            "confirme." :
+          "Esta compra no se completó.",
+        play.reason === "pending" ?
+          "The payment is still pending. The coins will arrive once it " +
+            "clears." :
+          "This purchase wasn't completed."
+      );
+    }
+    verdict = play;
+    ledgerKey = verificationData;
+  } else {
+    throw new HttpsError("invalid-argument", "Unknown store.");
   }
 
   const ledgerRef = db.collection("coin_purchases")
-    .doc(purchaseLedgerId(purchaseToken));
+    .doc(purchaseLedgerId(ledgerKey));
   const userRef = db.collection("users").doc(uid);
 
   const outcome = await db.runTransaction(async (tx) => {

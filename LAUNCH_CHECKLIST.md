@@ -6,7 +6,7 @@ Este documento cubre lo que **queda pendiente y no se puede resolver con código
 
 1. Los puntos **2 (parte final)** y **4**: completar App Check, que espera la clave de firma de Play y el Team ID de Apple, y lo demás que depende de Play Console y App Store Connect.
 2. La **revisión legal** del punto 5 — de contenido, no de código. (La revisión factual del banco, punto 7, quedó hecha el 2026-10-10.)
-3. La **compra de monedas** con dinero real (punto 6): sigue en "Próximamente" hasta que existan los productos en las tiendas.
+3. La **compra de monedas** con dinero real (punto 6): la tienda dice "Tienda no disponible" hasta que existan los productos en las tiendas.
 4. La configuración y las pruebas del inicio de sesión con Google o Apple (punto **8**).
 5. **Web** (punto 2, último ítem) solo si vas a lanzar esa plataforma.
 
@@ -126,16 +126,18 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
 
 **Compra de monedas — bloqueada por las tiendas**
 
-- [ ] Sigue en "Próximamente": el paquete `in_app_purchase` está instalado y el cliente ya escucha compras desde el inicio de sesión, pero no hay productos configurados.
+- [ ] Muestra "Tienda no disponible" mientras no haya productos configurados. El cliente escucha compras desde el inicio de sesión, así que una compra que se pagó tarde o no se acreditó se acredita en el siguiente arranque. Un pago pendiente (efectivo, banco) avisa "tu pago está pendiente" y no deja la tienda esperando.
 - [x] Verificación del recibo en `verifyCoinPurchase` para **Google Play** (escrita el 2026-10-14, sin desplegar ni probar contra Play):
   - Consulta el token con la Play Developer API (`purchases.products.get`) y solo acredita si Play dice pagado; un pago pendiente espera.
   - Registra cada token en `coin_purchases/{hash del token}`, así que un token acredita a una sola cuenta una sola vez. Si la misma cuenta vuelve a preguntar, se le confirma sin volver a pagar; otra cuenta con el mismo token es rechazada.
   - Cualquier fallo deja la compra pendiente para que la tienda la reentregue en el próximo arranque.
-  - La lógica está en `functions/src/coin_purchases.ts`, con tests. **App Store** sigue cerrado: necesita la clave de la App Store Server API, que sale con la membresía de Apple.
+  - La lógica está en `functions/src/coin_purchases.ts`, con tests.
+- [x] Verificación para **App Store** (2026-10-25, sin desplegar ni probar contra Apple): StoreKit 2 entrega la transacción firmada (JWS) y `verifyCoinPurchase` la comprueba en el servidor, sin llamar a Apple ni necesitar claves: la cadena de certificados tiene que terminar en Apple Root CA - G3 (huella fijada en `functions/src/app_store_jws.ts`), con las marcas de Apple en el intermedio y en la hoja, y la firma, la app, el producto y que no esté reembolsada. El registro en `coin_purchases` va por el id de transacción de Apple. Las compras de sandbox (TestFlight y la revisión de Apple) se acreditan marcadas `test: true`.
 - [ ] Faltan pasos que dependen de las cuentas del punto 4:
   - Crear en Play Console (y App Store Connect) los cuatro productos consumibles con los ids de `EconomyService.coinPacks`: `coins_pack_small`, `coins_pack_ai_topic`, `coins_pack_medium`, `coins_pack_large`.
   - En Play Console → **Usuarios y permisos**, invitar a la cuenta de servicio de las funciones con permiso para ver datos financieros y pedidos. Debería ser `1049545801330-compute@developer.gserviceaccount.com`, la predeterminada de las funciones de 2.ª generación; confírmalo en Cloud Run, en el detalle de `verifycoinpurchase`. Sin esto Play responde 401/403 y las compras quedan pendientes, sin perderse.
   - Desplegar `verifyCoinPurchase` y probar una compra de prueba con una cuenta de *license tester*. Esas compras se acreditan, marcadas `test: true` en `coin_purchases`.
+  - En iOS: firmar el acuerdo de **Apps de pago** en App Store Connect (con datos bancarios y fiscales), crear los cuatro productos y probar con una cuenta de sandbox desde TestFlight.
 
 **Limpieza antes de lanzar**
 

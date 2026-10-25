@@ -8,10 +8,10 @@ import 'economy_service.dart';
 
 /// Wraps `in_app_purchase` for the coin packs in [EconomyService.coinPacks].
 ///
-/// Product ids only resolve once the packs are actually configured in the
-/// Google Play Console / App Store Connect — until then, [products] stays
-/// empty and [isAvailable] may be false, which [CoinShopScreen] treats as
-/// "coming soon" rather than an error.
+/// Product ids only resolve once the packs are configured in the Google
+/// Play Console / App Store Connect, and the store can be unreachable —
+/// either way [CoinShopScreen] shows the packs as unavailable rather than
+/// an error.
 class PurchaseService {
   PurchaseService._();
   static final PurchaseService instance = PurchaseService._();
@@ -106,6 +106,16 @@ class PurchaseService {
 
       switch (purchase.status) {
         case PurchaseStatus.pending:
+          // Cash and bank methods can take days to clear. Said so the shop
+          // stops waiting on it; the store delivers it again once paid,
+          // and this service listens from sign-in on to credit it.
+          _purchaseResultController.add(
+            PurchaseResult(
+              productId: purchase.productID,
+              success: false,
+              pending: true,
+            ),
+          );
           break;
 
         case PurchaseStatus.error:
@@ -176,9 +186,7 @@ class PurchaseService {
         PurchaseResult(
           productId: purchase.productID,
           success: false,
-          // Left to the shop's own "purchase failed" text: the raw
-          // exception was English, and often a Firebase error code.
-          message: null,
+          message: purchaseFailureMessage(e),
         ),
       );
 
@@ -195,6 +203,9 @@ class PurchaseResult {
   /// The player backed out of the store's own sheet — not a failure.
   final bool canceled;
 
+  /// Paid with a method that hasn't cleared yet: the coins come later.
+  final bool pending;
+
   /// Only set when the server said why it refused, already in the
   /// player's language. Null means "say the generic thing".
   final String? message;
@@ -204,6 +215,21 @@ class PurchaseResult {
     required this.success,
     this.grantedCoins = 0,
     this.canceled = false,
+    this.pending = false,
     this.message,
   });
+}
+
+/// The server's reason for refusing a purchase, when it wrote one for the
+/// player (`details.localized`, see `localizedError` in
+/// functions/src/index.ts). Null means "say the generic thing": anything
+/// else is English, and often just a Firebase error code.
+String? purchaseFailureMessage(Object error) {
+  if (error is! FirebaseFunctionsException) return null;
+  final details = error.details;
+  final message = error.message?.trim() ?? '';
+  if (details is Map && details['localized'] == true && message.isNotEmpty) {
+    return message;
+  }
+  return null;
 }

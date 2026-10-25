@@ -2563,11 +2563,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coinShopPurchaseCanceled => 'Compra cancelada.';
 
   @override
-  String get coinShopComingSoonTitle => 'Próximamente';
+  String get coinShopUnavailableTitle => 'Tienda no disponible';
 
   @override
-  String get coinShopComingSoonBody =>
-      'La compra de monedas todavía no está disponible en esta versión.';
+  String get coinShopUnavailableBody =>
+      'No pudimos conectar con la tienda de tu teléfono. Inténtalo más tarde.';
+
+  @override
+  String get coinShopPurchasePending =>
+      'Tu pago está pendiente. Recibirás las monedas cuando se confirme.';
 
   @override
   String coinShopCoinsAmount(int coins) {

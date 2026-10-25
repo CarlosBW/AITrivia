@@ -2543,11 +2543,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coinShopPurchaseCanceled => 'Purchase canceled.';
 
   @override
-  String get coinShopComingSoonTitle => 'Coming soon';
+  String get coinShopUnavailableTitle => 'Store unavailable';
 
   @override
-  String get coinShopComingSoonBody =>
-      'Buying coins isn\'t available in this version yet.';
+  String get coinShopUnavailableBody =>
+      'We couldn\'t reach your phone\'s store. Please try again later.';
+
+  @override
+  String get coinShopPurchasePending =>
+      'Your payment is pending. You\'ll get the coins once it clears.';
 
   @override
   String coinShopCoinsAmount(int coins) {

@@ -1438,8 +1438,9 @@
   },
   "coinShopPurchaseFailed": "The purchase didn't complete.",
   "coinShopPurchaseCanceled": "Purchase canceled.",
-  "coinShopComingSoonTitle": "Coming soon",
-  "coinShopComingSoonBody": "Buying coins isn't available in this version yet.",
+  "coinShopUnavailableTitle": "Store unavailable",
+  "coinShopUnavailableBody": "We couldn't reach your phone's store. Please try again later.",
+  "coinShopPurchasePending": "Your payment is pending. You'll get the coins once it clears.",
   "coinShopCoinsAmount": "{coins} coins",
   "@coinShopCoinsAmount": {
     "placeholders": {

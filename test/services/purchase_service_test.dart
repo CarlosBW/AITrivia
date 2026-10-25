@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trivia_ia_flutter/services/purchase_service.dart';
@@ -17,6 +18,32 @@ void main() {
 
     test('starting to listen for purchases does not throw', () {
       expect(PurchaseService.instance.start, returnsNormally);
+    });
+  });
+
+  // The server explains a refused purchase in the player's language ("the
+  // payment is still pending", "this purchase was already used"); the shop
+  // used to replace that with a generic "the purchase didn't complete".
+  group('purchaseFailureMessage', () {
+    test('passes on a message the server wrote for the player', () {
+      final error = FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'El pago todavía está pendiente.',
+        details: {'localized': true},
+      );
+      expect(purchaseFailureMessage(error), 'El pago todavía está pendiente.');
+    });
+
+    test('not a technical message', () {
+      final error = FirebaseFunctionsException(
+        code: 'internal',
+        message: 'INTERNAL',
+      );
+      expect(purchaseFailureMessage(error), isNull);
+    });
+
+    test('not any other error', () {
+      expect(purchaseFailureMessage(StateError('offline')), isNull);
     });
   });
 }

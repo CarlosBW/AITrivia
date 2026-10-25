@@ -90,7 +90,9 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
               ? l10n.coinShopPurchaseSuccess(result.grantedCoins)
               : result.canceled
                   ? l10n.coinShopPurchaseCanceled
-                  : result.message ?? l10n.coinShopPurchaseFailed,
+                  : result.pending
+                      ? l10n.coinShopPurchasePending
+                      : result.message ?? l10n.coinShopPurchaseFailed,
         ),
       ),
     );
@@ -147,13 +149,13 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                 if (_storeAvailable)
                   _buildShop(context)
                 else
-                  _buildComingSoon(context),
+                  _buildUnavailable(context),
               ],
             ),
     );
   }
 
-  Widget _buildComingSoon(BuildContext context) {
+  Widget _buildUnavailable(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -170,12 +172,12 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              l10n.coinShopComingSoonTitle,
+              l10n.coinShopUnavailableTitle,
               style: context.heading(20, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.coinShopComingSoonBody,
+              l10n.coinShopUnavailableBody,
               textAlign: TextAlign.center,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),

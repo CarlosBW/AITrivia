@@ -4414,17 +4414,23 @@ abstract class AppLocalizations {
   /// **'Compra cancelada.'**
   String get coinShopPurchaseCanceled;
 
-  /// No description provided for @coinShopComingSoonTitle.
+  /// No description provided for @coinShopUnavailableTitle.
   ///
   /// In es, this message translates to:
-  /// **'Próximamente'**
-  String get coinShopComingSoonTitle;
+  /// **'Tienda no disponible'**
+  String get coinShopUnavailableTitle;
 
-  /// No description provided for @coinShopComingSoonBody.
+  /// No description provided for @coinShopUnavailableBody.
   ///
   /// In es, this message translates to:
-  /// **'La compra de monedas todavía no está disponible en esta versión.'**
-  String get coinShopComingSoonBody;
+  /// **'No pudimos conectar con la tienda de tu teléfono. Inténtalo más tarde.'**
+  String get coinShopUnavailableBody;
+
+  /// No description provided for @coinShopPurchasePending.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu pago está pendiente. Recibirás las monedas cuando se confirme.'**
+  String get coinShopPurchasePending;
 
   /// No description provided for @coinShopCoinsAmount.
   ///

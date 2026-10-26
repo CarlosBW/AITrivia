@@ -6,5 +6,10 @@
 	     build is exported for the App Store. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Sign in with Apple, to link the anonymous account (Profile). -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

@@ -97,7 +97,7 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
   - El lado de código ya está listo: `android/app/build.gradle.kts` lee `android/key.properties` (claves `keyAlias`, `keyPassword`, `storeFile`, `storePassword`) y firma release con esa clave. Solo falta crear el keystore y ese archivo — **no lo commitees**, ya está en `.gitignore`. Mientras `key.properties` no exista, el build release cae a la debug key y Gradle lo avisa con un `WARNING`; ese AAB no es publicable en Play.
 - [ ] App Store Connect: crear la app con ese bundle ID.
 - [x] Regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure` (2026-10-08). Creó una segunda app Android y una segunda app iOS en el proyecto `trivia-ia-app`, así que los appIds cambiaron junto con el identificador.
-- [ ] Agregar `ios/Runner/GoogleService-Info.plist` al target Runner en Xcode. El archivo está en el repo pero nada lo referencia: `flutterfire` no puede editar `project.pbxproj` desde Windows.
+- [x] `ios/Runner/GoogleService-Info.plist` agregado al target Runner (2026-10-25), editando `project.pbxproj` a mano: referencia en el grupo Runner y en *Copy Bundle Resources*. Sin compilar todavía: la primera vez que se abra en Xcode, confirmar que aparece en Runner → Build Phases → Copy Bundle Resources.
 - [ ] Notificaciones push en iOS. El código ya está (2026-10-21): `ios/Runner/Runner.entitlements` con `aps-environment`, enlazado en `project.pbxproj`, y el `AppDelegate` como delegado de notificaciones. Falta, en consolas: activar la capacidad **Push Notifications** en el App ID `pe.massivedynamics.triviaia` (Apple Developer → Identifiers) y subir una **APNs Authentication Key** (.p8) en Firebase Console → Configuración del proyecto → Cloud Messaging → app iOS. Sin la clave, FCM no puede entregar nada a iPhone.
 - [ ] Registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID.
 - [ ] Formulario de "Data Safety" (Google Play) y "Privacy Nutrition Label" (Apple) — usa el contenido de `public/privacy.html` como base.
@@ -168,7 +168,7 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 **iOS (Google y Apple)** — bloqueado por la membresía de Apple y por no tener Mac
 
 - [ ] Habilitar **Apple** en Firebase Console → Authentication → Sign-in method.
-- [ ] Agregar la capacidad *Sign in with Apple* al target Runner en Xcode.
+- [x] Capacidad *Sign in with Apple* en `ios/Runner/Runner.entitlements` (2026-10-25). Con firma automática, Xcode la activa en el App ID al compilar; con firma manual hay que activarla en Apple Developer → Identifiers.
 - [ ] Agregar a `Info.plist` el esquema de URL con el `REVERSED_CLIENT_ID` del `GoogleService-Info.plist` (que hay que volver a descargar tras habilitar Google).
 - En Android el botón de Apple no se muestra: requeriría un Service ID de Apple. Quien vincule con Apple en un iPhone no puede recuperar su partida en Android hasta que eso exista.
 

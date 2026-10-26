@@ -38,5 +38,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Google sign-in, to link the anonymous account (Profile): the
+	     iOS client from GoogleService-Info.plist, and its reversed id as
+	     the URL scheme Google's sign-in page returns to. -->
+	<key>GIDClientID</key>
+	<string>1049545801330-algchdel5q8rj2nlgia0oa9dej14hbro.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1049545801330-algchdel5q8rj2nlgia0oa9dej14hbro</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

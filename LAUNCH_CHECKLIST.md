@@ -74,7 +74,7 @@ El cliente Flutter ya activa App Check (`main.dart`), pero **no hace nada hasta 
 - [x] Registrar la app Android `pe.massivedynamics.triviaia` con **Play Integrity** (2026-10-14), con la huella SHA-256 de la clave debug de la PC de escritorio (`C1:13:7D:…:10:BA`) y tokens de 1 hora. Solo las apps `pe.massivedynamics.triviaia`; las de `com.example.*`, web y Windows quedan sin registrar a propósito.
 - [x] **Token de depuración** del emulador `Medium_Phone_API_36.1` de la PC de escritorio registrado (2026-10-14, Firebase Console → App Check → app Android → ⋮ → Administrar tokens de depuración). Verificado: la app guardó un token de App Check real y llegó a leer Firestore sin errores. El token es por instalación: desinstalar la app o borrar sus datos genera otro, y la laptop o un teléfono físico necesitan el suyo. Lo imprime el log al arrancar en debug ("Enter this debug secret into the allow list…"). No va al repo.
 - [ ] Agregar en la app Android de Firebase la huella SHA-256 de la **clave de firma de Play** (Play Console → Integridad de la app), y la de la clave de subida. La de debug registrada no sirve para los usuarios reales, que instalan desde la tienda: Play Integrity sí depende del punto 4.
-- [ ] Registrar la app iOS `pe.massivedynamics.triviaia` con **App Attest**. Pide el Team ID, que solo existe con la membresía de Apple Developer.
+- [x] App iOS `pe.massivedynamics.triviaia` registrada con **App Attest** en App Check (Team ID `5PCWES5PAM`). El permiso `com.apple.developer.devicecheck.appattest-environment` está en `ios/Runner/Runner.entitlements` (2026-10-26), y el App ID de Apple tiene la capacidad App Attest.
 - [ ] Una vez registrado y verificado que la app real está mandando tokens válidos, **recién ahí** activa "Enforce" en Firestore y en Cloud Functions. Si activas "Enforce" antes de registrar la app, bloqueas a todos los usuarios reales.
 - [ ] Web no está cubierto todavía (necesita una site key de reCAPTCHA) — si vas a lanzar la versión web, avísame y lo agrego.
 
@@ -98,7 +98,7 @@ Hasta que la API key de Anthropic quedó válida (2026-08-04), el gasto era estr
 - [ ] App Store Connect: crear la app con ese bundle ID.
 - [x] Regenerar `google-services.json` / `GoogleService-Info.plist` con `flutterfire configure` (2026-10-08). Creó una segunda app Android y una segunda app iOS en el proyecto `trivia-ia-app`, así que los appIds cambiaron junto con el identificador.
 - [x] `ios/Runner/GoogleService-Info.plist` agregado al target Runner (2026-10-25), editando `project.pbxproj` a mano: referencia en el grupo Runner y en *Copy Bundle Resources*. Sin compilar todavía: la primera vez que se abra en Xcode, confirmar que aparece en Runner → Build Phases → Copy Bundle Resources.
-- [ ] Notificaciones push en iOS. El código ya está (2026-10-21): `ios/Runner/Runner.entitlements` con `aps-environment`, enlazado en `project.pbxproj`, y el `AppDelegate` como delegado de notificaciones. Falta, en consolas: activar la capacidad **Push Notifications** en el App ID `pe.massivedynamics.triviaia` (Apple Developer → Identifiers) y subir una **APNs Authentication Key** (.p8) en Firebase Console → Configuración del proyecto → Cloud Messaging → app iOS. Sin la clave, FCM no puede entregar nada a iPhone.
+- [x] Notificaciones push en iOS (2026-10-26): App ID `pe.massivedynamics.triviaia` creado en Apple Developer con Push Notifications, Sign in with Apple y App Attest; clave APNs `D6GZ756PZ7` (*Team scoped*, *Sandbox & Production*) subida en Firebase → Cloud Messaging. El `.p8` no va al repo. Firebase dio "An unknown server error occurred" al subirla desde la sesión normal del navegador y funcionó desde una ventana de incógnito. Sin probar con un iPhone real.
 - [ ] Registrar App Check en Firebase Console (ver punto 2) — usa el mismo `applicationId`/bundle ID.
 - [ ] Formulario de "Data Safety" (Google Play) y "Privacy Nutrition Label" (Apple) — usa el contenido de `public/privacy.html` como base.
 
@@ -167,9 +167,9 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 
 **iOS (Google y Apple)** — bloqueado por la membresía de Apple y por no tener Mac
 
-- [ ] Habilitar **Apple** en Firebase Console → Authentication → Sign-in method.
+- [x] **Apple** habilitado en Firebase Console → Authentication → Sign-in method (2026-10-26).
 - [x] Capacidad *Sign in with Apple* en `ios/Runner/Runner.entitlements` (2026-10-25). Con firma automática, Xcode la activa en el App ID al compilar; con firma manual hay que activarla en Apple Developer → Identifiers.
-- [ ] Agregar a `Info.plist` el esquema de URL con el `REVERSED_CLIENT_ID` del `GoogleService-Info.plist` (que hay que volver a descargar tras habilitar Google).
+- [x] `GoogleService-Info.plist` vuelto a descargar con `CLIENT_ID`/`REVERSED_CLIENT_ID` (2026-10-26), y en `Info.plist` el esquema de URL con el `REVERSED_CLIENT_ID` más `GIDClientID`. Sin compilar ni probar en un iPhone.
 - En Android el botón de Apple no se muestra: requeriría un Service ID de Apple. Quien vincule con Apple en un iPhone no puede recuperar su partida en Android hasta que eso exista.
 
 **Publicación**

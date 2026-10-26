@@ -183,7 +183,7 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 - Firma release por `key.properties` en vez de la debug key (ver punto 4 para lo que falta de tu lado).
 - El token FCM ya no se imprime en builds release (`main.dart`): iba a logcat, donde cualquier app con permiso de lectura de logs podía leerlo.
 - Política de privacidad y términos de servicio (`public/privacy.html`, `public/terms.html`) + links desde Perfil.
-- Eliminar cuenta desde la app (Perfil → Zona peligrosa) + Cloud Function `deleteMyAccount`.
+- Eliminar cuenta desde la app (Perfil → Zona peligrosa) + Cloud Function `deleteMyAccount`. Desde el 2026-10-25 también limpia lo compartido con otros jugadores (`scrubSharedAccountData`): sale de las listas de amigos ajenas, se borran sus invitaciones, notificaciones enviadas y puestos en clasificaciones, y en las partidas de otros su nombre pasa a "Jugador eliminado" (las que estaban en curso se cancelan). Necesita el `fieldOverride` de `friends.uid` (`firebase deploy --only firestore:indexes`). Probado contra los emuladores con `npm run test:emulator` en `functions/`.
 - Firebase App Check inicializado en el cliente (falta el registro en consola, ver punto 2).
 - Firebase Crashlytics habilitado (captura errores de Flutter y errores async no capturados).
 - CI básico en GitHub Actions (`.github/workflows/ci.yml`): `flutter analyze` + `flutter test` + lint/build de `functions/`.

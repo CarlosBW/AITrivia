@@ -109,6 +109,12 @@ import {
   difficultyForLevel,
   sliceForLevel,
 } from "./fixed_level_slicing";
+import {
+  asyncMatchScrub,
+  deletedPlayerName,
+  leaderboardEntryPaths,
+  liveMatchScrub,
+} from "./account_deletion";
 
 // How much of each question the "don't repeat these" list sent to Claude
 // carries: enough to recognise the question, not its whole wording.
@@ -10783,14 +10789,185 @@ export const expireStaleRealtimeInvites = onSchedule(
 );
 
 /**
+ * Removes a deleted player from data they share with other players:
+ *
+ * - matches and async matches: their name and look become a neutral
+ *   "Deleted player" in the opponent's language, the scores stay (they're
+ *   the opponent's result too), and one still in play is closed — see
+ *   account_deletion.ts. Same for the opponent's `match_history` entry.
+ * - every notification those matches sent the opponent, and the realtime
+ *   invites they sent or got, with their notifications.
+ * - other players' `friends/{uid}` entries, with the friend request that
+ *   started them.
+ * - their daily and weekly leaderboard rows and their AI question reports.
+ *
+ * Each write stands alone: one that fails (a history entry the opponent no
+ * longer has, say) is logged and skipped rather than stopping the rest.
+ * @param {string} uid The deleted player.
+ * @param {string[]} playedDateIds Their `daily_challenges` doc ids.
+ * @param {string[]} friendUids Their `friends` doc ids.
+ * @return {Promise<void>} Resolves once every write was tried.
+ */
+async function scrubSharedAccountData(
+  uid: string, playedDateIds: string[], friendUids: string[]
+): Promise<void> {
+  const [
+    hosted, guested, challenger, challenged,
+    invitesSent, invitesReceived, friendEntries, aiReports,
+  ] = await Promise.all([
+    db.collection("matches").where("hostUid", "==", uid).get(),
+    db.collection("matches").where("guestUid", "==", uid).get(),
+    db.collection("async_matches").where("challengerUid", "==", uid).get(),
+    db.collection("async_matches").where("challengedUid", "==", uid).get(),
+    db.collection("realtime_invites").where("fromUid", "==", uid).get(),
+    db.collection("realtime_invites").where("toUid", "==", uid).get(),
+    // Needs a collection-group index (fieldOverrides). Without it (still
+    // building, say) the friend list read before the delete still covers
+    // every friendship but a one-sided one, so don't let it stop the rest.
+    db.collectionGroup("friends").where("uid", "==", uid).get()
+      .catch((e) => {
+        console.warn(`Friend-entry query failed for ${uid}: ${e}`);
+        return null;
+      }),
+    db.collection("ai_question_reports").where("uid", "==", uid).get(),
+  ]);
+
+  const writer = db.bulkWriter();
+  writer.onWriteError((error) => {
+    // NOT_FOUND is expected: a history entry that was never written.
+    if (error.code === 5) return false;
+    if (error.failedAttempts < 3) return true;
+    console.warn(
+      `Shared-data cleanup for ${uid}: ${error.documentRef.path}: ` +
+      error.message
+    );
+    return false;
+  });
+  // Failures are already handled by onWriteError.
+  const update = (
+    ref: FirebaseFirestore.DocumentReference,
+    patch: Record<string, unknown>
+  ) => void writer.update(ref, patch).catch(() => undefined);
+  const remove = (ref: FirebaseFirestore.DocumentReference) =>
+    void writer.delete(ref).catch(() => undefined);
+  const usersCol = db.collection("users");
+
+  const scrubFor = (
+    doc: FirebaseFirestore.QueryDocumentSnapshot, name: string
+  ) => doc.ref.parent.id === "matches" ?
+    liveMatchScrub(doc.data(), uid, name) :
+    asyncMatchScrub(doc.data(), uid, name);
+
+  const matches = [
+    ...hosted.docs, ...guested.docs, ...challenger.docs, ...challenged.docs,
+  ].map((doc) => ({doc, opponentUid: scrubFor(doc, "")?.opponentUid ?? null}));
+
+  const opponentUids = [...new Set(
+    matches.flatMap((m) => m.opponentUid ? [m.opponentUid] : [])
+  )];
+  const opponentSnaps = opponentUids.length > 0 ?
+    await db.getAll(...opponentUids.map((o) => usersCol.doc(o))) :
+    [];
+  const languageOf = new Map(
+    opponentSnaps.map((s) => [s.id, s.data()?.languageCode])
+  );
+
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const matchIdsByOpponent = new Map<string, string[]>();
+  for (const {doc, opponentUid} of matches) {
+    const name = deletedPlayerName(
+      opponentUid ? languageOf.get(opponentUid) : undefined
+    );
+    const scrub = scrubFor(doc, name);
+    if (!scrub) continue;
+
+    const patch = {...scrub.patch};
+    if (scrub.closed) {
+      if (doc.ref.parent.id === "matches") {
+        patch.updatedAt = now;
+      } else {
+        patch.declinedAt = now;
+        patch.lastUpdatedAt = now;
+      }
+    }
+    update(doc.ref, patch);
+
+    if (!opponentUid) continue;
+    update(
+      usersCol.doc(opponentUid).collection("match_history").doc(doc.id),
+      {opponentName: name}
+    );
+    const ids = matchIdsByOpponent.get(opponentUid) ?? [];
+    ids.push(doc.id);
+    matchIdsByOpponent.set(opponentUid, ids);
+  }
+
+  // Invites, challenges, turns, rematches and results all name the
+  // deleted player, and are only ever routed by matchId.
+  const notificationQueries: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+  for (const [opponentUid, ids] of matchIdsByOpponent) {
+    for (let i = 0; i < ids.length; i += 30) {
+      notificationQueries.push(
+        usersCol.doc(opponentUid).collection("notifications")
+          .where("data.matchId", "in", ids.slice(i, i + 30)).get()
+      );
+    }
+  }
+  for (const snap of await Promise.all(notificationQueries)) {
+    snap.docs.forEach((doc) => remove(doc.ref));
+  }
+
+  // Notification ids as notifyOnce/sendUserNotification build them.
+  for (const doc of invitesSent.docs) {
+    remove(doc.ref);
+    const toUid = String(doc.get("toUid") || "");
+    if (toUid) {
+      remove(usersCol.doc(toUid).collection("notifications")
+        .doc(`realtime_invite__${uid}__${doc.id}`));
+    }
+  }
+  // "Accepted your invite" is keyed by the match it started, so it went
+  // with the match notifications above.
+  for (const doc of invitesReceived.docs) remove(doc.ref);
+
+  // Their own friend list finds the other half of each friendship; the
+  // query also finds one-sided entries it no longer lists.
+  const friendRefs = new Map<string, FirebaseFirestore.DocumentReference>();
+  for (const friendUid of friendUids) {
+    const ref = usersCol.doc(friendUid).collection("friends").doc(uid);
+    friendRefs.set(ref.path, ref);
+  }
+  for (const doc of friendEntries?.docs ?? []) {
+    friendRefs.set(doc.ref.path, doc.ref);
+  }
+  for (const ref of friendRefs.values()) {
+    remove(ref);
+    const friendRef = ref.parent.parent;
+    if (friendRef) {
+      remove(friendRef.collection("notifications")
+        .doc(`friend_request__${uid}__`));
+    }
+  }
+
+  for (const doc of aiReports.docs) remove(doc.ref);
+
+  for (const path of leaderboardEntryPaths(
+    uid, playedDateIds, LEAGUES.map((l) => l.id)
+  )) {
+    remove(db.doc(path));
+  }
+
+  await writer.close();
+}
+/**
  * Deletes the caller's account: their `users/{uid}` doc and every
  * subcollection under it (ai_topics, match_history, friends, notifications,
  * etc.), their reserved `usernames/{usernameLower}` doc, and their Firebase
  * Auth record. Required by Apple/Google app-store policy — any app that
  * lets a user create an account must let them delete it from within the
- * app. Doesn't touch other users' `friends`/`match_history` entries that
- * reference this uid — those become harmless dangling references to a
- * deleted account, same as any other player who stops playing.
+ * app. What it shared with other players goes too, or loses its name —
+ * see scrubSharedAccountData. public/delete-account.html and
+ * public/privacy.html describe this to players; keep them in step.
  */
 export const deleteMyAccount = onCall(async (request) => {
   const uid = request.auth?.uid;
@@ -10801,6 +10978,23 @@ export const deleteMyAccount = onCall(async (request) => {
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
   const usernameLower = userSnap.data()?.usernameLower;
+
+  // The days this player played are only recorded under their own
+  // subtree, and their leaderboard rows are keyed by those days; their
+  // friends are the other half of each friendship. Read both before the
+  // subtree goes. Best-effort, like the cleanup that uses them.
+  let playedDateIds: string[] = [];
+  let friendUids: string[] = [];
+  try {
+    const [played, friends] = await Promise.all([
+      userRef.collection("daily_challenges").select().get(),
+      userRef.collection("friends").select().get(),
+    ]);
+    playedDateIds = played.docs.map((d) => d.id);
+    friendUids = friends.docs.map((d) => d.id);
+  } catch (e) {
+    console.warn(`Reading played days/friends failed for ${uid}: ${e}`);
+  }
 
   await db.recursiveDelete(userRef);
 
@@ -10868,6 +11062,12 @@ export const deleteMyAccount = onCall(async (request) => {
     const staleMirrorRefs = [
       ...incomingMirrors.docs.map((d) => d.ref),
       ...outgoingMirrors.docs.map((d) => d.ref),
+      // The "X wants to add you" notification each pending request sent,
+      // under notifyOnce's id.
+      ...outgoingMirrors.docs.flatMap((d) => d.ref.parent.parent ?
+        [d.ref.parent.parent.collection("notifications")
+          .doc(`friend_request__${uid}__`)] :
+        []),
     ];
 
     if (staleMirrorRefs.length > 0) {
@@ -10877,6 +11077,13 @@ export const deleteMyAccount = onCall(async (request) => {
     }
   } catch (e) {
     console.warn(`Friend-request mirror cleanup failed for ${uid}: ${e}`);
+  }
+
+  // Best-effort for the same reason as the mirrors above.
+  try {
+    await scrubSharedAccountData(uid, playedDateIds, friendUids);
+  } catch (e) {
+    console.warn(`Shared-data cleanup failed for ${uid}: ${e}`);
   }
 
   await admin.auth().deleteUser(uid);

@@ -1,6 +1,7 @@
 {
   "include": [
     ".eslintrc.js",
-    "deploy.js"
+    "deploy.js",
+    "emulator-tests/*.js"
   ]
 }

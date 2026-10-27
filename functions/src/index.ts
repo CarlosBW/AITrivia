@@ -110,6 +110,12 @@ import {
   sliceForLevel,
 } from "./fixed_level_slicing";
 import {
+  MAX_PLAYER_REPORTS_PER_DAY,
+  PLAYER_REPORT_REASONS,
+  playerReportDocId,
+  usernameViolation,
+} from "./player_safety";
+import {
   asyncMatchScrub,
   deletedPlayerName,
   leaderboardEntryPaths,
@@ -1749,7 +1755,14 @@ export const tryFindLiveOpponent = onCall(async (request) => {
     .limit(20)
     .get();
 
-  const candidates = candidatesSnap.docs.filter((d) => d.id !== uid);
+  const others = candidatesSnap.docs.filter((d) => d.id !== uid);
+  const blocks = others.length > 0 ? await db.getAll(
+    ...others.flatMap((d) => [blockRef(uid, d.id), blockRef(d.id, uid)])
+  ) : [];
+  // Two block docs per candidate, in order: theirs from me, mine from them.
+  const candidates = others.filter((_, i) =>
+    !blocks[2 * i].exists && !blocks[2 * i + 1].exists
+  );
   if (candidates.length === 0) return {matchId: null};
 
   // Picked before claiming anyone: when this used to come after the claim,
@@ -2337,6 +2350,9 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
       throw new HttpsError("failed-precondition", "Match isn't finished.");
     }
     if (old.rematchMatchId) return {rematchMatchId: old.rematchMatchId};
+    if (await blockedEitherWay(uid, opponentUid)) {
+      throw await blockedError(uid);
+    }
 
     const params = clampLiveMatchParams(old);
     // A rematch is casual even after a ranked match: the same two players
@@ -3020,6 +3036,9 @@ export const createAsyncPvpMatch = onCall({
       "No puedes retarte a ti mismo",
       "You can't challenge yourself"
     );
+  }
+  if (await blockedEitherWay(uid, challengedUid)) {
+    throw await blockedError(uid);
   }
 
   const categoryId = String(request.data?.categoryId || "random");
@@ -10459,6 +10478,236 @@ async function syncFriendsAchievementProgress(uid: string): Promise<void> {
 }
 
 // A player can have this many requests waiting for an answer.
+// ============================================================
+// PLAYER SAFETY
+//
+// What the stores ask of an app where players see each other (names,
+// matches, friend requests): a filter on what players can call
+// themselves, a way to report a player, and a way to block one. A block
+// is enforced here, on every way one player reaches another — friend
+// requests, async challenges, rematches and the live queue; live invites
+// already need a friendship, which a block ends.
+// ============================================================
+
+/**
+ * @param {string} uid The player who blocked.
+ * @param {string} otherUid The player they blocked.
+ * @return {FirebaseFirestore.DocumentReference} The block doc.
+ */
+function blockRef(
+  uid: string, otherUid: string
+): FirebaseFirestore.DocumentReference {
+  return db.collection("users").doc(uid).collection("blocked").doc(otherUid);
+}
+
+/**
+ * Whether either player blocked the other.
+ * @param {string} a One player.
+ * @param {string} b The other.
+ * @return {Promise<boolean>} True if there's a block either way.
+ */
+async function blockedEitherWay(a: string, b: string): Promise<boolean> {
+  const [ab, ba] = await db.getAll(blockRef(a, b), blockRef(b, a));
+  return ab.exists || ba.exists;
+}
+
+/**
+ * The refusal for reaching a player with a block between you. Says no
+ * more than that, either way round.
+ * @param {string} uid The caller.
+ * @return {Promise<HttpsError>} The error to throw.
+ */
+async function blockedError(uid: string): Promise<HttpsError> {
+  return localizedErrorFor(
+    uid, "permission-denied",
+    "No puedes interactuar con este jugador.",
+    "You can't interact with this player."
+  );
+}
+
+/**
+ * Whether a username may be taken, for the picker to say so before the
+ * account is created. enforceUsernamePolicy is what actually holds it.
+ */
+export const checkUsername = onCall(async (request) => {
+  if (!request.auth?.uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const username = String(request.data?.username || "").trim();
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+    return {allowed: false, reason: "format"};
+  }
+  const reason = usernameViolation(username);
+  return {allowed: reason === null, reason};
+});
+
+/**
+ * Takes back a reserved username the policy refuses. Names are reserved
+ * by the app itself (firestore.rules), so the check runs here, after the
+ * fact: the account goes back to its own default name, which the rules
+ * let it replace with another choice.
+ */
+export const enforceUsernamePolicy = onDocumentCreated(
+  "usernames/{usernameLower}",
+  async (event) => {
+    const reservation = event.data;
+    if (!reservation) return;
+    const data = reservation.data();
+    const uid = String(data?.uid || "");
+    const username = String(data?.username || event.params.usernameLower);
+    if (!uid || usernameViolation(username) === null) return;
+
+    console.warn(`Refused username "${username}" for ${uid}`);
+    const fallback = `Player${uid.slice(0, 8)}`;
+    const userRef = db.collection("users").doc(uid);
+    await db.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      if (userSnap.data()?.usernameLower === event.params.usernameLower) {
+        tx.set(userRef, {
+          username: fallback,
+          usernameLower: fallback.toLowerCase(),
+          displayName: fallback,
+          usernameRefusedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
+      tx.delete(reservation.ref);
+    });
+  }
+);
+
+/**
+ * Blocks a player: they can no longer send this player friend requests,
+ * challenges or rematches, nor meet them in the live queue. Any
+ * friendship between them ends, and pending requests and invites go.
+ */
+export const blockPlayer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const targetUid = cleanDocId(request.data?.targetUid);
+  if (!targetUid || targetUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid player.");
+  }
+
+  const users = db.collection("users");
+  const targetSnap = await users.doc(targetUid).get();
+  const target = targetSnap.data() || {};
+
+  const [invitesSent, invitesReceived] = await Promise.all([
+    db.collection("realtime_invites").where("fromUid", "==", uid)
+      .where("toUid", "==", targetUid).where("status", "==", "pending").get(),
+    db.collection("realtime_invites").where("fromUid", "==", targetUid)
+      .where("toUid", "==", uid).where("status", "==", "pending").get(),
+  ]);
+
+  const batch = db.batch();
+  batch.set(blockRef(uid, targetUid), {
+    uid: targetUid,
+    username: String(target.username || target.displayName || ""),
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  batch.delete(users.doc(uid).collection("friends").doc(targetUid));
+  batch.delete(users.doc(targetUid).collection("friends").doc(uid));
+  batch.delete(users.doc(uid).collection("friend_requests").doc(targetUid));
+  batch.delete(
+    users.doc(targetUid).collection("sent_friend_requests").doc(uid)
+  );
+  batch.delete(users.doc(targetUid).collection("friend_requests").doc(uid));
+  batch.delete(
+    users.doc(uid).collection("sent_friend_requests").doc(targetUid)
+  );
+  batch.delete(users.doc(uid).collection("notifications")
+    .doc(`friend_request__${targetUid}__`));
+  for (const doc of [...invitesSent.docs, ...invitesReceived.docs]) {
+    batch.update(doc.ref, {
+      status: "declined",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
+
+  return {blocked: true};
+});
+
+/** Lifts a block. */
+export const unblockPlayer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const targetUid = cleanDocId(request.data?.targetUid);
+  if (!targetUid || targetUid === uid) {
+    throw new HttpsError("invalid-argument", "Invalid player.");
+  }
+  await blockRef(uid, targetUid).delete();
+  return {unblocked: true};
+});
+
+/**
+ * Reports a player for review: one report per reporter and player (a new
+ * one updates it), within a daily allowance. Reports land in
+ * `player_reports`, which no client can read.
+ */
+export const reportPlayer = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+  const targetUid = cleanDocId(request.data?.targetUid);
+  const reason = String(request.data?.reason || "");
+  if (!targetUid || targetUid === uid || !PLAYER_REPORT_REASONS.has(reason)) {
+    throw new HttpsError("invalid-argument", "Invalid report.");
+  }
+  const details = cleanReportDetails(request.data?.details);
+  const matchId = cleanDocId(request.data?.matchId);
+
+  const targetSnap = await db.collection("users").doc(targetUid).get();
+  if (!targetSnap.exists) {
+    throw await localizedErrorFor(
+      uid, "not-found",
+      "Ese jugador ya no existe.", "That player no longer exists."
+    );
+  }
+  const target = targetSnap.data() || {};
+
+  const reportRef = db.collection("player_reports")
+    .doc(playerReportDocId(uid, targetUid));
+  const quotaRef = db.collection("player_report_quotas").doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    const [quotaSnap, reportSnap] = await tx.getAll(quotaRef, reportRef);
+    const quota = reportQuotaAfter(
+      quotaSnap.data(), serverDateId(), MAX_PLAYER_REPORTS_PER_DAY
+    );
+    if (!quota.allowed) {
+      throw await localizedErrorFor(
+        uid, "resource-exhausted",
+        "Llegaste al límite de reportes de hoy. Inténtalo mañana.",
+        "You've reached today's report limit. Try again tomorrow."
+      );
+    }
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    tx.set(quotaRef, quota.next);
+    tx.set(reportRef, {
+      reporterUid: uid,
+      targetUid,
+      // As the target was named when reported: an offensive name is what
+      // is being reported, and it may be gone by the time anyone looks.
+      targetUsername: String(target.username || target.displayName || ""),
+      reason,
+      details,
+      matchId: matchId || null,
+      status: "open",
+      reportCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: now,
+      ...(reportSnap.exists ? {} : {createdAt: now}),
+    }, {merge: true});
+  });
+
+  return {reported: true};
+});
+
 const MAX_PENDING_FRIEND_REQUESTS = 50;
 // A rejected request can't be sent again for this long.
 const FRIEND_REQUEST_RESEND_DAYS = 7;
@@ -10479,6 +10728,7 @@ export const sendFriendRequest = onCall(async (request) => {
   if (!targetUid || targetUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid player.");
   }
+  if (await blockedEitherWay(uid, targetUid)) throw await blockedError(uid);
 
   const myRef = db.collection("users").doc(uid);
   const targetRef = db.collection("users").doc(targetUid);
@@ -11020,9 +11270,13 @@ export const deleteMyAccount = onCall(async (request) => {
   // they go with the account (the reported question itself is unaffected).
   const reports = await db.collection("question_reports")
     .where("uid", "==", uid).get();
+  const playerReports = await db.collection("player_reports")
+    .where("reporterUid", "==", uid).get();
   const reportRefs = [
     ...reports.docs.map((doc) => doc.ref),
     db.collection("question_report_quotas").doc(uid),
+    ...playerReports.docs.map((doc) => doc.ref),
+    db.collection("player_report_quotas").doc(uid),
   ];
 
   // Topics this player created stay in the shared pool for whoever already

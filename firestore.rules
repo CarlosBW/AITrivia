@@ -490,6 +490,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Players this one blocked. Only blockPlayer / unblockPlayer write
+      // it, and only its owner reads it: the blocked player isn't told.
+      match /blocked/{blockedUid} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       // A friend request in its target's inbox. The inbox owner could once
       // write a fake request to accept it and farm the friends
       // achievements; then the requester could still write it with any

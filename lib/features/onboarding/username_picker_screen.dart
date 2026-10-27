@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/generated/app_localizations.dart';
 import '../auth/user_bootstrap.dart';
+import '../../services/player_safety_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/save_progress_sheet.dart';
 
@@ -71,6 +72,14 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
 
       if (existing.docs.isNotEmpty) {
         throw UsernameTakenException();
+      }
+
+      // Insults and names that pass for staff are refused; the server
+      // takes such a name back anyway, so this is to say so up front.
+      if (!await PlayerSafetyService.instance.isUsernameAllowed(username)) {
+        if (!mounted) return;
+        setState(() => _errorText = l10n.usernameNotAllowed);
+        return;
       }
 
       await widget.onSubmit(username);

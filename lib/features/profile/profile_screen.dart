@@ -18,6 +18,8 @@ import '../../widgets/buy_coins_button.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../widgets/save_progress_sheet.dart';
+import 'blocked_players_screen.dart';
+import '../../widgets/player_actions_sheet.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../l10n/league_names.dart';
@@ -1212,6 +1214,24 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(height: 10),
               const _AccountSection(),
+              const SizedBox(height: 10),
+              Card(
+                margin: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(context.radii.md),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.block),
+                  title: Text(l10n.blockedPlayersTitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BlockedPlayersScreen(),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               Text(
                 l10n.profileLegalSectionTitle,
@@ -1468,6 +1488,7 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
             final data = doc.data();
             final result = (data['result'] ?? 'match').toString();
             final opponent = (data['opponentName'] ?? AppLocalizations.of(context).asyncMatchPlayOpponentFallback).toString();
+            final opponentUid = (data['opponentUid'] ?? '').toString();
             final myScore = ((data['myScore'] ?? 0) as num).toInt();
             final opponentScore = ((data['opponentScore'] ?? 0) as num).toInt();
             final ranked = data['ranked'] == true;
@@ -1507,6 +1528,19 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
                           ),
                         ),
                       ),
+                      // Report or block the opponent of a finished match.
+                      if (opponentUid.isNotEmpty)
+                        IconButton(
+                          tooltip: l10n.playerActionsReport,
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.more_vert),
+                          onPressed: () => showPlayerActions(
+                            context,
+                            uid: opponentUid,
+                            name: opponent,
+                            matchId: doc.id,
+                          ),
+                        ),
                       if (deltaText.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(

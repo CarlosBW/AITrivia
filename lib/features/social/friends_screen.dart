@@ -9,6 +9,8 @@ import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/player_actions_sheet.dart';
+import '../../services/player_safety_service.dart';
 
 enum _RelationStatus { friend, requestSent, requestReceived, none }
 
@@ -152,8 +154,17 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     try {
       final snap = await _service.searchUsersByUsername(query: query);
-      final results =
-          snap.docs.where((doc) => doc.id != _service.uid).toList();
+      // Best-effort: a block list that can't be read filters nothing out.
+      var blocked = const <String>{};
+      try {
+        blocked = await PlayerSafetyService.instance
+            .watchBlocked()
+            .first
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {}
+      final results = snap.docs
+          .where((doc) => doc.id != _service.uid && !blocked.contains(doc.id))
+          .toList();
       final classification =
           await _classifySearchResults(results.map((d) => d.id).toList());
 
@@ -454,6 +465,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 final rawStatus = (presence?['status'] ?? '').toString();
 
                 return _UserTile(
+                  actionsUid: friendUid,
                   player: data,
                   title: displayName,
                   subtitle: online ? statusText : _offlineLabel(l10n, presence),
@@ -542,6 +554,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             };
 
             return _UserTile(
+              actionsUid: (data['targetUid'] ?? doc.id).toString(),
               player: targetPlayer,
               title: targetName,
               subtitle: l10n.friendsPending,
@@ -605,6 +618,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
             };
 
             return _UserTile(
+              actionsUid: requesterUid,
               player: requesterPlayer,
               title: name,
               subtitle: l10n.friendsWantsToAddYou,
@@ -721,6 +735,7 @@ class _SearchResultTile extends StatelessWidget {
             );
 
             return _UserTile(
+              actionsUid: uid,
               player: player,
               title: username,
               subtitle: l10n.friendsAlreadyFriend,
@@ -739,6 +754,7 @@ class _SearchResultTile extends StatelessWidget {
 
       case _RelationStatus.requestSent:
         return _UserTile(
+          actionsUid: uid,
           player: player,
           title: username,
           subtitle: l10n.friendsRequestSent,
@@ -751,6 +767,7 @@ class _SearchResultTile extends StatelessWidget {
 
       case _RelationStatus.requestReceived:
         return _UserTile(
+          actionsUid: uid,
           player: player,
           title: username,
           subtitle: l10n.friendsWantsToAddYouTile,
@@ -774,6 +791,7 @@ class _SearchResultTile extends StatelessWidget {
 
       case _RelationStatus.none:
         return _UserTile(
+          actionsUid: uid,
           player: player,
           title: username,
           subtitle: l10n.friendsPlayerFound,
@@ -789,6 +807,8 @@ class _SearchResultTile extends StatelessWidget {
 }
 
 class _UserTile extends StatelessWidget {
+  /// The player shown, for reporting or blocking them from a tap.
+  final String actionsUid;
   final Map<String, dynamic> player;
   final String title;
   final String subtitle;
@@ -796,6 +816,7 @@ class _UserTile extends StatelessWidget {
   final Color statusColor;
 
   const _UserTile({
+    required this.actionsUid,
     required this.player,
     required this.title,
     required this.subtitle,
@@ -841,6 +862,11 @@ class _UserTile extends StatelessWidget {
           ],
         ),
         trailing: trailing,
+        onTap: () => showPlayerActions(
+          context,
+          uid: actionsUid,
+          name: title,
+        ),
       ),
     );
   }

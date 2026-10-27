@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,8 @@ import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
 import '../../l10n/season_labels.dart';
+import '../../services/player_safety_service.dart';
+import '../../widgets/player_actions_sheet.dart';
 
 class AsyncFindPlayersScreen extends StatefulWidget {
   final String categoryId;
@@ -52,8 +56,21 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
   String? _error;
   String? _loadingUid;
 
+  /// Players this one blocked, left out of the results.
+  Set<String> _blocked = const {};
+  StreamSubscription<Set<String>>? _blockedSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _blockedSub = PlayerSafetyService.instance.watchBlocked().listen((ids) {
+      if (mounted) setState(() => _blocked = ids);
+    });
+  }
+
   @override
   void dispose() {
+    _blockedSub?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -194,7 +211,9 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                   }
 
                   final docs = snap.data?.docs ?? [];
-                  final allDocs = docs.where((d) => d.id != _uid).toList();
+                  final allDocs = docs
+                      .where((d) => d.id != _uid && !_blocked.contains(d.id))
+                      .toList();
 
                   final filtered = allDocs.map((d) {
                     final name = _safeDisplayName(d.data());
@@ -227,6 +246,11 @@ class _AsyncFindPlayersScreenState extends State<AsyncFindPlayersScreen> {
                           _loadingUid != null && !isLoadingThis;
 
                       return ListTile(
+                        onTap: () => showPlayerActions(
+                          context,
+                          uid: doc.id,
+                          name: name,
+                        ),
                         title: Text(name),
                         trailing: isLoadingThis
                             ? const SizedBox(

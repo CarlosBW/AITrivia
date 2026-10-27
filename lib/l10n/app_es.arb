@@ -1808,5 +1808,45 @@
   "weeklyRewardChampionBonus": "¡Bono de campeón!",
   "weeklyRewardTop3Bonus": "¡Bono top 3!",
   "weeklyRewardTop10Bonus": "¡Bono top 10!",
-  "weeklyRewardGenericBonus": "Recompensa de liga semanal"
+  "weeklyRewardGenericBonus": "Recompensa de liga semanal",
+  "playerActionsReport": "Reportar jugador",
+  "playerActionsBlock": "Bloquear jugador",
+  "playerActionsUnblock": "Desbloquear jugador",
+  "reportPlayerTitle": "Reportar a {name}",
+  "@reportPlayerTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reportPlayerSubtitle": "¿Qué pasó? Revisamos cada reporte.",
+  "reportReasonOffensiveName": "Nombre ofensivo",
+  "reportReasonCheating": "Hace trampa",
+  "reportReasonSpam": "Spam o acoso",
+  "reportReasonOther": "Otro motivo",
+  "reportDetailsHint": "Cuéntanos más (opcional)",
+  "reportSend": "Enviar reporte",
+  "reportSent": "Gracias. Revisaremos el reporte.",
+  "blockPlayerTitle": "¿Bloquear a {name}?",
+  "@blockPlayerTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "blockPlayerBody": "No podrá enviarte solicitudes de amistad, invitaciones ni retos, y no te tocará como rival en Buscar rival. Si son amigos, dejarán de serlo. No se le avisa.",
+  "blockPlayerConfirm": "Bloquear",
+  "playerBlocked": "{name} está bloqueado.",
+  "@playerBlocked": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "playerUnblocked": "{name} ya no está bloqueado.",
+  "@playerUnblocked": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "blockedPlayersTitle": "Jugadores bloqueados",
+  "blockedPlayersEmpty": "No has bloqueado a nadie.",
+  "usernameNotAllowed": "Ese nombre no está permitido. Elige otro."
 }

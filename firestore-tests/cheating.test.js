@@ -525,3 +525,32 @@ test("las respuestas de los modos individuales", async (t) => {
     );
   });
 });
+
+test("bloqueos y reportes de jugadores", async (t) => {
+  // Bloquear y reportar pasan por Cloud Functions (blockPlayer,
+  // reportPlayer): un bloqueo escrito desde la app podría apuntar a
+  // cualquiera, y un reporte, inventar su contenido.
+  await t.test("cada uno lee su propia lista de bloqueados", async () => {
+    await sembrar(["users", YO, "blocked", RIVAL], {uid: RIVAL});
+    await assertSucceeds(getDoc(doc(como(YO), "users", YO, "blocked", RIVAL)));
+  });
+
+  await t.test("nadie lee la lista de otro", async () => {
+    await sembrar(["users", YO, "blocked", RIVAL], {uid: RIVAL});
+    await assertFails(getDoc(doc(como(RIVAL), "users", YO, "blocked", RIVAL)));
+  });
+
+  await t.test("ni siquiera el dueño la escribe", async () => {
+    await assertFails(
+      setDoc(doc(como(YO), "users", YO, "blocked", RIVAL), {uid: RIVAL})
+    );
+  });
+
+  await t.test("los reportes no se leen ni se escriben", async () => {
+    const ruta = ["player_reports", `${YO}__${RIVAL}`];
+    await assertFails(setDoc(doc(como(YO), ...ruta), {reason: "other"}));
+    await sembrar(ruta, {reporterUid: YO, targetUid: RIVAL});
+    await assertFails(getDoc(doc(como(YO), ...ruta)));
+    await assertFails(getDoc(doc(como(RIVAL), ...ruta)));
+  });
+});

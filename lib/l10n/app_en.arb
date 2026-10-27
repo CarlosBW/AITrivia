@@ -1775,5 +1775,45 @@
   "weeklyRewardChampionBonus": "Champion bonus!",
   "weeklyRewardTop3Bonus": "Top 3 bonus!",
   "weeklyRewardTop10Bonus": "Top 10 bonus!",
-  "weeklyRewardGenericBonus": "Weekly league reward"
+  "weeklyRewardGenericBonus": "Weekly league reward",
+  "playerActionsReport": "Report player",
+  "playerActionsBlock": "Block player",
+  "playerActionsUnblock": "Unblock player",
+  "reportPlayerTitle": "Report {name}",
+  "@reportPlayerTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reportPlayerSubtitle": "What happened? We review every report.",
+  "reportReasonOffensiveName": "Offensive name",
+  "reportReasonCheating": "Cheating",
+  "reportReasonSpam": "Spam or harassment",
+  "reportReasonOther": "Something else",
+  "reportDetailsHint": "Tell us more (optional)",
+  "reportSend": "Send report",
+  "reportSent": "Thanks. We'll review the report.",
+  "blockPlayerTitle": "Block {name}?",
+  "@blockPlayerTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "blockPlayerBody": "They won't be able to send you friend requests, invites or challenges, and you won't be matched against them in Find opponent. If you're friends, you won't be anymore. They aren't told.",
+  "blockPlayerConfirm": "Block",
+  "playerBlocked": "{name} is blocked.",
+  "@playerBlocked": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "playerUnblocked": "{name} is no longer blocked.",
+  "@playerUnblocked": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "blockedPlayersTitle": "Blocked players",
+  "blockedPlayersEmpty": "You haven't blocked anyone.",
+  "usernameNotAllowed": "That name isn't allowed. Pick another one."
 }

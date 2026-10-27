@@ -3345,4 +3345,73 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get weeklyRewardGenericBonus => 'Recompensa de liga semanal';
+
+  @override
+  String get playerActionsReport => 'Reportar jugador';
+
+  @override
+  String get playerActionsBlock => 'Bloquear jugador';
+
+  @override
+  String get playerActionsUnblock => 'Desbloquear jugador';
+
+  @override
+  String reportPlayerTitle(String name) {
+    return 'Reportar a $name';
+  }
+
+  @override
+  String get reportPlayerSubtitle => '¿Qué pasó? Revisamos cada reporte.';
+
+  @override
+  String get reportReasonOffensiveName => 'Nombre ofensivo';
+
+  @override
+  String get reportReasonCheating => 'Hace trampa';
+
+  @override
+  String get reportReasonSpam => 'Spam o acoso';
+
+  @override
+  String get reportReasonOther => 'Otro motivo';
+
+  @override
+  String get reportDetailsHint => 'Cuéntanos más (opcional)';
+
+  @override
+  String get reportSend => 'Enviar reporte';
+
+  @override
+  String get reportSent => 'Gracias. Revisaremos el reporte.';
+
+  @override
+  String blockPlayerTitle(String name) {
+    return '¿Bloquear a $name?';
+  }
+
+  @override
+  String get blockPlayerBody =>
+      'No podrá enviarte solicitudes de amistad, invitaciones ni retos, y no te tocará como rival en Buscar rival. Si son amigos, dejarán de serlo. No se le avisa.';
+
+  @override
+  String get blockPlayerConfirm => 'Bloquear';
+
+  @override
+  String playerBlocked(String name) {
+    return '$name está bloqueado.';
+  }
+
+  @override
+  String playerUnblocked(String name) {
+    return '$name ya no está bloqueado.';
+  }
+
+  @override
+  String get blockedPlayersTitle => 'Jugadores bloqueados';
+
+  @override
+  String get blockedPlayersEmpty => 'No has bloqueado a nadie.';
+
+  @override
+  String get usernameNotAllowed => 'Ese nombre no está permitido. Elige otro.';
 }

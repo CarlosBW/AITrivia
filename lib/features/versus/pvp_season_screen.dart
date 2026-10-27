@@ -13,6 +13,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../l10n/season_labels.dart';
+import '../../widgets/player_actions_sheet.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
   const PvpSeasonScreen({super.key});
@@ -534,7 +535,14 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
               );
               final color = Color(league.colorValue);
 
-              return Container(
+              return GestureDetector(
+                // Report or block a player from the friends ranking.
+                onTap: () => showPlayerActions(
+                  context,
+                  uid: player.uid,
+                  name: player.username,
+                ),
+                child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isMe
@@ -597,7 +605,7 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
                     ),
                   ],
                 ),
-              );
+              ));
             },
           ),
         );
@@ -683,7 +691,14 @@ class _LeaderboardListState extends State<_LeaderboardList> {
             final matches = wins + losses + draws;
             final color = Color(league.colorValue);
 
-            return Container(
+            return GestureDetector(
+              // Report or block a player from the ranking.
+              onTap: () => showPlayerActions(
+                context,
+                uid: doc.id,
+                name: username,
+              ),
+              child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isMe
@@ -739,7 +754,7 @@ class _LeaderboardListState extends State<_LeaderboardList> {
                   if (!isMe) AddFriendButton(targetUid: doc.id),
                 ],
               ),
-            );
+            ));
           },
         );
       },

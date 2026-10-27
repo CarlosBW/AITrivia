@@ -5631,6 +5631,126 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Recompensa de liga semanal'**
   String get weeklyRewardGenericBonus;
+
+  /// No description provided for @playerActionsReport.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar jugador'**
+  String get playerActionsReport;
+
+  /// No description provided for @playerActionsBlock.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear jugador'**
+  String get playerActionsBlock;
+
+  /// No description provided for @playerActionsUnblock.
+  ///
+  /// In es, this message translates to:
+  /// **'Desbloquear jugador'**
+  String get playerActionsUnblock;
+
+  /// No description provided for @reportPlayerTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportar a {name}'**
+  String reportPlayerTitle(String name);
+
+  /// No description provided for @reportPlayerSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué pasó? Revisamos cada reporte.'**
+  String get reportPlayerSubtitle;
+
+  /// No description provided for @reportReasonOffensiveName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre ofensivo'**
+  String get reportReasonOffensiveName;
+
+  /// No description provided for @reportReasonCheating.
+  ///
+  /// In es, this message translates to:
+  /// **'Hace trampa'**
+  String get reportReasonCheating;
+
+  /// No description provided for @reportReasonSpam.
+  ///
+  /// In es, this message translates to:
+  /// **'Spam o acoso'**
+  String get reportReasonSpam;
+
+  /// No description provided for @reportReasonOther.
+  ///
+  /// In es, this message translates to:
+  /// **'Otro motivo'**
+  String get reportReasonOther;
+
+  /// No description provided for @reportDetailsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuéntanos más (opcional)'**
+  String get reportDetailsHint;
+
+  /// No description provided for @reportSend.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar reporte'**
+  String get reportSend;
+
+  /// No description provided for @reportSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Gracias. Revisaremos el reporte.'**
+  String get reportSent;
+
+  /// No description provided for @blockPlayerTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Bloquear a {name}?'**
+  String blockPlayerTitle(String name);
+
+  /// No description provided for @blockPlayerBody.
+  ///
+  /// In es, this message translates to:
+  /// **'No podrá enviarte solicitudes de amistad, invitaciones ni retos, y no te tocará como rival en Buscar rival. Si son amigos, dejarán de serlo. No se le avisa.'**
+  String get blockPlayerBody;
+
+  /// No description provided for @blockPlayerConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Bloquear'**
+  String get blockPlayerConfirm;
+
+  /// No description provided for @playerBlocked.
+  ///
+  /// In es, this message translates to:
+  /// **'{name} está bloqueado.'**
+  String playerBlocked(String name);
+
+  /// No description provided for @playerUnblocked.
+  ///
+  /// In es, this message translates to:
+  /// **'{name} ya no está bloqueado.'**
+  String playerUnblocked(String name);
+
+  /// No description provided for @blockedPlayersTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugadores bloqueados'**
+  String get blockedPlayersTitle;
+
+  /// No description provided for @blockedPlayersEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No has bloqueado a nadie.'**
+  String get blockedPlayersEmpty;
+
+  /// No description provided for @usernameNotAllowed.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese nombre no está permitido. Elige otro.'**
+  String get usernameNotAllowed;
 }
 
 class _AppLocalizationsDelegate

@@ -37,6 +37,10 @@ AndroidNotificationChannel get triviaChannel {
 final FlutterLocalNotificationsPlugin localNotifications =
     FlutterLocalNotificationsPlugin();
 
+// Called from native code in its own isolate, so a release build's tree
+// shaking can't see it's used: without the pragma it's stripped, and a
+// push arriving with the app closed hits "must be annotated".
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

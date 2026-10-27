@@ -179,6 +179,11 @@ Todas las cuentas nacen anónimas, y una cuenta anónima se pierde al reinstalar
 
 ## 9. Cosas ya resueltas en este repo (para tu referencia)
 
+- **Seguridad entre jugadores** (2026-10-27), lo que piden Apple (regla 1.2) y Google Play para apps donde los jugadores se ven entre sí:
+  - Filtro de nombres de usuario (`functions/src/player_safety.ts`): insultos en español e inglés, términos de odio y sexuales, y nombres que pasan por oficiales (admin, soporte, triviaia…). La pantalla de elegir nombre avisa antes (`checkUsername`), y si alguien lo salta, `enforceUsernamePolicy` le devuelve el nombre por defecto. Es una primera barrera, no completa: lo que pase va por los reportes.
+  - **Reportar jugador** (`reportPlayer`): desde amigos, búsqueda, clasificación PvP, buscar rival por turnos y el historial de partidas del perfil. Los reportes quedan en `player_reports` (un documento por quien reporta y reportado, con el motivo, el comentario y el nombre que tenía), con un límite de 20 por día. Nadie los lee desde la app: se revisan en la consola de Firestore.
+  - **Bloquear jugador** (`blockPlayer`/`unblockPlayer`): termina la amistad, declina invitaciones pendientes y el servidor rechaza solicitudes de amistad, retos por turnos y revanchas entre ellos; en Buscar rival en vivo no se emparejan. La lista está en Perfil → Jugadores bloqueados.
+- **Versión de tienda probada en el emulador** (2026-10-27, `flutter run --release`). Encontró dos fallos que solo existen ahí: el manejador de push en segundo plano sin `@pragma('vm:entry-point')` (las notificaciones con la app cerrada no se procesaban) y la app cerrándose al instalar o reiniciar el teléfono porque R8 borraba lo que `flutter_local_notifications` necesita para el recordatorio diario (`android/app/proguard-rules.pro`). Recorridos sin fallos: Inicio, Amigos y el menú de reportar/bloquear, un nivel de Solo y la Tienda.
 - Metadata cosmética (nombre "TriviaIA" en label/manifest, no el `applicationId` final).
 - Firma release por `key.properties` en vez de la debug key (ver punto 4 para lo que falta de tu lado).
 - El token FCM ya no se imprime en builds release (`main.dart`): iba a logcat, donde cualquier app con permiso de lectura de logs podía leerlo.

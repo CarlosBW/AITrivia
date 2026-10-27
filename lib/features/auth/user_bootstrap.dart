@@ -199,8 +199,10 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
 
       'hasSeenOnboarding': hasSeenOnboarding,
 
-      'languageCode': data['languageCode'] ??
-          LocaleController.instance.locale.value.languageCode,
+      // The language the app is showing, every launch: the server writes
+      // its messages and notifications in this one, and a stored value
+      // that missed a change (switched offline) kept them in the other.
+      'languageCode': LocaleController.instance.locale.value.languageCode,
 
       'updatedAt': FieldValue.serverTimestamp(),
     },

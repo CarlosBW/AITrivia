@@ -50,11 +50,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "1049545801330-4u13m18mpivue009m9jtmm14fk83a0mi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pe.massivedynamics.triviaia",
+            "certificate_hash": "932887852f6eeee3b6f0504438f0df12bb6050a4"
+          }
+        },
+        {
           "client_id": "1049545801330-8kuqc7rhr3qr2s7rkhc2k96ko2kolmmn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "pe.massivedynamics.triviaia",
             "certificate_hash": "8f4fa6886a8d8ec91863d8478c13c30f2a332a9e"
+          }
+        },
+        {
+          "client_id": "1049545801330-jn56lbkpqvup41p8lbd5m8vdnvi42m1a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pe.massivedynamics.triviaia",
+            "certificate_hash": "168dd9d000d922952e58a7717d7538fcfdb93204"
           }
         },
         {

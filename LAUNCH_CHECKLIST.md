@@ -133,10 +133,13 @@ La tienda tiene dos mitades que dependen de cosas distintas: los temas se compra
   - Cualquier fallo deja la compra pendiente para que la tienda la reentregue en el próximo arranque.
   - La lógica está en `functions/src/coin_purchases.ts`, con tests.
 - [x] Verificación para **App Store** (2026-10-25, sin desplegar ni probar contra Apple): StoreKit 2 entrega la transacción firmada (JWS) y `verifyCoinPurchase` la comprueba en el servidor, sin llamar a Apple ni necesitar claves: la cadena de certificados tiene que terminar en Apple Root CA - G3 (huella fijada en `functions/src/app_store_jws.ts`), con las marcas de Apple en el intermedio y en la hoja, y la firma, la app, el producto y que no esté reembolsada. El registro en `coin_purchases` va por el id de transacción de Apple. Las compras de sandbox (TestFlight y la revisión de Apple) se acreditan marcadas `test: true`.
-- [ ] Faltan pasos que dependen de las cuentas del punto 4:
-  - Crear en Play Console (y App Store Connect) los cuatro productos consumibles con los ids de `EconomyService.coinPacks`: `coins_pack_small`, `coins_pack_ai_topic`, `coins_pack_medium`, `coins_pack_large`.
-  - En Play Console → **Usuarios y permisos**, invitar a la cuenta de servicio de las funciones con permiso para ver datos financieros y pedidos. Debería ser `1049545801330-compute@developer.gserviceaccount.com`, la predeterminada de las funciones de 2.ª generación; confírmalo en Cloud Run, en el detalle de `verifycoinpurchase`. Sin esto Play responde 401/403 y las compras quedan pendientes, sin perderse.
-  - Desplegar `verifyCoinPurchase` y probar una compra de prueba con una cuenta de *license tester*. Esas compras se acreditan, marcadas `test: true` en `coin_purchases`.
+- [x] **Google Play** listo para cobrar (2026-11-01):
+  - Perfil de pagos de Massive Dynamics Peru S.A.C. creado, con el nombre `TriviaIA` en el estado de cuenta de la tarjeta, e inscripción en la **comisión del 15%** (grupo de cuentas con una sola cuenta; rige desde esa fecha).
+  - Los cuatro productos únicos creados y activos (`coins_pack_small`, `coins_pack_ai_topic`, `coins_pack_medium`, `coins_pack_large`), con la opción de compra `buy`, sin permitir varias unidades por transacción (el servidor acredita un paquete por compra) y precios de US$ 0.99 / 4.99 / 9.99 / 19.99 convertidos a cada país.
+  - La cuenta de servicio `1049545801330-compute@developer.gserviceaccount.com` invitada con *View app information* y *View financial data* (sin reembolsos), y la *Google Play Android Developer API* activada en `trivia-ia-app`.
+  - Testers de licencia: la lista de correos de la prueba interna.
+- [ ] Falta el **método de cobro** (cuenta bancaria de la empresa) en el perfil de pagos, para recibir las ganancias.
+- [ ] **Compra de prueba en un teléfono**: instalar desde el link de la prueba interna con una cuenta de la lista, comprar 100 monedas con la tarjeta de prueba y comprobar que se acreditan (en `coin_purchases` queda `test: true`). Si no se acreditan, lo más probable es que el permiso de la cuenta de servicio aún no se haya propagado (hasta 24 h); la compra queda pendiente y se acredita al volver a abrir la app.
   - En iOS: firmar el acuerdo de **Apps de pago** en App Store Connect (con datos bancarios y fiscales), crear los cuatro productos y probar con una cuenta de sandbox desde TestFlight.
 
 **Limpieza antes de lanzar**

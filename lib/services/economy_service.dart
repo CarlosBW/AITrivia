@@ -56,7 +56,7 @@ class EconomyService {
   static const int aiQuestionsPerLevel = 10;
   static const int aiGenerationBufferLevels = 2;
 
-  static const int aiInitialGeneratedLevels = 2;
+  static const int aiInitialGeneratedLevels = 1;
 
   // ============================================================
   // SOLO REWARDS

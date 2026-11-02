@@ -275,9 +275,9 @@ class AiTopicService {
       final result = await FirebaseFunctions.instance
           .httpsCallable(
         'createAiTopic',
-        // Creating a topic generates two levels of real questions, roughly
-        // 30s each. At 30s the caller gave up mid-generation and surfaced
-        // an error for a topic that then finished creating anyway.
+        // Creating a topic generates the first level of real questions,
+        // roughly 30s. At 30s the caller gave up mid-generation and
+        // surfaced an error for a topic that then finished creating anyway.
         options: HttpsCallableOptions(timeout: const Duration(seconds: 150)),
       )
           .call({
@@ -285,7 +285,11 @@ class AiTopicService {
         if (fromPoolId != null) 'fromPoolId': fromPoolId,
       });
 
-      return (result.data as Map)['topicId'].toString();
+      final topicId = (result.data as Map)['topicId'].toString();
+      // Only level 1 exists yet: start level 2 now, while the player
+      // reads the topic and plays level 1, instead of when level 1 opens.
+      unawaited(ensureAiTopicBuffer(topicId: topicId, completedLevel: 0));
+      return topicId;
     } on FirebaseFunctionsException catch (e) {
       throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotCreateTopic));
     }

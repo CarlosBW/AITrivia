@@ -8,7 +8,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError, FunctionsErrorCode} from
   "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
 import * as crypto from "crypto";
 import {
   aiTopicPoolId,
@@ -135,6 +135,20 @@ const db = admin.firestore();
 // Set via `firebase functions:secrets:set ANTHROPIC_API_KEY`. Only bound to
 // the callables that actually call Claude (see their `secrets:` option).
 const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
+
+/**
+ * A Claude client, with the SDK loaded on first use. Every function in
+ * this file starts from the same module, so a top-level import made each
+ * cold start load the SDK — even the many that never call Claude.
+ * @return {Promise<Anthropic>} The client.
+ */
+async function anthropicClient(): Promise<Anthropic> {
+  // require, not import(): the SDK's ESM typings don't match the CommonJS
+  // build this file compiles to.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const AnthropicSdk: typeof Anthropic = require("@anthropic-ai/sdk").default;
+  return new AnthropicSdk({apiKey: anthropicApiKey.value()});
+}
 const AI_SECRETS = [anthropicApiKey];
 
 /**
@@ -5489,7 +5503,11 @@ const AI_LEVELS_PER_TOPIC = 10;
 // "don't repeat these" list is no longer a sample.
 const AI_AVOID_LIST_MAX_QUESTIONS = avoidListCapacity(AI_LEVELS_PER_TOPIC);
 const AI_QUESTIONS_PER_LEVEL = 10;
-const AI_INITIAL_GENERATED_LEVELS = 2;
+// Only level 1 is generated before createAiTopic answers: each level is
+// ~30s of Claude, and the player can't reach level 2 before finishing 1.
+// The app asks for the rest right after (ensureAiTopicLevelsGenerated),
+// and ensureSoloLevelSession still generates a level that isn't ready.
+const AI_INITIAL_GENERATED_LEVELS = 1;
 const AI_GENERATION_BUFFER_LEVELS = 2;
 const AI_MODEL = "claude-haiku-5-5";
 
@@ -7316,7 +7334,7 @@ async function requestAiQuestionsFromClaude(
     throw new TopicBlockedError("Topic previously blocked.");
   }
 
-  const client = new Anthropic({apiKey: anthropicApiKey.value()});
+  const client = await anthropicClient();
   const outputLanguage = pickText(languageCode, "Spanish", "English");
   const difficulty = aiLevelDifficultyLabel(levelNumber, languageCode);
 
@@ -8345,7 +8363,7 @@ export const suggestAiTopicTitles = onCall({
   // (or starving it, which charging it there would do).
   await consumeAiBudget(uid, "suggestions", 1);
 
-  const client = new Anthropic({apiKey: anthropicApiKey.value()});
+  const client = await anthropicClient();
 
   const prompt = "A player typed the following trivia topic request, " +
     "which may contain typos or be too vague to generate good trivia " +
@@ -8449,8 +8467,8 @@ export const suggestAiTopicTitles = onCall({
 
 export const createAiTopic = onCall({
   secrets: AI_SECRETS,
-  // Generates AI_INITIAL_GENERATED_LEVELS levels at roughly 30s each, so
-  // the 60s default sat exactly on the edge of the work it has to do.
+  // Generates AI_INITIAL_GENERATED_LEVELS levels at roughly 30s each,
+  // which left too little room under the 60s default.
   timeoutSeconds: 300,
 }, async (request) => {
   const uid = request.auth?.uid;

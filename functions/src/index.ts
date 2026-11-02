@@ -43,6 +43,7 @@ import {
   previousDateId,
   weekIdForDateId,
 } from "./daily_challenge_dates";
+import {dailyAnswerTooLate, dailyRemainingMs} from "./daily_clock";
 import {
   AI_QUESTIONS_PER_SESSION,
   avoidListCapacity,
@@ -4781,8 +4782,12 @@ export const answerDailyQuestion = onCall(async (request) => {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(dailyRef);
     const data = snap.data();
+    // The reasons let the app close the run and save it instead of
+    // showing a generic error the player can do nothing about.
     if (!data || data.played === true) {
-      throw new HttpsError("failed-precondition", "No open daily.");
+      throw new HttpsError("failed-precondition", "No open daily.", {
+        reason: "daily_closed",
+      });
     }
     const keyed = await keyedQuestions(dailyRef, data, tx);
     if (questionIndex >= keyed.length) {
@@ -4790,21 +4795,27 @@ export const answerDailyQuestion = onCall(async (request) => {
     }
     const correctIndex = safeInt(keyed[questionIndex]?.answerIndex, -1);
 
+    const startedAt = data.startedAt as admin.firestore.Timestamp | undefined;
+    const startedAtMs = startedAt?.toMillis();
+    const durationMs = safeInt(data.durationSeconds, DAILY_DURATION_SECONDS) *
+      1000;
+    const now = Date.now();
+    // Sent with every verdict for the app to set its clock by.
+    const remainingMs = dailyRemainingMs(startedAtMs, durationMs, now);
+
     const banked = (data.answers && typeof data.answers === "object") ?
       data.answers as Record<string, unknown> : {};
     const key = String(questionIndex);
     if (Object.prototype.hasOwnProperty.call(banked, key)) {
       const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
-      return {correct: stored === correctIndex, correctIndex};
+      return {correct: stored === correctIndex, correctIndex, remainingMs};
     }
 
-    const startedAt = data.startedAt as admin.firestore.Timestamp | undefined;
-    const durationMs = safeInt(data.durationSeconds, DAILY_DURATION_SECONDS) *
-      1000;
-    if (startedAt &&
-        Date.now() > startedAt.toMillis() + durationMs +
-          DAILY_ANSWER_GRACE_MS) {
-      throw new HttpsError("failed-precondition", "Time is up.");
+    if (dailyAnswerTooLate(startedAtMs, durationMs, now,
+      DAILY_ANSWER_GRACE_MS)) {
+      throw new HttpsError("failed-precondition", "Time is up.", {
+        reason: "daily_time_up",
+      });
     }
 
     const correct = selectedIndex === correctIndex;
@@ -4812,7 +4823,7 @@ export const answerDailyQuestion = onCall(async (request) => {
       answers: {[key]: selectedIndex},
       results: {[key]: {correct, correctIndex}},
     }, {merge: true});
-    return {correct, correctIndex};
+    return {correct, correctIndex, remainingMs};
   });
 });
 

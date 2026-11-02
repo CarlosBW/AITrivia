@@ -15,12 +15,24 @@ class AnswerVerdict {
   /// The life balance after this answer, when the mode spends lives.
   final Map<String, dynamic>? lifeState;
 
+  /// What is left of a timed run by the server's clock, when the mode has
+  /// one (the Daily Challenge).
+  final int? remainingMs;
+
   const AnswerVerdict({
     required this.correct,
     required this.correctIndex,
     this.lifeLost = false,
     this.lifeState,
+    this.remainingMs,
   });
+}
+
+/// The Daily Challenge run is over on the server — its clock ran out, or it
+/// was already saved — so the answer can't count. The run should be
+/// closed and saved rather than retried.
+class DailyClosedException implements Exception {
+  const DailyClosedException();
 }
 
 /// The player can't afford to answer: out of lives, or not enough for a
@@ -57,9 +69,18 @@ class AnswerService {
       if (details is Map && details['reason'] == 'no_lives') {
         throw const NoLivesException();
       }
+      if (details is Map &&
+          (details['reason'] == 'daily_time_up' ||
+              details['reason'] == 'daily_closed')) {
+        throw const DailyClosedException();
+      }
       rethrow;
     }
   }
+
+  /// Codes that mean the call may never have reached the server, or its
+  /// reply never came back.
+  static const _retryableCodes = {'unavailable', 'deadline-exceeded', 'internal'};
 
   AnswerVerdict _verdict(Map<String, dynamic> data, {bool withLives = true}) {
     return AnswerVerdict(
@@ -69,6 +90,7 @@ class AnswerService {
       lifeState: withLives && data.containsKey('lifeUnits')
           ? LifeService.instance.stateFromCallableResponse(data)
           : null,
+      remainingMs: (data['remainingMs'] as num?)?.toInt(),
     );
   }
 
@@ -92,19 +114,28 @@ class AnswerService {
   }
 
   /// The Daily Challenge, which costs no lives.
+  ///
+  /// A call lost on the way is sent once more before giving up: the clock
+  /// is running, and the server answers a repeat with the verdict it
+  /// already banked, so a second try can't count an answer twice.
   Future<AnswerVerdict> answerDaily({
     required String dateId,
     required int questionIndex,
     required int selectedIndex,
   }) async {
-    return _verdict(
-      await _call('answerDailyQuestion', {
-        'dateId': dateId,
-        'questionIndex': questionIndex,
-        'selectedIndex': selectedIndex,
-      }),
-      withLives: false,
-    );
+    final data = {
+      'dateId': dateId,
+      'questionIndex': questionIndex,
+      'selectedIndex': selectedIndex,
+    };
+    Map<String, dynamic> response;
+    try {
+      response = await _call('answerDailyQuestion', data);
+    } on FirebaseFunctionsException catch (e) {
+      if (!_retryableCodes.contains(e.code)) rethrow;
+      response = await _call('answerDailyQuestion', data);
+    }
+    return _verdict(response, withLives: false);
   }
 
   /// The Weekly Topic round drawn by `drawWeeklyTopicRound`.

@@ -2604,6 +2604,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dailyAnswerSendFailed =>
+      'Your answer didn\'t go through. Tap it again.';
+
+  @override
   String get homeLivesUnavailable => 'Couldn\'t load your lives.';
 
   @override

@@ -1501,6 +1501,7 @@
       "total": {"type": "int"}
     }
   },
+  "dailyAnswerSendFailed": "No se pudo enviar tu respuesta. Tócala de nuevo.",
   "homeLivesUnavailable": "No se pudieron cargar tus vidas.",
   "createAiTopicSearchingButton": "Buscando temas similares...",
   "createAiTopicSuggestingButton": "Pidiendo sugerencias a la IA...",

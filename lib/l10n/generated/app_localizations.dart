@@ -4354,6 +4354,12 @@ abstract class AppLocalizations {
   /// **'{passed}/{total} niveles'**
   String soloCategoryLevels(int passed, int total);
 
+  /// No description provided for @dailyAnswerSendFailed.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo enviar tu respuesta. Tócala de nuevo.'**
+  String get dailyAnswerSendFailed;
+
   /// No description provided for @homeLivesUnavailable.
   ///
   /// In es, this message translates to:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/answer_service.dart';
+import '../../services/daily_clock.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
@@ -39,6 +40,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   final List<Map<String, dynamic>> _answers = [];
 
   int _timeLeft = 120;
+  int _durationSeconds = 120;
   Timer? _timer;
   bool _loading = true;
   /// Why today's challenge couldn't be opened, e.g. the device's date is
@@ -164,6 +166,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
       _dateId = session.dateId;
       _questions = session.questions;
       _timeLeft = session.remainingSeconds;
+      _durationSeconds = session.durationSeconds;
       _answers
         ..clear()
         ..addAll(session.answers);
@@ -217,6 +220,17 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
         questionIndex: questionIndex,
         selectedIndex: index,
       );
+    } on DailyClosedException {
+      if (!mounted) return;
+      // The server's clock is out even if this one isn't: save the run
+      // rather than let every tap fail until the countdown catches up.
+      setState(() {
+        _shownQuestionIndex = null;
+        _selectedIndex = null;
+        _awaitingVerdict = false;
+      });
+      await _finish();
+      return;
     } catch (e) {
       if (!mounted) return;
       // The tap can be tried again; one the server did get comes back with
@@ -226,9 +240,12 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
         _selectedIndex = null;
         _awaitingVerdict = false;
       });
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(userFacingError(AppLocalizations.of(context), e)),
+          content: Text(
+            userFacingError(l10n, e, fallback: l10n.dailyAnswerSendFailed),
+          ),
         ),
       );
       return;
@@ -244,6 +261,12 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
 
     setState(() {
       _awaitingVerdict = false;
+      // The server's count, not this one: see resyncedSecondsLeft.
+      _timeLeft = resyncedSecondsLeft(
+        current: _timeLeft,
+        serverRemainingMs: verdict.remainingMs,
+        durationSeconds: _durationSeconds,
+      );
       _revealedIndex = verdict.correctIndex;
       _correctIndexByQuestion[questionIndex] = verdict.correctIndex;
       _flashColor = isCorrect

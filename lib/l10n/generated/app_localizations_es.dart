@@ -2627,6 +2627,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get dailyAnswerSendFailed =>
+      'No se pudo enviar tu respuesta. Tócala de nuevo.';
+
+  @override
   String get homeLivesUnavailable => 'No se pudieron cargar tus vidas.';
 
   @override

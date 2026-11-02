@@ -21,7 +21,6 @@
   "homeActionTimeout": "The action took too long.",
   "homeCoins": "Coins",
   "homeXp": "XP",
-  "homeFreeTopic": "Free topic",
   "homeAlreadyPlayedDaily": "You already played today's Daily Challenge.",
   "homeMoreWaysToPlay": "More ways to play",
   "homeWeeklyChallengeReward": "Weekly Challenge • Reward!",
@@ -82,7 +81,6 @@
       "days": {"type": "int"}
     }
   },
-  "homeReward": "Reward!",
 
   "profileTitle": "Player Profile",
   "profileUsernameHelper": "Must be unique. Use 3 to 20 characters.",
@@ -313,24 +311,9 @@
   "soloAllCompletedPvpButton": "Go to PvP",
   "soloLifeRecovered": "❤️ Life recovered",
   "soloNotEnoughCoins": "❌ Not enough coins",
-  "soloProgressLevels": "Progress: {completed} / {total} levels",
-  "@soloProgressLevels": {
-    "placeholders": {
-      "completed": {"type": "int"},
-      "total": {"type": "int"}
-    }
-  },
-  "soloViewLevels": "View levels",
   "soloStatusCompleted": "Completed",
   "soloStatusInProgress": "In progress",
   "soloStatusNew": "New",
-  "soloStartButton": "Start",
-  "soloContinueLevel": "Level {level}",
-  "@soloContinueLevel": {
-    "placeholders": {
-      "level": {"type": "int"}
-    }
-  },
 
   "levelSelectNoLevelsYet": "This category doesn't have levels available yet.",
   "levelSelectPlayLastLevel": "Play last level",
@@ -1431,6 +1414,52 @@
   "createAiTopicExistingBadgeTooltip": "Existing topic, discounted",
   "createAiTopicNewBadgeTooltip": "New topic, will be generated with AI",
   "createAiTopicFreeLabel": "Free",
+  "homeLivesLabel": "Lives",
+  "homeResumeTitle": "Keep going in {name}",
+  "@homeResumeTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeResumeSubtitle": "Your next challenge: level {level}",
+  "@homeResumeSubtitle": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "homeResumeAction": "Play level {level}",
+  "@homeResumeAction": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "homeRetryTitle": "Try again",
+  "homeRetrySubtitle": "{name} · Level {level}: {correct}/{total} correct",
+  "@homeRetrySubtitle": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"},
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "homeDailySubtitle": "Beat the clock: answer as many as you can",
+  "homePlayAction": "Play",
+  "homeFindRivalTitle": "Find a rival",
+  "homeFindRivalSubtitle": "Live or turn-based 1v1 matches",
+  "homeFreeTopicPasses": "{count, plural, =1{1 free topic} other{{count} free topics}}",
+  "@homeFreeTopicPasses": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "soloCategoryLevels": "{passed}/{total} levels",
+  "@soloCategoryLevels": {
+    "placeholders": {
+      "passed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "homeLivesUnavailable": "Couldn't load your lives.",
   "createAiTopicSearchingButton": "Searching similar topics...",
   "createAiTopicSuggestingButton": "Asking the AI for suggestions...",

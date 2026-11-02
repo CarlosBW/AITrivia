@@ -62,9 +62,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeXp => 'XP';
 
   @override
-  String get homeFreeTopic => 'Tema libre';
-
-  @override
   String get homeAlreadyPlayedDaily => 'Ya jugaste el reto diario de hoy.';
 
   @override
@@ -197,9 +194,6 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get homeReward => '¡Recompensa!';
 
   @override
   String get profileTitle => 'Perfil de jugador';
@@ -726,14 +720,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get soloNotEnoughCoins => '❌ No tienes suficientes monedas';
 
   @override
-  String soloProgressLevels(int completed, int total) {
-    return 'Progreso: $completed / $total niveles';
-  }
-
-  @override
-  String get soloViewLevels => 'Ver niveles';
-
-  @override
   String get soloStatusCompleted => 'Completado';
 
   @override
@@ -741,14 +727,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get soloStatusNew => 'Nuevo';
-
-  @override
-  String get soloStartButton => 'Empezar';
-
-  @override
-  String soloContinueLevel(int level) {
-    return 'Nivel $level';
-  }
 
   @override
   String get levelSelectNoLevelsYet =>
@@ -2587,6 +2565,60 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createAiTopicFreeLabel => 'Gratis';
+
+  @override
+  String get homeLivesLabel => 'Vidas';
+
+  @override
+  String homeResumeTitle(String name) {
+    return 'Sigue en $name';
+  }
+
+  @override
+  String homeResumeSubtitle(int level) {
+    return 'Tu próximo reto: nivel $level';
+  }
+
+  @override
+  String homeResumeAction(int level) {
+    return 'Jugar nivel $level';
+  }
+
+  @override
+  String get homeRetryTitle => 'Vuelve a intentarlo';
+
+  @override
+  String homeRetrySubtitle(String name, int level, int correct, int total) {
+    return '$name · Nivel $level: $correct/$total aciertos';
+  }
+
+  @override
+  String get homeDailySubtitle => 'Contrarreloj: responde todas las que puedas';
+
+  @override
+  String get homePlayAction => 'Jugar';
+
+  @override
+  String get homeFindRivalTitle => 'Buscar rival';
+
+  @override
+  String get homeFindRivalSubtitle => 'Partidas 1 vs 1 en vivo o por turnos';
+
+  @override
+  String homeFreeTopicPasses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count temas gratis',
+      one: '1 tema gratis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soloCategoryLevels(int passed, int total) {
+    return '$passed/$total niveles';
+  }
 
   @override
   String get homeLivesUnavailable => 'No se pudieron cargar tus vidas.';

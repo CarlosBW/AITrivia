@@ -6,14 +6,15 @@ import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../versus/pvp_screen.dart';
-import 'level_play_screen.dart';
 import 'level_select_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/locale_controller.dart';
 import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
+import '../../services/solo_progress.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/category_illustration.dart';
 import '../../l10n/lives_format.dart';
 
 class SoloScreen extends StatefulWidget {
@@ -82,63 +83,24 @@ class _SoloScreenState extends State<SoloScreen> {
 
           final progressData = progressSnap.data() ?? {};
 
-          final completedLevels =
+          final attempted =
               (progressData['completedLevels'] as List<dynamic>? ?? [])
-                  .map((e) => (e as num).toInt())
-                  .toSet();
+                  .isNotEmpty;
 
-          // Same passedLevels-or-migrate-from-levelStats fallback as
-          // level_select_screen.dart, for progress docs saved before the
-          // passedLevels field existed.
-          final levelStats = Map<String, dynamic>.from(
-            progressData['levelStats'] as Map? ?? {},
-          );
-
-          final migratedPassedLevels = <int>{};
-          for (final entry in levelStats.entries) {
-            final level = int.tryParse(entry.key);
-            final stat = Map<String, dynamic>.from(entry.value as Map? ?? {});
-            final percent = ((stat['percent'] ?? 0.0) as num).toDouble();
-
-            if (level != null && percent >= 0.4) {
-              migratedPassedLevels.add(level);
-            }
-          }
-
-          final passedLevels = (progressData['passedLevels'] as List<dynamic>?)
-                  ?.map((e) => (e as num).toInt())
-                  .toSet() ??
-              migratedPassedLevels;
-
-          final completedCount = completedLevels.length;
+          // Passed levels, as the level list counts them: a level that was
+          // only attempted doesn't move the bar.
+          final soloProgress = SoloProgress.fromDoc(progressData, levelCount);
+          final completedCount = soloProgress.passedCount;
           final progress = levelCount == 0
               ? 0.0
               : (completedCount / levelCount).clamp(0.0, 1.0);
-
-          // Uses passedLevels (actually passed >=40%), not completedLevels
-          // (attempted, pass or fail), so Continue can't drop a player past
-          // a level they failed — matching level_select_screen.dart's
-          // lock/unlock logic, which also keys off passedLevels.
-          int nextLevel = 1;
-          if (passedLevels.isNotEmpty) {
-            final highestPassed = passedLevels.reduce(
-              (a, b) => a > b ? a : b,
-            );
-            nextLevel = highestPassed + 1;
-          }
-
-          if (nextLevel > levelCount) {
-            nextLevel = levelCount;
-          }
-
-          final completedAll = progressData['completedAllLevels'] == true ||
-              completedCount >= levelCount;
+          final completedAll = soloProgress.completedAll;
 
           _SoloCategoryStatus status;
 
           if (completedAll) {
             status = _SoloCategoryStatus.completed;
-          } else if (completedCount > 0) {
+          } else if (attempted) {
             status = _SoloCategoryStatus.inProgress;
           } else {
             status = _SoloCategoryStatus.fresh;
@@ -150,8 +112,6 @@ class _SoloScreenState extends State<SoloScreen> {
             levelCount: levelCount,
             completedCount: completedCount,
             progress: progress,
-            nextLevel: nextLevel,
-            completedAll: completedAll,
             status: status,
           );
         }),
@@ -306,39 +266,6 @@ class _SoloScreenState extends State<SoloScreen> {
     await _loadCategoriesAndProgress();
   }
 
-  Future<void> _continueLevel(_SoloCategoryItem item) async {
-    final canPlay = await _ensureHasLives();
-    if (!canPlay) return;
-
-    if (!mounted) return;
-
-    if (item.completedAll) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LevelSelectScreen(
-            categoryId: item.categoryId,
-            categoryName: item.name,
-          ),
-        ),
-      );
-    } else {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LevelPlayScreen(
-            categoryId: item.categoryId,
-            categoryName: item.name,
-            levelNumber: item.nextLevel,
-          ),
-        ),
-      );
-    }
-
-    if (!mounted) return;
-    await _loadCategoriesAndProgress();
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -423,42 +350,43 @@ class _SoloScreenState extends State<SoloScreen> {
 
     final allCompleted = _categories.isNotEmpty &&
         _categories.every((c) => c.status == _SoloCategoryStatus.completed);
-    final bannerOffset = allCompleted ? 1 : 0;
 
-    return ListView.separated(
+    final busy = _isNavigating || _buyingLife;
+
+    return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: _categories.length + 1 + bannerOffset,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        if (i == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              l10n.soloFixedTopics,
-              style: context.heading(22),
-            ),
-          );
-        }
-
-        if (allCompleted && i == 1) {
-          return _AllCategoriesCompletedBanner(l10n: l10n);
-        }
-
-        final item = _categories[i - 1 - bannerOffset];
-
-        return _CategoryCard(
-          item: item,
-          accent: CategoryAccent.forIndex(i - 1 - bannerOffset),
-          disabled: _isNavigating || _buyingLife,
-          onOpenLevels: () {
-            _safeNavigate(() => _openLevelSelect(item));
+      children: [
+        Text(l10n.soloFixedTopics, style: context.heading(22)),
+        const SizedBox(height: 12),
+        if (allCompleted) ...[
+          _AllCategoriesCompletedBanner(l10n: l10n),
+          const SizedBox(height: 12),
+        ],
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: _categories.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.9,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemBuilder: (context, i) {
+            final item = _categories[i];
+            return _CategoryCard(
+              item: item,
+              accent: CategoryAccent.forIndex(i),
+              disabled: busy,
+              onOpenLevels: () {
+                _safeNavigate(() => _openLevelSelect(item));
+              },
+            );
           },
-          onContinue: () {
-            _safeNavigate(() => _continueLevel(item));
-          },
-        );
-      },
+        ),
+      ],
     );
   }
 }
@@ -550,8 +478,6 @@ class _SoloCategoryItem {
   final int levelCount;
   final int completedCount;
   final double progress;
-  final int nextLevel;
-  final bool completedAll;
   final _SoloCategoryStatus status;
 
   const _SoloCategoryItem({
@@ -560,48 +486,8 @@ class _SoloCategoryItem {
     required this.levelCount,
     required this.completedCount,
     required this.progress,
-    required this.nextLevel,
-    required this.completedAll,
     required this.status,
   });
-}
-
-/// Best-effort icon per known category name/id, falling back to a generic
-/// quiz icon for AI-generated or unrecognized categories.
-IconData _iconForCategory(String categoryId, String name) {
-  final key = '$categoryId $name'.toLowerCase();
-
-  if (key.contains('cine') || key.contains('movie')) {
-    return Icons.movie_outlined;
-  }
-  if (key.contains('historia') || key.contains('history')) {
-    return Icons.account_balance_outlined;
-  }
-  if (key.contains('ciencia') || key.contains('science')) {
-    return Icons.science_outlined;
-  }
-  if (key.contains('geografia') ||
-      key.contains('geografía') ||
-      key.contains('geography')) {
-    return Icons.public_outlined;
-  }
-  if (key.contains('musica') || key.contains('música') || key.contains('music')) {
-    return Icons.music_note_outlined;
-  }
-  if (key.contains('arte') || key.contains('art')) {
-    return Icons.palette_outlined;
-  }
-  if (key.contains('libro') || key.contains('book')) {
-    return Icons.menu_book_outlined;
-  }
-  if (key.contains('videojuego') || key.contains('video game')) {
-    return Icons.sports_esports_outlined;
-  }
-  if (key.contains('deporte') || key.contains('sport')) {
-    return Icons.sports_soccer_outlined;
-  }
-
-  return Icons.quiz_outlined;
 }
 
 class _CategoryCard extends StatelessWidget {
@@ -609,14 +495,12 @@ class _CategoryCard extends StatelessWidget {
   final CategoryAccent accent;
   final bool disabled;
   final VoidCallback onOpenLevels;
-  final VoidCallback onContinue;
 
   const _CategoryCard({
     required this.item,
     required this.accent,
     required this.disabled,
     required this.onOpenLevels,
-    required this.onContinue,
   });
 
   String _statusLabel(AppLocalizations l10n) {
@@ -648,114 +532,121 @@ class _CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final statusColor = _statusColor(context);
+    final radius = BorderRadius.circular(context.radii.md);
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(context.radii.md),
-        onTap: disabled ? null : onOpenLevels,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
+    // The shadow sits on a box around the Material: Ink paints onto the
+    // Material, which clips it, and the blur came out as a grey wash.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: context.surfaces.shadowsOr([
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ]),
+      ),
+      child: Material(
+        color: colorScheme.surface,
+        borderRadius: radius,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: disabled ? null : onOpenLevels,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: context.surfaces.borderOr(null),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     decoration: BoxDecoration(
-                      color: context.tintOf(
-                        accent.progress,
-                        accent.background,
-                      ),
+                      color: context.tintOf(accent.progress, accent.background),
                       borderRadius: BorderRadius.circular(context.radii.sm),
-                      border: context.surfaces.borderOr(null),
-                      boxShadow: context.surfaces.shadowsOr(null),
                     ),
-                    child: Icon(
-                      _iconForCategory(item.categoryId, item.name),
-                      // The dark inks of the light theme vanish into a dark
-                      // wash; the brighter progress colour is the same hue.
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? accent.progress
-                          : accent.foreground,
-                      size: 20,
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: CategoryIllustration(
+                            categoryId: item.categoryId,
+                            name: item.name,
+                            size: 92,
+                          ),
+                        ),
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius:
+                                  BorderRadius.circular(context.radii.pill),
+                            ),
+                            child: Text(
+                              _statusLabel(l10n),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: readableInk(
+                                  statusColor,
+                                  colorScheme.surface,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      style: context.heading(18),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _statusColor(context).withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(context.radii.pill),
-                    ),
-                    child: Text(
-                      _statusLabel(l10n),
-                      style: TextStyle(
-                        color: _statusColor(context),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.soloProgressLevels(item.completedCount, item.levelCount),
-                style: const TextStyle(fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(context.radii.xs),
-                child: LinearProgressIndicator(
-                  value: item.progress,
-                  minHeight: 8,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHighest,
-                  valueColor: AlwaysStoppedAnimation(accent.progress),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: disabled ? null : onOpenLevels,
-                      icon: const Icon(Icons.map_outlined),
-                      label: Text(l10n.soloViewLevels),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: disabled ? null : onContinue,
-                      icon: Icon(
-                        item.completedAll
-                            ? Icons.check_circle_outline
-                            : Icons.play_arrow,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.heading(16),
                       ),
-                      label: Text(
-                        item.completedAll
-                            ? l10n.soloStatusCompleted
-                            : item.status == _SoloCategoryStatus.fresh
-                                ? l10n.soloStartButton
-                                : l10n.soloContinueLevel(item.nextLevel),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(context.radii.pill),
+                        child: LinearProgressIndicator(
+                          value: item.progress,
+                          minHeight: 6,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation(accent.progress),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.soloCategoryLevels(
+                          item.completedCount,
+                          item.levelCount,
+                        ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

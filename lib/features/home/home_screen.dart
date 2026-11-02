@@ -17,19 +17,25 @@ import '../../services/achievement_service.dart';
 import '../../services/avatar_service.dart';
 import '../../services/sfx_service.dart';
 import '../ai_topics/ai_topics_screen.dart';
+import '../shop/coin_shop_screen.dart';
+import '../solo/level_play_screen.dart';
+import '../../services/solo_progress_service.dart';
+import '../../l10n/lives_format.dart';
 import '../weekly/weekly_topic_screen.dart';
 import '../../widgets/guarded_navigation.dart';
-import '../../widgets/lives_card.dart';
-import '../../widgets/stat_chip.dart';
 import '../../widgets/section_label.dart';
-import '../../widgets/buy_coins_button.dart';
+import '../../widgets/category_illustration.dart';
+import '../../widgets/hero_card.dart';
 import '../../widgets/save_progress_reminder.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  /// Switches the shell to the PvP tab, for the "find a rival" card.
+  final VoidCallback? onFindRival;
+
+  const HomeScreen({super.key, this.onFindRival});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -39,16 +45,17 @@ class _HomeScreenState extends State<HomeScreen> {
   // One stream per StreamBuilder, held for the life of the screen. Home
   // rebuilds constantly (life timer, streak/login/achievement popups), and
   // building these inside `build()` re-subscribed all four every time.
-  // The two user-doc streams are separate on purpose: a Firestore stream
-  // feeds one listener, so each consumer gets its own.
+  // A Firestore stream feeds one listener, so the user doc has a single
+  // StreamBuilder and everything that reads it sits under it.
   late final _userDocForStats = FirebaseFirestore.instance
       .collection('users')
       .doc(uid)
       .snapshots();
-  late final _userDocForProfile = FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid)
-      .snapshots();
+
+  /// The "keep going" card's category; replaced on refresh and after
+  /// playing from it.
+  late Future<RecentSoloCategory?> _recentCategory =
+      SoloProgressService.instance.mostRecent();
   late final _achievements =
       AchievementService.instance.watchUserAchievements(uid: uid);
 
@@ -97,6 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _initLives();
     _checkPendingSeasonRewards();
     _startLifeTimer();
+    SoloProgressService.instance.revision.addListener(_reloadRecentCategory);
+  }
+
+  void _reloadRecentCategory() {
+    if (!mounted) return;
+    setState(() => _recentCategory = SoloProgressService.instance.mostRecent());
   }
 
   Future<void> _initLives() async {
@@ -214,7 +227,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshHome() async {
+    setState(() => _recentCategory = SoloProgressService.instance.mostRecent());
     await Future.wait([
+      _recentCategory,
       _syncLivesFromFirestore(),
       _checkPendingSeasonRewards(),
     ]);
@@ -381,6 +396,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _lifeTimer?.cancel();
+    SoloProgressService.instance.revision
+        .removeListener(_reloadRecentCategory);
     super.dispose();
   }
 
@@ -391,6 +408,98 @@ class _HomeScreenState extends State<HomeScreen> {
     final seconds = totalSeconds % 60;
 
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildLivesChip(AppLocalizations l10n) {
+    const heart = Color(0xFFFF4D5E);
+    final state = _lifeState;
+
+    if (_livesFailed) {
+      return _ResourceChip(
+        icon: Icons.favorite_rounded,
+        color: heart,
+        value: '–',
+        label: l10n.commonRetry,
+        onTap: _initLives,
+      );
+    }
+
+    if (_loadingLives || state == null) {
+      return _ResourceChip(
+        icon: Icons.favorite_rounded,
+        color: heart,
+        value: '–',
+        label: l10n.homeLivesLabel,
+      );
+    }
+
+    final units = state['lifeUnits'] as int;
+    final isFull = units >= (state['maxLifeUnits'] as int);
+
+    return _ResourceChip(
+      icon: Icons.favorite_rounded,
+      color: heart,
+      value: l10n.lives(units),
+      label: isFull
+          ? l10n.levelPlayLivesMax
+          : _formatCountdown(state['secondsToNextHalfLife']),
+    );
+  }
+
+  Future<void> _openDailyChallenge() async {
+    final l10n = AppLocalizations.of(context);
+
+    await _safeNavigate(() async {
+      final alreadyPlayed =
+          await DailyChallengeService.instance.hasPlayedToday(uid);
+
+      if (!mounted) return;
+
+      if (alreadyPlayed) {
+        final todayResult =
+            await DailyChallengeService.instance.getTodayResult(uid);
+
+        if (!mounted) return;
+
+        if (todayResult != null) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DailyChallengeResultScreen(result: todayResult),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.homeAlreadyPlayedDaily)),
+          );
+        }
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => DailyChallengeScreen(uid: uid)),
+      );
+
+      if (!mounted) return;
+      await _refreshHome();
+    });
+  }
+
+  /// Opens the level the "keep going" card offers. The level screen runs
+  /// its own lives check, so there's none here, and saving the level
+  /// reloads the card through [SoloProgressService.revision].
+  Future<void> _playRecent(RecentSoloCategory recent) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LevelPlayScreen(
+          categoryId: recent.categoryId,
+          categoryName: recent.name,
+          levelNumber: recent.resume.level,
+        ),
+      ),
+    );
   }
 
   @override
@@ -414,40 +523,13 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const SaveProgressReminder(),
-                _AiTopicCta(
-                  onTap: _isNavigating || _buyingLife
-                      ? null
-                      : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AiTopicsScreen(),
-                            ),
-                          );
-                        },
-                ),
-                const SizedBox(height: 18),
                 StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: _userDocForStats,
                   builder: (context, snap) {
-                    if (snap.hasError) {
-                      return Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          l10n.homeStatsErrorLoading(userFacingError(AppLocalizations.of(context), snap.error!)),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: context.appColors.danger),
-                        ),
-                      );
-                    }
-
-                    if (!snap.hasData) {
-                      return const LinearProgressIndicator();
-                    }
-
-                    final data = snap.data!.data() ?? {};
+                    final data = snap.data?.data() ?? {};
+                    final loaded = snap.hasData;
                     final coins = data['coins'] ?? 0;
-                    final passes = data['freeTopicPasses'] ?? 0;
+                    final passes = ((data['freeTopicPasses'] ?? 0) as num).toInt();
                     final xp = data['xp'] ?? 0;
                     final streak = ((data['dailyStreak'] ?? 0) as num).toInt();
 
@@ -459,178 +541,155 @@ class _HomeScreenState extends State<HomeScreen> {
                         ((data['loginStreakCelebrationCoins'] ?? 0) as num)
                             .toInt();
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
+                    if (loaded) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
 
-                      _handleStreakChange(streak);
-                      _handleAvatarUnlockChange(data);
-                      _handleLifeChange(data);
+                        _handleStreakChange(streak);
+                        _handleAvatarUnlockChange(data);
+                        _handleLifeChange(data);
 
-                      if (loginCelebrationPending) {
-                        _showLoginStreakCelebration(
-                          loginStreak,
-                          loginCelebrationCoins,
-                        );
-                      }
-                    });
+                        if (loginCelebrationPending) {
+                          _showLoginStreakCelebration(
+                            loginStreak,
+                            loginCelebrationCoins,
+                          );
+                        }
+                      });
+                    }
 
-                    return Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(context.radii.md),
-                        border: context.surfaces.borderOr(null),
-                        boxShadow: context.surfaces.shadowsOr(null),
-                      ),
-                      child: Column(
-                        children: [
-                          _livesFailed
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        l10n.homeLivesUnavailable,
-                                        style: TextStyle(
-                                          color: context.appColors.danger,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: _initLives,
-                                      child: Text(l10n.commonRetry),
-                                    ),
-                                  ],
-                                )
-                              : _loadingLives || _lifeState == null
-                                  ? const LinearProgressIndicator()
-                                  : Column(
-                                      children: [
-                                        LivesCard(
-                                          lifeUnits:
-                                              _lifeState!['lifeUnits'] as int,
-                                          maxLifeUnits: _lifeState![
-                                              'maxLifeUnits'] as int,
-                                          isFull: _lifeState!['lifeUnits'] >=
-                                              _lifeState!['maxLifeUnits'],
-                                          countdownText: _formatCountdown(
-                                            _lifeState![
-                                                'secondsToNextHalfLife'],
+                    final busy = _isNavigating || _buyingLife;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (snap.hasError)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              l10n.homeStatsErrorLoading(userFacingError(
+                                AppLocalizations.of(context),
+                                snap.error!,
+                              )),
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(color: context.appColors.danger),
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Expanded(child: _buildLivesChip(l10n)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _ResourceChip(
+                                icon: Icons.monetization_on_rounded,
+                                color: context.appColors.reward,
+                                value: loaded ? '$coins' : '–',
+                                label: l10n.homeCoins,
+                                onTap: busy
+                                    ? null
+                                    : () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const CoinShopScreen(),
                                           ),
                                         ),
-                                        const SizedBox(height: 12),
-                                      ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _ResourceChip(
+                                icon: Icons.auto_awesome_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                                value: loaded ? '$xp' : '–',
+                                label: l10n.homeXp,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        FutureBuilder<RecentSoloCategory?>(
+                          future: _recentCategory,
+                          builder: (context, recentSnap) {
+                            final recent = recentSnap.data;
+                            if (recent == null) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: _ResumeCard(
+                                recent: recent,
+                                onPlay: busy
+                                    ? null
+                                    : () => _safeNavigate(
+                                          () => _playRecent(recent),
+                                        ),
+                              ),
+                            );
+                          },
+                        ),
+                        AnimatedScale(
+                          scale: _streakGlow ? 1.03 : 1.0,
+                          duration: const Duration(milliseconds: 300),
+                          child: HeroCard(
+                            // Darkened only as far as the white text needs:
+                            // the dark themes lighten danger, and the card
+                            // went pale.
+                            gradientStart: readableInk(
+                              Color.lerp(
+                                context.appColors.reward,
+                                context.appColors.danger,
+                                0.45,
+                              )!,
+                              context.appColors.onAccent,
+                              minContrast: 3,
+                            ),
+                            gradientEnd: readableInk(
+                              context.appColors.danger,
+                              context.appColors.onAccent,
+                              minContrast: 3,
+                            ),
+                            illustration: 'assets/illustrations/daily.png',
+                            badge: streak > 0
+                                ? l10n.homeDailyChallengeStreak(streak)
+                                : null,
+                            title: l10n.homeDailyChallengeTitle,
+                            subtitle: l10n.homeDailySubtitle,
+                            actionLabel: l10n.homePlayAction,
+                            onTap: busy ? null : _openDailyChallenge,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        HeroCard(
+                          gradientStart: context.appColors.brandGradientStart,
+                          gradientEnd: context.appColors.brandGradientEnd,
+                          illustration: 'assets/illustrations/pvp.png',
+                          title: l10n.homeFindRivalTitle,
+                          subtitle: l10n.homeFindRivalSubtitle,
+                          actionLabel: l10n.homePlayAction,
+                          onTap: busy ? null : widget.onFindRival,
+                        ),
+                        const SizedBox(height: 14),
+                        HeroCard(
+                          gradientStart: context.appColors.heroGradientStart,
+                          gradientEnd: context.appColors.heroGradientEnd,
+                          illustration: 'assets/illustrations/ai_topic.png',
+                          badge: passes > 0
+                              ? l10n.homeFreeTopicPasses(passes)
+                              : null,
+                          title: l10n.homeAiTopicTitle,
+                          subtitle: l10n.homeAiTopicSubtitle,
+                          onTap: busy
+                              ? null
+                              : () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AiTopicsScreen(),
                                     ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: StatChip(
-                                  icon: Icons.monetization_on_outlined,
-                                  label: l10n.homeCoins,
-                                  accent: context.appColors.reward,
-                                  background: context.appColors.rewardBg,
-                                  value: '$coins',
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: StatChip(
-                                  icon: Icons.auto_awesome_outlined,
-                                  label: l10n.homeXp,
-                                  accent: Theme.of(context).colorScheme.primary,
-                                  background: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest,
-                                  value: '$xp',
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          StatChip(
-                            icon: Icons.style_outlined,
-                            label: l10n.homeFreeTopic,
-                            accent: Theme.of(context).colorScheme.primary,
-                            background: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            value: '$passes',
-                            fullWidth: true,
-                          ),
-                          const SizedBox(height: 14),
-                          const BuyCoinsButton(),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 18),
-                StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: _userDocForProfile,
-                  builder: (context, snap) {
-                    final streak =
-                        ((snap.data?.data()?['dailyStreak'] ?? 0) as num)
-                            .toInt();
-
-                    return _DailyChallengeCard(
-                      streak: streak,
-                      glow: _streakGlow,
-                      onTap: _isNavigating || _buyingLife
-                          ? null
-                          : () {
-                              _safeNavigate(() async {
-                                final alreadyPlayed =
-                                    await DailyChallengeService.instance
-                                        .hasPlayedToday(uid);
-
-                                if (!context.mounted) return;
-
-                                if (alreadyPlayed) {
-                                  final todayResult =
-                                      await DailyChallengeService.instance
-                                          .getTodayResult(uid);
-
-                                  if (!context.mounted) return;
-
-                                  if (todayResult != null) {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            DailyChallengeResultScreen(
-                                          result: todayResult,
-                                        ),
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          l10n.homeAlreadyPlayedDaily,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        DailyChallengeScreen(uid: uid),
-                                  ),
-                                );
-
-                                if (!mounted) return;
-                                await _refreshHome();
-                              });
-                            },
+                                  );
+                                },
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -1016,128 +1075,6 @@ class _WeeklyCountdownLabelState extends State<_WeeklyCountdownLabel> {
 // The AI-topic flow is the game's differentiator and the main sink for
 // coins earned elsewhere, so this CTA gets its own glowing pulse to draw
 // the eye — the only element on Home that animates on a loop.
-class _AiTopicCta extends StatefulWidget {
-  final VoidCallback? onTap;
-
-  const _AiTopicCta({required this.onTap});
-
-  @override
-  State<_AiTopicCta> createState() => _AiTopicCtaState();
-}
-
-class _AiTopicCtaState extends State<_AiTopicCta>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(context.radii.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(context.radii.md),
-        onTap: widget.onTap,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final t = reduceMotion ? 0.0 : _controller.value;
-
-            return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 20,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(context.radii.md),
-                border: context.surfaces.borderOr(null),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    context.appColors.heroGradientStart,
-                    context.appColors.heroGradientEnd,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.appColors.reward.withValues(
-                      alpha: 0.25 + t * 0.30,
-                    ),
-                    blurRadius: 14 + t * 12,
-                    spreadRadius: t * 2,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Transform.scale(
-                    scale: 1.0 + t * 0.10,
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: context.appColors.reward,
-                        borderRadius: BorderRadius.circular(context.radii.sm),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Color(0xFF412402),
-                        size: 26,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.homeAiTopicTitle,
-                          style: context.heading(19, color: context.appColors.onAccent),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          l10n.homeAiTopicSubtitle,
-                          style: TextStyle(
-                            color: context.appColors.onAccent.withValues(alpha: 0.7),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    color: context.appColors.onAccent.withValues(alpha: 0.7),
-                    size: 18,
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
 class _WeeklyTopicCard extends StatefulWidget {
   final bool isBusy;
   final void Function(Map<String, dynamic> topicData) onOpen;
@@ -1414,134 +1351,169 @@ class _WeeklyButtonIcon extends StatelessWidget {
 // Daily Challenge + streak used to be two separate cards, but the streak
 // only exists because of the Daily Challenge, so the count now lives
 // inline in this card's subtitle instead of its own block below it.
-class _DailyChallengeCard extends StatelessWidget {
-  final int streak;
-  final bool glow;
+/// One of the three counters at the top of Home: lives, coins, XP.
+class _ResourceChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String value;
+  final String label;
   final VoidCallback? onTap;
 
-  const _DailyChallengeCard({
-    required this.streak,
-    required this.glow,
-    required this.onTap,
+  const _ResourceChip({
+    required this.icon,
+    required this.color,
+    required this.value,
+    required this.label,
+    this.onTap,
   });
-
-  Color _streakColor(BuildContext context) {
-    if (streak >= 7) return context.appColors.danger;
-    return const Color(0xFFE5622C);
-  }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
-    final streakColor = _streakColor(context);
+    final radius = BorderRadius.circular(context.radii.md);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    // The shadow on a box around the Material, as in BuyCoinsButton.
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(context.radii.md),
-        border: Border.all(
-          color: streakColor.withValues(alpha: glow ? 0.8 : 0.25),
-          width: glow ? 1.6 : 1,
-        ),
-        boxShadow: glow
-            ? [
-                BoxShadow(
-                  color: streakColor.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                ),
-              ]
-            : [],
+        borderRadius: radius,
+        boxShadow: context.surfaces.shadowsOr(null),
       ),
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(context.radii.md),
+        color: colorScheme.surface,
+        borderRadius: radius,
         child: InkWell(
-          borderRadius: BorderRadius.circular(context.radii.md),
+          borderRadius: radius,
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 18,
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              border: context.surfaces.borderOr(null),
             ),
             child: Row(
               children: [
-                AnimatedScale(
-                  scale: glow ? 1.15 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: streakColor.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(context.radii.sm),
-                    ),
-                    child: Icon(
-                      Icons.local_fire_department,
-                      color: streakColor,
-                      size: 26,
-                    ),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
                   ),
+                  child: Icon(icon, size: 20, color: color),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        l10n.homeDailyChallengeTitle,
-                        style: context.heading(17, color: colorScheme.onSurface),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(value, style: context.heading(17)),
                       ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              l10n.homeDailyChallengeStreak(streak),
-                              style: TextStyle(
-                                color: streakColor,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (streak > 0 && streak % 3 == 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.appColors.reward,
-                                borderRadius: BorderRadius.circular(context.radii.pill),
-                              ),
-                              child: Text(
-                                l10n.homeReward,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                  color: context.appColors.onReward,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 16,
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Picks up the fixed category played last: the level just failed, or the
+/// next one to play.
+class _ResumeCard extends StatelessWidget {
+  final RecentSoloCategory recent;
+  final VoidCallback? onPlay;
+
+  const _ResumeCard({required this.recent, required this.onPlay});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final retry = recent.resume.retry;
+    final level = recent.resume.level;
+    // The button writes onAccent on this, so it's darkened until that
+    // reads; the dark themes' danger is too pale for white text.
+    final accent = readableInk(
+      retry ? context.appColors.danger : colorScheme.primary,
+      context.appColors.onAccent,
+    );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(
+          Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
+        ),
+        boxShadow: context.surfaces.shadowsOr(null),
+      ),
+      child: Row(
+        children: [
+          CategoryIllustration(
+            categoryId: recent.categoryId,
+            name: recent.name,
+            size: 72,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  retry
+                      ? l10n.homeRetryTitle
+                      : l10n.homeResumeTitle(recent.name),
+                  style: context.heading(17),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  retry
+                      ? l10n.homeRetrySubtitle(
+                          recent.name,
+                          level,
+                          recent.progress.lastCorrect,
+                          recent.progress.lastTotal,
+                        )
+                      : l10n.homeResumeSubtitle(level),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: context.appColors.onAccent,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: onPlay,
+                  icon: Icon(retry ? Icons.replay : Icons.play_arrow),
+                  label: Text(
+                    retry ? l10n.commonRetry : l10n.homeResumeAction(level),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

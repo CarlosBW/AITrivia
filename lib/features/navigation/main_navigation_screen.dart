@@ -289,7 +289,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 children: [
                   _lazyTab(
                     tabIndex: 0,
-                    child: const HomeScreen(),
+                    child: HomeScreen(onFindRival: () => _selectTab(2)),
                   ),
                   _lazyTab(
                     tabIndex: 1,

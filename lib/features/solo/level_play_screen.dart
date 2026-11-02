@@ -13,6 +13,7 @@ import '../../services/economy_service.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/answer_service.dart';
 import '../../services/question_report_service.dart';
+import '../../services/solo_progress_service.dart';
 import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/localized_content.dart';
@@ -1423,6 +1424,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
       }
 
       _saved = true;
+      if (!widget.isAiTopic) SoloProgressService.instance.notifyLevelSaved();
     } catch (e) {
       if (mounted) {
         _saveError = userFacingError(AppLocalizations.of(context), e);

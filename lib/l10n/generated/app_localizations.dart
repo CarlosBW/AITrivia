@@ -200,12 +200,6 @@ abstract class AppLocalizations {
   /// **'XP'**
   String get homeXp;
 
-  /// No description provided for @homeFreeTopic.
-  ///
-  /// In es, this message translates to:
-  /// **'Tema libre'**
-  String get homeFreeTopic;
-
   /// No description provided for @homeAlreadyPlayedDaily.
   ///
   /// In es, this message translates to:
@@ -385,12 +379,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{days, plural, =1{Racha: 1 día} other{Racha: {days} días}}'**
   String homeDailyChallengeStreak(int days);
-
-  /// No description provided for @homeReward.
-  ///
-  /// In es, this message translates to:
-  /// **'¡Recompensa!'**
-  String get homeReward;
 
   /// No description provided for @profileTitle.
   ///
@@ -1352,18 +1340,6 @@ abstract class AppLocalizations {
   /// **'❌ No tienes suficientes monedas'**
   String get soloNotEnoughCoins;
 
-  /// No description provided for @soloProgressLevels.
-  ///
-  /// In es, this message translates to:
-  /// **'Progreso: {completed} / {total} niveles'**
-  String soloProgressLevels(int completed, int total);
-
-  /// No description provided for @soloViewLevels.
-  ///
-  /// In es, this message translates to:
-  /// **'Ver niveles'**
-  String get soloViewLevels;
-
   /// No description provided for @soloStatusCompleted.
   ///
   /// In es, this message translates to:
@@ -1381,18 +1357,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nuevo'**
   String get soloStatusNew;
-
-  /// No description provided for @soloStartButton.
-  ///
-  /// In es, this message translates to:
-  /// **'Empezar'**
-  String get soloStartButton;
-
-  /// No description provided for @soloContinueLevel.
-  ///
-  /// In es, this message translates to:
-  /// **'Nivel {level}'**
-  String soloContinueLevel(int level);
 
   /// No description provided for @levelSelectNoLevelsYet.
   ///
@@ -4311,6 +4275,78 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Gratis'**
   String get createAiTopicFreeLabel;
+
+  /// No description provided for @homeLivesLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Vidas'**
+  String get homeLivesLabel;
+
+  /// No description provided for @homeResumeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sigue en {name}'**
+  String homeResumeTitle(String name);
+
+  /// No description provided for @homeResumeSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu próximo reto: nivel {level}'**
+  String homeResumeSubtitle(int level);
+
+  /// No description provided for @homeResumeAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugar nivel {level}'**
+  String homeResumeAction(int level);
+
+  /// No description provided for @homeRetryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Vuelve a intentarlo'**
+  String get homeRetryTitle;
+
+  /// No description provided for @homeRetrySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'{name} · Nivel {level}: {correct}/{total} aciertos'**
+  String homeRetrySubtitle(String name, int level, int correct, int total);
+
+  /// No description provided for @homeDailySubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Contrarreloj: responde todas las que puedas'**
+  String get homeDailySubtitle;
+
+  /// No description provided for @homePlayAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugar'**
+  String get homePlayAction;
+
+  /// No description provided for @homeFindRivalTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar rival'**
+  String get homeFindRivalTitle;
+
+  /// No description provided for @homeFindRivalSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Partidas 1 vs 1 en vivo o por turnos'**
+  String get homeFindRivalSubtitle;
+
+  /// No description provided for @homeFreeTopicPasses.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 tema gratis} other{{count} temas gratis}}'**
+  String homeFreeTopicPasses(int count);
+
+  /// No description provided for @soloCategoryLevels.
+  ///
+  /// In es, this message translates to:
+  /// **'{passed}/{total} niveles'**
+  String soloCategoryLevels(int passed, int total);
 
   /// No description provided for @homeLivesUnavailable.
   ///

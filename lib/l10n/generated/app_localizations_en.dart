@@ -62,9 +62,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeXp => 'XP';
 
   @override
-  String get homeFreeTopic => 'Free topic';
-
-  @override
   String get homeAlreadyPlayedDaily =>
       'You already played today\'s Daily Challenge.';
 
@@ -197,9 +194,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get homeReward => 'Reward!';
 
   @override
   String get profileTitle => 'Player Profile';
@@ -718,14 +712,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get soloNotEnoughCoins => '❌ Not enough coins';
 
   @override
-  String soloProgressLevels(int completed, int total) {
-    return 'Progress: $completed / $total levels';
-  }
-
-  @override
-  String get soloViewLevels => 'View levels';
-
-  @override
   String get soloStatusCompleted => 'Completed';
 
   @override
@@ -733,14 +719,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get soloStatusNew => 'New';
-
-  @override
-  String get soloStartButton => 'Start';
-
-  @override
-  String soloContinueLevel(int level) {
-    return 'Level $level';
-  }
 
   @override
   String get levelSelectNoLevelsYet =>
@@ -2564,6 +2542,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createAiTopicFreeLabel => 'Free';
+
+  @override
+  String get homeLivesLabel => 'Lives';
+
+  @override
+  String homeResumeTitle(String name) {
+    return 'Keep going in $name';
+  }
+
+  @override
+  String homeResumeSubtitle(int level) {
+    return 'Your next challenge: level $level';
+  }
+
+  @override
+  String homeResumeAction(int level) {
+    return 'Play level $level';
+  }
+
+  @override
+  String get homeRetryTitle => 'Try again';
+
+  @override
+  String homeRetrySubtitle(String name, int level, int correct, int total) {
+    return '$name · Level $level: $correct/$total correct';
+  }
+
+  @override
+  String get homeDailySubtitle => 'Beat the clock: answer as many as you can';
+
+  @override
+  String get homePlayAction => 'Play';
+
+  @override
+  String get homeFindRivalTitle => 'Find a rival';
+
+  @override
+  String get homeFindRivalSubtitle => 'Live or turn-based 1v1 matches';
+
+  @override
+  String homeFreeTopicPasses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count free topics',
+      one: '1 free topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String soloCategoryLevels(int passed, int total) {
+    return '$passed/$total levels';
+  }
 
   @override
   String get homeLivesUnavailable => 'Couldn\'t load your lives.';

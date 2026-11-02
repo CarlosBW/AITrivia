@@ -21,7 +21,6 @@
   "homeActionTimeout": "La acción tardó demasiado.",
   "homeCoins": "Monedas",
   "homeXp": "XP",
-  "homeFreeTopic": "Tema libre",
   "homeAlreadyPlayedDaily": "Ya jugaste el reto diario de hoy.",
   "homeMoreWaysToPlay": "Más formas de jugar",
   "homeWeeklyChallengeReward": "Liga semanal • ¡Recompensa!",
@@ -105,7 +104,6 @@
       "days": {"type": "int"}
     }
   },
-  "homeReward": "¡Recompensa!",
 
   "profileTitle": "Perfil de jugador",
   "profileUsernameHelper": "Debe ser único. Usa 3 a 20 caracteres.",
@@ -336,24 +334,9 @@
   "soloAllCompletedPvpButton": "Ir a PvP",
   "soloLifeRecovered": "❤️ Vida recuperada",
   "soloNotEnoughCoins": "❌ No tienes suficientes monedas",
-  "soloProgressLevels": "Progreso: {completed} / {total} niveles",
-  "@soloProgressLevels": {
-    "placeholders": {
-      "completed": {"type": "int"},
-      "total": {"type": "int"}
-    }
-  },
-  "soloViewLevels": "Ver niveles",
   "soloStatusCompleted": "Completado",
   "soloStatusInProgress": "En curso",
   "soloStatusNew": "Nuevo",
-  "soloStartButton": "Empezar",
-  "soloContinueLevel": "Nivel {level}",
-  "@soloContinueLevel": {
-    "placeholders": {
-      "level": {"type": "int"}
-    }
-  },
 
   "levelSelectNoLevelsYet": "Esta categoría aún no tiene niveles disponibles.",
   "levelSelectPlayLastLevel": "Jugar último nivel",
@@ -1459,6 +1442,52 @@
   "createAiTopicExistingBadgeTooltip": "Tema ya existente, con descuento",
   "createAiTopicNewBadgeTooltip": "Tema nuevo, se generará con IA",
   "createAiTopicFreeLabel": "Gratis",
+  "homeLivesLabel": "Vidas",
+  "homeResumeTitle": "Sigue en {name}",
+  "@homeResumeTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeResumeSubtitle": "Tu próximo reto: nivel {level}",
+  "@homeResumeSubtitle": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "homeResumeAction": "Jugar nivel {level}",
+  "@homeResumeAction": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "homeRetryTitle": "Vuelve a intentarlo",
+  "homeRetrySubtitle": "{name} · Nivel {level}: {correct}/{total} aciertos",
+  "@homeRetrySubtitle": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "level": {"type": "int"},
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "homeDailySubtitle": "Contrarreloj: responde todas las que puedas",
+  "homePlayAction": "Jugar",
+  "homeFindRivalTitle": "Buscar rival",
+  "homeFindRivalSubtitle": "Partidas 1 vs 1 en vivo o por turnos",
+  "homeFreeTopicPasses": "{count, plural, =1{1 tema gratis} other{{count} temas gratis}}",
+  "@homeFreeTopicPasses": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "soloCategoryLevels": "{passed}/{total} niveles",
+  "@soloCategoryLevels": {
+    "placeholders": {
+      "passed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "homeLivesUnavailable": "No se pudieron cargar tus vidas.",
   "createAiTopicSearchingButton": "Buscando temas similares...",
   "createAiTopicSuggestingButton": "Pidiendo sugerencias a la IA...",

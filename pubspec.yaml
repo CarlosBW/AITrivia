@@ -45,6 +45,7 @@ flutter:
     - assets/sfx/
     - assets/icon/
     - assets/google_fonts/
+    - assets/illustrations/
 
 flutter_launcher_icons:
   android: true

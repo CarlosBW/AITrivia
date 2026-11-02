@@ -11,6 +11,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_illustration.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../l10n/lives_format.dart';
@@ -450,69 +451,174 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
       );
     }
 
+    final earnedStars = passedLevels.fold<int>(
+      0,
+      (total, level) =>
+          total +
+          _starsForLevel(
+            level: level,
+            isCompleted: true,
+            levelStats: levelStats,
+          ),
+    );
+
+    final busy = _isNavigating || _buyingLife;
+    final colorScheme = Theme.of(context).colorScheme;
+    final onHero = context.appColors.onAccent;
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          l10n.levelSelectChooseLevel,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 10),
         Container(
-          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(18, 18, 8, 18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                context.appColors.heroGradientStart,
+                context.appColors.heroGradientEnd,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(context.radii.lg),
+            border: context.surfaces.borderOr(null),
+            boxShadow: context.surfaces.shadowsOr(null),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.levelSelectPathTitle(widget.categoryName),
+                      style: context.heading(22, color: onHero),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.levelSelectPassedOfTotal(completedCount, levelCount),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: onHero.withValues(alpha: 0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(context.radii.pill),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 8,
+                        backgroundColor: onHero.withValues(alpha: 0.25),
+                        valueColor: AlwaysStoppedAnimation(onHero),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: onHero.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(context.radii.pill),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            size: 18,
+                            color: context.appColors.reward,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            l10n.levelSelectStarsOfTotal(
+                              earnedStars,
+                              levelCount * 3,
+                            ),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: onHero,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CategoryIllustration(
+                categoryId: widget.categoryId,
+                name: widget.categoryName,
+                isAiTopic: widget.isAiTopic,
+                size: 112,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(context.radii.md),
             border: context.surfaces.borderOr(null),
             boxShadow: context.surfaces.shadowsOr(null),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                completedAll
-                    ? widget.isAiTopic
-                        ? l10n.levelSelectAiTopicApproved
-                        : l10n.levelSelectCategoryApproved
-                    : widget.isAiTopic
-                        ? l10n.levelSelectAiTopicProgressApproved
-                        : l10n.levelSelectCategoryProgressApproved,
-                style: context.heading(17),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.levelSelectApprovedCount(completedCount, levelCount),
-                style: const TextStyle(fontSize: 15),
-              ),
-              const SizedBox(height: 10),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(context.radii.xs),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 10,
-                ),
+              Row(
+                children: [
+                  _LevelBadge(
+                    level: recommendedLevel,
+                    color: completedAll
+                        ? context.appColors.success
+                        : colorScheme.primary,
+                    size: 48,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.levelSelectNextChallenge,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          completedAll
+                              ? l10n.levelSelectAllDone
+                              : l10n.levelSelectLevelNumber(recommendedLevel),
+                          style: context.heading(19),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _isNavigating || _buyingLife
-                      ? null
-                      : () => _openLevel(
-                            context: context,
-                            uid: uid,
-                            level: recommendedLevel,
-                          ),
-                  icon: Icon(
-                    completedAll ? Icons.replay : Icons.play_arrow,
-                  ),
-                  label: Text(
-                    completedAll
-                        ? l10n.levelSelectPlayLastLevel
-                        : l10n.levelSelectContinueAtLevel(recommendedLevel),
-                  ),
+              FilledButton.icon(
+                onPressed: busy
+                    ? null
+                    : () => _openLevel(
+                          context: context,
+                          uid: uid,
+                          level: recommendedLevel,
+                        ),
+                icon: Icon(completedAll ? Icons.replay : Icons.play_arrow),
+                label: Text(
+                  completedAll
+                      ? l10n.levelSelectPlayLastLevel
+                      : l10n.levelSelectContinueAtLevel(recommendedLevel),
                 ),
               ),
             ],
@@ -522,10 +628,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
           itemCount: levelCount,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.92,
+            childAspectRatio: 1.2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
           ),
@@ -534,6 +641,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             final isCompleted = passedLevels.contains(level);
             final isPlayed = playedLevels.contains(level);
             final isUnlocked = level <= maxUnlocked;
+            final isNext = level == recommendedLevel && !completedAll;
 
             final stars = _starsForLevel(
               level: level,
@@ -541,107 +649,131 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
               levelStats: levelStats,
             );
 
-            Color tileColor;
-            IconData icon;
-            String subtitle;
+            final accent = isCompleted
+                ? context.appColors.success
+                : isUnlocked
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant;
 
+            final String subtitle;
             if (isCompleted) {
-              tileColor = context.appColors.success.withValues(alpha: 0.15);
-              icon = Icons.check_circle_outline;
               subtitle = l10n.soloStatusCompleted;
+            } else if (isNext) {
+              subtitle = l10n.levelSelectNextBadge;
             } else if (isUnlocked) {
-              tileColor = isPlayed
-                  ? context.appColors.reward.withValues(alpha: 0.12)
-                  : Theme.of(context).colorScheme.primary.withValues(alpha: 0.12);
-              icon = isPlayed ? Icons.refresh : Icons.play_circle_outline;
               subtitle = isPlayed ? l10n.commonRetry : l10n.levelSelectAvailable;
             } else {
-              tileColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-              icon = Icons.lock_outline;
               subtitle = l10n.levelSelectLocked;
             }
 
-            final showRecommended = level == recommendedLevel && !completedAll;
+            final radius = BorderRadius.circular(context.radii.md);
 
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              decoration: BoxDecoration(
-                color: tileColor,
-                borderRadius: BorderRadius.circular(context.radii.md),
-                border: context.surfaces.borderOr(Border.all(
-                  color: showRecommended
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  width: showRecommended ? 2 : 1,
-                )),
-                boxShadow: context.surfaces.shadowsOr(showRecommended
-                    ? [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : []),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(context.radii.md),
-                onTap: (!isUnlocked || _isNavigating || _buyingLife)
-                    ? null
-                    : () => _openLevel(
-                          context: context,
-                          uid: uid,
-                          level: level,
-                        ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(icon, size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.levelSelectLevelNumber(level),
-                        style: context.heading(17),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      _StarsRow(count: stars),
-                      if (showRecommended) ...[
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+            return Opacity(
+              opacity: isUnlocked ? 1 : 0.6,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isUnlocked
+                      ? colorScheme.surface
+                      : colorScheme.surfaceContainerHighest,
+                  borderRadius: radius,
+                  border: context.surfaces.borderOr(Border.all(
+                    color: isNext
+                        ? colorScheme.primary
+                        : isCompleted
+                            ? context.appColors.success.withValues(alpha: 0.5)
+                            : Colors.transparent,
+                    width: isNext ? 2 : 1.5,
+                  )),
+                  boxShadow: context.surfaces.shadowsOr(isUnlocked
+                      ? [
+                          BoxShadow(
+                            color: colorScheme.shadow.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(context.radii.pill),
-                          ),
-                          child: Text(
-                            l10n.levelSelectNextBadge,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.blue,
+                        ]
+                      : []),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: radius,
+                    onTap: (!isUnlocked || busy)
+                        ? null
+                        : () => _openLevel(
+                              context: context,
+                              uid: uid,
+                              level: level,
                             ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          isUnlocked
+                              ? _LevelBadge(
+                                  level: level,
+                                  color: accent,
+                                  size: 44,
+                                )
+                              : Icon(
+                                  Icons.lock_rounded,
+                                  size: 36,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.levelSelectLevelNumber(level),
+                            style: context.heading(16),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ],
-                    ],
+                          const SizedBox(height: 4),
+                          _StarsRow(count: stars),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: context.readableOnOwnTint(
+                                accent,
+                                wash: 0,
+                              ),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             );
           },
         ),
+        const SizedBox(height: 18),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_open_rounded,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                l10n.levelSelectUnlockHint,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -697,6 +829,43 @@ class _StarsRow extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+/// A level's number in a filled circle of [color].
+class _LevelBadge extends StatelessWidget {
+  final int level;
+  final Color color;
+  final double size;
+
+  const _LevelBadge({
+    required this.level,
+    required this.color,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Text(
+        '$level',
+        style: context.heading(size * 0.42, color: context.appColors.onAccent),
+      ),
     );
   }
 }

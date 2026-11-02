@@ -333,18 +333,6 @@
   },
 
   "levelSelectNoLevelsYet": "This category doesn't have levels available yet.",
-  "levelSelectChooseLevel": "Choose a level",
-  "levelSelectAiTopicApproved": "AI topic passed",
-  "levelSelectCategoryApproved": "Category passed",
-  "levelSelectAiTopicProgressApproved": "Your progress passed in this AI topic",
-  "levelSelectCategoryProgressApproved": "Your progress passed in this category",
-  "levelSelectApprovedCount": "Passed: {completed} / {total}",
-  "@levelSelectApprovedCount": {
-    "placeholders": {
-      "completed": {"type": "int"},
-      "total": {"type": "int"}
-    }
-  },
   "levelSelectPlayLastLevel": "Play last level",
   "levelSelectContinueAtLevel": "Continue at level {level}",
   "@levelSelectContinueAtLevel": {
@@ -358,6 +346,35 @@
   "@levelSelectLevelNumber": {
     "placeholders": {
       "level": {"type": "int"}
+    }
+  },
+  "levelSelectPathTitle": "Your path in {name}",
+  "@levelSelectPathTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "levelSelectPassedOfTotal": "{passed} of {total} levels passed",
+  "@levelSelectPassedOfTotal": {
+    "placeholders": {
+      "passed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelSelectStarsOfTotal": "{stars}/{total} stars",
+  "@levelSelectStarsOfTotal": {
+    "placeholders": {
+      "stars": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelSelectNextChallenge": "Your next challenge",
+  "levelSelectAllDone": "You've completed every level!",
+  "levelSelectUnlockHint": "Pass each level to unlock the next one.",
+  "levelPlayCorrectFooter": "{count, plural, =1{1 correct} other{{count} correct}}",
+  "@levelPlayCorrectFooter": {
+    "placeholders": {
+      "count": {"type": "int"}
     }
   },
   "levelSelectNextBadge": "Next",
@@ -418,18 +435,6 @@
   "levelPlayLivesMax": "MAX",
   "levelPlayOutOfLivesTitle": "You ran out of lives",
   "levelPlayOutOfLivesMessage": "You can't continue this level until you recover lives.",
-  "levelPlayLivesHeader": "Lives: {lives}",
-  "@levelPlayLivesHeader": {
-    "placeholders": {
-      "lives": {"type": "String"}
-    }
-  },
-  "levelPlayHalfLifeIn": "+0.5 in {time}",
-  "@levelPlayHalfLifeIn": {
-    "placeholders": {
-      "time": {"type": "String"}
-    }
-  },
   "levelPlayQuestionOfTotal": "Question {current} of {total}",
   "@levelPlayQuestionOfTotal": {
     "placeholders": {

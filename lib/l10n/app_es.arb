@@ -356,18 +356,6 @@
   },
 
   "levelSelectNoLevelsYet": "Esta categoría aún no tiene niveles disponibles.",
-  "levelSelectChooseLevel": "Selecciona un nivel",
-  "levelSelectAiTopicApproved": "Tema IA aprobado",
-  "levelSelectCategoryApproved": "Categoría aprobada",
-  "levelSelectAiTopicProgressApproved": "Tu progreso aprobado en este tema IA",
-  "levelSelectCategoryProgressApproved": "Tu progreso aprobado en esta categoría",
-  "levelSelectApprovedCount": "Aprobados: {completed} / {total}",
-  "@levelSelectApprovedCount": {
-    "placeholders": {
-      "completed": {"type": "int"},
-      "total": {"type": "int"}
-    }
-  },
   "levelSelectPlayLastLevel": "Jugar último nivel",
   "levelSelectContinueAtLevel": "Continuar en nivel {level}",
   "@levelSelectContinueAtLevel": {
@@ -381,6 +369,35 @@
   "@levelSelectLevelNumber": {
     "placeholders": {
       "level": {"type": "int"}
+    }
+  },
+  "levelSelectPathTitle": "Tu camino en {name}",
+  "@levelSelectPathTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "levelSelectPassedOfTotal": "{passed} de {total} niveles aprobados",
+  "@levelSelectPassedOfTotal": {
+    "placeholders": {
+      "passed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelSelectStarsOfTotal": "{stars}/{total} estrellas",
+  "@levelSelectStarsOfTotal": {
+    "placeholders": {
+      "stars": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "levelSelectNextChallenge": "Tu próximo reto",
+  "levelSelectAllDone": "¡Completaste todos los niveles!",
+  "levelSelectUnlockHint": "Aprueba cada nivel para desbloquear el siguiente.",
+  "levelPlayCorrectFooter": "{count, plural, =1{1 acierto} other{{count} aciertos}}",
+  "@levelPlayCorrectFooter": {
+    "placeholders": {
+      "count": {"type": "int"}
     }
   },
   "levelSelectNextBadge": "Siguiente",
@@ -441,18 +458,6 @@
   "levelPlayLivesMax": "MÁX",
   "levelPlayOutOfLivesTitle": "Te quedaste sin vidas",
   "levelPlayOutOfLivesMessage": "No puedes continuar este nivel hasta recuperar vidas.",
-  "levelPlayLivesHeader": "Vidas: {lives}",
-  "@levelPlayLivesHeader": {
-    "placeholders": {
-      "lives": {"type": "String"}
-    }
-  },
-  "levelPlayHalfLifeIn": "+0,5 en {time}",
-  "@levelPlayHalfLifeIn": {
-    "placeholders": {
-      "time": {"type": "String"}
-    }
-  },
   "levelPlayQuestionOfTotal": "Pregunta {current} de {total}",
   "@levelPlayQuestionOfTotal": {
     "placeholders": {

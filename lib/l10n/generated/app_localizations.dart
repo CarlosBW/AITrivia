@@ -1400,42 +1400,6 @@ abstract class AppLocalizations {
   /// **'Esta categoría aún no tiene niveles disponibles.'**
   String get levelSelectNoLevelsYet;
 
-  /// No description provided for @levelSelectChooseLevel.
-  ///
-  /// In es, this message translates to:
-  /// **'Selecciona un nivel'**
-  String get levelSelectChooseLevel;
-
-  /// No description provided for @levelSelectAiTopicApproved.
-  ///
-  /// In es, this message translates to:
-  /// **'Tema IA aprobado'**
-  String get levelSelectAiTopicApproved;
-
-  /// No description provided for @levelSelectCategoryApproved.
-  ///
-  /// In es, this message translates to:
-  /// **'Categoría aprobada'**
-  String get levelSelectCategoryApproved;
-
-  /// No description provided for @levelSelectAiTopicProgressApproved.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu progreso aprobado en este tema IA'**
-  String get levelSelectAiTopicProgressApproved;
-
-  /// No description provided for @levelSelectCategoryProgressApproved.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu progreso aprobado en esta categoría'**
-  String get levelSelectCategoryProgressApproved;
-
-  /// No description provided for @levelSelectApprovedCount.
-  ///
-  /// In es, this message translates to:
-  /// **'Aprobados: {completed} / {total}'**
-  String levelSelectApprovedCount(int completed, int total);
-
   /// No description provided for @levelSelectPlayLastLevel.
   ///
   /// In es, this message translates to:
@@ -1465,6 +1429,48 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Nivel {level}'**
   String levelSelectLevelNumber(int level);
+
+  /// No description provided for @levelSelectPathTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu camino en {name}'**
+  String levelSelectPathTitle(String name);
+
+  /// No description provided for @levelSelectPassedOfTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'{passed} de {total} niveles aprobados'**
+  String levelSelectPassedOfTotal(int passed, int total);
+
+  /// No description provided for @levelSelectStarsOfTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'{stars}/{total} estrellas'**
+  String levelSelectStarsOfTotal(int stars, int total);
+
+  /// No description provided for @levelSelectNextChallenge.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu próximo reto'**
+  String get levelSelectNextChallenge;
+
+  /// No description provided for @levelSelectAllDone.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Completaste todos los niveles!'**
+  String get levelSelectAllDone;
+
+  /// No description provided for @levelSelectUnlockHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Aprueba cada nivel para desbloquear el siguiente.'**
+  String get levelSelectUnlockHint;
+
+  /// No description provided for @levelPlayCorrectFooter.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 acierto} other{{count} aciertos}}'**
+  String levelPlayCorrectFooter(int count);
 
   /// No description provided for @levelSelectNextBadge.
   ///
@@ -1711,18 +1717,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No puedes continuar este nivel hasta recuperar vidas.'**
   String get levelPlayOutOfLivesMessage;
-
-  /// No description provided for @levelPlayLivesHeader.
-  ///
-  /// In es, this message translates to:
-  /// **'Vidas: {lives}'**
-  String levelPlayLivesHeader(String lives);
-
-  /// No description provided for @levelPlayHalfLifeIn.
-  ///
-  /// In es, this message translates to:
-  /// **'+0,5 en {time}'**
-  String levelPlayHalfLifeIn(String time);
 
   /// No description provided for @levelPlayQuestionOfTotal.
   ///

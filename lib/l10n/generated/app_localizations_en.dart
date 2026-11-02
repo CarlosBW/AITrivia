@@ -747,28 +747,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This category doesn\'t have levels available yet.';
 
   @override
-  String get levelSelectChooseLevel => 'Choose a level';
-
-  @override
-  String get levelSelectAiTopicApproved => 'AI topic passed';
-
-  @override
-  String get levelSelectCategoryApproved => 'Category passed';
-
-  @override
-  String get levelSelectAiTopicProgressApproved =>
-      'Your progress passed in this AI topic';
-
-  @override
-  String get levelSelectCategoryProgressApproved =>
-      'Your progress passed in this category';
-
-  @override
-  String levelSelectApprovedCount(int completed, int total) {
-    return 'Passed: $completed / $total';
-  }
-
-  @override
   String get levelSelectPlayLastLevel => 'Play last level';
 
   @override
@@ -785,6 +763,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String levelSelectLevelNumber(int level) {
     return 'Level $level';
+  }
+
+  @override
+  String levelSelectPathTitle(String name) {
+    return 'Your path in $name';
+  }
+
+  @override
+  String levelSelectPassedOfTotal(int passed, int total) {
+    return '$passed of $total levels passed';
+  }
+
+  @override
+  String levelSelectStarsOfTotal(int stars, int total) {
+    return '$stars/$total stars';
+  }
+
+  @override
+  String get levelSelectNextChallenge => 'Your next challenge';
+
+  @override
+  String get levelSelectAllDone => 'You\'ve completed every level!';
+
+  @override
+  String get levelSelectUnlockHint => 'Pass each level to unlock the next one.';
+
+  @override
+  String levelPlayCorrectFooter(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count correct',
+      one: '1 correct',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -921,16 +934,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get levelPlayOutOfLivesMessage =>
       'You can\'t continue this level until you recover lives.';
-
-  @override
-  String levelPlayLivesHeader(String lives) {
-    return 'Lives: $lives';
-  }
-
-  @override
-  String levelPlayHalfLifeIn(String time) {
-    return '+0.5 in $time';
-  }
 
   @override
   String levelPlayQuestionOfTotal(int current, int total) {

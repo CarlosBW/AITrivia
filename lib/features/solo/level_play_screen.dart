@@ -21,8 +21,10 @@ import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
+import '../../widgets/category_illustration.dart';
+import '../../widgets/circular_timer.dart';
 import '../../widgets/count_pill.dart';
-import '../../widgets/profile_avatar_button.dart';
+import '../../widgets/segmented_progress.dart';
 import '../../l10n/lives_format.dart';
 
 /// What the result screen's primary button does.
@@ -746,6 +748,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const CloseButton(),
         title: AppBarTitle(
           l10n.levelPlayAppBarTitle(
             widget.isAiTopic
@@ -754,7 +757,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
             widget.levelNumber,
           ),
         ),
-        actions: const [ProfileAvatarButton(openProfileOnTap: false)],
+        actions: [_buildLivesChip(), const SizedBox(width: 12)],
       ),
       body: Stack(
         children: [
@@ -1132,57 +1135,44 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
     );
   }
 
-  Widget _buildLivesHeader() {
+  /// The player's lives, top right, as a heart and a count.
+  Widget _buildLivesChip() {
     final l10n = AppLocalizations.of(context);
-    final lifeText =
-        '${AppLocalizations.of(context).lives(_lifeUnits)} / ${AppLocalizations.of(context).lives(_maxLifeUnits)}';
-    final isFull = _lifeUnits >= _maxLifeUnits;
-
-    const iconColor = Color(0xFFFF6B5B);
-    final valueColor = context.legibleOnDark(const Color(0xFFB23A2C));
-    const labelColor = Color(0xFFD9695B);
+    const heart = Color(0xFFFF4D5E);
 
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: context.appColors.dangerBg,
-        borderRadius: BorderRadius.circular(context.radii.sm),
-        border: context.surfaces.borderOr(null),
-        boxShadow: context.surfaces.shadowsOr(null),
+        color: heart.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(context.radii.pill),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.favorite_border, size: 22, color: iconColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              l10n.levelPlayLivesHeader(lifeText),
-              style: context.heading(15, color: valueColor),
-            ),
-          ),
-          Icon(
-            isFull ? Icons.check_circle_outline : Icons.timer_outlined,
-            size: 16,
-            color: labelColor,
-          ),
-          const SizedBox(width: 4),
+          const Icon(Icons.favorite, size: 18, color: heart),
+          const SizedBox(width: 6),
           Text(
-            isFull
-                ? l10n.levelPlayLivesMax
-                : l10n.levelPlayHalfLifeIn(
-                    _formatSeconds(_secondsToNextHalfLife),
-                  ),
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: labelColor,
+            l10n.lives(_lifeUnits),
+            style: context.heading(
+              15,
+              color: readableInk(heart, Theme.of(context).colorScheme.surface),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Each question's result so far, for [SegmentedProgress].
+  List<bool?> _questionResults(int total) {
+    final results = List<bool?>.filled(total, null);
+    for (final answer in _answers) {
+      final q = answer['questionIndex'] as int;
+      final correctIndex = _correctIndexByQuestion[q];
+      if (q < 0 || q >= total || correctIndex == null) continue;
+      results[q] = answer['selectedIndex'] == correctIndex;
+    }
+    return results;
   }
 
   Widget _buildQuestionView({
@@ -1198,17 +1188,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
     final colorScheme = Theme.of(context).colorScheme;
 
-    final progress = total == 0 ? 0.0 : (_index / total).clamp(0.0, 1.0);
-
-    final timeFraction = _defaultTimePerQ == 0
-        ? 0.0
-        : (_secondsLeft / _defaultTimePerQ).clamp(0.0, 1.0);
-
-    final timerColor = timeFraction > 0.5
-        ? context.appColors.success
-        : timeFraction > 0.2
-            ? context.appColors.reward
-            : context.appColors.danger;
+    final categoryName = widget.categoryName ??
+        (widget.isAiTopic ? l10n.levelPlayAiTopicLabel : widget.categoryId);
 
     // The whole screen tints with the answer, as in the Daily Challenge
     // and the Weekly Topic: green when it was right, red when it wasn't
@@ -1233,15 +1214,39 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildLivesHeader(),
-              const SizedBox(height: 14),
+              SegmentedProgress(
+                results: _questionResults(total),
+                current: _index,
+              ),
+              const SizedBox(height: 16),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  CategoryIllustration(
+                    categoryId: widget.categoryId,
+                    name: categoryName,
+                    isAiTopic: widget.isAiTopic,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(
+                          categoryName.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: context.readableOnOwnTint(
+                              colorScheme.primary,
+                              wash: 0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
                         Text(
                           l10n.levelPlayQuestionOfTotal(_index + 1, total),
                           style: TextStyle(
@@ -1250,46 +1255,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(context.radii.pill),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 8,
-                            backgroundColor: colorScheme.surfaceContainerHighest,
-                            valueColor:
-                                AlwaysStoppedAnimation(colorScheme.primary),
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: timerColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(context.radii.pill),
-                      border: Border.all(color: timerColor.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.timer_outlined, size: 16, color: timerColor),
-                        const SizedBox(width: 5),
-                        Text(
-                          '${_secondsLeft}s',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: timerColor,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const SizedBox(width: 12),
+                  CircularTimer(
+                    secondsLeft: _secondsLeft,
+                    totalSeconds: _defaultTimePerQ,
                   ),
                 ],
               ),
@@ -1322,7 +1294,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
               Center(
                 child: CountPill(
                   icon: Icons.check_circle_rounded,
-                  label: l10n.playCorrectCount(_correct),
+                  label: l10n.levelPlayCorrectFooter(_correct),
                   color: context.appColors.success,
                 ),
               ),

@@ -14,6 +14,8 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/circular_timer.dart';
+import '../../widgets/segmented_progress.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
@@ -47,6 +49,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
   /// The right option for the question on screen, once the server has
   /// judged the answer. Null until then: the key isn't in the match doc.
   int? _revealCorrect;
+
+  /// Each answered question's verdict this session, for the segmented
+  /// progress bar. Questions answered before a reconnect aren't in it.
+  final Map<int, bool> _results = {};
 
   /// When the current question was answered, so the reveal pause can
   /// discount the round trip it waited on.
@@ -367,6 +373,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       }
 
       setState(() {
+        _results[questionIndex] = result.correct;
         if (_index == questionIndex) {
           _revealCorrect = result.correctIndex;
           if (_timedOut) _timeoutAnswerIndex = result.correctIndex;
@@ -735,17 +742,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     final absorbing = _locked || _answerSubmitting;
     final colorScheme = Theme.of(context).colorScheme;
 
-    final progress = total == 0 ? 0.0 : (_index / total).clamp(0.0, 1.0);
-
-    final timeFraction =
-        timePerQ == 0 ? 0.0 : (_secondsLeft / timePerQ).clamp(0.0, 1.0);
-
-    final timerColor = timeFraction > 0.5
-        ? context.appColors.success
-        : timeFraction > 0.2
-            ? context.appColors.reward
-            : context.appColors.danger;
-
     return AbsorbPointer(
       key: key,
       absorbing: absorbing,
@@ -754,61 +750,27 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            SegmentedProgress(
+              results: [for (var i = 0; i < total; i++) _results[i]],
+              current: _index,
+            ),
+            const SizedBox(height: 14),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.levelPlayQuestionOfTotal(_index + 1, total),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(context.radii.pill),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 8,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                          valueColor:
-                              AlwaysStoppedAnimation(colorScheme.primary),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    l10n.levelPlayQuestionOfTotal(_index + 1, total),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: timerColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(context.radii.pill),
-                    border: Border.all(color: timerColor.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.timer_outlined, size: 16, color: timerColor),
-                      const SizedBox(width: 5),
-                      Text(
-                        '${_secondsLeft}s',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: timerColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(width: 12),
+                CircularTimer(
+                  secondsLeft: _secondsLeft,
+                  totalSeconds: timePerQ,
                 ),
               ],
             ),

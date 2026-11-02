@@ -42,6 +42,23 @@ void main() {
     expect(colors[3], scheme.surfaceContainerHighest);
   });
 
+  testWidgets('una pregunta ya pasada sin resultado conocido no se ve pendiente',
+      (tester) async {
+    // Al volver a una partida en vivo no se sabe cómo salieron las
+    // anteriores; deben verse jugadas, no grises como las que faltan.
+    final colors = await segmentColors(
+      tester,
+      results: [null, null, null],
+      current: 1,
+    );
+    final scheme =
+        Theme.of(tester.element(find.byType(SegmentedProgress))).colorScheme;
+
+    expect(colors[0], scheme.primary.withValues(alpha: 0.45));
+    expect(colors[1], scheme.primary);
+    expect(colors[2], scheme.surfaceContainerHighest);
+  });
+
   testWidgets('sin preguntas no dibuja nada', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(

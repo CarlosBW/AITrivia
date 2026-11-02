@@ -4,7 +4,9 @@ import '../theme/app_theme.dart';
 
 /// A round's progress as one segment per question: green for a right
 /// answer, red for a wrong one, the brand colour for the question on
-/// screen and grey for the ones still ahead.
+/// screen and grey for the ones still ahead. A question already behind
+/// with no known result — a live match picked back up — is a paler brand
+/// colour, so it doesn't read as still to come.
 class SegmentedProgress extends StatelessWidget {
   /// One entry per question: true right, false wrong, null not answered.
   final List<bool?> results;
@@ -37,7 +39,9 @@ class SegmentedProgress extends StatelessWidget {
                   false => context.appColors.danger,
                   null => i == current
                       ? scheme.primary
-                      : scheme.surfaceContainerHighest,
+                      : i < current
+                          ? scheme.primary.withValues(alpha: 0.45)
+                          : scheme.surfaceContainerHighest,
                 },
                 borderRadius: BorderRadius.circular(context.radii.pill),
               ),

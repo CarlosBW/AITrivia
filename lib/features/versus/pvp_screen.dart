@@ -8,7 +8,11 @@ import 'active_matches_screen.dart';
 import 'pvp_season_screen.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/league_names.dart';
+import '../../services/my_profile_service.dart';
+import '../../services/pvp_league_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/hero_card.dart';
 
 class PvPScreen extends StatefulWidget {
   const PvPScreen({super.key});
@@ -39,6 +43,14 @@ class _PvPScreenState extends State<PvPScreen> {
       .snapshots()
       .map((snap) => snap.docs.isNotEmpty);
 
+  // Shared with the rest of the app: one listener on the user doc.
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _me =
+      MyProfileService.instance.watchMe();
+
+  void _push(Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -50,14 +62,41 @@ class _PvPScreenState extends State<PvPScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            l10n.pvpHubHeading,
-            style: context.heading(22),
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: _me,
+            builder: (context, snap) {
+              final data = snap.data?.data() ?? const {};
+              final rating = ((data['pvpRating'] ?? 1000) as num).toInt();
+              final wins = ((data['wins1v1'] ?? 0) as num).toInt();
+              final losses = ((data['losses1v1'] ?? 0) as num).toInt();
+              final league = PvpLeagueService.instance.leagueForRating(rating);
+
+              return HeroCard(
+                gradientStart: context.appColors.heroGradientStart,
+                gradientEnd: context.appColors.heroGradientEnd,
+                illustration: 'assets/illustrations/trophy.png',
+                badge: league.emoji,
+                title: l10n.pvpRankTitle(l10n.leagueName(league.id)),
+                subtitle: l10n.pvpRankSubtitle(rating, wins, losses),
+                actionLabel: l10n.pvpSeasonAction,
+                onTap: () => _push(const PvpSeasonScreen()),
+              );
+            },
           ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.pvpHubSubheading,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(height: 14),
+          SpotlightHint(
+            id: 'pvp_find_opponent',
+            title: l10n.spotlightPvpTitle,
+            description: l10n.spotlightPvpBody,
+            child: HeroCard(
+              gradientStart: context.appColors.brandGradientStart,
+              gradientEnd: context.appColors.brandGradientEnd,
+              illustration: 'assets/illustrations/pvp.png',
+              title: l10n.pvpFindOpponentTitle,
+              subtitle: l10n.pvpFindOpponentSubtitle,
+              actionLabel: l10n.pvpFindAction,
+              onTap: () => _push(const FindOpponentScreen()),
+            ),
           ),
           const SizedBox(height: 18),
           StreamBuilder<bool>(
@@ -66,9 +105,7 @@ class _PvPScreenState extends State<PvPScreen> {
               final hasPendingTurn = snap.data == true;
 
               return _PvpCard(
-                icon: Icons.flash_on_outlined,
-                accent: const Color(0xFF6C4FF2),
-                accentBg: const Color(0xFFEEEDFE),
+                illustration: 'assets/illustrations/matches.png',
                 title: hasPendingTurn
                     ? l10n.pvpActiveMatchesTitleAlert
                     : l10n.pvpActiveMatchesTitle,
@@ -76,14 +113,7 @@ class _PvPScreenState extends State<PvPScreen> {
                     ? l10n.pvpActiveMatchesSubtitleAlert
                     : l10n.pvpActiveMatchesSubtitle,
                 alert: hasPendingTurn,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ActiveMatchesScreen(),
-                    ),
-                  );
-                },
+                onTap: () => _push(const ActiveMatchesScreen()),
               );
             },
           ),
@@ -93,9 +123,7 @@ class _PvPScreenState extends State<PvPScreen> {
               final hasPending = snap.data == true;
 
               return _PvpCard(
-                icon: Icons.flare_outlined,
-                accent: const Color(0xFFFF6B5B),
-                accentBg: const Color(0xFFFFF0EE),
+                illustration: 'assets/illustrations/friends.png',
                 title: hasPending
                     ? l10n.pvpRealtimeInvitesTitleAlert
                     : l10n.pvpRealtimeInvitesTitle,
@@ -103,49 +131,7 @@ class _PvPScreenState extends State<PvPScreen> {
                     ? l10n.pvpRealtimeInvitesSubtitleAlert
                     : l10n.pvpRealtimeInvitesSubtitle,
                 alert: hasPending,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RealtimeInvitesScreen(),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-          SpotlightHint(
-            id: 'pvp_find_opponent',
-            title: l10n.spotlightPvpTitle,
-            description: l10n.spotlightPvpBody,
-            child: _PvpCard(
-              icon: Icons.travel_explore_outlined,
-              accent: const Color(0xFFE5A400),
-              accentBg: const Color(0xFFFFF6DE),
-              title: l10n.pvpFindOpponentTitle,
-              subtitle: l10n.pvpFindOpponentSubtitle,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const FindOpponentScreen(),
-                  ),
-                );
-              },
-            ),
-          ),
-          _PvpCard(
-            icon: Icons.workspace_premium_outlined,
-            accent: const Color(0xFFE5622C),
-            accentBg: const Color(0xFFFFE8D6),
-            title: l10n.pvpSeasonTitle,
-            subtitle: l10n.pvpSeasonSubtitle,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PvpSeasonScreen(),
-                ),
+                onTap: () => _push(const RealtimeInvitesScreen()),
               );
             },
           ),
@@ -156,18 +142,15 @@ class _PvPScreenState extends State<PvPScreen> {
 }
 
 class _PvpCard extends StatelessWidget {
-  final IconData icon;
-  final Color accent;
-  final Color accentBg;
+  /// An asset under `assets/illustrations/`.
+  final String illustration;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
   final bool alert;
 
   const _PvpCard({
-    required this.icon,
-    required this.accent,
-    required this.accentBg,
+    required this.illustration,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -177,53 +160,56 @@ class _PvpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = alert ? context.appColors.danger : accent;
-    final bg = alert
-        ? context.appColors.dangerBg
-        : context.tintOf(accent, accentBg);
+    final danger = context.appColors.danger;
+    final radius = BorderRadius.circular(context.radii.md);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(context.radii.md),
+        color: alert ? context.appColors.dangerBg : colorScheme.surface,
+        borderRadius: radius,
         boxShadow: context.surfaces.shadowsOr(null),
         border: context.surfaces.borderOr(Border.all(
-          color: color.withValues(alpha: alert ? 0.7 : 0.35),
-          width: alert ? 1.6 : 1.2,
+          color: alert
+              ? danger.withValues(alpha: 0.7)
+              : colorScheme.outline.withValues(alpha: 0.4),
+          width: alert ? 1.6 : 1,
         )),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(context.radii.md),
+        borderRadius: radius,
         child: InkWell(
-          borderRadius: BorderRadius.circular(context.radii.md),
+          borderRadius: radius,
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    CircleAvatar(
-                      backgroundColor: color,
-                      child: Icon(icon, color: context.appColors.onAccent),
+                    Image.asset(
+                      illustration,
+                      width: 56,
+                      height: 56,
+                      cacheWidth:
+                          (56 * MediaQuery.devicePixelRatioOf(context)).round(),
+                      filterQuality: FilterQuality.medium,
                     ),
                     if (alert)
                       Positioned(
-                        right: -1,
-                        top: -1,
+                        right: 0,
+                        top: 0,
                         child: Container(
-                          width: 11,
-                          height: 11,
+                          width: 13,
+                          height: 13,
                           decoration: BoxDecoration(
-                            color: context.appColors.danger,
+                            color: danger,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: context.decor.pageColor,
-                              width: 1.4,
+                              width: 1.6,
                             ),
                           ),
                         ),
@@ -243,7 +229,9 @@ class _PvpCard extends StatelessWidget {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: alert ? color : colorScheme.onSurfaceVariant,
+                          color: alert
+                              ? readableInk(danger, context.appColors.dangerBg)
+                              : colorScheme.onSurfaceVariant,
                           fontWeight:
                               alert ? FontWeight.w600 : FontWeight.normal,
                           fontSize: 13,
@@ -253,7 +241,10 @@ class _PvpCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right, color: color),
+                Icon(
+                  Icons.chevron_right,
+                  color: alert ? danger : colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),

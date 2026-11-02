@@ -1015,10 +1015,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pvpHubTitle => 'PvP';
 
   @override
-  String get pvpHubHeading => 'Centro competitivo';
+  String pvpRankTitle(String league) {
+    return 'Liga $league';
+  }
 
   @override
-  String get pvpHubSubheading => 'Elige cómo quieres competir.';
+  String pvpRankSubtitle(int rating, int wins, int losses) {
+    return '$rating MMR · $wins V · $losses D';
+  }
+
+  @override
+  String get pvpSeasonAction => 'Ver temporada';
+
+  @override
+  String get pvpFindAction => 'Buscar';
 
   @override
   String get pvpActiveMatchesTitle => 'Partidas activas';
@@ -1057,10 +1067,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonTitle => 'Temporada PvP';
-
-  @override
-  String get pvpSeasonSubtitle =>
-      'Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.';
 
   @override
   String get activeMatchesTitle => 'Partidas activas';

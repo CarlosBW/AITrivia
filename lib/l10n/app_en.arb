@@ -496,8 +496,22 @@
   },
 
   "pvpHubTitle": "PvP",
-  "pvpHubHeading": "Competitive hub",
-  "pvpHubSubheading": "Choose how you want to compete.",
+  "pvpRankTitle": "{league} league",
+  "@pvpRankTitle": {
+    "placeholders": {
+      "league": {"type": "String"}
+    }
+  },
+  "pvpRankSubtitle": "{rating} MMR · {wins} W · {losses} L",
+  "@pvpRankSubtitle": {
+    "placeholders": {
+      "rating": {"type": "int"},
+      "wins": {"type": "int"},
+      "losses": {"type": "int"}
+    }
+  },
+  "pvpSeasonAction": "View season",
+  "pvpFindAction": "Find",
   "pvpActiveMatchesTitle": "Active Matches",
   "pvpActiveMatchesTitleAlert": "Active matches • Your turn!",
   "pvpActiveMatchesSubtitle": "Pending turns, live games, and recent results.",
@@ -509,7 +523,6 @@
   "pvpFindOpponentTitle": "Find Opponent",
   "pvpFindOpponentSubtitle": "Play against any available challenger.",
   "pvpSeasonTitle": "PvP Season",
-  "pvpSeasonSubtitle": "View your ranked league, season progress, leaderboard and rewards.",
 
   "activeMatchesTitle": "Active Matches",
   "activeMatchesReconnecting": "Reconnecting...",

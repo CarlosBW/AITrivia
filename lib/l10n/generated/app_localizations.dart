@@ -1820,17 +1820,29 @@ abstract class AppLocalizations {
   /// **'PvP'**
   String get pvpHubTitle;
 
-  /// No description provided for @pvpHubHeading.
+  /// No description provided for @pvpRankTitle.
   ///
   /// In es, this message translates to:
-  /// **'Centro competitivo'**
-  String get pvpHubHeading;
+  /// **'Liga {league}'**
+  String pvpRankTitle(String league);
 
-  /// No description provided for @pvpHubSubheading.
+  /// No description provided for @pvpRankSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Elige cómo quieres competir.'**
-  String get pvpHubSubheading;
+  /// **'{rating} MMR · {wins} V · {losses} D'**
+  String pvpRankSubtitle(int rating, int wins, int losses);
+
+  /// No description provided for @pvpSeasonAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver temporada'**
+  String get pvpSeasonAction;
+
+  /// No description provided for @pvpFindAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar'**
+  String get pvpFindAction;
 
   /// No description provided for @pvpActiveMatchesTitle.
   ///
@@ -1897,12 +1909,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Temporada PvP'**
   String get pvpSeasonTitle;
-
-  /// No description provided for @pvpSeasonSubtitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.'**
-  String get pvpSeasonSubtitle;
 
   /// No description provided for @activeMatchesTitle.
   ///

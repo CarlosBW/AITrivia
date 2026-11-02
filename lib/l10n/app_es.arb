@@ -519,8 +519,22 @@
   },
 
   "pvpHubTitle": "PvP",
-  "pvpHubHeading": "Centro competitivo",
-  "pvpHubSubheading": "Elige cómo quieres competir.",
+  "pvpRankTitle": "Liga {league}",
+  "@pvpRankTitle": {
+    "placeholders": {
+      "league": {"type": "String"}
+    }
+  },
+  "pvpRankSubtitle": "{rating} MMR · {wins} V · {losses} D",
+  "@pvpRankSubtitle": {
+    "placeholders": {
+      "rating": {"type": "int"},
+      "wins": {"type": "int"},
+      "losses": {"type": "int"}
+    }
+  },
+  "pvpSeasonAction": "Ver temporada",
+  "pvpFindAction": "Buscar",
   "pvpActiveMatchesTitle": "Partidas activas",
   "pvpActiveMatchesTitleAlert": "Partidas Activas • ¡Tu turno!",
   "pvpActiveMatchesSubtitle": "Turnos pendientes, partidas en vivo y resultados recientes.",
@@ -532,7 +546,6 @@
   "pvpFindOpponentTitle": "Buscar rival",
   "pvpFindOpponentSubtitle": "Juega contra cualquier retador disponible.",
   "pvpSeasonTitle": "Temporada PvP",
-  "pvpSeasonSubtitle": "Consulta tu liga clasificatoria, el progreso de la temporada, la clasificación y las recompensas.",
 
   "activeMatchesTitle": "Partidas activas",
   "activeMatchesReconnecting": "Reconectando...",

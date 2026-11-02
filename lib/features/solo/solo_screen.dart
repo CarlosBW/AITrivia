@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -43,11 +45,13 @@ class _SoloScreenState extends State<SoloScreen> {
     _loadCategoriesAndProgress();
   }
 
-  Future<void> _loadCategoriesAndProgress() async {
+  /// [showLoading] swaps the grid for a spinner; refreshes that already
+  /// have something on screen update it in place instead.
+  Future<void> _loadCategoriesAndProgress({bool showLoading = true}) async {
     if (!mounted) return;
 
     setState(() {
-      _loading = true;
+      if (showLoading) _loading = true;
       _error = null;
     });
 
@@ -263,7 +267,10 @@ class _SoloScreenState extends State<SoloScreen> {
     );
 
     if (!mounted) return;
-    await _loadCategoriesAndProgress();
+    // Not awaited and without the full-screen spinner: awaiting kept the
+    // navigation overlay's spinner up on top of the grid's own, two
+    // spinners stacked out of line every time the player came back.
+    unawaited(_loadCategoriesAndProgress(showLoading: false));
   }
 
   @override
@@ -277,7 +284,7 @@ class _SoloScreenState extends State<SoloScreen> {
       body: Stack(
         children: [
           RefreshIndicator(
-            onRefresh: _loadCategoriesAndProgress,
+            onRefresh: () => _loadCategoriesAndProgress(showLoading: false),
             child: _buildContent(l10n),
           ),
           if (_isNavigating || _buyingLife)

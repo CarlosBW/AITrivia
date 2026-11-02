@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/economy_service.dart';
+import '../../services/my_profile_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
@@ -37,6 +39,10 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   String? _purchasingProductId;
 
   StreamSubscription<PurchaseResult>? _purchaseResultsSub;
+
+  // Held, not built in build(): see CLAUDE.md on Firestore streams.
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _me =
+      MyProfileService.instance.watchMe();
 
   @override
   void initState() {
@@ -128,28 +134,48 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
             ? const []
             : const [ProfileAvatarButton()],
       ),
-      // Themes are bought with coins the player already has, so they show
-      // whether or not the IAP store is reachable — only the coin packs
-      // below wait on the app-store accounts.
+      // Coin packs first: "Comprar monedas" on Home opens this screen. The
+      // themes below are bought with coins the player already has, so they
+      // show whether or not the app store is reachable.
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const ThemeShopSection(),
-                const SizedBox(height: 28),
-                Text(
-                  AppLocalizations.of(context).coinShopCoinsSectionTitle,
-                  style: context.heading(
-                    20,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        AppLocalizations.of(context).coinShopCoinsSectionTitle,
+                        style: context.heading(
+                          20,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    // A price means nothing without the balance next to it.
+                    // Not until the doc arrives: a 0 that turns into the
+                    // real figure a moment later reads as lost coins.
+                    StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: _me,
+                      builder: (context, snap) {
+                        final data = snap.data?.data();
+                        if (data == null) return const SizedBox.shrink();
+                        return CoinBalance(
+                          coins: ((data['coins'] ?? 0) as num).toInt(),
+                          l10n: AppLocalizations.of(context),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 if (_storeAvailable)
                   _buildShop(context)
                 else
                   _buildUnavailable(context),
+                const SizedBox(height: 28),
+                const ThemeShopSection(),
               ],
             ),
     );

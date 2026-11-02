@@ -168,19 +168,10 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.themeShopSectionTitle,
-                    style: context.heading(20, color: colorScheme.onSurface),
-                  ),
-                ),
-                // A price means nothing without the balance next to it.
-                // Not until the doc arrives: a 0 that turns into the real
-                // figure a moment later reads as having lost the coins.
-                if (data != null) _Balance(coins: coins, l10n: l10n),
-              ],
+            // The balance sits by the coin packs at the top of the store.
+            Text(
+              l10n.themeShopSectionTitle,
+              style: context.heading(20, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 4),
             Text(
@@ -210,8 +201,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
 }
 
 /// What the player has to spend, in the same coin the home screen uses.
-class _Balance extends StatelessWidget {
-  const _Balance({required this.coins, required this.l10n});
+class CoinBalance extends StatelessWidget {
+  const CoinBalance({super.key, required this.coins, required this.l10n});
 
   final int coins;
   final AppLocalizations l10n;

@@ -29,6 +29,9 @@ workflows:
     scripts:
       - name: Code signing
         script: |
+          # Stop here if Apple refuses, rather than build unsigned and fail
+          # later with a misleading error.
+          set -e
           keychain initialize
           # Fetches the App Store certificate and provisioning profile for
           # the bundle ID, creating them the first time.

@@ -1,0 +1,59 @@
+# Codemagic builds the iOS app (Flutter can't build iOS on Windows) and
+# uploads it to TestFlight. Started by hand from the Codemagic dashboard:
+# there's no trigger, so pushes don't spend Mac minutes.
+#
+# Needs an environment group named `app_store_credentials` in Codemagic
+# (Team settings → Global variables), all marked Secure:
+#   APP_STORE_CONNECT_ISSUER_ID      App Store Connect → Users and Access →
+#   APP_STORE_CONNECT_KEY_IDENTIFIER   Integrations → App Store Connect API
+#   APP_STORE_CONNECT_PRIVATE_KEY    the whole .p8 file, App Manager role
+#   CERTIFICATE_PRIVATE_KEY          an RSA key the distribution certificate
+#                                    is made from (ssh-keygen -t rsa -b 2048
+#                                    -m PEM); keep it, so later builds reuse
+#                                    the same certificate instead of making
+#                                    a new one each time.
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      groups:
+        - app_store_credentials
+      vars:
+        BUNDLE_ID: pe.massivedynamics.triviaia
+      # Same version as the Android builds are made with.
+      flutter: 3.44.8
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Code signing
+        script: |
+          keychain initialize
+          # Fetches the App Store certificate and provisioning profile for
+          # the bundle ID, creating them the first time.
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Pods
+        script: cd ios && pod install --repo-update
+      - name: Build ipa
+        # Version and build number come from pubspec.yaml, like Android.
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        # Internal testers get it as soon as Apple finishes processing.
+        submit_to_testflight: true

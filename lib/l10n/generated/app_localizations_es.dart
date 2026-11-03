@@ -3053,6 +3053,63 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotlightGotIt => 'Entendido';
 
   @override
+  String navTourTapPrompt(String tab) {
+    return 'Toca $tab para abrir esta sección';
+  }
+
+  @override
+  String navTourProgress(int step, int total) {
+    return '$step de $total';
+  }
+
+  @override
+  String get navTourNext => 'Siguiente';
+
+  @override
+  String get navTourDone => '¡A jugar!';
+
+  @override
+  String get navTourSkip => 'Saltar tutorial';
+
+  @override
+  String get navTourHomeName => 'Inicio';
+
+  @override
+  String get navTourHomeTitle => 'Inicio: tu tema, creado con IA';
+
+  @override
+  String get navTourHomeBody =>
+      'Aquí está lo que hace única a TriviaIA: ✨ Tema libre IA. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y la IA arma una trivia solo para ti. ¡Tu primer tema IA es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.';
+
+  @override
+  String get navTourSoloTitle => 'Solo: niveles por categoría';
+
+  @override
+  String get navTourSoloBody =>
+      'Juega niveles de Cine, Historia, Deportes y muchas categorías más. Cada nivel que superas desbloquea el siguiente y te da monedas y XP. Las respuestas incorrectas te cuestan vidas, que se recuperan solas con el tiempo.';
+
+  @override
+  String get navTourPvpTitle => 'PvP: duelos contra otros jugadores';
+
+  @override
+  String get navTourPvpBody =>
+      'Enfréntate a otros jugadores en vivo o por turnos. Cada victoria sube tu puntuación y te lleva a ligas más altas, con mejores recompensas.';
+
+  @override
+  String get navTourFriendsTitle => 'Amigos: ¡rétalos!';
+
+  @override
+  String get navTourFriendsBody =>
+      'Busca a tus amigos por su nombre de usuario, agrégalos y rétalos a un duelo de trivia. Si no están conectados, juegan por turnos cuando puedan. ¡Demuestra quién sabe más!';
+
+  @override
+  String get navTourStoreTitle => 'Tienda: tus monedas';
+
+  @override
+  String get navTourStoreBody =>
+      'Todo lo que juegas te da monedas. Guárdalas para crear más Temas IA personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.';
+
+  @override
   String get spotlightPvpTitle => 'Duelos 1 vs 1';
 
   @override

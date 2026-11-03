@@ -12,15 +12,22 @@ import '../solo/solo_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/spotlight_service.dart';
 import '../../widgets/notification_bell_button.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../widgets/language_switch.dart';
 import '../../widgets/nav_glyphs.dart';
+import '../../widgets/nav_tour.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../theme/app_theme.dart';
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  /// Walks a new player through the bottom bar ([NavTour]) the first time
+  /// the shell is on screen — after the first Daily Challenge, when
+  /// onboarding opens one on top.
+  final bool startTour;
+
+  const MainNavigationScreen({super.key, this.startTour = false});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -46,6 +53,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final Set<int> _visitedTabs = {0};
 
+  final List<GlobalKey> _navItemKeys = List.generate(5, (_) => GlobalKey());
+  late bool _tourPending = widget.startTour;
+  bool _touring = false;
+
   // Held rather than built in `build()`: this is the navigation shell, so it
   // rebuilds on every tab switch and twice more per notification overlay,
   // and each rebuild used to re-subscribe this query from scratch.
@@ -64,6 +75,78 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         _openNotifications();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Runs again whenever this route becomes (or stops being) the top one,
+    // so a Daily Challenge opened on top — and the result screen that
+    // replaces it — holds the tour back until the player is back here.
+    if (_tourPending && ModalRoute.isCurrentOf(context) == true) {
+      _tourPending = false;
+      _startTour();
+    }
+  }
+
+  Future<void> _startTour() async {
+    // The tour explains PvP itself; its own first-visit hint would pop up
+    // over the tour's text when the tab opens.
+    await SpotlightService.instance.markSeen('pvp_find_opponent');
+    // Lets the route transition finish before the screen darkens.
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    if (ModalRoute.isCurrentOf(context) != true) {
+      _tourPending = true;
+      return;
+    }
+    setState(() => _touring = true);
+  }
+
+  List<NavTourStep> _tourSteps(AppLocalizations l10n) => [
+        NavTourStep(
+          tabIndex: 0,
+          targetKey: _navItemKeys[0],
+          tabName: l10n.navTourHomeName,
+          title: l10n.navTourHomeTitle,
+          description: l10n.navTourHomeBody,
+          // Leaves the free AI topic card, what the text is about, in view.
+          explainAtTop: true,
+        ),
+        NavTourStep(
+          tabIndex: 1,
+          targetKey: _navItemKeys[1],
+          tabName: l10n.soloTabTitle,
+          title: l10n.navTourSoloTitle,
+          description: l10n.navTourSoloBody,
+        ),
+        NavTourStep(
+          tabIndex: 2,
+          targetKey: _navItemKeys[2],
+          tabName: l10n.pvpHubTitle,
+          title: l10n.navTourPvpTitle,
+          description: l10n.navTourPvpBody,
+        ),
+        NavTourStep(
+          tabIndex: 3,
+          targetKey: _navItemKeys[3],
+          tabName: l10n.friendsTitle,
+          title: l10n.navTourFriendsTitle,
+          description: l10n.navTourFriendsBody,
+        ),
+        NavTourStep(
+          tabIndex: 4,
+          targetKey: _navItemKeys[4],
+          tabName: l10n.storeTabTitle,
+          title: l10n.navTourStoreTitle,
+          description: l10n.navTourStoreBody,
+        ),
+      ];
+
+  void _finishTour() {
+    setState(() => _touring = false);
+    // Back where the free AI topic is, the tour's last word on coins.
+    _selectTab(0);
   }
 
   static const _tabNames = ['home', 'solo', 'pvp', 'friends', 'store'];
@@ -264,7 +347,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final shell = Scaffold(
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _unreadNotifications,
         builder: (context, snap) {
@@ -356,7 +439,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       bottomNavigationBar: _BottomNavBar(
         selectedIndex: _index,
         onSelect: _selectTab,
+        itemKeys: _navItemKeys,
       ),
+    );
+
+    // Always the Stack, tour or not: returning the bare Scaffold when the
+    // tour ends would move it in the tree and rebuild every tab from zero.
+    return Stack(
+      children: [
+        shell,
+        if (_touring)
+          Positioned.fill(
+            child: NavTour(
+              steps: _tourSteps(AppLocalizations.of(context)),
+              onSelectTab: _selectTab,
+              onFinished: _finishTour,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -381,9 +481,13 @@ class _BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
+  /// One per tab, by logical index: what [NavTour] lights up.
+  final List<GlobalKey> itemKeys;
+
   const _BottomNavBar({
     required this.selectedIndex,
     required this.onSelect,
+    required this.itemKeys,
   });
 
   static const _soloIndex = 1;
@@ -400,6 +504,7 @@ class _BottomNavBar extends StatelessWidget {
 
     return Expanded(
       child: InkWell(
+        key: itemKeys[logicalIndex],
         onTap: () => onSelect(logicalIndex),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -457,6 +562,7 @@ class _BottomNavBar extends StatelessWidget {
             Positioned(
               top: -6,
               child: GestureDetector(
+                key: itemKeys[_soloIndex],
                 onTap: () => onSelect(_soloIndex),
                 child: _AppIconFab(selected: selectedIndex == _soloIndex),
               ),

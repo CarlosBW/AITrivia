@@ -5092,6 +5092,102 @@ abstract class AppLocalizations {
   /// **'Entendido'**
   String get spotlightGotIt;
 
+  /// No description provided for @navTourTapPrompt.
+  ///
+  /// In es, this message translates to:
+  /// **'Toca {tab} para abrir esta sección'**
+  String navTourTapPrompt(String tab);
+
+  /// No description provided for @navTourProgress.
+  ///
+  /// In es, this message translates to:
+  /// **'{step} de {total}'**
+  String navTourProgress(int step, int total);
+
+  /// No description provided for @navTourNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Siguiente'**
+  String get navTourNext;
+
+  /// No description provided for @navTourDone.
+  ///
+  /// In es, this message translates to:
+  /// **'¡A jugar!'**
+  String get navTourDone;
+
+  /// No description provided for @navTourSkip.
+  ///
+  /// In es, this message translates to:
+  /// **'Saltar tutorial'**
+  String get navTourSkip;
+
+  /// No description provided for @navTourHomeName.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio'**
+  String get navTourHomeName;
+
+  /// No description provided for @navTourHomeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Inicio: tu tema, creado con IA'**
+  String get navTourHomeTitle;
+
+  /// No description provided for @navTourHomeBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Aquí está lo que hace única a TriviaIA: ✨ Tema libre IA. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y la IA arma una trivia solo para ti. ¡Tu primer tema IA es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.'**
+  String get navTourHomeBody;
+
+  /// No description provided for @navTourSoloTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Solo: niveles por categoría'**
+  String get navTourSoloTitle;
+
+  /// No description provided for @navTourSoloBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Juega niveles de Cine, Historia, Deportes y muchas categorías más. Cada nivel que superas desbloquea el siguiente y te da monedas y XP. Las respuestas incorrectas te cuestan vidas, que se recuperan solas con el tiempo.'**
+  String get navTourSoloBody;
+
+  /// No description provided for @navTourPvpTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'PvP: duelos contra otros jugadores'**
+  String get navTourPvpTitle;
+
+  /// No description provided for @navTourPvpBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Enfréntate a otros jugadores en vivo o por turnos. Cada victoria sube tu puntuación y te lleva a ligas más altas, con mejores recompensas.'**
+  String get navTourPvpBody;
+
+  /// No description provided for @navTourFriendsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Amigos: ¡rétalos!'**
+  String get navTourFriendsTitle;
+
+  /// No description provided for @navTourFriendsBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Busca a tus amigos por su nombre de usuario, agrégalos y rétalos a un duelo de trivia. Si no están conectados, juegan por turnos cuando puedan. ¡Demuestra quién sabe más!'**
+  String get navTourFriendsBody;
+
+  /// No description provided for @navTourStoreTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienda: tus monedas'**
+  String get navTourStoreTitle;
+
+  /// No description provided for @navTourStoreBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo lo que juegas te da monedas. Guárdalas para crear más Temas IA personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.'**
+  String get navTourStoreBody;
+
   /// No description provided for @spotlightPvpTitle.
   ///
   /// In es, this message translates to:

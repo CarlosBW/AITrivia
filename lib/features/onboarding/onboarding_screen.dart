@@ -84,7 +84,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     // pushed on top rather than replacing everything, otherwise its result
     // screen's "back home" button has nothing below it to pop to.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      MaterialPageRoute(
+        builder: (_) => const MainNavigationScreen(startTour: true),
+      ),
     );
 
     if (goToDailyChallenge) {

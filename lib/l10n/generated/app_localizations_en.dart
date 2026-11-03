@@ -3029,6 +3029,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotlightGotIt => 'Got it';
 
   @override
+  String navTourTapPrompt(String tab) {
+    return 'Tap $tab to open this section';
+  }
+
+  @override
+  String navTourProgress(int step, int total) {
+    return '$step of $total';
+  }
+
+  @override
+  String get navTourNext => 'Next';
+
+  @override
+  String get navTourDone => 'Let\'s play!';
+
+  @override
+  String get navTourSkip => 'Skip tour';
+
+  @override
+  String get navTourHomeName => 'Home';
+
+  @override
+  String get navTourHomeTitle => 'Home: your own topic, made by AI';
+
+  @override
+  String get navTourHomeBody =>
+      'This is what makes TriviaIA unique: ✨ AI Free Topic. Type any topic — your favorite show, your team, your field — and the AI builds a trivia just for you. Your first AI topic is free! You\'ll also find the Daily Challenge here: 2 minutes, once a day.';
+
+  @override
+  String get navTourSoloTitle => 'Solo: levels by category';
+
+  @override
+  String get navTourSoloBody =>
+      'Play levels in Movies, History, Sports and many more categories. Every level you pass unlocks the next one and earns you coins and XP. Wrong answers cost you lives, which refill on their own over time.';
+
+  @override
+  String get navTourPvpTitle => 'PvP: duels against other players';
+
+  @override
+  String get navTourPvpBody =>
+      'Take on other players live or turn by turn. Every win raises your rating and moves you up to higher leagues, with better rewards.';
+
+  @override
+  String get navTourFriendsTitle => 'Friends: challenge them!';
+
+  @override
+  String get navTourFriendsBody =>
+      'Find your friends by username, add them and challenge them to a trivia duel. If they\'re offline, you play turn by turn whenever they can. Show them who knows more!';
+
+  @override
+  String get navTourStoreTitle => 'Store: your coins';
+
+  @override
+  String get navTourStoreBody =>
+      'Everything you play earns you coins. Save them to create more custom AI Topics once you\'ve used your free one, or spend them here on visual themes for the app. If you want more, you can also buy them.';
+
+  @override
   String get spotlightPvpTitle => '1v1 Duels';
 
   @override

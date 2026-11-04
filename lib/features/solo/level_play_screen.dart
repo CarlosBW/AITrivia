@@ -1275,6 +1275,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                 locked: _locked,
                 timedOut: _timedOut,
                 timeoutAnswerIndex: _timeoutAnswerIndex,
+                pending: _awaitingVerdict,
                 onTapAnswer: (i) => _onTapAnswer(tappedIndex: i),
               ),
               SizedBox(

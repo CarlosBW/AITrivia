@@ -590,6 +590,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
                               answerIndex: _revealedIndex ?? -1,
                               selectedIndex: _selectedIndex,
                               locked: _revealedIndex != null,
+                              pending: _awaitingVerdict,
                               onTapAnswer: _answer,
                             ),
                           ),

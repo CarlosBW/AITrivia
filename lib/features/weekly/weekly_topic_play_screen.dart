@@ -426,7 +426,30 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                         onPressed: _selectedIndex != null || _submitting
                             ? null
                             : () => _answer(i),
-                        child: Text(options[i], textAlign: TextAlign.center),
+                        child: _awaitingVerdict && i == _selectedIndex
+                            // Sent, not judged yet: a slow verdict otherwise
+                            // looked like a tap that didn't register.
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      options[i],
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: _buttonTextColor(i),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(options[i], textAlign: TextAlign.center),
                       ),
                     ),
                   );

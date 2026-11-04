@@ -12,6 +12,11 @@ class QuestionAnswerCard extends StatelessWidget {
   final bool locked;
   final bool timedOut;
   final int? timeoutAnswerIndex;
+
+  /// The selected option has been sent and the server hasn't judged it
+  /// yet. It spins meanwhile: a slow verdict otherwise looked like a tap
+  /// that didn't register, and players kept tapping.
+  final bool pending;
   final void Function(int index) onTapAnswer;
 
   const QuestionAnswerCard({
@@ -24,6 +29,7 @@ class QuestionAnswerCard extends StatelessWidget {
     required this.onTapAnswer,
     this.timedOut = false,
     this.timeoutAnswerIndex,
+    this.pending = false,
   });
 
   @override
@@ -197,6 +203,16 @@ class QuestionAnswerCard extends StatelessWidget {
                     if (trailingIcon != null) ...[
                       const SizedBox(width: 8),
                       Icon(trailingIcon, color: trailingIconColor),
+                    ] else if (pending && isSelected && !locked) ...[
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: colorScheme.primary,
+                        ),
+                      ),
                     ],
                   ],
                 ),

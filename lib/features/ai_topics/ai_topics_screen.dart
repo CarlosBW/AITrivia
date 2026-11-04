@@ -463,10 +463,29 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                                       ),
                                       PopupMenuItem(
                                         value: 'expand',
-                                        child: Text(
-                                          l10n.aiTopicsExpandMenuItem(
-                                            EconomyService.expandAiTopicCost,
-                                          ),
+                                        // Priced the way the store and
+                                        // the level screen show it.
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                l10n.aiTopicsExpandMenuItem,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            const Text(
+                                              '🪙',
+                                              style: TextStyle(fontSize: 14),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${EconomyService.expandAiTopicCost}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],

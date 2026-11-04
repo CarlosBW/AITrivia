@@ -2429,9 +2429,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String aiTopicsExpandMenuItem(int cost) {
-    return 'Ampliar tema (+10 niveles) — $cost monedas';
-  }
+  String get aiTopicsExpandMenuItem => 'Ampliar tema (+10 niveles)';
 
   @override
   String get aiTopicsRegenerateMenuItemPlain => 'Añadir más preguntas';

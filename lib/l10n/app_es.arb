@@ -1374,12 +1374,7 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsExpandMenuItem": "Ampliar tema (+10 niveles) — {cost} monedas",
-  "@aiTopicsExpandMenuItem": {
-    "placeholders": {
-      "cost": {"type": "int"}
-    }
-  },
+  "aiTopicsExpandMenuItem": "Ampliar tema (+10 niveles)",
   "aiTopicsRegenerateMenuItemPlain": "Añadir más preguntas",
   "aiTopicsRegenerateAllFull": "Ya añadiste el máximo de preguntas a este tema.",
   "aiTopicsRegenerateDialogTitle": "Añadir más preguntas",

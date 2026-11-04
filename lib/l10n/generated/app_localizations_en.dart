@@ -2406,9 +2406,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String aiTopicsExpandMenuItem(int cost) {
-    return 'Expand topic (+10 levels) — $cost coins';
-  }
+  String get aiTopicsExpandMenuItem => 'Expand topic (+10 levels)';
 
   @override
   String get aiTopicsRegenerateMenuItemPlain => 'Add more questions';

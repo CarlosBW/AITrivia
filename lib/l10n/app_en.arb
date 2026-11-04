@@ -1346,12 +1346,7 @@
       "cost": {"type": "int"}
     }
   },
-  "aiTopicsExpandMenuItem": "Expand topic (+10 levels) — {cost} coins",
-  "@aiTopicsExpandMenuItem": {
-    "placeholders": {
-      "cost": {"type": "int"}
-    }
-  },
+  "aiTopicsExpandMenuItem": "Expand topic (+10 levels)",
   "aiTopicsRegenerateMenuItemPlain": "Add more questions",
   "aiTopicsRegenerateAllFull": "You have already added the maximum number of questions to this topic.",
   "aiTopicsRegenerateDialogTitle": "Add more questions",

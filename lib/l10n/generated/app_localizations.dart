@@ -4069,8 +4069,8 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsExpandMenuItem.
   ///
   /// In es, this message translates to:
-  /// **'Ampliar tema (+10 niveles) — {cost} monedas'**
-  String aiTopicsExpandMenuItem(int cost);
+  /// **'Ampliar tema (+10 niveles)'**
+  String get aiTopicsExpandMenuItem;
 
   /// No description provided for @aiTopicsRegenerateMenuItemPlain.
   ///

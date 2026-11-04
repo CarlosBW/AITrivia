@@ -700,11 +700,19 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                 OutlinedButton.icon(
                   onPressed: busy ? null : () => _expandTopic(context, uid),
                   icon: const Icon(Icons.add_circle_outline),
-                  label: Text(
-                    l10n.aiTopicsExpandMenuItem(
-                      EconomyService.expandAiTopicCost,
-                    ),
-                    textAlign: TextAlign.center,
+                  // The price the way the store shows one: coin, then amount.
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: Text(l10n.aiTopicsExpandMenuItem)),
+                      const SizedBox(width: 10),
+                      const Text('🪙', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${EconomyService.expandAiTopicCost}',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
                   ),
                 ),
               ],

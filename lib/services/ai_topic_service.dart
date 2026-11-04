@@ -485,5 +485,34 @@ class AiTopicService {
     } on FirebaseFunctionsException catch (e) {
       throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotExpandTopic));
     }
+
+    // Expanding only raises the topic's ceiling; nothing gets generated
+    // until a level is played. A player who had finished every level then
+    // opened the first new one on the slow on-demand path, watching the
+    // AI write it. Buffering from where they are starts it right away.
+    unawaited(_bufferAfterExpand(topicId));
+  }
+
+  Future<void> _bufferAfterExpand(String topicId) async {
+    try {
+      final progress = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('progress_ai')
+          .doc(topicId)
+          .get();
+      final passed = progress.data()?['passedLevels'];
+      final highestPassed = passed is List
+          ? passed.whereType<num>().fold<int>(
+              0, (best, level) => level > best ? level.toInt() : best)
+          : 0;
+      await ensureAiTopicBuffer(
+        topicId: topicId,
+        completedLevel: highestPassed,
+      );
+    } catch (_) {
+      // Best effort, like every buffering call: the level still generates
+      // on demand when it's opened.
+    }
   }
 }

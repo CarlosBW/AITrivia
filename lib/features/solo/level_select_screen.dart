@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/ai_topic_service.dart';
+import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
 import 'level_play_screen.dart';
 import '../../widgets/no_lives_dialog.dart';
@@ -39,6 +41,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     with WidgetsBindingObserver {
   bool _isNavigating = false;
   bool _buyingLife = false;
+  bool _expanding = false;
 
   bool _loading = true;
   String? _loadError;
@@ -329,6 +332,72 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     });
   }
 
+  /// Adds another batch of levels to this AI topic, the same purchase as
+  /// the topic list's menu — which is where it used to be the only way in.
+  Future<void> _expandTopic(BuildContext context, String uid) async {
+    final topicId = widget.aiTopicId;
+    if (topicId == null || _expanding || _isNavigating || _buyingLife) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final userSnap =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final coins = ((userSnap.data()?['coins'] ?? 0) as num).toInt();
+
+    if (!context.mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.aiTopicsExpandDialogTitle),
+        content: Text(
+          l10n.aiTopicsExpandDialogBody(
+            widget.categoryName,
+            EconomyService.expandAiTopicCost,
+            coins,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.aiTopicsCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.aiTopicsConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    setState(() => _expanding = true);
+
+    try {
+      await AiTopicService.instance.expandTopic(topicId: topicId);
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.aiTopicsExpandSuccess)),
+      );
+      // The new levels come from the topic doc, which this screen reads
+      // once rather than watches.
+      await _loadScreenData(showLoading: false);
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _expanding = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -351,7 +420,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             )
           else
             _buildContent(context: context, uid: uid, l10n: l10n),
-          if (_isNavigating || _buyingLife)
+          if (_isNavigating || _buyingLife || _expanding)
             Container(
               color: Theme.of(context)
                   .colorScheme
@@ -429,8 +498,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     final progress =
         levelCount == 0 ? 0.0 : (completedCount / levelCount).clamp(0.0, 1.0);
 
-    final completedAll = _progressData['completedAllLevels'] == true ||
-        (levelCount > 0 && completedCount >= levelCount);
+    // Counted, not read from `completedAllLevels`: that flag is never
+    // cleared, so after expanding an AI topic it kept offering to replay
+    // the last level instead of the first new one.
+    final completedAll = levelCount > 0 && completedCount >= levelCount;
 
     final recommendedLevel = completedAll ? levelCount : maxUnlocked;
 
@@ -462,7 +533,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           ),
     );
 
-    final busy = _isNavigating || _buyingLife;
+    final busy = _isNavigating || _buyingLife || _expanding;
+    final canExpand = widget.isAiTopic &&
+        widget.aiTopicId != null &&
+        _categoryData['status'] == 'ready';
     final colorScheme = Theme.of(context).colorScheme;
     final onHero = context.appColors.onAccent;
 
@@ -621,6 +695,19 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
                       : l10n.levelSelectContinueAtLevel(recommendedLevel),
                 ),
               ),
+              if (canExpand) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : () => _expandTopic(context, uid),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: Text(
+                    l10n.aiTopicsExpandMenuItem(
+                      EconomyService.expandAiTopicCost,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

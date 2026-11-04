@@ -50,6 +50,18 @@ void main() {
     expect(p.resume, isNull);
   });
 
+  test('tras ampliar un tema completado, ofrece el primer nivel nuevo', () {
+    // completedAllLevels lo dejó el servidor cuando el tema tenía 10
+    // niveles; con 20, ya no es cierto.
+    final p = SoloProgress.fromDoc({
+      'passedLevels': [for (var i = 1; i <= 10; i++) i],
+      'completedAllLevels': true,
+    }, 20);
+    expect(p.completedAll, isFalse);
+    expect(p.nextLevel, 11);
+    expect(p.resume, (level: 11, retry: false));
+  });
+
   test('los documentos viejos sin passedLevels se leen de levelStats', () {
     final p = SoloProgress.fromDoc({
       'levelStats': {

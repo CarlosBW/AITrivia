@@ -59,8 +59,10 @@ class SoloProgress {
     while (passed.contains(next)) {
       next++;
     }
-    final completedAll = data['completedAllLevels'] == true ||
-        (levelCount > 0 && passed.length >= levelCount);
+    // Counted, not read from `completedAllLevels`: the server sets that
+    // flag once and never clears it, so after an AI topic is expanded it
+    // still claimed every level was done.
+    final completedAll = levelCount > 0 && passed.length >= levelCount;
     if (next > levelCount) next = levelCount;
 
     final last = data['lastScore'];

@@ -14,6 +14,7 @@ import '../../services/ai_topic_service.dart';
 import '../../services/answer_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/solo_progress_service.dart';
+import '../../services/level_session_retry.dart';
 import '../review/question_review_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/localized_content.dart';
@@ -73,7 +74,8 @@ class LevelPlayScreen extends StatefulWidget {
   State<LevelPlayScreen> createState() => _LevelPlayScreenState();
 }
 
-class _LevelPlayScreenState extends State<LevelPlayScreen> {
+class _LevelPlayScreenState extends State<LevelPlayScreen>
+    with WidgetsBindingObserver {
   int _index = 0;
   int _correct = 0;
   final List<Map<String, dynamic>> _answers = [];
@@ -107,6 +109,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   bool _creatingSession = false;
   String? _sessionError;
+
+  /// Whether the app left the foreground while the session was being
+  /// created, and how often that has been retried on its own — see
+  /// [shouldRetryLevelSession].
+  bool _backgroundedWhileCreating = false;
+  int _sessionRetries = 0;
 
   bool _bufferKicked = false;
 
@@ -218,6 +226,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lifeUiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _refreshLivesUi();
     });
@@ -225,9 +234,19 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _lifeUiTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_creatingSession &&
+        (state == AppLifecycleState.paused ||
+            state == AppLifecycleState.hidden)) {
+      _backgroundedWhileCreating = true;
+    }
   }
 
   Future<void> _safeNavigate(Future<void> Function() action) async {
@@ -830,6 +849,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen> {
                           );
                           _kickAiBuffer();
                         } catch (e) {
+                          final retry = shouldRetryLevelSession(
+                            errorCode: e is FirebaseFunctionsException
+                                ? e.code
+                                : null,
+                            wentToBackground: _backgroundedWhileCreating,
+                            retriesSoFar: _sessionRetries,
+                          );
+                          _backgroundedWhileCreating = false;
+                          if (retry) {
+                            // Asked again by the rebuild in `finally`,
+                            // which no longer finds a session.
+                            _sessionRetries++;
+                            return;
+                          }
                           // No life to give back: the entry cost is charged
                           // on the first answer, and there is no answer
                           // without a session.

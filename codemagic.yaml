@@ -60,3 +60,7 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         # Internal testers get it as soon as Apple finishes processing.
         submit_to_testflight: true
+        # External testers get it once Beta App Review passes, without
+        # adding each build to the group by hand in App Store Connect.
+        beta_groups:
+          - Beta pública

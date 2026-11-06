@@ -376,9 +376,9 @@ extension AppSurfacesContext on BuildContext {
 /// resolves its style from the theme. A wrapper would have meant editing
 /// all 74 and would still have missed the next one somebody writes.
 ///
-/// The lip lives *inside* the button's own box — the face occupies all but
-/// the bottom [AppSurfaces.buttonLip] pixels, and pressing moves it down
-/// onto the block underneath. Same trick the answer cards already use for
+/// The lip lives *inside* the button's own box — the bottom
+/// [AppSurfaces.buttonLip] pixels are the block, and pressing flattens it
+/// while the content moves down into its place. Same trick the answer cards already use for
 /// their animated border: the outer size never changes, so nothing below
 /// the button shifts when it is pressed.
 ///
@@ -400,28 +400,41 @@ extension AppSurfacesContext on BuildContext {
     background: (context, states, child) {
       final pressed = states.contains(WidgetState.pressed);
 
-      return Stack(
-        children: [
-          // The block the face sits on. Always full-height: once the face
-          // drops onto it, it is simply covered.
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: surfaces.shadowColor,
-                borderRadius: shape,
+      // The button's own Material paints the face, under this builder. The
+      // block used to be drawn full-height on top of it, so it covered the
+      // fill and every filled button came out as a solid dark pill. Now
+      // only the bottom strip is block, clipped to the button's corners,
+      // and pressing flattens it while the content sinks into its place.
+      return ClipRRect(
+        borderRadius: shape,
+        child: Stack(
+          children: [
+            // Not positioned: the content is what gives the Stack its size.
+            // With every child positioned the Stack took the largest size
+            // allowed, which a full-width button in a list leaves unbounded
+            // — and the whole screen failed to lay out.
+            AnimatedPadding(
+              duration: duration,
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(
+                top: pressed ? lip : 0,
+                bottom: pressed ? 0 : lip,
+              ),
+              child: child ?? const SizedBox.shrink(),
+            ),
+            AnimatedPositioned(
+              duration: duration,
+              curve: Curves.easeOut,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: pressed ? 0 : lip,
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: surfaces.shadowColor),
               ),
             ),
-          ),
-          AnimatedPositioned(
-            duration: duration,
-            curve: Curves.easeOut,
-            left: 0,
-            right: 0,
-            top: pressed ? lip : 0,
-            bottom: pressed ? 0 : lip,
-            child: child ?? const SizedBox.shrink(),
-          ),
-        ],
+          ],
+        ),
       );
     },
     // The label has to travel with the face, or it floats while the button

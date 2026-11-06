@@ -62,5 +62,8 @@ workflows:
         submit_to_testflight: true
         # External testers get it once Beta App Review passes, without
         # adding each build to the group by hand in App Store Connect.
+        # Its "What to Test" comes from release_notes.json at the repo root
+        # (no < or >: Apple's API refuses them); update it with each
+        # version.
         beta_groups:
           - Beta pública

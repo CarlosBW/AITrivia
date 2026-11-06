@@ -7,7 +7,7 @@ import {
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError, FunctionsErrorCode} from
   "firebase-functions/v2/https";
-import {defineSecret} from "firebase-functions/params";
+import {defineSecret, defineString} from "firebase-functions/params";
 import type Anthropic from "@anthropic-ai/sdk";
 import * as crypto from "crypto";
 import {
@@ -90,6 +90,11 @@ import {
   questionAt,
   reportQuotaAfter,
 } from "./question_reports";
+import {
+  StoredReport,
+  parseNotifyUids,
+  questionReportAlert,
+} from "./question_report_alert";
 import {
   isOpponentUnresponsive,
   mergeAnswerKey,
@@ -9779,6 +9784,66 @@ export const reportQuestion = onCall(async (request) => {
 
   return {alreadyReported};
 });
+
+/**
+ * Who hears about new question reports: uids, comma-separated. Asked for
+ * on the first deploy and kept in `functions/.env.<project>`; empty means
+ * nobody, which leaves reports collected silently as they used to be.
+ */
+const questionReportNotifyUids = defineString("QUESTION_REPORT_NOTIFY_UIDS", {
+  default: "",
+  description: "UIDs (separados por comas) que reciben un aviso por cada " +
+    "pregunta reportada",
+});
+
+/**
+ * Tells the team a question was reported, as an in-app notification —
+ * which [sendPushOnNotificationCreated] then pushes to their phones.
+ * @param {"fixed" | "ai"} kind Which collection the report landed in.
+ * @param {string} reportId The report document's id.
+ * @param {StoredReport | undefined} report The report document's data.
+ * @return {Promise<void>} Resolves once every notification is written.
+ */
+async function notifyQuestionReport(
+  kind: "fixed" | "ai",
+  reportId: string,
+  report: StoredReport | undefined
+): Promise<void> {
+  const uids = parseNotifyUids(questionReportNotifyUids.value());
+  if (!report || uids.length === 0) return;
+
+  const {title, body} = questionReportAlert(kind, report);
+  const batch = db.batch();
+  for (const uid of uids) {
+    batch.set(db.collection("users").doc(uid).collection("notifications")
+      .doc(), {
+      type: "question_report",
+      title,
+      body,
+      data: {kind, reportId},
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
+}
+
+// One trigger per collection. Both only fire on creation: a player
+// reporting the same question again updates their report in place, and
+// that shouldn't alert anyone twice.
+export const notifyQuestionReportCreated = onDocumentCreated(
+  "question_reports/{reportId}",
+  (event) => notifyQuestionReport(
+    "fixed", event.params.reportId, event.data?.data()
+  )
+);
+
+export const notifyAiQuestionReportCreated = onDocumentCreated(
+  "ai_question_reports/{reportId}",
+  (event) => notifyQuestionReport(
+    "ai", event.params.reportId, event.data?.data()
+  )
+);
 
 /**
  * A fixed pool's questions for one category and difficulty.

@@ -61,6 +61,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.bolt_outlined;
       case 'realtime_invite_accepted':
         return Icons.check_circle_outline;
+      // Only the team gets these — see notifyQuestionReport on the server.
+      case 'question_report':
+        return Icons.flag_outlined;
       default:
         return Icons.notifications_outlined;
     }

@@ -859,6 +859,85 @@ class AppThemes {
     preview: [_christmasRed, _christmasGold, _christmasPage],
   );
 
+  /// Pencil on paper: the whole game in black, white and grey, as if
+  /// drawn in a sketchbook. Ink outlines and a hard offset shadow on every
+  /// surface, handwritten headings, and loose hatching on the page.
+  ///
+  /// With no colour to tell a right answer from a wrong one, they differ by
+  /// tone (near-black against mid grey) on top of the icon each answer
+  /// already shows.
+  static const String sketchId = 'sketch';
+
+  static const Color _sketchPage = Color(0xFFF6F5F1);
+  static const Color _sketchInk = Color(0xFF1C1C1C);
+  static const Color _sketchGrey = Color(0xFF555555);
+
+  static const AppThemeSpec _sketch = AppThemeSpec(
+    id: sketchId,
+    price: 400,
+    colorScheme: ColorScheme(
+      brightness: Brightness.light,
+      primary: _sketchInk,
+      onPrimary: Colors.white,
+      primaryContainer: Color(0xFFE4E4E1),
+      onPrimaryContainer: _sketchInk,
+      secondary: Color(0xFF4A4A4A),
+      onSecondary: Colors.white,
+      secondaryContainer: Color(0xFFEDEDEA),
+      onSecondaryContainer: _sketchInk,
+      tertiary: Color(0xFF5C5C5C),
+      onTertiary: Colors.white,
+      surface: Colors.white,
+      onSurface: _sketchInk,
+      surfaceContainerHighest: Color(0xFFECEBE8),
+      onSurfaceVariant: _sketchGrey,
+      outline: Color(0xFF8A8A8A),
+      outlineVariant: Color(0xFFCFCFCC),
+      error: Color(0xFF3A3A3A),
+      onError: Colors.white,
+      errorContainer: Color(0xFFE6E6E3),
+      onErrorContainer: _sketchInk,
+      inverseSurface: _sketchInk,
+      onInverseSurface: Colors.white,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    ),
+    semanticColors: AppSemanticColors(
+      reward: Color(0xFF2B2B2B),
+      rewardBg: Color(0xFFE9E9E6),
+      success: _sketchInk,
+      successBg: Color(0xFFE3E3E0),
+      danger: Color(0xFF5A5A5A),
+      dangerBg: Color(0xFFF1F1EE),
+      onAccent: Colors.white,
+      onScrim: Colors.white,
+      onReward: Colors.white,
+      // Charcoal into graphite for both: the cards that stand out do so by
+      // being solid ink on a white page.
+      brandGradientStart: Color(0xFF2A2A2A),
+      brandGradientEnd: Color(0xFF4A4A4A),
+      heroGradientStart: _sketchInk,
+      heroGradientEnd: Color(0xFF3D3D3D),
+    ),
+    // Small corners, as a pen rounds them without trying.
+    shapes: AppShapes(xs: 4, sm: 6, md: 10, lg: 14, pill: AppRadius.pill),
+    surfaces: AppSurfaces(
+      borderWidth: 2,
+      borderColor: _sketchInk,
+      // A solid ink shadow off to one side, the way a drawn box is given
+      // depth.
+      shadowColor: _sketchInk,
+      shadowBlur: 0,
+      shadowOffset: Offset(3, 3),
+      buttonLip: 0,
+      overridesSurfaces: true,
+    ),
+    scaffoldBackground: _sketchPage,
+    backdrop: AppBackdrop.sketchbook,
+    headingFace: AppHeadingFace.handwritten,
+    preview: [_sketchInk, Color(0xFF8A8A8A), _sketchPage],
+  );
+
   // Cheapest first after the free one, so the first thing a player sees
   // for sale is the one they are closest to affording.
   static const List<AppThemeSpec> all = [
@@ -874,6 +953,7 @@ class AppThemes {
     _cyberpunk,
     _steampunk,
     _christmas,
+    _sketch,
   ];
 
   /// The spec for [id], falling back to the default for an id this build

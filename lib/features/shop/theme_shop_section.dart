@@ -7,6 +7,7 @@ import '../../l10n/user_facing_error.dart';
 import '../../services/theme_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_themes.dart';
+import 'theme_preview_screen.dart';
 
 /// The themes half of the store.
 ///
@@ -55,6 +56,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeNameSteampunk;
       case AppThemes.christmasId:
         return l10n.themeNameChristmas;
+      case AppThemes.sketchId:
+        return l10n.themeNameSketch;
       default:
         return l10n.themeNameDefault;
     }
@@ -84,6 +87,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
         return l10n.themeDescriptionSteampunk;
       case AppThemes.christmasId:
         return l10n.themeDescriptionChristmas;
+      case AppThemes.sketchId:
+        return l10n.themeDescriptionSketch;
       default:
         return l10n.themeDescriptionDefault;
     }
@@ -96,6 +101,21 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
     } finally {
       if (mounted) setState(() => _busyThemeId = null);
     }
+  }
+
+  Future<void> _preview(AppThemeSpec spec, bool owned, int coins) async {
+    final l10n = AppLocalizations.of(context);
+    final buy = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ThemePreviewScreen(
+          spec: spec,
+          name: _nameOf(l10n, spec.id),
+          owned: owned,
+        ),
+      ),
+    );
+    if (buy == true && mounted) await _buy(spec, coins);
   }
 
   Future<void> _buy(AppThemeSpec spec, int coins) async {
@@ -180,7 +200,7 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
             ),
             const SizedBox(height: 12),
             for (final spec in AppThemes.all) ...[
-              _ThemeCard(
+              ThemeCard(
                 spec: spec,
                 name: _nameOf(l10n, spec.id),
                 description: _descriptionOf(l10n, spec.id),
@@ -190,6 +210,8 @@ class _ThemeShopSectionState extends State<ThemeShopSection> {
                 affordable: coins >= spec.price,
                 onEquip: () => _equip(spec.id),
                 onBuy: () => _buy(spec, coins),
+                onPreview: () =>
+                    _preview(spec, owned.contains(spec.id), coins),
               ),
               const SizedBox(height: 12),
             ],
@@ -245,8 +267,9 @@ class CoinBalance extends StatelessWidget {
   }
 }
 
-class _ThemeCard extends StatelessWidget {
-  const _ThemeCard({
+class ThemeCard extends StatelessWidget {
+  const ThemeCard({
+    super.key,
     required this.spec,
     required this.name,
     required this.description,
@@ -256,6 +279,7 @@ class _ThemeCard extends StatelessWidget {
     required this.affordable,
     required this.onEquip,
     required this.onBuy,
+    required this.onPreview,
   });
 
   final AppThemeSpec spec;
@@ -267,6 +291,7 @@ class _ThemeCard extends StatelessWidget {
   final bool affordable;
   final VoidCallback onEquip;
   final VoidCallback onBuy;
+  final VoidCallback onPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -308,6 +333,18 @@ class _ThemeCard extends StatelessWidget {
                     fontSize: 12,
                     color: colorScheme.onSurfaceVariant,
                   ),
+                ),
+                const SizedBox(height: 4),
+                TextButton.icon(
+                  onPressed: onPreview,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.visibility_outlined, size: 18),
+                  label: Text(l10n.themePreviewButton),
                 ),
               ],
             ),

@@ -6,6 +6,7 @@ import 'app_theme.dart';
 import 'gears_backdrop.dart';
 import 'neon_city_backdrop.dart';
 import 'paper_backdrop.dart';
+import 'sketchbook_backdrop.dart';
 import 'snowfall_backdrop.dart';
 import 'wasteland_backdrop.dart';
 
@@ -50,15 +51,7 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
     Widget child,
   ) {
     // Whichever backdrop the theme sells; the routing is the same for all.
-    final page = switch (context.decor.backdrop) {
-      AppBackdrop.starfield => StarfieldBackdrop(child: child),
-      AppBackdrop.paper => PaperBackdrop(child: child),
-      AppBackdrop.wasteland => WastelandBackdrop(child: child),
-      AppBackdrop.neonCity => NeonCityBackdrop(child: child),
-      AppBackdrop.gears => GearsBackdrop(child: child),
-      AppBackdrop.snowfall => SnowfallBackdrop(child: child),
-      AppBackdrop.plain => child,
-    };
+    final page = themeBackdrop(context.decor.backdrop, child);
 
     return _platformDefaults.buildTransitions<T>(
       route,
@@ -68,6 +61,21 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
       page,
     );
   }
+}
+
+/// [child] drawn over [backdrop]. Each backdrop reads its page colour from
+/// the theme around it, so this must sit inside the theme it belongs to.
+Widget themeBackdrop(AppBackdrop backdrop, Widget child) {
+  return switch (backdrop) {
+    AppBackdrop.starfield => StarfieldBackdrop(child: child),
+    AppBackdrop.paper => PaperBackdrop(child: child),
+    AppBackdrop.wasteland => WastelandBackdrop(child: child),
+    AppBackdrop.neonCity => NeonCityBackdrop(child: child),
+    AppBackdrop.gears => GearsBackdrop(child: child),
+    AppBackdrop.snowfall => SnowfallBackdrop(child: child),
+    AppBackdrop.sketchbook => SketchbookBackdrop(child: child),
+    AppBackdrop.plain => child,
+  };
 }
 
 /// A fixed night sky in the theme's page colour, drawn under [child].

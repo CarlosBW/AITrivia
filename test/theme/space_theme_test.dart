@@ -135,6 +135,7 @@ void main() {
               AppBackdrop.snowfall,
               AppNavIcons.christmas,
             ),
+          AppThemes.sketchId => (AppBackdrop.sketchbook, AppNavIcons.classic),
           _ => (AppBackdrop.plain, AppNavIcons.classic),
         };
         expect(spec.decor.backdrop, backdrop);

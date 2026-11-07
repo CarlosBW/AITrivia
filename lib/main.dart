@@ -286,6 +286,7 @@ void _registerFontLicenses() {
     'Cinzel': 'OFL-cinzel.txt',
     'Manrope': 'OFL-manrope.txt',
     'Mountains of Christmas': 'LICENSE-mountainsofchristmas.txt',
+    'Patrick Hand': 'OFL-patrickhand.txt',
     'Playfair Display': 'OFL-playfairdisplay.txt',
   };
   LicenseRegistry.addLicense(() async* {

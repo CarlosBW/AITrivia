@@ -4738,6 +4738,78 @@ abstract class AppLocalizations {
   /// **'Nieve cayendo sobre una noche de pinos, en rojo, dorado y verde, con íconos navideños.'**
   String get themeDescriptionChristmas;
 
+  /// No description provided for @themeNameSketch.
+  ///
+  /// In es, this message translates to:
+  /// **'Boceto'**
+  String get themeNameSketch;
+
+  /// No description provided for @themeDescriptionSketch.
+  ///
+  /// In es, this message translates to:
+  /// **'Todo el juego en blanco y negro, como dibujado a lápiz en un cuaderno.'**
+  String get themeDescriptionSketch;
+
+  /// No description provided for @themePreviewButton.
+  ///
+  /// In es, this message translates to:
+  /// **'Vista previa'**
+  String get themePreviewButton;
+
+  /// No description provided for @themePreviewIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'Así se ve el juego con este tema.'**
+  String get themePreviewIntro;
+
+  /// No description provided for @themePreviewLevel.
+  ///
+  /// In es, this message translates to:
+  /// **'Nivel 3 · Astronomía'**
+  String get themePreviewLevel;
+
+  /// No description provided for @themePreviewQuestion.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué planeta es conocido como el planeta rojo?'**
+  String get themePreviewQuestion;
+
+  /// No description provided for @themePreviewAnswerVenus.
+  ///
+  /// In es, this message translates to:
+  /// **'Venus'**
+  String get themePreviewAnswerVenus;
+
+  /// No description provided for @themePreviewAnswerMars.
+  ///
+  /// In es, this message translates to:
+  /// **'Marte'**
+  String get themePreviewAnswerMars;
+
+  /// No description provided for @themePreviewAnswerJupiter.
+  ///
+  /// In es, this message translates to:
+  /// **'Júpiter'**
+  String get themePreviewAnswerJupiter;
+
+  /// No description provided for @themePreviewAnswerSaturn.
+  ///
+  /// In es, this message translates to:
+  /// **'Saturno'**
+  String get themePreviewAnswerSaturn;
+
+  /// No description provided for @themePreviewNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Siguiente'**
+  String get themePreviewNext;
+
+  /// No description provided for @themePreviewClose.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get themePreviewClose;
+
   /// No description provided for @notificationsChallengeDeclined.
   ///
   /// In es, this message translates to:

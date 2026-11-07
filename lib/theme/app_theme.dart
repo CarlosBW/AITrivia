@@ -547,6 +547,10 @@ enum AppBackdrop {
 
   /// Falling snow over drifts — see `snowfall_backdrop.dart`.
   snowfall,
+
+  /// A sketchbook page with pencil hatching — see
+  /// `sketchbook_backdrop.dart`.
+  sketchbook,
 }
 
 /// The face headings, scores and app bar titles are set in.
@@ -573,6 +577,9 @@ enum AppHeadingFace {
 
   /// Mountains of Christmas: hand-drawn and festive.
   festive,
+
+  /// Patrick Hand: plain handwriting, as if lettered with a pen.
+  handwritten,
 }
 
 /// [face] at [fontWeight], the way `google_fonts` builds it: the weight is
@@ -622,19 +629,28 @@ TextStyle headingStyle(
         fontSize: fontSize,
         color: color,
       );
+    case AppHeadingFace.handwritten:
+      // One weight, like the stencil: a heavier one would be a fake bold.
+      return GoogleFonts.patrickHand(
+        fontSize: fontSize,
+        color: color,
+      );
   }
 }
 
 /// The weight [face] is set in when [weight] is asked for.
 ///
 /// Chakra Petch and Mountains of Christmas stop at 700, and anything
-/// heavier would be a fake bold, so it is capped there. The other faces
+/// heavier would be a fake bold, so it is capped there. Patrick Hand only
+/// has 400, so it is always that. The other faces
 /// either have every weight or, like the stencil, ignore it.
 FontWeight headingWeight(AppHeadingFace face, FontWeight weight) {
   switch (face) {
     case AppHeadingFace.tech:
     case AppHeadingFace.festive:
       return weight.value > FontWeight.w700.value ? FontWeight.w700 : weight;
+    case AppHeadingFace.handwritten:
+      return FontWeight.w400;
     case AppHeadingFace.rounded:
     case AppHeadingFace.serif:
     case AppHeadingFace.stencil:
@@ -935,10 +951,15 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
     AppHeadingFace.engraved => GoogleFonts.cinzelTextTheme(base.textTheme),
     AppHeadingFace.festive =>
       GoogleFonts.mountainsOfChristmasTextTheme(base.textTheme),
+    AppHeadingFace.handwritten =>
+      GoogleFonts.patrickHandTextTheme(base.textTheme),
   };
-  // The stencil has a single weight; see [headingStyle].
-  final titleWeight =
-      theme.headingFace == AppHeadingFace.stencil ? null : FontWeight.w700;
+  // The stencil and the handwriting have a single weight; see
+  // [headingStyle].
+  final titleWeight = theme.headingFace == AppHeadingFace.stencil ||
+          theme.headingFace == AppHeadingFace.handwritten
+      ? null
+      : FontWeight.w700;
 
   final textTheme = bodyFont.copyWith(
     displayLarge: headingFont.displayLarge,

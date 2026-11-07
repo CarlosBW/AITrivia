@@ -2825,6 +2825,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'Snow falling on a night among the pines, in red, gold and green, with Christmas icons.';
 
   @override
+  String get themeNameSketch => 'Sketch';
+
+  @override
+  String get themeDescriptionSketch =>
+      'The whole game in black and white, as if drawn in pencil in a sketchbook.';
+
+  @override
+  String get themePreviewButton => 'Preview';
+
+  @override
+  String get themePreviewIntro => 'This is how the game looks with this theme.';
+
+  @override
+  String get themePreviewLevel => 'Level 3 · Astronomy';
+
+  @override
+  String get themePreviewQuestion => 'Which planet is known as the Red Planet?';
+
+  @override
+  String get themePreviewAnswerVenus => 'Venus';
+
+  @override
+  String get themePreviewAnswerMars => 'Mars';
+
+  @override
+  String get themePreviewAnswerJupiter => 'Jupiter';
+
+  @override
+  String get themePreviewAnswerSaturn => 'Saturn';
+
+  @override
+  String get themePreviewNext => 'Next';
+
+  @override
+  String get themePreviewClose => 'Close';
+
+  @override
   String get notificationsChallengeDeclined => 'Challenge declined';
 
   @override

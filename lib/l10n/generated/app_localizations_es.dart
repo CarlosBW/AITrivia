@@ -2851,6 +2851,44 @@ class AppLocalizationsEs extends AppLocalizations {
       'Nieve cayendo sobre una noche de pinos, en rojo, dorado y verde, con íconos navideños.';
 
   @override
+  String get themeNameSketch => 'Boceto';
+
+  @override
+  String get themeDescriptionSketch =>
+      'Todo el juego en blanco y negro, como dibujado a lápiz en un cuaderno.';
+
+  @override
+  String get themePreviewButton => 'Vista previa';
+
+  @override
+  String get themePreviewIntro => 'Así se ve el juego con este tema.';
+
+  @override
+  String get themePreviewLevel => 'Nivel 3 · Astronomía';
+
+  @override
+  String get themePreviewQuestion =>
+      '¿Qué planeta es conocido como el planeta rojo?';
+
+  @override
+  String get themePreviewAnswerVenus => 'Venus';
+
+  @override
+  String get themePreviewAnswerMars => 'Marte';
+
+  @override
+  String get themePreviewAnswerJupiter => 'Júpiter';
+
+  @override
+  String get themePreviewAnswerSaturn => 'Saturno';
+
+  @override
+  String get themePreviewNext => 'Siguiente';
+
+  @override
+  String get themePreviewClose => 'Cerrar';
+
+  @override
   String get notificationsChallengeDeclined => 'Reto rechazado';
 
   @override

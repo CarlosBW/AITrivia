@@ -135,6 +135,7 @@ void main() {
       AppThemes.cyberpunkId,
       AppThemes.steampunkId,
       AppThemes.christmasId,
+      AppThemes.sketchId,
     };
     for (final spec in AppThemes.all.where((s) => !ownFace.contains(s.id))) {
       expect(spec.headingFace, AppHeadingFace.rounded, reason: spec.id);

@@ -7147,7 +7147,8 @@ const FIRST_AI_TOPIC_FREE_PASSES = 1;
 const RESERVED_TOPIC_NAMES = new Set([
   "movies", "movie", "cine", "history", "historia", "science", "ciencia",
   "geography", "geografia", "geografía", "books", "libros", "video games",
-  "videogames", "videojuegos", "sports", "deportes",
+  "videogames", "videojuegos", "sports", "deportes", "astronomy",
+  "astronomia", "astronomía",
 ]);
 
 /**

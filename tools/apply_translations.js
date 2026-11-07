@@ -23,6 +23,7 @@ const path = require("path");
 
 const CATEGORY_NAMES_EN = {
   arte: "Art",
+  astronomia: "Astronomy",
   ciencia: "Science",
   cine: "Movies",
   deportes: "Sports",

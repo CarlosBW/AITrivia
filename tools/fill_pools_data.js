@@ -2,6 +2,7 @@
 // Una entrada por categoria activa de fixed_categories.
 module.exports = {
   arte: require("./fill_pools/arte"),
+  astronomia: require("./fill_pools/astronomia"),
   ciencia: require("./fill_pools/ciencia"),
   cine: require("./fill_pools/cine"),
   deportes: require("./fill_pools/deportes"),

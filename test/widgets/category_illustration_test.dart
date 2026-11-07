@@ -9,6 +9,7 @@ void main() {
   test('las categorías fijas usan su propia ilustración', () {
     for (final id in const [
       'arte',
+      'astronomia',
       'ciencia',
       'cine',
       'deportes',
@@ -35,6 +36,10 @@ void main() {
         'assets/illustrations/geografia.png');
     expect(categoryIllustrationAsset('x', 'Video games'),
         'assets/illustrations/videojuegos.png');
+    expect(categoryIllustrationAsset('x', 'Astronomía'),
+        'assets/illustrations/astronomia.png');
+    expect(categoryIllustrationAsset('x', 'Astronomy'),
+        'assets/illustrations/astronomia.png');
   });
 
   test('un tema IA usa la ilustración de IA aunque su nombre coincida', () {

@@ -1,0 +1,1202 @@
+[
+  {
+    "d": 1,
+    "id": "q1",
+    "q": "¿Cómo se llama la galaxia en la que se encuentra el sistema solar?",
+    "options": [
+      "La Vía Láctea",
+      "Andrómeda",
+      "La galaxia del Triángulo",
+      "La galaxia del Sombrero"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q2",
+    "q": "¿Quién fue el primer ser humano en pisar la Luna?",
+    "options": [
+      "Neil Armstrong",
+      "Buzz Aldrin",
+      "Yuri Gagarin",
+      "Michael Collins"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q3",
+    "q": "¿Cómo se suele llamar a los astronautas del programa espacial ruso?",
+    "options": [
+      "Cosmonautas",
+      "Taikonautas",
+      "Argonautas",
+      "Espacionautas"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q4",
+    "q": "¿Qué tipo de cuerpo celeste es el Sol?",
+    "options": [
+      "Un planeta",
+      "Un cometa",
+      "Una galaxia",
+      "Una estrella"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q5",
+    "q": "¿Qué planeta es famoso por su Gran Mancha Roja, una tormenta gigantesca?",
+    "options": [
+      "Marte",
+      "Saturno",
+      "Júpiter",
+      "Neptuno"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q6",
+    "q": "¿Qué cuerpo celeste dejó de considerarse planeta en 2006?",
+    "options": [
+      "Neptuno",
+      "Urano",
+      "Mercurio",
+      "Plutón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q7",
+    "q": "¿Cuál es el planeta más caliente del sistema solar?",
+    "options": [
+      "Venus",
+      "Mercurio",
+      "Marte",
+      "Júpiter"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q8",
+    "q": "¿Cómo se llama el fenómeno en el que la Luna se interpone entre el Sol y la Tierra?",
+    "options": [
+      "Eclipse lunar",
+      "Equinoccio",
+      "Solsticio",
+      "Eclipse solar"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q9",
+    "q": "¿Cuánto tarda aproximadamente la Tierra en dar una vuelta completa alrededor del Sol?",
+    "options": [
+      "Unos 30 días",
+      "Unas 24 horas",
+      "Unos 100 días",
+      "Unos 365 días"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q10",
+    "q": "¿Cuánto tarda aproximadamente la Tierra en girar una vez sobre su propio eje?",
+    "options": [
+      "Unos 365 días",
+      "Unas 12 horas",
+      "Unas 24 horas",
+      "Unos 7 días"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q11",
+    "q": "¿Cuál es el nombre científico de una \"estrella fugaz\"?",
+    "options": [
+      "Cometa",
+      "Meteoro",
+      "Púlsar",
+      "Nebulosa"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q12",
+    "q": "¿Cuál es el planeta más alejado del Sol?",
+    "options": [
+      "Urano",
+      "Neptuno",
+      "Saturno",
+      "Júpiter"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q13",
+    "q": "¿Qué agencia espacial llevó a los primeros astronautas a la Luna?",
+    "options": [
+      "La ESA",
+      "Roscosmos",
+      "La JAXA",
+      "La NASA"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q14",
+    "q": "¿Cómo se llamaba el programa de la NASA que llevó a los primeros humanos a la Luna?",
+    "options": [
+      "Géminis",
+      "Mercury",
+      "Apolo",
+      "Skylab"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q15",
+    "q": "¿Qué planeta es conocido popularmente como el \"lucero del alba\"?",
+    "options": [
+      "Venus",
+      "Marte",
+      "Mercurio",
+      "Júpiter"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q16",
+    "q": "¿Qué forma tiene la Vía Láctea?",
+    "options": [
+      "Elíptica",
+      "Irregular",
+      "Espiral",
+      "Cúbica"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q17",
+    "q": "¿Cómo se llama un grupo de estrellas que forma una figura reconocible en el cielo?",
+    "options": [
+      "Constelación",
+      "Galaxia",
+      "Nebulosa",
+      "Asteroide"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q18",
+    "q": "¿Qué cuerpo helado desarrolla una cola brillante al acercarse al Sol?",
+    "options": [
+      "Un asteroide",
+      "Un cometa",
+      "Un meteorito",
+      "Un satélite"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q19",
+    "q": "¿Cuál es el planeta más pequeño del sistema solar?",
+    "options": [
+      "Marte",
+      "Venus",
+      "Mercurio",
+      "La Tierra"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q20",
+    "q": "¿En qué fase la Luna se ve completamente iluminada desde la Tierra?",
+    "options": [
+      "Luna nueva",
+      "Cuarto creciente",
+      "Cuarto menguante",
+      "Luna llena"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q21",
+    "q": "¿Qué estación espacial, construida por varios países, está habitada de forma continua desde el año 2000?",
+    "options": [
+      "La Mir",
+      "La Estación Espacial Internacional",
+      "El Skylab",
+      "La Salyut 1"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q22",
+    "q": "¿Qué objeto es tan denso que ni siquiera la luz puede escapar de él?",
+    "options": [
+      "Un púlsar",
+      "Una nebulosa",
+      "Un agujero negro",
+      "Un cometa"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q23",
+    "q": "¿Qué instrumento óptico se usa para observar objetos lejanos en el cielo?",
+    "options": [
+      "El microscopio",
+      "El estetoscopio",
+      "El telescopio",
+      "El periscopio"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 1,
+    "id": "q24",
+    "q": "¿De qué está compuesto principalmente el Sol?",
+    "options": [
+      "Oxígeno y nitrógeno",
+      "Hidrógeno y helio",
+      "Hierro y níquel",
+      "Carbono y silicio"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q25",
+    "q": "¿Qué astronauta caminó sobre la Luna junto a Neil Armstrong en la misión Apolo 11?",
+    "options": [
+      "Michael Collins",
+      "Buzz Aldrin",
+      "John Glenn",
+      "Yuri Gagarin"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q26",
+    "q": "¿Qué vehículo se usa para llevar astronautas y satélites al espacio?",
+    "options": [
+      "Un cohete",
+      "Un submarino",
+      "Un dirigible",
+      "Un planeador"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 1,
+    "id": "q27",
+    "q": "¿Cómo se llaman las rocas del espacio que atraviesan la atmósfera y caen en la superficie terrestre?",
+    "options": [
+      "Cometas",
+      "Quásares",
+      "Púlsares",
+      "Meteoritos"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 1,
+    "id": "q28",
+    "q": "¿Cómo se llamaba la perra que fue el primer animal en orbitar la Tierra?",
+    "options": [
+      "Belka",
+      "Laika",
+      "Strelka",
+      "Rex"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q29",
+    "q": "¿Entre qué dos planetas se encuentra el cinturón principal de asteroides?",
+    "options": [
+      "La Tierra y Marte",
+      "Marte y Júpiter",
+      "Júpiter y Saturno",
+      "Venus y la Tierra"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 1,
+    "id": "q30",
+    "q": "¿Qué estrella se usa tradicionalmente para orientarse hacia el norte?",
+    "options": [
+      "La Estrella Polar",
+      "Sirio",
+      "Betelgeuse",
+      "Vega"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q1",
+    "q": "¿Qué planeta tarda más en girar sobre su eje que en dar una vuelta alrededor del Sol?",
+    "options": [
+      "Mercurio",
+      "Marte",
+      "Júpiter",
+      "Venus"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q2",
+    "q": "¿Qué planeta tiene el eje tan inclinado que parece girar de lado?",
+    "options": [
+      "Urano",
+      "Neptuno",
+      "Saturno",
+      "Marte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q3",
+    "q": "¿Cuál es la estrella más cercana al sistema solar?",
+    "options": [
+      "Sirio",
+      "Betelgeuse",
+      "Próxima Centauri",
+      "Vega"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q4",
+    "q": "¿Cuál es la estrella más brillante del cielo nocturno?",
+    "options": [
+      "La Estrella Polar",
+      "Sirio",
+      "Betelgeuse",
+      "Aldebarán"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q5",
+    "q": "¿Cómo se llama el volcán más alto de Marte?",
+    "options": [
+      "Maxwell Montes",
+      "Olympus Mons",
+      "Mauna Kea",
+      "Monte Erebus"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q6",
+    "q": "¿Cómo se llama el enorme sistema de cañones de Marte?",
+    "options": [
+      "Gran Cañón",
+      "Hellas Planitia",
+      "Utopia Planitia",
+      "Valles Marineris"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q7",
+    "q": "¿Cuál es la luna más grande del sistema solar?",
+    "options": [
+      "Titán",
+      "Calisto",
+      "Ganímedes",
+      "Ío"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q8",
+    "q": "¿Qué luna de Saturno tiene una atmósfera densa y lagos de metano?",
+    "options": [
+      "Titán",
+      "Encélado",
+      "Mimas",
+      "Rea"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q9",
+    "q": "¿Qué luna de Júpiter es el cuerpo con mayor actividad volcánica del sistema solar?",
+    "options": [
+      "Europa",
+      "Ganímedes",
+      "Ío",
+      "Calisto"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q10",
+    "q": "¿Quién descubrió en 1610 las cuatro lunas más grandes de Júpiter?",
+    "options": [
+      "Johannes Kepler",
+      "Isaac Newton",
+      "Tycho Brahe",
+      "Galileo Galilei"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q11",
+    "q": "¿Qué astrónomo danés hizo observaciones muy precisas a simple vista que luego aprovechó Kepler?",
+    "options": [
+      "Tycho Brahe",
+      "Nicolás Copérnico",
+      "Galileo Galilei",
+      "Edmond Halley"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q12",
+    "q": "¿Qué científico formuló las leyes del movimiento planetario que describen órbitas elípticas?",
+    "options": [
+      "Nicolás Copérnico",
+      "Johannes Kepler",
+      "Galileo Galilei",
+      "Edmond Halley"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q13",
+    "q": "¿Cada cuántos años aproximadamente regresa el cometa Halley?",
+    "options": [
+      "Unos 25 años",
+      "Unos 150 años",
+      "Unos 76 años",
+      "Unos 300 años"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q14",
+    "q": "¿Qué telescopio espacial fue lanzado en 1990?",
+    "options": [
+      "James Webb",
+      "Spitzer",
+      "Kepler",
+      "Hubble"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q15",
+    "q": "¿En qué año se lanzó el telescopio espacial James Webb?",
+    "options": [
+      "2018",
+      "2016",
+      "2024",
+      "2021"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q16",
+    "q": "¿Cómo se llamó el primer satélite artificial, lanzado en 1957?",
+    "options": [
+      "Vostok 1",
+      "Explorer 1",
+      "Sputnik 1",
+      "Luna 1"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q17",
+    "q": "¿Quién fue la primera mujer en viajar al espacio?",
+    "options": [
+      "Sally Ride",
+      "Svetlana Savitskaya",
+      "Valentina Tereshkova",
+      "Mae Jemison"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q18",
+    "q": "¿Qué mide un año luz?",
+    "options": [
+      "Un tiempo",
+      "Una distancia",
+      "Una velocidad",
+      "Un brillo"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q19",
+    "q": "¿Cómo se llama la unidad basada en la distancia media entre la Tierra y el Sol?",
+    "options": [
+      "Pársec",
+      "Año luz",
+      "Ångström",
+      "Unidad astronómica"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q20",
+    "q": "¿Cuál es la galaxia espiral grande más cercana a la Vía Láctea?",
+    "options": [
+      "La galaxia del Sombrero",
+      "La galaxia del Remolino",
+      "Centaurus A",
+      "Andrómeda"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q21",
+    "q": "¿Qué rover de la NASA aterrizó en el cráter Jezero de Marte en 2021?",
+    "options": [
+      "Curiosity",
+      "Opportunity",
+      "Spirit",
+      "Perseverance"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q22",
+    "q": "¿Qué sonda es el objeto fabricado por humanos más lejano de la Tierra?",
+    "options": [
+      "Voyager 1",
+      "Voyager 2",
+      "New Horizons",
+      "Pioneer 10"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q23",
+    "q": "¿Qué sonda sobrevoló Plutón en 2015?",
+    "options": [
+      "New Horizons",
+      "Cassini",
+      "Juno",
+      "Dawn"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q24",
+    "q": "¿Qué sonda estudió Saturno durante años y terminó su misión sumergiéndose en su atmósfera en 2017?",
+    "options": [
+      "Cassini",
+      "Galileo",
+      "Juno",
+      "Magallanes"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q25",
+    "q": "¿Cómo se llama la capa visible del Sol que solemos considerar su \"superficie\"?",
+    "options": [
+      "Fotosfera",
+      "Corona",
+      "Cromosfera",
+      "Núcleo"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q26",
+    "q": "¿Cómo se llaman las zonas más oscuras y frías que aparecen en la superficie del Sol?",
+    "options": [
+      "Fulguraciones",
+      "Manchas solares",
+      "Protuberancias",
+      "Fáculas"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q27",
+    "q": "¿Qué fenómeno luminoso se produce cerca de los polos cuando partículas del Sol chocan con la atmósfera?",
+    "options": [
+      "Los arcoíris",
+      "Las auroras",
+      "Los espejismos",
+      "Los rayos crepusculares"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q28",
+    "q": "¿Cómo se llama una nube de gas y polvo en el espacio donde pueden nacer estrellas?",
+    "options": [
+      "Quásar",
+      "Púlsar",
+      "Magnetar",
+      "Nebulosa"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 2,
+    "id": "q29",
+    "q": "¿En qué constelación se encuentran las estrellas Betelgeuse y Rigel?",
+    "options": [
+      "Tauro",
+      "Escorpio",
+      "Orión",
+      "Osa Mayor"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q30",
+    "q": "¿En qué se convertirá el Sol al final de su vida?",
+    "options": [
+      "En un agujero negro",
+      "En una estrella de neutrones",
+      "En una enana blanca",
+      "En una enana marrón"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q31",
+    "q": "¿Qué astrónomo demostró en la década de 1920 que existen galaxias más allá de la Vía Láctea?",
+    "options": [
+      "Carl Sagan",
+      "Edwin Hubble",
+      "Harlow Shapley",
+      "Galileo Galilei"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q32",
+    "q": "¿Qué planeta descubrió William Herschel en 1781?",
+    "options": [
+      "Urano",
+      "Neptuno",
+      "Saturno",
+      "Plutón"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q33",
+    "q": "¿Qué planeta fue descubierto en 1846 gracias a predicciones matemáticas?",
+    "options": [
+      "Neptuno",
+      "Urano",
+      "Saturno",
+      "Marte"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q34",
+    "q": "¿Qué planeta enano se encuentra en el cinturón de asteroides?",
+    "options": [
+      "Eris",
+      "Makemake",
+      "Ceres",
+      "Haumea"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q35",
+    "q": "¿Qué astronauta permaneció en órbita lunar mientras sus compañeros del Apolo 11 caminaban sobre la Luna?",
+    "options": [
+      "Buzz Aldrin",
+      "Michael Collins",
+      "Jim Lovell",
+      "Alan Shepard"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q36",
+    "q": "¿Qué misión Apolo sufrió una explosión en ruta y tuvo que regresar sin alunizar?",
+    "options": [
+      "Apolo 11",
+      "Apolo 13",
+      "Apolo 8",
+      "Apolo 17"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q37",
+    "q": "¿Qué empresa privada desarrolló la cápsula tripulada Crew Dragon?",
+    "options": [
+      "Blue Origin",
+      "SpaceX",
+      "Boeing",
+      "Virgin Galactic"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 2,
+    "id": "q38",
+    "q": "¿Cómo se llama el punto de la órbita de un planeta más cercano al Sol?",
+    "options": [
+      "Perihelio",
+      "Afelio",
+      "Apogeo",
+      "Cenit"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 2,
+    "id": "q39",
+    "q": "¿Qué es una supernova?",
+    "options": [
+      "La colisión de dos galaxias",
+      "Un cometa muy brillante",
+      "La explosión de una estrella",
+      "El nacimiento de un planeta"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 2,
+    "id": "q40",
+    "q": "¿Qué planeta tiene una densidad media menor que la del agua?",
+    "options": [
+      "Júpiter",
+      "Urano",
+      "Neptuno",
+      "Saturno"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q1",
+    "q": "¿Cómo se llama la masa máxima que puede tener una enana blanca estable?",
+    "options": [
+      "Límite de Eddington",
+      "Límite de Roche",
+      "Límite de Chandrasekhar",
+      "Radio de Schwarzschild"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q2",
+    "q": "¿Cómo se llama el radio del horizonte de sucesos de un agujero negro sin rotación?",
+    "options": [
+      "Radio de Roche",
+      "Radio de Schwarzschild",
+      "Radio de Chandrasekhar",
+      "Radio de Bohr"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q3",
+    "q": "¿Qué astrofísica descubrió los púlsares en 1967 siendo estudiante de doctorado?",
+    "options": [
+      "Vera Rubin",
+      "Henrietta Swan Leavitt",
+      "Cecilia Payne",
+      "Jocelyn Bell Burnell"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q4",
+    "q": "¿Qué astrónoma descubrió la relación entre el periodo y la luminosidad de las estrellas cefeidas?",
+    "options": [
+      "Annie Jump Cannon",
+      "Henrietta Swan Leavitt",
+      "Vera Rubin",
+      "Cecilia Payne"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q5",
+    "q": "¿Qué astrónoma aportó evidencia clave de la materia oscura al estudiar las curvas de rotación de las galaxias?",
+    "options": [
+      "Vera Rubin",
+      "Jocelyn Bell Burnell",
+      "Annie Jump Cannon",
+      "Carolyn Shoemaker"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q6",
+    "q": "¿Qué radiación, detectada en 1965 por Penzias y Wilson, se considera un eco del universo primitivo?",
+    "options": [
+      "La radiación de fondo de microondas",
+      "Los rayos gamma cósmicos",
+      "La radiación de Hawking",
+      "La radiación de Cherenkov"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q7",
+    "q": "¿Cuál es la temperatura aproximada de la radiación cósmica de fondo de microondas?",
+    "options": [
+      "Unos 27 K",
+      "Unos 2,7 K",
+      "Unos 0,27 K",
+      "Unos 270 K"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q8",
+    "q": "¿Cuál es el orden de la clasificación espectral estelar, de las estrellas más calientes a las más frías?",
+    "options": [
+      "O, B, A, F, G, K, M",
+      "M, K, G, F, A, B, O",
+      "A, B, C, D, E, F, G",
+      "O, A, B, F, K, G, M"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q9",
+    "q": "¿A qué clase espectral pertenece el Sol?",
+    "options": [
+      "K",
+      "M",
+      "G",
+      "B"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q10",
+    "q": "¿Cómo se llama el diagrama que relaciona la luminosidad de las estrellas con su temperatura?",
+    "options": [
+      "Diagrama de Feynman",
+      "Diagrama de Minkowski",
+      "Diagrama de Hertzsprung-Russell",
+      "Diagrama de Venn"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q11",
+    "q": "¿Qué describe el límite de Roche?",
+    "options": [
+      "La distancia mínima a la que un satélite puede orbitar sin ser desintegrado por las fuerzas de marea",
+      "La masa máxima de una estrella de neutrones",
+      "La velocidad mínima para escapar de la gravedad de un planeta",
+      "El borde exterior de la heliosfera"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q12",
+    "q": "¿Cómo se llama la región hipotética de cuerpos helados en los confines del sistema solar, fuente de los cometas de periodo largo?",
+    "options": [
+      "El cinturón de Kuiper",
+      "La heliopausa",
+      "Los cinturones de Van Allen",
+      "La nube de Oort"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q13",
+    "q": "¿Qué sonda fue la primera en orbitar un asteroide y luego se posó sobre Eros en 2001?",
+    "options": [
+      "Rosetta",
+      "Hayabusa",
+      "NEAR Shoemaker",
+      "Dawn"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q14",
+    "q": "¿Qué misión depositó el módulo Philae sobre el cometa 67P/Churyumov-Gerasimenko?",
+    "options": [
+      "Giotto",
+      "Rosetta",
+      "Deep Impact",
+      "Stardust"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q15",
+    "q": "¿Qué misión de la NASA chocó deliberadamente contra el asteroide Dimorphos en 2022 para desviar su órbita?",
+    "options": [
+      "DART",
+      "OSIRIS-REx",
+      "Lucy",
+      "Psyche"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q16",
+    "q": "¿Qué misión japonesa trajo a la Tierra muestras del asteroide Ryugu?",
+    "options": [
+      "OSIRIS-REx",
+      "Hayabusa2",
+      "Rosetta",
+      "Chang'e 5"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q17",
+    "q": "¿De qué asteroide trajo muestras la misión OSIRIS-REx?",
+    "options": [
+      "Bennu",
+      "Ryugu",
+      "Itokawa",
+      "Vesta"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q18",
+    "q": "¿Qué planeta enano, anunciado en 2005 y de tamaño similar a Plutón, impulsó la redefinición de planeta?",
+    "options": [
+      "Makemake",
+      "Haumea",
+      "Eris",
+      "Sedna"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q19",
+    "q": "¿Cómo se llama la luna más grande de Neptuno, que tiene una órbita retrógrada?",
+    "options": [
+      "Nereida",
+      "Proteo",
+      "Caronte",
+      "Tritón"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q20",
+    "q": "¿Cómo se llama la luna más grande de Plutón?",
+    "options": [
+      "Nix",
+      "Hidra",
+      "Estigia",
+      "Caronte"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q21",
+    "q": "¿Cómo se llaman las dos lunas de Marte?",
+    "options": [
+      "Ío y Europa",
+      "Fobos y Deimos",
+      "Titán y Rea",
+      "Tritón y Nereida"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q22",
+    "q": "¿Qué luna de Saturno expulsa géiseres de vapor de agua y hielo desde su polo sur?",
+    "options": [
+      "Titán",
+      "Encélado",
+      "Mimas",
+      "Jápeto"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q23",
+    "q": "¿Qué cosmonauta realizó la primera caminata espacial de la historia en 1965?",
+    "options": [
+      "Yuri Gagarin",
+      "Guerman Titov",
+      "Alexéi Leónov",
+      "Ed White"
+    ],
+    "answerIndex": 2
+  },
+  {
+    "d": 3,
+    "id": "q24",
+    "q": "¿Qué nave soviética logró en 1966 el primer alunizaje suave de la historia?",
+    "options": [
+      "Luna 2",
+      "Lunojod 1",
+      "Surveyor 1",
+      "Luna 9"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q25",
+    "q": "¿Qué sonda fue la primera en transmitir datos desde la superficie de Venus, en 1970?",
+    "options": [
+      "Venera 7",
+      "Mariner 2",
+      "Magallanes",
+      "Pioneer Venus"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q26",
+    "q": "¿Qué colaboración internacional obtuvo en 2019 la primera imagen de un agujero negro, en la galaxia M87?",
+    "options": [
+      "Event Horizon Telescope",
+      "LIGO",
+      "Telescopio espacial Hubble",
+      "Observatorio Chandra"
+    ],
+    "answerIndex": 0
+  },
+  {
+    "d": 3,
+    "id": "q27",
+    "q": "¿Qué observatorio detectó por primera vez ondas gravitacionales en 2015?",
+    "options": [
+      "Virgo",
+      "LIGO",
+      "Event Horizon Telescope",
+      "ALMA"
+    ],
+    "answerIndex": 1
+  },
+  {
+    "d": 3,
+    "id": "q28",
+    "q": "¿Cómo se llama el agujero negro supermasivo del centro de la Vía Láctea?",
+    "options": [
+      "Cygnus X-1",
+      "M87*",
+      "Centaurus A",
+      "Sagitario A*"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q29",
+    "q": "¿Cuánto tarda aproximadamente Neptuno en completar una órbita alrededor del Sol?",
+    "options": [
+      "Unos 84 años",
+      "Unos 29 años",
+      "Unos 248 años",
+      "Unos 165 años"
+    ],
+    "answerIndex": 3
+  },
+  {
+    "d": 3,
+    "id": "q30",
+    "q": "Según la tercera ley de Kepler, ¿a qué es proporcional el cuadrado del periodo orbital de un planeta?",
+    "options": [
+      "A la masa del planeta",
+      "Al cuadrado de su velocidad orbital",
+      "Al cubo del semieje mayor de su órbita",
+      "A la masa de sus lunas"
+    ],
+    "answerIndex": 2
+  }
+]

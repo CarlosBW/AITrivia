@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 /// The built-in categories with an illustration of their own, by id.
 const List<String> categoryIllustrationIds = [
   'arte',
+  'astronomia',
   'ciencia',
   'cine',
   'deportes',
@@ -24,6 +25,7 @@ final Map<String, RegExp> _namePatterns = {
   'libros': RegExp(r'\b(libros?|books?|literatura|literature)\b'),
   'videojuegos': RegExp(r'\b(videojuegos?|video ?games?)\b'),
   'deportes': RegExp(r'\b(deportes?|sports?)\b'),
+  'astronomia': RegExp(r'\b(astronomia|astronomy)\b'),
 };
 
 String _withoutAccents(String s) => s

@@ -222,6 +222,9 @@ class AiTopicService {
     'videojuegos',
     'sports',
     'deportes',
+    'astronomy',
+    'astronomia',
+    'astronomía',
   };
 
   bool isReservedTopic(String normalizedTitle) {

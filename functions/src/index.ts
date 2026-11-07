@@ -48,7 +48,6 @@ import {
   AI_QUESTIONS_PER_SESSION,
   avoidListCapacity,
   bankHeadroom,
-  buildAnswerOptions,
   capAvoidList,
   compareQuestionIds,
   fnv1a32,
@@ -90,6 +89,8 @@ import {
   questionAt,
   reportQuotaAfter,
 } from "./question_reports";
+import {expansionTarget} from "./ai_topic_expansion";
+import {acceptModelQuestions} from "./ai_question_drafts";
 import {
   StoredReport,
   parseNotifyUids,
@@ -103,7 +104,9 @@ import {
 import {
   DailyPoolEntry,
   matchCandidates,
+  dailyEntryKey,
   orderByAscendingDifficulty,
+  recentDailyServed,
   selectDailyEntries,
 } from "./daily_question_set";
 import {
@@ -2606,7 +2609,9 @@ export const acceptRealtimeInvite = onCall({timeoutSeconds: 60},
         hostUid: fromUid,
         guestUid: uid,
         hostSeat: liveSeatFor(fromSnap.data() || {}),
-        guestSeat: liveSeatFor(toSnap.data() || {}),
+        // Accepting is saying "I'm ready": the invitee used to land in the
+        // lobby and have to confirm it a second time.
+        guestSeat: {...liveSeatFor(toSnap.data() || {}), ready: true},
         params,
         ranked: false,
         questions,
@@ -4350,36 +4355,36 @@ function dateIdMinusDays(dateId: string, days: number): string {
 }
 
 /**
- * Question ids served on the last 2 Daily Challenges, so today's draw can
- * avoid repeating them.
- * @param {string} dateId Today's date id.
- * @return {Promise<Set<string>>} Recently-served `sourceQuestionId`s.
+ * Days back a Daily Challenge avoids repeating. Ten days of 60 questions
+ * is 600, well inside a bank of about a thousand, so the fresh ones still
+ * fill a day with room to spare.
  */
-async function recentlyUsedDailyQuestionIds(
-  dateId: string
-): Promise<Set<string>> {
-  const ids = new Set<string>();
+const DAILY_REPEAT_WINDOW_DAYS = 10;
 
+/**
+ * Questions served on recent Daily Challenges, so today's draw can avoid
+ * repeating them — and, when it can't, repeat the oldest.
+ * @param {string} dateId Today's date id.
+ * @return {Promise<Map<string, number>>} See recentDailyServed.
+ */
+async function recentlyServedDailyQuestions(
+  dateId: string
+): Promise<Map<string, number>> {
   // Read off the shared day sets rather than one player's history: the day
   // is the same for everyone now, so "recently served" is a property of the
-  // day, not of who is asking.
-  for (let i = 1; i <= 2; i++) {
-    const pastDateId = dateIdMinusDays(dateId, i);
-    const snap = await db.collection(DAILY_QUESTION_SET_COLLECTION)
-      .doc(pastDateId).get();
-    const questions = snap.data()?.questions;
-    if (!Array.isArray(questions)) continue;
+  // day, not of who is asking. Runs once per day, on its first play.
+  const daysAgo = Array.from(
+    {length: DAILY_REPEAT_WINDOW_DAYS}, (_, i) => i + 1
+  );
+  const snaps = await db.getAll(...daysAgo.map((days) =>
+    db.collection(DAILY_QUESTION_SET_COLLECTION)
+      .doc(dateIdMinusDays(dateId, days))
+  ));
 
-    for (const q of questions) {
-      if (q && typeof q === "object") {
-        const sourceQuestionId =
-          (q as Record<string, unknown>).sourceQuestionId;
-        if (sourceQuestionId) ids.add(String(sourceQuestionId));
-      }
-    }
-  }
-
-  return ids;
+  return recentDailyServed(snaps.map((snap, i) => ({
+    daysAgo: daysAgo[i],
+    questions: snap.data()?.questions,
+  })));
 }
 
 /**
@@ -4407,8 +4412,8 @@ async function loadSharedDailyQuestions(
     return cached as Record<string, unknown>[];
   }
 
-  const excludeQuestionIds = await recentlyUsedDailyQuestionIds(dateId);
-  const questions = await loadRandomDailyQuestions(excludeQuestionIds);
+  const recentlyServed = await recentlyServedDailyQuestions(dateId);
+  const questions = await loadRandomDailyQuestions(recentlyServed);
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(setRef);
@@ -4430,10 +4435,8 @@ async function loadSharedDailyQuestions(
 /**
  * Mirrors DailyChallengeService's `loadRandomQuestions` — reads every
  * active fixed-pool category/difficulty question bank and returns a
- * random `DAILY_QUESTION_LIMIT`-sized subset, preferring questions not in
- * `excludeQuestionIds`.
- * @param {Set<string>} excludeQuestionIds Recently-served question ids to
- * avoid repeating when enough fresh ones are available.
+ * random `DAILY_QUESTION_LIMIT`-sized subset, preferring questions not
+ * served recently.
  * @return {Promise<Record<string, unknown>[]>} The chosen questions.
  */
 // DailyPoolEntry now lives in ./daily_question_set, next to the selection
@@ -4591,11 +4594,11 @@ async function readDailyQuestionIndex(): Promise<DailyQuestionIndex> {
 /**
  * Picks this player's daily question set from the cached index, then reads
  * only the questions being served.
- * @param {Set<string>} excludeQuestionIds Recently served question ids.
+ * @param {Map<string, number>} recentlyServed See recentDailyServed.
  * @return {Promise<Record<string, unknown>[]>} The chosen questions.
  */
 async function loadRandomDailyQuestions(
-  excludeQuestionIds: Set<string>
+  recentlyServed: Map<string, number>
 ): Promise<Record<string, unknown>[]> {
   // Draws across every category at once, so a truncated index just means
   // a smaller pool to draw from — never the wrong difficulty.
@@ -4615,7 +4618,7 @@ async function loadRandomDailyQuestions(
   // tiers together turned "how far did you get" into a lottery over which
   // difficulties happened to land early.
   const selected = orderByAscendingDifficulty(selectDailyEntries(
-    shuffled, excludeQuestionIds, DAILY_QUESTION_LIMIT
+    shuffled, recentlyServed, DAILY_QUESTION_LIMIT
   ));
 
   if (selected.length === 0) {
@@ -5326,11 +5329,19 @@ export const sendPushOnNotificationCreated = onDocumentCreated(
     const title = String(data.title || "TriviaIA");
     const body = String(data.body || "");
 
+    // The ids ride along so tapping the push can open the invite or the
+    // match itself, not just the notifications list.
+    const payload = (data.data || {}) as Record<string, unknown>;
+    const ids: Record<string, string> = {};
+    for (const key of ["inviteId", "matchId"]) {
+      if (typeof payload[key] === "string") ids[key] = payload[key] as string;
+    }
+
     try {
       await admin.messaging().send({
         token,
         notification: {title, body},
-        data: {type: String(data.type || "")},
+        data: {type: String(data.type || ""), ...ids},
       });
     } catch (e) {
       console.warn(`Push send failed for user ${uid}: ${e}`);
@@ -7357,25 +7368,29 @@ async function requestAiQuestionsFromClaude(
 
   // Questions already banked for this topic, so a top-up doesn't hand
   // back what the player has already been asked. The whole topic goes
-  // in, each question cut to a recognisable prefix.
-  const avoidList = avoidQuestions
-    .slice(0, AI_AVOID_LIST_MAX_QUESTIONS)
-    .map((q) => `- ${q.slice(0, AI_AVOID_LIST_MAX_CHARS)}`)
-    .join("\n");
+  // in, each question cut to a recognisable prefix — plus, on a follow-up
+  // request, the ones this call already kept.
+  const promptFor = (wanted: number, avoid: string[]): string => {
+    const avoidList = avoid
+      .slice(0, AI_AVOID_LIST_MAX_QUESTIONS)
+      .map((q) => `- ${q.slice(0, AI_AVOID_LIST_MAX_CHARS)}`)
+      .join("\n");
 
-  const prompt = `Generate exactly ${count} multiple-choice ` +
-    `trivia questions about "${title}", at ${difficulty} difficulty ` +
-    `(this is level ${levelNumber} of ${AI_LEVELS_PER_TOPIC}; difficulty ` +
-    "should scale up with the level number). Write every question, " +
-    `answer, and explanation in ${outputLanguage}. Each question needs ` +
-    "one correct answer and exactly 3 wrong answers that are plausible " +
-    "but unambiguously incorrect, each different from the others. Do " +
-    "not repeat questions or trivially reword the same fact twice." +
-    (avoidList ?
-      "\n\nThese questions already exist for this topic. Do not repeat " +
-      "any of them, and do not ask the same fact in different words — " +
-      `cover different ground:\n${avoidList}` :
-      "");
+    return `Generate exactly ${wanted} multiple-choice ` +
+      `trivia questions about "${title}", at ${difficulty} difficulty ` +
+      `(this is level ${levelNumber} of ${AI_LEVELS_PER_TOPIC}; ` +
+      "difficulty should scale up with the level number). Write every " +
+      `question, answer, and explanation in ${outputLanguage}. Each ` +
+      "question needs one correct answer and exactly 3 wrong answers that " +
+      "are plausible but unambiguously incorrect, each different from the " +
+      "others. Do not repeat questions or trivially reword the same fact " +
+      "twice." +
+      (avoidList ?
+        "\n\nThese questions already exist for this topic. Do not repeat " +
+        "any of them, and do not ask the same fact in different words — " +
+        `cover different ground:\n${avoidList}` :
+        "");
+  };
 
   const schema = {
     type: "object",
@@ -7400,14 +7415,24 @@ async function requestAiQuestionsFromClaude(
   };
 
   let lastError: unknown;
+  const kept: GeneratedAiQuestion[] = [];
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // Three requests at most: a batch that came back short is topped up by
+  // asking only for the missing ones, rather than thrown away.
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
+      const wanted = count - kept.length;
       const response = await client.messages.create({
         model: AI_MODEL,
         max_tokens: 16000,
         system: AI_TOPIC_SYSTEM_PROMPT,
-        messages: [{role: "user", content: prompt}],
+        messages: [{
+          role: "user",
+          content: promptFor(wanted, [
+            ...kept.map((q) => q.q),
+            ...avoidQuestions,
+          ]),
+        }],
         output_config: {format: {type: "json_schema", schema}},
       });
 
@@ -7430,35 +7455,13 @@ async function requestAiQuestionsFromClaude(
       const parsed = JSON.parse(block.text) as {
         questions?: ModelAiQuestion[];
       };
-      const drafts = parsed.questions || [];
 
-      if (drafts.length !== count) {
-        throw new Error(
-          `Expected ${count} questions, got ` +
-          `${drafts.length}.`
-        );
-      }
+      kept.push(...acceptModelQuestions(
+        parsed.questions || [], kept.map((q) => q.q), wanted
+      ));
+      if (kept.length >= count) return kept;
 
-      return drafts.map((draft) => {
-        // Seeded by the question text so a question always lays out the
-        // same way, while different questions land on different slots.
-        const built = typeof draft.q === "string" && draft.q.trim() !== "" ?
-          buildAnswerOptions(
-            draft.correctAnswer, draft.wrongAnswers, fnv1a32(draft.q)
-          ) :
-          null;
-
-        if (!built) {
-          throw new Error("Malformed question from Claude.");
-        }
-
-        return {
-          q: draft.q,
-          options: built.options,
-          answerIndex: built.answerIndex,
-          explanation: draft.explanation,
-        };
-      });
+      throw new Error(`Expected ${count} questions, have ${kept.length}.`);
     } catch (error) {
       if (error instanceof HttpsError || error instanceof TopicBlockedError) {
         throw error;
@@ -8182,9 +8185,9 @@ async function assertAiTopicCapAvailable(uid: string): Promise<void> {
   if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
     throw await localizedErrorFor(
       uid, "resource-exhausted",
-      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas IA. ` +
+      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas personalizados. ` +
       "Elimina uno para crear otro.",
-      `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+      `You can have up to ${MAX_AI_TOPICS_PER_USER} custom topics. ` +
       "Delete one to create another."
     );
   }
@@ -8563,9 +8566,9 @@ export const createAiTopic = onCall({
   if (activeTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
     throw await localizedErrorFor(
       uid, "resource-exhausted",
-      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas IA. ` +
+      `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas personalizados. ` +
       "Elimina uno para crear otro.",
-      `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+      `You can have up to ${MAX_AI_TOPICS_PER_USER} custom topics. ` +
       "Delete one to create another."
     );
   }
@@ -8601,8 +8604,8 @@ export const createAiTopic = onCall({
   if (!usesFreePass && coins < cost) {
     throw localizedError(
       userData.languageCode, "failed-precondition",
-      `Necesitas ${cost} monedas para crear un tema IA.`,
-      `You need ${cost} coins to create an AI topic.`
+      `Necesitas ${cost} monedas para crear un tema personalizado.`,
+      `You need ${cost} coins to create a custom topic.`
     );
   }
 
@@ -8688,8 +8691,8 @@ export const createAiTopic = onCall({
     if (!freshUsesFreePass && freshCoins < freshCost) {
       throw localizedError(
         freshUserData.languageCode, "failed-precondition",
-        `Necesitas ${freshCost} monedas para crear un tema IA.`,
-        `You need ${freshCost} coins to create an AI topic.`
+        `Necesitas ${freshCost} monedas para crear un tema personalizado.`,
+        `You need ${freshCost} coins to create a custom topic.`
       );
     }
 
@@ -8702,9 +8705,9 @@ export const createAiTopic = onCall({
     if (freshActiveTopicsSnap.size >= MAX_AI_TOPICS_PER_USER) {
       throw await localizedErrorFor(
         uid, "resource-exhausted",
-        `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas de IA. ` +
+        `Puedes tener hasta ${MAX_AI_TOPICS_PER_USER} temas personalizados. ` +
         "Borra uno para crear otro.",
-        `You can have up to ${MAX_AI_TOPICS_PER_USER} AI topics. ` +
+        `You can have up to ${MAX_AI_TOPICS_PER_USER} custom topics. ` +
         "Delete one to create another."
       );
     }
@@ -9067,12 +9070,34 @@ export const expandAiTopic = onCall(async (request) => {
   );
   const poolRef = db.collection("ai_topic_pool").doc(poolId);
 
-  const currentTarget = safeInt(topicData.targetLevels, AI_LEVELS_PER_TOPIC);
-  const newTarget = currentTarget + AI_LEVELS_PER_TOPIC;
+  // The ceiling the player saw when they tapped; see expansionTarget.
+  const fromLevels = request.data?.fromLevels;
+  const seenTarget = typeof fromLevels === "number" ?
+    safeInt(fromLevels, 0) : undefined;
 
   return db.runTransaction(async (tx) => {
-    const [freshSnap, poolSnap] = await tx.getAll(userRef, poolRef);
+    // The topic is read inside the transaction: read outside it, two
+    // overlapping calls both started from the same ceiling and were both
+    // charged.
+    const [freshSnap, poolSnap, freshTopicSnap] =
+      await tx.getAll(userRef, poolRef, topicRef);
     const freshCoins = safeInt(freshSnap.data()?.coins, 0);
+
+    const expansion = expansionTarget({
+      currentTarget: safeInt(
+        freshTopicSnap.data()?.targetLevels, AI_LEVELS_PER_TOPIC
+      ),
+      perExpansion: AI_LEVELS_PER_TOPIC,
+      seenTarget,
+    });
+    if (!expansion.ok) {
+      throw localizedError(
+        languageCode, "failed-precondition",
+        "Este tema ya se amplió.",
+        "This topic was already expanded."
+      );
+    }
+    const newTarget = expansion.newTarget;
 
     if (freshCoins < EXPAND_AI_TOPIC_COST) {
       throw localizedError(
@@ -10084,8 +10109,16 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
   const order = seededShuffleIndices(
     entries.length, crypto.randomBytes(4).readUInt32LE(0)
   );
+  // usedQuestionIds keep only the id, not the tier, so each counts as used
+  // in every tier of this category — the same as before keys carried both.
+  const usedKeys = new Map<string, number>();
+  for (const id of used) {
+    for (const d of [1, 2, 3]) {
+      usedKeys.set(dailyEntryKey(categoryId, d, id), 0);
+    }
+  }
   const picked = selectDailyEntries(
-    order.map((i) => entries[i]), used, WEEKLY_TOPIC_ROUND_SIZE
+    order.map((i) => entries[i]), usedKeys, WEEKLY_TOPIC_ROUND_SIZE
   );
 
   const docs = await db.getAll(...picked.map((entry) =>

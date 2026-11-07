@@ -258,3 +258,60 @@ class NotificationService {
     await _notificationsCol(uid).doc(notificationId).delete();
   }
 }
+
+/// Where tapping a push should take the player.
+///
+/// Tapping a challenge used to open the notifications list, then the
+/// invites screen, and only there could it be accepted. The push now
+/// carries the invite or match id, so it can go straight to it.
+@immutable
+class PushTapTarget {
+  final String kind;
+  final String? id;
+
+  const PushTapTarget._(this.kind, this.id);
+
+  /// Accept this live challenge and open its lobby.
+  const PushTapTarget.acceptLiveInvite(String inviteId)
+      : this._('acceptLiveInvite', inviteId);
+
+  /// Open this turn-based match.
+  const PushTapTarget.asyncMatch(String matchId)
+      : this._('asyncMatch', matchId);
+
+  /// Open the lobby of a live match a friend accepted.
+  const PushTapTarget.liveLobby(String matchId) : this._('liveLobby', matchId);
+
+  /// Anything else: the notifications list, as before.
+  const PushTapTarget.notifications() : this._('notifications', null);
+
+  @override
+  bool operator ==(Object other) =>
+      other is PushTapTarget && other.kind == kind && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(kind, id);
+
+  @override
+  String toString() => 'PushTapTarget($kind, $id)';
+}
+
+/// [PushTapTarget] for a push's data. Pushes sent before the ids were
+/// added carry only the type, and fall back to the list.
+PushTapTarget pushTapTarget(Map<String, dynamic> data) {
+  final type = (data['type'] ?? '').toString();
+  final inviteId = (data['inviteId'] ?? '').toString();
+  final matchId = (data['matchId'] ?? '').toString();
+
+  switch (type) {
+    case 'realtime_invite':
+      if (inviteId.isNotEmpty) return PushTapTarget.acceptLiveInvite(inviteId);
+    case 'match_invite':
+    case 'match_turn':
+    case 'match_result':
+      if (matchId.isNotEmpty) return PushTapTarget.asyncMatch(matchId);
+    case 'realtime_invite_accepted':
+      if (matchId.isNotEmpty) return PushTapTarget.liveLobby(matchId);
+  }
+  return const PushTapTarget.notifications();
+}

@@ -914,6 +914,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                                   setState(() {
                                     _sessionError = null;
                                     _creatingSession = false;
+                                    // A fresh start: the automatic
+                                    // retries are spent per attempt, not
+                                    // once for the whole screen.
+                                    _sessionRetries = 0;
                                     // A retry has to look the session up
                                     // again; the cached miss is what sent
                                     // us down this branch.

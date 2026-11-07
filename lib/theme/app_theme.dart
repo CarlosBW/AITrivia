@@ -407,7 +407,11 @@ extension AppSurfacesContext on BuildContext {
       // and pressing flattens it while the content sinks into its place.
       return ClipRRect(
         borderRadius: shape,
+        // Passthrough, so the content keeps the button's own constraints:
+        // a loose Stack let it shrink to the label, and a full-width
+        // button drew its text in the top-left corner.
         child: Stack(
+          fit: StackFit.passthrough,
           children: [
             // Not positioned: the content is what gives the Stack its size.
             // With every child positioned the Stack took the largest size
@@ -1004,16 +1008,17 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
       style: FilledButton.styleFrom(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-        // The lip eats into the bottom of the box, so the label needs that
-        // much more room under it to stay centred on the face.
-        padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + surfaces.buttonLip),
+        // No extra room for the lip here: the lip background adds its own
+        // strip under the content, and both left the label off-centre.
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(shapes.pill),
           side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        // The background sinks the whole content when pressed; a foreground
+        // builder on top moved the label down twice the lip.
         backgroundBuilder: lip.background,
-        foregroundBuilder: lip.foreground,
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -1021,14 +1026,15 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
-        padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + surfaces.buttonLip),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(shapes.pill),
           side: surfaces.side ?? BorderSide.none,
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        // The background sinks the whole content when pressed; a foreground
+        // builder on top moved the label down twice the lip.
         backgroundBuilder: lip.background,
-        foregroundBuilder: lip.foreground,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(

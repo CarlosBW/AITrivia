@@ -8,6 +8,8 @@ import '../shop/coin_shop_screen.dart';
 import '../social/friends_screen.dart';
 import '../versus/pvp_screen.dart';
 import '../versus/match_lobby_screen.dart';
+import '../versus/async_match_play_screen.dart';
+import '../versus/realtime_invites_screen.dart';
 import '../solo/solo_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../../services/notification_service.dart';
@@ -68,11 +70,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _pushTaps = NotificationService.instance.pushTaps().listen((_) {
+    _pushTaps = NotificationService.instance.pushTaps().listen((message) {
       // Only from the tabs themselves: on top of a live match or a level
-      // in progress the list would cover the game the player came back to.
+      // in progress it would cover the game the player came back to.
       if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-        _openNotifications();
+        _openPushTarget(pushTapTarget(message.data));
       }
     });
   }
@@ -285,6 +287,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
 
     _showingChallengeAcceptedDialog = false;
+  }
+
+  /// Opens what a tapped push is about — accepting a challenge, opening a
+  /// match — instead of the notifications list it always used to open.
+  Future<void> _openPushTarget(PushTapTarget target) async {
+    final id = target.id;
+    switch (target.kind) {
+      case 'acceptLiveInvite':
+        await acceptLiveInviteAndOpenLobby(context, id!);
+      case 'asyncMatch':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AsyncMatchPlayScreen(asyncMatchId: id!),
+          ),
+        );
+      case 'liveLobby':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => MatchLobbyScreen(matchId: id!)),
+        );
+      default:
+        await _openNotifications();
+    }
   }
 
   Future<void> _openNotifications() async {

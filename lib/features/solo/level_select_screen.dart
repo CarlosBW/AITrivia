@@ -43,6 +43,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   bool _buyingLife = false;
   bool _expanding = false;
 
+  /// Held from the tap until the expansion settles, dialog included: a
+  /// double tap used to open two confirmations and send two purchases.
+  bool _expandInFlight = false;
+
   bool _loading = true;
   String? _loadError;
 
@@ -336,11 +340,28 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   /// the topic list's menu — which is where it used to be the only way in.
   Future<void> _expandTopic(BuildContext context, String uid) async {
     final topicId = widget.aiTopicId;
-    if (topicId == null || _expanding || _isNavigating || _buyingLife) {
+    if (topicId == null || _expandInFlight || _isNavigating || _buyingLife) {
       return;
     }
+    _expandInFlight = true;
+    try {
+      await _confirmAndExpand(context, uid, topicId);
+    } finally {
+      _expandInFlight = false;
+    }
+  }
 
+  Future<void> _confirmAndExpand(
+    BuildContext context,
+    String uid,
+    String topicId,
+  ) async {
     final l10n = AppLocalizations.of(context);
+    // The ceiling the player is looking at; the server refuses the
+    // purchase if the topic already moved past it.
+    final fromLevels = ((_categoryData['targetLevels'] ??
+            EconomyService.aiLevelsPerTopic) as num)
+        .toInt();
     final userSnap =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     final coins = ((userSnap.data()?['coins'] ?? 0) as num).toInt();
@@ -376,7 +397,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     setState(() => _expanding = true);
 
     try {
-      await AiTopicService.instance.expandTopic(topicId: topicId);
+      await AiTopicService.instance.expandTopic(
+        topicId: topicId,
+        fromLevels: fromLevels,
+      );
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

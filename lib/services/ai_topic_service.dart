@@ -475,8 +475,12 @@ class AiTopicService {
     }
   }
 
+  /// [fromLevels] is the level count the player saw: the server refuses
+  /// the expansion when the topic already moved past it, so a duplicated
+  /// request can't be charged twice.
   Future<void> expandTopic({
     required String topicId,
+    required int fromLevels,
   }) async {
     try {
       await FirebaseFunctions.instance
@@ -484,7 +488,7 @@ class AiTopicService {
         'expandAiTopic',
         options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
       )
-          .call({'topicId': topicId});
+          .call({'topicId': topicId, 'fromLevels': fromLevels});
     } on FirebaseFunctionsException catch (e) {
       throw Exception(userFacingError(_l10n, e, fallback: _l10n.serviceCouldNotExpandTopic));
     }

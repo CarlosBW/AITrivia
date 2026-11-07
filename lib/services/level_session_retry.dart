@@ -9,12 +9,20 @@ const int maxLevelSessionRetries = 2;
 /// finishes and saves it even when the client stops waiting — so a wait cut
 /// short by the app going to the background, or by the client's own
 /// timeout, is worth asking again: the retry finds the questions ready.
-/// Anything else is a real answer from the server and is shown.
+/// Anything else is a real answer from the server and is shown — even after
+/// a trip to the background, which explains a dropped connection but not a
+/// locked level or an exhausted daily allowance.
 bool shouldRetryLevelSession({
   required String? errorCode,
   required bool wentToBackground,
   required int retriesSoFar,
 }) {
   if (retriesSoFar >= maxLevelSessionRetries) return false;
-  return wentToBackground || errorCode == 'deadline-exceeded';
+  if (errorCode == 'deadline-exceeded') return true;
+  return wentToBackground && _connectionErrors.contains(errorCode);
 }
+
+/// What a connection cut off mid-call comes back as. Null is an error that
+/// isn't a Functions one at all, such as a dropped socket.
+const _connectionErrors = {null, 'unavailable', 'internal', 'unknown',
+    'cancelled', 'aborted'};

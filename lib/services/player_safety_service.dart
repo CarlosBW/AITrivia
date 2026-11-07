@@ -63,7 +63,7 @@ class PlayerSafetyService {
           .handleError((Object _) => _blocked = null)
           .asBroadcastStream();
     }
-    return withLatest(_blocked!, _latestBlocked);
+    return withLatest(_blocked!, () => _latestBlocked);
   }
 
   /// The blocked players with the name they had when blocked, newest

@@ -86,4 +86,46 @@ void main() {
     expect(tester.getSize(button), before);
     await gesture.up();
   });
+
+  // El texto quedaba pegado a la esquina superior izquierda de los botones
+  // anchos: el bloque del labio dejaba al contenido tomar solo su ancho.
+  testWidgets('en Juguetón el texto de un botón ancho queda centrado',
+      (tester) async {
+    final playful = AppThemes.byId(AppThemes.playfulId);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(playful),
+        home: Scaffold(body: buttons()),
+      ),
+    );
+    final button = find.widgetWithText(FilledButton, 'Jugar');
+    final label = find.text('Jugar');
+    final lip = playful.surfaces.buttonLip;
+
+    final face = tester.getRect(button);
+    final text = tester.getRect(label);
+    expect(text.center.dx, closeTo(face.center.dx, 20));
+    // Centrado en la cara, que es todo el botón menos el labio de abajo.
+    expect(text.center.dy, closeTo(face.top + (face.height - lip) / 2, 2));
+  });
+
+  testWidgets('en Juguetón el texto baja exactamente el labio al presionar',
+      (tester) async {
+    final playful = AppThemes.byId(AppThemes.playfulId);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(playful),
+        home: Scaffold(body: buttons()),
+      ),
+    );
+    final label = find.text('Jugar');
+    final resting = tester.getRect(label).top;
+
+    final gesture = await tester.startGesture(tester.getCenter(label));
+    await tester.pumpAndSettle();
+    final pressed = tester.getRect(label).top;
+    await gesture.up();
+
+    expect(pressed - resting, playful.surfaces.buttonLip);
+  });
 }

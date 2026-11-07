@@ -15,34 +15,86 @@ export interface DailyPoolEntry {
 }
 
 /**
+ * What identifies a pool question: its category, tier and id together.
+ * Ids restart at q1 in every category and tier, so the id alone names a
+ * dozen different questions.
+ * @param {string} c Category id.
+ * @param {number} d Difficulty tier.
+ * @param {string} q Question id within that pool.
+ * @return {string} The question's key.
+ */
+export function dailyEntryKey(c: string, d: number, q: string): string {
+  return `${c}/${d}/${q}`;
+}
+
+/**
+ * The questions served on recent days, by [dailyEntryKey], each with how
+ * many days ago it was last served.
+ * @param {object[]} days Recent days' stored question sets.
+ * @return {Map<string, number>} Key to days since it was last served.
+ */
+export function recentDailyServed(
+  days: {daysAgo: number; questions: unknown}[]
+): Map<string, number> {
+  const served = new Map<string, number>();
+
+  for (const {daysAgo, questions} of days) {
+    if (!Array.isArray(questions)) continue;
+    for (const q of questions) {
+      if (!q || typeof q !== "object") continue;
+      const {sourceCategoryId, sourceDifficulty, sourceQuestionId} =
+        q as Record<string, unknown>;
+      if (!sourceCategoryId || !sourceQuestionId ||
+          typeof sourceDifficulty !== "number") {
+        continue;
+      }
+      const key = dailyEntryKey(
+        String(sourceCategoryId), sourceDifficulty, String(sourceQuestionId)
+      );
+      const seen = served.get(key);
+      if (seen === undefined || daysAgo < seen) served.set(key, daysAgo);
+    }
+  }
+  return served;
+}
+
+/**
  * Picks the day's entries out of an already-shuffled index.
  *
  * Questions served on recent days are pushed to the back rather than
  * dropped: on a small bank the fresh ones can't fill a set on their own,
- * and a short day is worse than a repeat.
+ * and a short day is worse than a repeat. When it has to repeat, it takes
+ * the ones served longest ago first, so repeats are as spaced as the bank
+ * allows.
  * @param {DailyPoolEntry[]} shuffled The whole index, already shuffled.
- * @param {Set<string>} excludeQuestionIds Ids served on recent days.
+ * @param {Map<string, number>} recentlyServed From [recentDailyServed].
  * @param {number} limit How many questions the day should hold.
  * @return {DailyPoolEntry[]} The chosen entries, still in shuffled order.
  */
 export function selectDailyEntries(
   shuffled: DailyPoolEntry[],
-  excludeQuestionIds: Set<string>,
+  recentlyServed: Map<string, number>,
   limit: number
 ): DailyPoolEntry[] {
   const fresh: DailyPoolEntry[] = [];
-  const recentlyUsed: DailyPoolEntry[] = [];
+  const recentlyUsed: {entry: DailyPoolEntry; daysAgo: number}[] = [];
 
   for (const entry of shuffled) {
-    if (excludeQuestionIds.has(entry.q)) recentlyUsed.push(entry);
-    else fresh.push(entry);
+    const daysAgo =
+      recentlyServed.get(dailyEntryKey(entry.c, entry.d, entry.q));
+    if (daysAgo === undefined) fresh.push(entry);
+    else recentlyUsed.push({entry, daysAgo});
   }
 
   const capped = Math.max(0, Math.min(limit, shuffled.length));
   const selected = fresh.slice(0, capped);
 
   if (selected.length < capped) {
-    selected.push(...recentlyUsed.slice(0, capped - selected.length));
+    // Stable, so equally old ones keep their shuffled order.
+    recentlyUsed.sort((a, b) => b.daysAgo - a.daysAgo);
+    selected.push(...recentlyUsed
+      .slice(0, capped - selected.length)
+      .map((r) => r.entry));
   }
 
   return selected;

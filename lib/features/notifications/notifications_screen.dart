@@ -116,7 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'streak_at_risk':
         return l10n.navPlayNow;
       case 'realtime_invite':
-        return l10n.notificationsOpen;
+        return l10n.realtimeInvitesAccept;
       case 'realtime_invite_accepted':
         return l10n.notificationsOpenLobby;
       default:
@@ -301,6 +301,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return;
 
       case 'realtime_invite':
+        final inviteId = (data['inviteId'] ?? '').toString();
+        if (inviteId.isNotEmpty) {
+          await acceptLiveInviteAndOpenLobby(context, inviteId);
+          return;
+        }
         await Navigator.push(
           context,
           MaterialPageRoute(

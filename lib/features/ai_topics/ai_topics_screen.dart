@@ -149,6 +149,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
     required String topicId,
     required String topicTitle,
     required int generatedLevels,
+    required int targetLevels,
   }) async {
     final uid = AiTopicService.instance.uid;
     final userSnap =
@@ -218,7 +219,10 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
           EconomyService.expandAiTopicCost,
           coins,
         ),
-        action: () => AiTopicService.instance.expandTopic(topicId: topicId),
+        action: () => AiTopicService.instance.expandTopic(
+          topicId: topicId,
+          fromLevels: targetLevels,
+        ),
         successMessage: l10n.aiTopicsExpandSuccess,
       );
     }
@@ -337,6 +341,9 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                       ((data['questionsCount'] ?? 0) as num).toInt();
                   final generatedLevels =
                       ((data['generatedLevels'] ?? 0) as num).toInt();
+                  final targetLevels = ((data['targetLevels'] ??
+                          EconomyService.aiLevelsPerTopic) as num)
+                      .toInt();
                   final usedFreePass = data['usedFreePass'] == true;
                   final cost =
                       ((data['generationCostCoins'] ?? 0) as num).toInt();
@@ -447,6 +454,7 @@ class _AiTopicsScreenState extends State<AiTopicsScreen> {
                                       topicId: doc.id,
                                       topicTitle: title,
                                       generatedLevels: generatedLevels,
+                                      targetLevels: targetLevels,
                                     ),
                                     itemBuilder: (context) => [
                                       // No price here: it depends on how

@@ -254,15 +254,22 @@ class LifeService {
     required int cost,
   }) async {
     try {
-      await FirebaseFunctions.instance
-          .httpsCallable(
-            'buyFullLife',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
-          .call();
+      await buyLife();
       return true;
     } on FirebaseFunctionsException {
       return false;
     }
+  }
+
+  /// [buyFullLife] for a caller that shows why it failed: the server says
+  /// whether the lives were already full or the coins short, and a bare
+  /// `false` dropped that.
+  Future<void> buyLife() async {
+    await FirebaseFunctions.instance
+        .httpsCallable(
+          'buyFullLife',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
   }
 }

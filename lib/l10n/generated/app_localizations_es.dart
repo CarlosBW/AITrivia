@@ -1371,6 +1371,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get realtimeInvitesAccept => 'Aceptar';
 
   @override
+  String get realtimeInvitesChallengeFriend => 'Retar a un amigo';
+
+  @override
   String get realtimeInvitesEmpty =>
       'No tienes invitaciones en vivo por ahora.';
 
@@ -2966,7 +2969,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get friendsNoFriendsYet => 'Todavía no tienes amigos agregados.';
 
   @override
-  String get friendsAsyncOnly => 'Solo asíncrono';
+  String get friendsChallengeLaterHint => 'Jugará cuando se conecte';
 
   @override
   String friendsTodayScore(int score) {

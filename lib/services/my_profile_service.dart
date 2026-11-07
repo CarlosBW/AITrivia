@@ -41,7 +41,7 @@ class MyProfileService {
           .asBroadcastStream();
     }
 
-    return withLatest(_stream!, _latest);
+    return withLatest(_stream!, () => _latest);
   }
 
   /// Drops the cached stream — call on sign-out so the next reader starts
@@ -53,11 +53,17 @@ class MyProfileService {
   }
 }
 
-/// Listens to [shared], first handing the new listener [latest] when there
-/// is one — what a broadcast stream alone doesn't do for late subscribers.
-Stream<T> withLatest<T>(Stream<T> shared, T? latest) {
+/// Listens to [shared], first handing the new listener the [latest] value
+/// when there is one — what a broadcast stream alone doesn't do for late
+/// subscribers.
+///
+/// A getter, read on each subscription: a stream held by a screen is
+/// listened to again whenever a widget under it remounts, and a value
+/// captured when the stream was created would replay that old snapshot.
+Stream<T> withLatest<T>(Stream<T> shared, T? Function() latest) {
   return Stream.multi((controller) {
-    if (latest != null) controller.add(latest);
+    final current = latest();
+    if (current != null) controller.add(current);
     final sub = shared.listen(
       controller.add,
       onError: controller.addError,

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/realtime_invite_service.dart';
+import '../social/friends_screen.dart';
 import 'match_lobby_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
@@ -9,6 +10,31 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../theme/app_theme.dart';
+
+/// Accepts a live challenge and opens its lobby, ready to play.
+///
+/// What tapping the challenge — the push, or its card in the notifications
+/// list — does now. It used to lead to the invites screen first, and then
+/// to a lobby that asked "ready?" again.
+Future<void> acceptLiveInviteAndOpenLobby(
+  BuildContext context,
+  String inviteId,
+) async {
+  final navigator = Navigator.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final l10n = AppLocalizations.of(context);
+
+  try {
+    final matchId = await RealtimeInviteService.instance.acceptInvite(
+      inviteId: inviteId,
+    );
+    await navigator.push(
+      MaterialPageRoute(builder: (_) => MatchLobbyScreen(matchId: matchId)),
+    );
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(userFacingError(l10n, e))));
+  }
+}
 
 class RealtimeInvitesScreen extends StatefulWidget {
   const RealtimeInvitesScreen({super.key});
@@ -140,6 +166,21 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
             ],
           ),
         ),
+        // Where the challenges come from: this screen only lists them, and
+        // a player who landed here had no way on to actually send one.
+        floatingActionButton: FloatingActionButton.extended(
+          // The default surface tint washed out against this page.
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const FriendsScreen(initialTab: 1),
+            ),
+          ),
+          icon: const Icon(Icons.bolt),
+          label: Text(l10n.realtimeInvitesChallengeFriend),
+        ),
         body: Stack(
           children: [
             TabBarView(
@@ -192,7 +233,8 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.all(16),
+                // Room at the bottom for the challenge button.
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 itemCount: docs.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
@@ -322,7 +364,8 @@ class _RealtimeInvitesScreenState extends State<RealtimeInvitesScreen> {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          // Room at the bottom for the challenge button.
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {

@@ -15,7 +15,10 @@ import '../../services/player_safety_service.dart';
 enum _RelationStatus { friend, requestSent, requestReceived, none }
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  /// The tab to open on: 0 search, 1 friends, 2 sent, 3 received.
+  final int initialTab;
+
+  const FriendsScreen({super.key, this.initialTab = 0});
 
   @override
   State<FriendsScreen> createState() => _FriendsScreenState();
@@ -287,6 +290,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
 
     return DefaultTabController(
       length: 4,
+      initialIndex: widget.initialTab,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.friendsTitle),
@@ -464,7 +468,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                 final statusText = _presenceService.presenceLabel(presence);
                 final rawStatus = (presence?['status'] ?? '').toString();
 
-                return _UserTile(
+                return FriendTile(
                   actionsUid: friendUid,
                   player: data,
                   title: displayName,
@@ -482,7 +486,8 @@ class _FriendsScreenState extends State<FriendsScreen> {
                     children: [
                       _DailyScoreBadge(friendUid: friendUid),
                       const SizedBox(height: 4),
-                      FilledButton.icon(
+                      FriendChallengeButton(
+                        online: online,
                         onPressed: _actionLoading
                             ? null
                             : () => _challengeFriend(
@@ -490,11 +495,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
                                   displayName: displayName,
                                   isOnline: online,
                                 ),
-                        icon: Icon(
-                          online ? Icons.flash_on : Icons.schedule,
-                          size: 18,
-                        ),
-                        label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
                       ),
                     ],
                   ),
@@ -553,7 +553,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               'bestLeagueId': data['targetBestLeagueId'],
             };
 
-            return _UserTile(
+            return FriendTile(
               actionsUid: (data['targetUid'] ?? doc.id).toString(),
               player: targetPlayer,
               title: targetName,
@@ -617,7 +617,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
               'bestLeagueId': data['requesterBestLeagueId'],
             };
 
-            return _UserTile(
+            return FriendTile(
               actionsUid: requesterUid,
               player: requesterPlayer,
               title: name,
@@ -734,26 +734,22 @@ class _SearchResultTile extends StatelessWidget {
               presence,
             );
 
-            return _UserTile(
+            return FriendTile(
               actionsUid: uid,
               player: player,
               title: username,
               subtitle: l10n.friendsAlreadyFriend,
               statusColor: Colors.greenAccent,
-              trailing: FilledButton.icon(
+              trailing: FriendChallengeButton(
+                online: online,
                 onPressed: actionLoading ? null : () => onChallenge(online),
-                icon: Icon(
-                  online ? Icons.flash_on : Icons.schedule,
-                  size: 18,
-                ),
-                label: Text(online ? l10n.asyncFindPlayersChallengeButton : l10n.friendsAsyncOnly),
               ),
             );
           },
         );
 
       case _RelationStatus.requestSent:
-        return _UserTile(
+        return FriendTile(
           actionsUid: uid,
           player: player,
           title: username,
@@ -766,7 +762,7 @@ class _SearchResultTile extends StatelessWidget {
         );
 
       case _RelationStatus.requestReceived:
-        return _UserTile(
+        return FriendTile(
           actionsUid: uid,
           player: player,
           title: username,
@@ -790,7 +786,7 @@ class _SearchResultTile extends StatelessWidget {
         );
 
       case _RelationStatus.none:
-        return _UserTile(
+        return FriendTile(
           actionsUid: uid,
           player: player,
           title: username,
@@ -806,7 +802,61 @@ class _SearchResultTile extends StatelessWidget {
   }
 }
 
-class _UserTile extends StatelessWidget {
+/// "Challenge" for a friend: live when they're online, otherwise a
+/// turn-based match they play when they come back — which the line under
+/// the button says, since "Async only" meant nothing to players.
+/// Public only for its test.
+class FriendChallengeButton extends StatelessWidget {
+  final bool online;
+  final VoidCallback? onPressed;
+
+  const FriendChallengeButton({
+    super.key,
+    required this.online,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FilledButton.icon(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+          icon: Icon(online ? Icons.flash_on : Icons.schedule, size: 18),
+          label: Text(l10n.asyncFindPlayersChallengeButton),
+        ),
+        if (!online) ...[
+          const SizedBox(height: 4),
+          // Narrow on purpose: it wraps under the button on a small phone
+          // instead of pushing the friend's name off the row.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Text(
+              l10n.friendsChallengeLaterHint,
+              textAlign: TextAlign.end,
+              maxLines: 2,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One player in the friends lists. Public only for its test.
+class FriendTile extends StatelessWidget {
   /// The player shown, for reporting or blocking them from a tap.
   final String actionsUid;
   final Map<String, dynamic> player;
@@ -815,7 +865,8 @@ class _UserTile extends StatelessWidget {
   final Widget trailing;
   final Color statusColor;
 
-  const _UserTile({
+  const FriendTile({
+    super.key,
     required this.actionsUid,
     required this.player,
     required this.title,
@@ -826,46 +877,72 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A Row rather than a ListTile: a ListTile has a fixed height, and the
+    // friends tab puts the day's score above the challenge button, which
+    // pushed the button out of the card.
     return Card(
       color: Theme.of(context).colorScheme.surface,
       margin: const EdgeInsets.only(bottom: 10),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(context.radii.md),
       ),
-      child: ListTile(
-        leading: PlayerAvatarWidget.fromPlayer(
-          player,
-          radius: 20,
-        ),
-        title: Text(
-          title,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Row(
-          children: [
-            Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: statusColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                subtitle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        trailing: trailing,
+      child: InkWell(
         onTap: () => showPlayerActions(
           context,
           uid: actionsUid,
           name: title,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            children: [
+              PlayerAvatarWidget.fromPlayer(player, radius: 20),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            subtitle,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              trailing,
+            ],
+          ),
         ),
       ),
     );

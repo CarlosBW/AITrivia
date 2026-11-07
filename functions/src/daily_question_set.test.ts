@@ -5,6 +5,7 @@ import {
   DailyPoolEntry,
   matchCandidates,
   orderByAscendingDifficulty,
+  recentDailyServed,
   selectDailyEntries,
 } from "./daily_question_set";
 
@@ -27,7 +28,7 @@ function entries(
 
 describe("selectDailyEntries", () => {
   test("takes the requested number from the shuffled order", () => {
-    const selected = selectDailyEntries(entries(1, 10), new Set(), 4);
+    const selected = selectDailyEntries(entries(1, 10), new Map(), 4);
 
     assert.equal(selected.length, 4);
     assert.deepEqual(selected.map((e) => e.q), [
@@ -38,7 +39,7 @@ describe("selectDailyEntries", () => {
   test("prefers questions not served on recent days", () => {
     const pool = entries(1, 4);
     const selected = selectDailyEntries(
-      pool, new Set(["q1_0", "q1_1"]), 2
+      pool, new Map([["cine/1/q1_0", 1], ["cine/1/q1_1", 1]]), 2
     );
 
     assert.deepEqual(selected.map((e) => e.q), ["q1_2", "q1_3"]);
@@ -49,7 +50,7 @@ describe("selectDailyEntries", () => {
   test("falls back to recent rather than serving a short day", () => {
     const pool = entries(1, 3);
     const selected = selectDailyEntries(
-      pool, new Set(["q1_0", "q1_1"]), 3
+      pool, new Map([["cine/1/q1_0", 1], ["cine/1/q1_1", 1]]), 3
     );
 
     assert.equal(selected.length, 3);
@@ -58,13 +59,72 @@ describe("selectDailyEntries", () => {
     ]);
   });
 
+  // Question ids restart at q1 in every category and difficulty, so "q3"
+  // served yesterday from Cine said nothing about Historia's q3 — yet the
+  // id alone was what got compared, and on a full day almost every id
+  // looked used, which let real repeats back in.
+  test("a served question doesn't hide another category's same id", () => {
+    const pool: DailyPoolEntry[] = [
+      {c: "cine", d: 1, q: "q3"},
+      {c: "historia", d: 1, q: "q3"},
+    ];
+    const selected = selectDailyEntries(
+      pool, new Map([["cine/1/q3", 1]]), 1
+    );
+
+    assert.deepEqual(selected, [{c: "historia", d: 1, q: "q3"}]);
+  });
+
+  test("when it must repeat, it repeats the longest-ago first", () => {
+    const pool = entries(1, 3);
+    const selected = selectDailyEntries(
+      pool,
+      new Map([["cine/1/q1_0", 1], ["cine/1/q1_1", 9], ["cine/1/q1_2", 4]]),
+      2
+    );
+
+    assert.deepEqual(selected.map((e) => e.q), ["q1_1", "q1_2"]);
+  });
+
   test("never returns more than the pool holds", () => {
-    assert.equal(selectDailyEntries(entries(1, 3), new Set(), 60).length, 3);
+    assert.equal(selectDailyEntries(entries(1, 3), new Map(), 60).length, 3);
   });
 
   test("handles an empty pool and a zero limit", () => {
-    assert.deepEqual(selectDailyEntries([], new Set(), 10), []);
-    assert.deepEqual(selectDailyEntries(entries(1, 5), new Set(), 0), []);
+    assert.deepEqual(selectDailyEntries([], new Map(), 10), []);
+    assert.deepEqual(selectDailyEntries(entries(1, 5), new Map(), 0), []);
+  });
+});
+
+describe("recentDailyServed", () => {
+  test("keys each served question by category, tier and id", () => {
+    const served = recentDailyServed([
+      {daysAgo: 1, questions: [
+        {sourceCategoryId: "cine", sourceDifficulty: 2, sourceQuestionId: "q7"},
+      ]},
+    ]);
+
+    assert.deepEqual([...served], [["cine/2/q7", 1]]);
+  });
+
+  test("keeps the most recent day a question was served", () => {
+    const q = {sourceCategoryId: "arte", sourceDifficulty: 1,
+      sourceQuestionId: "q1"};
+    const served = recentDailyServed([
+      {daysAgo: 6, questions: [q]},
+      {daysAgo: 2, questions: [q]},
+    ]);
+
+    assert.equal(served.get("arte/1/q1"), 2);
+  });
+
+  test("ignores anything that isn't a served question", () => {
+    const served = recentDailyServed([
+      {daysAgo: 1, questions: [null, "x", {sourceQuestionId: "q1"}]},
+      {daysAgo: 2, questions: undefined},
+    ]);
+
+    assert.equal(served.size, 0);
   });
 });
 

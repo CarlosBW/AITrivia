@@ -716,6 +716,7 @@
   },
   "realtimeInvitesDecline": "Rechazar",
   "realtimeInvitesAccept": "Aceptar",
+  "realtimeInvitesChallengeFriend": "Retar a un amigo",
   "realtimeInvitesEmpty": "No tienes invitaciones en vivo por ahora.",
   "realtimeInvitesReceivedTab": "Recibidas",
   "realtimeInvitesSentTab": "Enviadas",
@@ -1669,7 +1670,7 @@
   },
   "friendsLoadingFriends": "Cargando amigos...",
   "friendsNoFriendsYet": "Todavía no tienes amigos agregados.",
-  "friendsAsyncOnly": "Solo asíncrono",
+  "friendsChallengeLaterHint": "Jugará cuando se conecte",
   "friendsTodayScore": "Hoy: {score} pts",
   "@friendsTodayScore": {
     "placeholders": {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
@@ -325,10 +324,11 @@ class _LivesForCoinsState extends State<_LivesForCoins> {
     super.initState();
     // Only to move the countdown along: the lives themselves come from the
     // user doc, which the server updates on every change.
-    _ticker = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) => setState(() {}),
-    );
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      // The store tab stays alive while another tab is showing; there is
+      // no countdown to move there.
+      if (mounted && TickerMode.valuesOf(context).enabled) setState(() {});
+    });
   }
 
   @override
@@ -349,14 +349,13 @@ class _LivesForCoinsState extends State<_LivesForCoins> {
 
     setState(() => _buying = true);
     try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: FirebaseAuth.instance.currentUser!.uid,
-        cost: EconomyService.buyFullLifeCost,
-      );
+      await LifeService.instance.buyLife();
+      messenger.showSnackBar(SnackBar(content: Text(l10n.soloLifeRecovered)));
+    } catch (e) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            success ? l10n.soloLifeRecovered : l10n.coinShopPurchaseFailed,
+            userFacingError(l10n, e, fallback: l10n.coinShopPurchaseFailed),
           ),
         ),
       );

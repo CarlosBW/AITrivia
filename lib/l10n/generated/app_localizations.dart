@@ -2432,6 +2432,12 @@ abstract class AppLocalizations {
   /// **'Aceptar'**
   String get realtimeInvitesAccept;
 
+  /// No description provided for @realtimeInvitesChallengeFriend.
+  ///
+  /// In es, this message translates to:
+  /// **'Retar a un amigo'**
+  String get realtimeInvitesChallengeFriend;
+
   /// No description provided for @realtimeInvitesEmpty.
   ///
   /// In es, this message translates to:
@@ -4936,11 +4942,11 @@ abstract class AppLocalizations {
   /// **'Todavía no tienes amigos agregados.'**
   String get friendsNoFriendsYet;
 
-  /// No description provided for @friendsAsyncOnly.
+  /// No description provided for @friendsChallengeLaterHint.
   ///
   /// In es, this message translates to:
-  /// **'Solo asíncrono'**
-  String get friendsAsyncOnly;
+  /// **'Jugará cuando se conecte'**
+  String get friendsChallengeLaterHint;
 
   /// No description provided for @friendsTodayScore.
   ///

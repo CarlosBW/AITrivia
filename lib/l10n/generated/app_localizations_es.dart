@@ -144,7 +144,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeLivesFull => 'Vidas al máximo';
 
   @override
-  String get homeAiTopicTitle => 'Tema libre (IA)';
+  String get homeAiTopicTitle => 'Tema personalizado';
 
   @override
   String get homeAiTopicSubtitle =>
@@ -493,10 +493,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarCategoryAchievement => 'LOGRO';
 
   @override
-  String get avatarCategoryAi => 'IA';
+  String get avatarCategoryAi => 'TEMA PROPIO';
 
   @override
-  String get avatarCategoryAiUnique => 'IA ÚNICO';
+  String get avatarCategoryAiUnique => 'TEMA ÚNICO';
 
   @override
   String get avatarNameBrain => 'Cerebro';
@@ -635,10 +635,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get avatarUnlock1000Questions => 'Responde 1000 preguntas';
 
   @override
-  String get avatarNameAiTopicMaster => 'Maestro de Temas IA';
+  String get avatarNameAiTopicMaster => 'Maestro de Temas Personalizados';
 
   @override
-  String get avatarUnlockAiTopicMaster => 'Completa un tema generado por IA';
+  String get avatarUnlockAiTopicMaster => 'Completa un tema personalizado';
 
   @override
   String get frameNameBronze => 'Marco de Bronce';
@@ -794,7 +794,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get levelSelectLoadFailedTitle => 'No se pudo cargar la categoría.';
 
   @override
-  String get levelPlayAiTopicLabel => 'Tema IA';
+  String get levelPlayAiTopicLabel => 'Tema personalizado';
 
   @override
   String levelPlayAppBarTitle(String name, int level) {
@@ -905,7 +905,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get questionReportFailed => 'No pudimos enviar el reporte.';
 
   @override
-  String get levelPlayGeneratingQuestions => 'Generando preguntas del nivel...';
+  String get levelPlayGeneratingQuestions =>
+      'Preparando preguntas del nivel...';
 
   @override
   String get levelPlaySessionNotFound => 'Sesión no encontrada.';
@@ -1506,10 +1507,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchLobbyModeLabel => 'Modo';
 
   @override
-  String get matchLobbyModeFixed => 'Sin IA';
+  String get matchLobbyModeFixed => 'Temas fijos';
 
   @override
-  String get matchLobbyModeAi => 'Con IA';
+  String get matchLobbyModeAi => 'Tema personalizado';
 
   @override
   String get matchLobbyTimeLabel => 'Tiempo';
@@ -2384,14 +2385,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiTopicsStatusPreparing => 'Preparando';
 
   @override
-  String get aiTopicsTitle => 'Temas IA';
+  String get aiTopicsTitle => 'Temas personalizados';
 
   @override
   String get aiTopicsCreateTopic => 'Crear tema';
 
   @override
   String aiTopicsErrorLoading(String error) {
-    return 'Error cargando temas IA:\n$error';
+    return 'Error cargando tus temas:\n$error';
   }
 
   @override
@@ -2402,7 +2403,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String aiTopicsDeleteBody(String title) {
-    return '¿Quieres quitar \"$title\" de tus temas IA?';
+    return '¿Quieres quitar \"$title\" de tus temas personalizados?';
   }
 
   @override
@@ -2468,16 +2469,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiTopicsEmptySubtitle =>
-      'Elige cualquier tema que te guste y la IA preparará preguntas sobre él.';
+      'Elige cualquier tema que te guste y prepararemos una trivia solo para ti.';
 
   @override
-  String get aiTopicsEmptyButton => 'Crear tema IA';
+  String get aiTopicsEmptyButton => 'Crear tema personalizado';
 
   @override
   String get createAiTopicEnterTopic => 'Ingresa un tema';
 
   @override
-  String get createAiTopicCreated => 'Tema IA creado';
+  String get createAiTopicCreated => 'Tema creado';
 
   @override
   String get createAiTopicSubtitle => 'Crea tu propia categoría de trivia';
@@ -2565,7 +2566,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tema ya existente, con descuento';
 
   @override
-  String get createAiTopicNewBadgeTooltip => 'Tema nuevo, se generará con IA';
+  String get createAiTopicNewBadgeTooltip =>
+      'Tema nuevo, lo prepararemos para ti';
 
   @override
   String get createAiTopicFreeLabel => 'Gratis';
@@ -2635,7 +2637,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createAiTopicSearchingButton => 'Buscando temas similares...';
 
   @override
-  String get createAiTopicSuggestingButton => 'Pidiendo sugerencias a la IA...';
+  String get createAiTopicSuggestingButton => 'Buscando sugerencias...';
 
   @override
   String get createAiTopicBlockedMessage =>
@@ -2656,7 +2658,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createAiTopicBackButton => 'Volver';
 
   @override
-  String get createAiTopicAiSuggestionsTitle => 'Sugerencias de la IA';
+  String get createAiTopicAiSuggestionsTitle => 'Sugerencias para ti';
 
   @override
   String get createAiTopicAiSuggestionsHint =>
@@ -2711,6 +2713,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get coinShopCoinsSectionTitle => 'Monedas';
+
+  @override
+  String get lifeShopHint =>
+      'Se recuperan solas con el tiempo, o recarga una al instante.';
+
+  @override
+  String get lifeShopBuyOne => '+1 vida';
 
   @override
   String get themeShopSectionTitle => 'Temas';
@@ -3073,11 +3082,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navTourHomeName => 'Inicio';
 
   @override
-  String get navTourHomeTitle => 'Inicio: tu tema, creado con IA';
+  String get navTourHomeTitle => 'Inicio: tu propio tema';
 
   @override
   String get navTourHomeBody =>
-      'Aquí está lo que hace única a TriviaIA: ✨ Tema libre IA. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y la IA arma una trivia solo para ti. ¡Tu primer tema IA es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.';
+      'Aquí está lo que hace única a TriviaIA: ✨ Temas personalizados. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y armamos una trivia solo para ti. ¡Tu primer tema es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.';
 
   @override
   String get navTourSoloTitle => 'Solo: niveles por categoría';
@@ -3105,7 +3114,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navTourStoreBody =>
-      'Todo lo que juegas te da monedas. Guárdalas para crear más Temas IA personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.';
+      'Todo lo que juegas te da monedas. Guárdalas para crear más temas personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.';
 
   @override
   String get spotlightPvpTitle => 'Duelos 1 vs 1';
@@ -3136,18 +3145,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Personaliza tu avatar con marcos que desbloqueas al subir de liga en PvP.';
 
   @override
-  String get spotlightAiTopicsGuidedTitle => 'Buscamos antes de generar';
+  String get spotlightAiTopicsGuidedTitle => 'Buscamos antes de crear';
 
   @override
   String get spotlightAiTopicsGuidedBody =>
-      'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.';
+      'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, te proponemos opciones bien escritas para que elijas una.';
 
   @override
   String get spotlightAiTopicsPopularTitle => 'Temas populares';
 
   @override
   String get spotlightAiTopicsPopularBody =>
-      'Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.';
+      'Estos temas ya los crearon otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.';
 
   @override
   String get notificationBellTooltip => 'Notificaciones';
@@ -3381,7 +3390,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get achievementCategoriesExplored5Description =>
-      'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas de IA).';
+      'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas personalizados).';
 
   @override
   String get serviceAchievementNotFound => 'Logro no encontrado.';

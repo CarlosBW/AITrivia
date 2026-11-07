@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/economy_service.dart';
+import '../../services/life_service.dart';
 import '../../services/my_profile_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
+import 'life_shop_section.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
@@ -175,6 +178,19 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                 else
                   _buildUnavailable(context),
                 const SizedBox(height: 28),
+                // Bought with coins the player already has, like the
+                // themes, so it shows whether or not the store is reachable.
+                StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: _me,
+                  builder: (context, snap) {
+                    final data = snap.data?.data();
+                    if (data == null) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 28),
+                      child: _LivesForCoins(userData: data),
+                    );
+                  },
+                ),
                 const ThemeShopSection(),
               ],
             ),
@@ -284,6 +300,89 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// [LifeShopSection] with what it needs: the lives worked out from the user
+/// doc, a countdown that ticks, and the purchase itself.
+class _LivesForCoins extends StatefulWidget {
+  const _LivesForCoins({required this.userData});
+
+  final Map<String, dynamic> userData;
+
+  @override
+  State<_LivesForCoins> createState() => _LivesForCoinsState();
+}
+
+class _LivesForCoinsState extends State<_LivesForCoins> {
+  bool _buying = false;
+
+  late final Timer _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only to move the countdown along: the lives themselves come from the
+    // user doc, which the server updates on every change.
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => setState(() {}),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker.cancel();
+    super.dispose();
+  }
+
+  Future<void> _buy(int coins) async {
+    if (_buying) return;
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (coins < EconomyService.buyFullLifeCost) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.soloNotEnoughCoins)));
+      return;
+    }
+
+    setState(() => _buying = true);
+    try {
+      final success = await LifeService.instance.buyFullLife(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        cost: EconomyService.buyFullLifeCost,
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? l10n.soloLifeRecovered : l10n.coinShopPurchaseFailed,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _buying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lives =
+        LifeService.instance.calculateLocalLifeState(widget.userData);
+    final coins = ((widget.userData['coins'] ?? 0) as num).toInt();
+    final seconds = lives['secondsToNextHalfLife'] as int?;
+    final countdown = seconds == null
+        ? ''
+        : '${(seconds ~/ 60).toString().padLeft(2, '0')}:'
+            '${(seconds % 60).toString().padLeft(2, '0')}';
+
+    return LifeShopSection(
+      lifeUnits: lives['lifeUnits'] as int,
+      maxLifeUnits: lives['maxLifeUnits'] as int,
+      coins: coins,
+      countdownText: countdown,
+      buying: _buying,
+      onBuy: () => _buy(coins),
     );
   }
 }

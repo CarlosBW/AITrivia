@@ -7469,8 +7469,8 @@ async function requestAiQuestionsFromClaude(
   console.error("AI topic question generation failed", lastError);
   throw localizedError(
     languageCode, "internal",
-    "No se pudo generar el tema con IA. Intenta de nuevo.",
-    "The topic couldn't be generated with AI. Please try again."
+    "No se pudo preparar el tema. Intenta de nuevo.",
+    "The topic couldn't be prepared. Please try again."
   );
 }
 
@@ -7888,15 +7888,16 @@ async function consumeAiBudget(
     console.warn(`AI daily ${meter} budget exhausted project-wide`);
     throw await localizedErrorFor(
       uid, "resource-exhausted",
-      "El servicio de IA alcanzó su límite diario. Intenta mañana.",
-      "The AI service reached its daily limit. Please try again tomorrow."
+      "Los temas personalizados alcanzaron su límite diario. Intenta " +
+        "mañana.",
+      "Custom topics reached their daily limit. Please try again tomorrow."
     );
   }
 
   throw await localizedErrorFor(
     uid, "resource-exhausted",
-    "Alcanzaste tu límite diario de generación con IA. Intenta mañana.",
-    "You've reached your daily AI generation limit. Try again tomorrow."
+    "Alcanzaste tu límite diario de temas personalizados. Intenta mañana.",
+    "You've reached your daily custom topic limit. Try again tomorrow."
   );
 }
 

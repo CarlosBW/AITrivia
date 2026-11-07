@@ -311,7 +311,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeAiTopicTitle.
   ///
   /// In es, this message translates to:
-  /// **'Tema libre (IA)'**
+  /// **'Tema personalizado'**
   String get homeAiTopicTitle;
 
   /// No description provided for @homeAiTopicSubtitle.
@@ -917,13 +917,13 @@ abstract class AppLocalizations {
   /// No description provided for @avatarCategoryAi.
   ///
   /// In es, this message translates to:
-  /// **'IA'**
+  /// **'TEMA PROPIO'**
   String get avatarCategoryAi;
 
   /// No description provided for @avatarCategoryAiUnique.
   ///
   /// In es, this message translates to:
-  /// **'IA ÚNICO'**
+  /// **'TEMA ÚNICO'**
   String get avatarCategoryAiUnique;
 
   /// No description provided for @avatarNameBrain.
@@ -1187,13 +1187,13 @@ abstract class AppLocalizations {
   /// No description provided for @avatarNameAiTopicMaster.
   ///
   /// In es, this message translates to:
-  /// **'Maestro de Temas IA'**
+  /// **'Maestro de Temas Personalizados'**
   String get avatarNameAiTopicMaster;
 
   /// No description provided for @avatarUnlockAiTopicMaster.
   ///
   /// In es, this message translates to:
-  /// **'Completa un tema generado por IA'**
+  /// **'Completa un tema personalizado'**
   String get avatarUnlockAiTopicMaster;
 
   /// No description provided for @frameNameBronze.
@@ -1451,7 +1451,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelPlayAiTopicLabel.
   ///
   /// In es, this message translates to:
-  /// **'Tema IA'**
+  /// **'Tema personalizado'**
   String get levelPlayAiTopicLabel;
 
   /// No description provided for @levelPlayAppBarTitle.
@@ -1649,7 +1649,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelPlayGeneratingQuestions.
   ///
   /// In es, this message translates to:
-  /// **'Generando preguntas del nivel...'**
+  /// **'Preparando preguntas del nivel...'**
   String get levelPlayGeneratingQuestions;
 
   /// No description provided for @levelPlaySessionNotFound.
@@ -2669,13 +2669,13 @@ abstract class AppLocalizations {
   /// No description provided for @matchLobbyModeFixed.
   ///
   /// In es, this message translates to:
-  /// **'Sin IA'**
+  /// **'Temas fijos'**
   String get matchLobbyModeFixed;
 
   /// No description provided for @matchLobbyModeAi.
   ///
   /// In es, this message translates to:
-  /// **'Con IA'**
+  /// **'Tema personalizado'**
   String get matchLobbyModeAi;
 
   /// No description provided for @matchLobbyTimeLabel.
@@ -3997,7 +3997,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Temas IA'**
+  /// **'Temas personalizados'**
   String get aiTopicsTitle;
 
   /// No description provided for @aiTopicsCreateTopic.
@@ -4009,7 +4009,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsErrorLoading.
   ///
   /// In es, this message translates to:
-  /// **'Error cargando temas IA:\n{error}'**
+  /// **'Error cargando tus temas:\n{error}'**
   String aiTopicsErrorLoading(String error);
 
   /// No description provided for @aiTopicsUntitled.
@@ -4027,7 +4027,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsDeleteBody.
   ///
   /// In es, this message translates to:
-  /// **'¿Quieres quitar \"{title}\" de tus temas IA?'**
+  /// **'¿Quieres quitar \"{title}\" de tus temas personalizados?'**
   String aiTopicsDeleteBody(String title);
 
   /// No description provided for @aiTopicsCancel.
@@ -4135,13 +4135,13 @@ abstract class AppLocalizations {
   /// No description provided for @aiTopicsEmptySubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Elige cualquier tema que te guste y la IA preparará preguntas sobre él.'**
+  /// **'Elige cualquier tema que te guste y prepararemos una trivia solo para ti.'**
   String get aiTopicsEmptySubtitle;
 
   /// No description provided for @aiTopicsEmptyButton.
   ///
   /// In es, this message translates to:
-  /// **'Crear tema IA'**
+  /// **'Crear tema personalizado'**
   String get aiTopicsEmptyButton;
 
   /// No description provided for @createAiTopicEnterTopic.
@@ -4153,7 +4153,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicCreated.
   ///
   /// In es, this message translates to:
-  /// **'Tema IA creado'**
+  /// **'Tema creado'**
   String get createAiTopicCreated;
 
   /// No description provided for @createAiTopicSubtitle.
@@ -4273,7 +4273,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicNewBadgeTooltip.
   ///
   /// In es, this message translates to:
-  /// **'Tema nuevo, se generará con IA'**
+  /// **'Tema nuevo, lo prepararemos para ti'**
   String get createAiTopicNewBadgeTooltip;
 
   /// No description provided for @createAiTopicFreeLabel.
@@ -4375,7 +4375,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicSuggestingButton.
   ///
   /// In es, this message translates to:
-  /// **'Pidiendo sugerencias a la IA...'**
+  /// **'Buscando sugerencias...'**
   String get createAiTopicSuggestingButton;
 
   /// No description provided for @createAiTopicBlockedMessage.
@@ -4411,7 +4411,7 @@ abstract class AppLocalizations {
   /// No description provided for @createAiTopicAiSuggestionsTitle.
   ///
   /// In es, this message translates to:
-  /// **'Sugerencias de la IA'**
+  /// **'Sugerencias para ti'**
   String get createAiTopicAiSuggestionsTitle;
 
   /// No description provided for @createAiTopicAiSuggestionsHint.
@@ -4503,6 +4503,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Monedas'**
   String get coinShopCoinsSectionTitle;
+
+  /// No description provided for @lifeShopHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Se recuperan solas con el tiempo, o recarga una al instante.'**
+  String get lifeShopHint;
+
+  /// No description provided for @lifeShopBuyOne.
+  ///
+  /// In es, this message translates to:
+  /// **'+1 vida'**
+  String get lifeShopBuyOne;
 
   /// No description provided for @themeShopSectionTitle.
   ///
@@ -5131,13 +5143,13 @@ abstract class AppLocalizations {
   /// No description provided for @navTourHomeTitle.
   ///
   /// In es, this message translates to:
-  /// **'Inicio: tu tema, creado con IA'**
+  /// **'Inicio: tu propio tema'**
   String get navTourHomeTitle;
 
   /// No description provided for @navTourHomeBody.
   ///
   /// In es, this message translates to:
-  /// **'Aquí está lo que hace única a TriviaIA: ✨ Tema libre IA. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y la IA arma una trivia solo para ti. ¡Tu primer tema IA es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.'**
+  /// **'Aquí está lo que hace única a TriviaIA: ✨ Temas personalizados. Escribe cualquier tema —tu serie favorita, tu equipo, tu carrera— y armamos una trivia solo para ti. ¡Tu primer tema es gratis! También encontrarás el Reto diario: 2 minutos, una vez al día.'**
   String get navTourHomeBody;
 
   /// No description provided for @navTourSoloTitle.
@@ -5185,7 +5197,7 @@ abstract class AppLocalizations {
   /// No description provided for @navTourStoreBody.
   ///
   /// In es, this message translates to:
-  /// **'Todo lo que juegas te da monedas. Guárdalas para crear más Temas IA personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.'**
+  /// **'Todo lo que juegas te da monedas. Guárdalas para crear más temas personalizados cuando uses tu tema gratis, o úsalas aquí para cambiar el estilo de la app con temas visuales. Si quieres más, también puedes comprarlas.'**
   String get navTourStoreBody;
 
   /// No description provided for @spotlightPvpTitle.
@@ -5239,13 +5251,13 @@ abstract class AppLocalizations {
   /// No description provided for @spotlightAiTopicsGuidedTitle.
   ///
   /// In es, this message translates to:
-  /// **'Buscamos antes de generar'**
+  /// **'Buscamos antes de crear'**
   String get spotlightAiTopicsGuidedTitle;
 
   /// No description provided for @spotlightAiTopicsGuidedBody.
   ///
   /// In es, this message translates to:
-  /// **'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, la IA te propone opciones bien escritas para que elijas una.'**
+  /// **'Al crear un tema primero buscamos si ya existe uno parecido: si lo eliges, pagas menos porque reutilizamos sus preguntas. Si no, te proponemos opciones bien escritas para que elijas una.'**
   String get spotlightAiTopicsGuidedBody;
 
   /// No description provided for @spotlightAiTopicsPopularTitle.
@@ -5257,7 +5269,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotlightAiTopicsPopularBody.
   ///
   /// In es, this message translates to:
-  /// **'Estos temas ya fueron generados por otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.'**
+  /// **'Estos temas ya los crearon otros jugadores, así que puedes jugarlos con descuento en lugar de pagar el costo completo de un tema nuevo.'**
   String get spotlightAiTopicsPopularBody;
 
   /// No description provided for @notificationBellTooltip.
@@ -5653,7 +5665,7 @@ abstract class AppLocalizations {
   /// No description provided for @achievementCategoriesExplored5Description.
   ///
   /// In es, this message translates to:
-  /// **'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas de IA).'**
+  /// **'Aprueba al menos un nivel en 5 categorías fijas distintas del modo Solo (no incluye temas personalizados).'**
   String get achievementCategoriesExplored5Description;
 
   /// No description provided for @serviceAchievementNotFound.

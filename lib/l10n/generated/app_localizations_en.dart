@@ -145,7 +145,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeLivesFull => 'Lives at max';
 
   @override
-  String get homeAiTopicTitle => 'Free Topic (AI)';
+  String get homeAiTopicTitle => 'Custom Topic';
 
   @override
   String get homeAiTopicSubtitle =>
@@ -493,10 +493,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get avatarCategoryAchievement => 'ACHIEVEMENT';
 
   @override
-  String get avatarCategoryAi => 'AI';
+  String get avatarCategoryAi => 'OWN TOPIC';
 
   @override
-  String get avatarCategoryAiUnique => 'AI UNIQUE';
+  String get avatarCategoryAiUnique => 'UNIQUE TOPIC';
 
   @override
   String get avatarNameBrain => 'Brain';
@@ -628,10 +628,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get avatarUnlock1000Questions => 'Answer 1000 questions';
 
   @override
-  String get avatarNameAiTopicMaster => 'AI Topic Master';
+  String get avatarNameAiTopicMaster => 'Custom Topic Master';
 
   @override
-  String get avatarUnlockAiTopicMaster => 'Complete an AI-generated topic';
+  String get avatarUnlockAiTopicMaster => 'Complete a custom topic';
 
   @override
   String get frameNameBronze => 'Bronze Frame';
@@ -785,7 +785,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get levelSelectLoadFailedTitle => 'Couldn\'t load the category.';
 
   @override
-  String get levelPlayAiTopicLabel => 'AI Topic';
+  String get levelPlayAiTopicLabel => 'Custom Topic';
 
   @override
   String levelPlayAppBarTitle(String name, int level) {
@@ -895,7 +895,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questionReportFailed => 'We couldn\'t send the report.';
 
   @override
-  String get levelPlayGeneratingQuestions => 'Generating level questions...';
+  String get levelPlayGeneratingQuestions => 'Preparing level questions...';
 
   @override
   String get levelPlaySessionNotFound => 'Session not found.';
@@ -1494,10 +1494,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchLobbyModeLabel => 'Mode';
 
   @override
-  String get matchLobbyModeFixed => 'No AI';
+  String get matchLobbyModeFixed => 'Fixed topics';
 
   @override
-  String get matchLobbyModeAi => 'With AI';
+  String get matchLobbyModeAi => 'Custom topic';
 
   @override
   String get matchLobbyTimeLabel => 'Time';
@@ -2361,14 +2361,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTopicsStatusPreparing => 'Preparing';
 
   @override
-  String get aiTopicsTitle => 'AI Topics';
+  String get aiTopicsTitle => 'Custom Topics';
 
   @override
   String get aiTopicsCreateTopic => 'Create Topic';
 
   @override
   String aiTopicsErrorLoading(String error) {
-    return 'Error loading AI topics:\n$error';
+    return 'Error loading your topics:\n$error';
   }
 
   @override
@@ -2379,7 +2379,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aiTopicsDeleteBody(String title) {
-    return 'Do you want to remove \"$title\" from your AI topics?';
+    return 'Do you want to remove \"$title\" from your custom topics?';
   }
 
   @override
@@ -2445,16 +2445,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTopicsEmptySubtitle =>
-      'Pick any topic you like and the AI will write questions about it.';
+      'Pick any topic you like and we\'ll put together a trivia just for you.';
 
   @override
-  String get aiTopicsEmptyButton => 'Create AI Topic';
+  String get aiTopicsEmptyButton => 'Create Custom Topic';
 
   @override
   String get createAiTopicEnterTopic => 'Enter a topic';
 
   @override
-  String get createAiTopicCreated => 'AI topic created';
+  String get createAiTopicCreated => 'Topic created';
 
   @override
   String get createAiTopicSubtitle => 'Create your own trivia category';
@@ -2542,7 +2542,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createAiTopicNewBadgeTooltip =>
-      'New topic, will be generated with AI';
+      'New topic, we\'ll prepare it for you';
 
   @override
   String get createAiTopicFreeLabel => 'Free';
@@ -2612,8 +2612,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAiTopicSearchingButton => 'Searching similar topics...';
 
   @override
-  String get createAiTopicSuggestingButton =>
-      'Asking the AI for suggestions...';
+  String get createAiTopicSuggestingButton => 'Finding suggestions...';
 
   @override
   String get createAiTopicBlockedMessage =>
@@ -2634,7 +2633,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAiTopicBackButton => 'Back';
 
   @override
-  String get createAiTopicAiSuggestionsTitle => 'AI suggestions';
+  String get createAiTopicAiSuggestionsTitle => 'Suggestions for you';
 
   @override
   String get createAiTopicAiSuggestionsHint =>
@@ -2689,6 +2688,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coinShopCoinsSectionTitle => 'Coins';
+
+  @override
+  String get lifeShopHint =>
+      'They refill on their own over time, or top one up right now.';
+
+  @override
+  String get lifeShopBuyOne => '+1 life';
 
   @override
   String get themeShopSectionTitle => 'Themes';
@@ -3049,11 +3055,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTourHomeName => 'Home';
 
   @override
-  String get navTourHomeTitle => 'Home: your own topic, made by AI';
+  String get navTourHomeTitle => 'Home: your very own topic';
 
   @override
   String get navTourHomeBody =>
-      'This is what makes TriviaIA unique: ✨ AI Free Topic. Type any topic — your favorite show, your team, your field — and the AI builds a trivia just for you. Your first AI topic is free! You\'ll also find the Daily Challenge here: 2 minutes, once a day.';
+      'This is what makes TriviaIA unique: ✨ Custom Topics. Type any topic — your favorite show, your team, your field — and we build a trivia just for you. Your first topic is free! You\'ll also find the Daily Challenge here: 2 minutes, once a day.';
 
   @override
   String get navTourSoloTitle => 'Solo: levels by category';
@@ -3081,7 +3087,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navTourStoreBody =>
-      'Everything you play earns you coins. Save them to create more custom AI Topics once you\'ve used your free one, or spend them here on visual themes for the app. If you want more, you can also buy them.';
+      'Everything you play earns you coins. Save them to create more custom topics once you\'ve used your free one, or spend them here on visual themes for the app. If you want more, you can also buy them.';
 
   @override
   String get spotlightPvpTitle => '1v1 Duels';
@@ -3112,18 +3118,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Customize your avatar with frames you unlock by climbing PvP leagues.';
 
   @override
-  String get spotlightAiTopicsGuidedTitle => 'We search before generating';
+  String get spotlightAiTopicsGuidedTitle => 'We search before creating';
 
   @override
   String get spotlightAiTopicsGuidedBody =>
-      'When you create a topic we first look for a similar one: picking it costs less, because we reuse its questions. If there\'s none, the AI proposes well-formed options for you to choose from.';
+      'When you create a topic we first look for a similar one: picking it costs less, because we reuse its questions. If there\'s none, we suggest well-formed options for you to choose from.';
 
   @override
   String get spotlightAiTopicsPopularTitle => 'Popular Topics';
 
   @override
   String get spotlightAiTopicsPopularBody =>
-      'These topics were already generated by other players, so you can play them at a discount instead of paying full price for a new topic.';
+      'These topics were already created by other players, so you can play them at a discount instead of paying full price for a new topic.';
 
   @override
   String get notificationBellTooltip => 'Notifications';
@@ -3351,7 +3357,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementCategoriesExplored5Description =>
-      'Pass at least one level in 5 different fixed Solo categories (AI-generated topics don\'t count).';
+      'Pass at least one level in 5 different fixed Solo categories (custom topics don\'t count).';
 
   @override
   String get serviceAchievementNotFound => 'Achievement not found.';

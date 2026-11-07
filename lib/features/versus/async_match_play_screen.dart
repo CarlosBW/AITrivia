@@ -779,15 +779,23 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               final isCorrect = revealed && i == _revealCorrect;
               final letter = String.fromCharCode(65 + i);
 
+              // Opaque, like QuestionAnswerCard's: a see-through tint
+              // showed a theme's solid shadow through the option.
               Color? fillColor;
 
               if (revealed && !_timedOut) {
                 if (isCorrect) {
-                  fillColor = context.appColors.success.withValues(alpha: 0.16);
+                  fillColor = Color.alphaBlend(
+                    context.appColors.success.withValues(alpha: 0.16),
+                    colorScheme.surface,
+                  );
                 }
 
                 if (isSelected && !isCorrect) {
-                  fillColor = context.appColors.danger.withValues(alpha: 0.16);
+                  fillColor = Color.alphaBlend(
+                    context.appColors.danger.withValues(alpha: 0.16),
+                    colorScheme.surface,
+                  );
                 }
               } else if (!revealed && isSelected) {
                 fillColor = colorScheme.surfaceContainerHighest;

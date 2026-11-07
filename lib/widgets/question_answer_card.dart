@@ -71,13 +71,21 @@ class QuestionAnswerCard extends StatelessWidget {
           final isCorrect = i == answerIndex;
           final letter = String.fromCharCode(65 + i);
 
+          // Mixed onto the card's own colour rather than left translucent:
+          // under a theme's solid shadow, a see-through tint showed the ink
+          // block beneath and the option went nearly black.
+          Color tint(Color color) => Color.alphaBlend(
+                color.withValues(alpha: 0.16),
+                colorScheme.surface,
+              );
+
           Color? fillColor;
           if (locked && !timedOut) {
             if (isCorrect) {
-              fillColor = context.appColors.success.withValues(alpha: 0.16);
+              fillColor = tint(context.appColors.success);
             }
             if (isSelected && !isCorrect) {
-              fillColor = context.appColors.danger.withValues(alpha: 0.16);
+              fillColor = tint(context.appColors.danger);
             }
           } else if (!locked && isSelected) {
             fillColor = colorScheme.surfaceContainerHighest;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:trivia_ia_flutter/theme/app_themes.dart';
 import 'package:trivia_ia_flutter/widgets/question_answer_card.dart';
 
 /// Mientras el servidor juzga la respuesta, la opción tocada lo muestra:
@@ -60,5 +61,46 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byIcon(Icons.cancel), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
+  });
+
+  // En los temas con sombra sólida, como Juguetón, el tinte de acierto y
+  // de error era semitransparente y dejaba ver la sombra de tinta de debajo:
+  // la opción quedaba casi negra y su texto no se leía.
+  testWidgets('acierto y error se pintan opacos sobre una sombra solida',
+      (tester) async {
+    final playful = AppThemes.byId(AppThemes.playfulId);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          colorScheme: playful.colorScheme,
+          extensions: [
+            playful.semanticColors,
+            playful.shapes,
+            playful.surfaces,
+          ],
+        ),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: QuestionAnswerCard(
+              qText: '¿Pregunta?',
+              options: const ['Uno', 'Dos', 'Tres', 'Cuatro'],
+              answerIndex: 1,
+              selectedIndex: 0,
+              locked: true,
+              onTapAnswer: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    for (final option in ['Uno', 'Dos']) {
+      final box = tester.widget<AnimatedContainer>(find.ancestor(
+        of: find.text(option),
+        matching: find.byType(AnimatedContainer),
+      ));
+      final fill = (box.decoration! as BoxDecoration).color!;
+      expect(fill.a, 1.0, reason: option);
+    }
   });
 }

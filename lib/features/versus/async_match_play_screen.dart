@@ -437,6 +437,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     required BuildContext context,
     required String opponentUid,
     required String categoryId,
+    required String? aiTopicId,
     required int difficulty,
     required int totalQuestions,
     required int timePerQuestionSec,
@@ -449,6 +450,7 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       final newMatchId = await _service.createAsyncFixedMatch(
         challengedUid: opponentUid,
         categoryId: categoryId,
+        aiTopicId: aiTopicId,
         difficulty: difficulty,
         totalQuestions: totalQuestions,
         timePerQuestionSec: timePerQuestionSec,
@@ -577,6 +579,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
               opponentScore: opponentSavedScore,
               opponentFinished: opponentStatus == 'finished',
               categoryId: (data['categoryId'] ?? 'random').toString(),
+              aiTopicId: data['aiTopicId'] as String?,
+              canRematch: data['aiTopicId'] == null || myRole == 'challenger',
               difficulty: ((data['difficulty'] ?? 1) as num).toInt(),
               totalQuestions: ((data['totalQuestions'] ?? 10) as num).toInt(),
               timePerQuestionSec: timePerQ,
@@ -995,6 +999,8 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
     required int opponentScore,
     required bool opponentFinished,
     required String categoryId,
+    required String? aiTopicId,
+    required bool canRematch,
     required int difficulty,
     required int totalQuestions,
     required int timePerQuestionSec,
@@ -1063,15 +1069,20 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
       opponentScore: opponentScore,
       primaryButtonText: l10n.matchPlayExit,
       onPrimaryPressed: _leaveScreen,
-      secondaryButtonText: _requestingRematch
-          ? l10n.asyncMatchPlaySendingRematch
-          : l10n.matchPlayRematch,
-      onSecondaryPressed: _requestingRematch
+      // A custom topic belongs to whoever created the challenge, so only
+      // they can ask for a rematch on it.
+      secondaryButtonText: !canRematch
+          ? null
+          : _requestingRematch
+              ? l10n.asyncMatchPlaySendingRematch
+              : l10n.matchPlayRematch,
+      onSecondaryPressed: !canRematch || _requestingRematch
           ? null
           : () => _requestRematch(
                 context: context,
                 opponentUid: opponentUid,
                 categoryId: categoryId,
+                aiTopicId: aiTopicId,
                 difficulty: difficulty,
                 totalQuestions: totalQuestions,
                 timePerQuestionSec: timePerQuestionSec,

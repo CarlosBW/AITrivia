@@ -766,6 +766,8 @@
   },
   "friendChallengeRealtimeHint": "En tiempo real ambos deben estar en línea. Las partidas con amigos son casuales y no afectan el MMR.",
   "friendChallengeAsyncHint": "Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.",
+  "friendChallengeCustomTopicHint": "Se crearán preguntas nuevas de este tema solo para este reto. Usa parte de tu límite diario de temas personalizados.",
+  "friendChallengePreparingQuestions": "Preparando las preguntas…",
 
   "matchLobbyWaitingFriendJoin": "Esperando que tu amigo se una a la sala.",
   "matchLobbyAllReadyStarting": "Todo listo. La partida está iniciando...",

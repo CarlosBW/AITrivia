@@ -2606,6 +2606,18 @@ abstract class AppLocalizations {
   /// **'Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.'**
   String get friendChallengeAsyncHint;
 
+  /// No description provided for @friendChallengeCustomTopicHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Se crearán preguntas nuevas de este tema solo para este reto. Usa parte de tu límite diario de temas personalizados.'**
+  String get friendChallengeCustomTopicHint;
+
+  /// No description provided for @friendChallengePreparingQuestions.
+  ///
+  /// In es, this message translates to:
+  /// **'Preparando las preguntas…'**
+  String get friendChallengePreparingQuestions;
+
   /// No description provided for @matchLobbyWaitingFriendJoin.
   ///
   /// In es, this message translates to:

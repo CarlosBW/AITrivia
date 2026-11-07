@@ -1460,6 +1460,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Async lets your friend play whenever they can. Doesn\'t affect MMR.';
 
   @override
+  String get friendChallengeCustomTopicHint =>
+      'New questions on this topic are written just for this challenge. It uses part of your daily custom topic limit.';
+
+  @override
+  String get friendChallengePreparingQuestions => 'Preparing the questions…';
+
+  @override
   String get matchLobbyWaitingFriendJoin =>
       'Waiting for your friend to join the room.';
 

@@ -115,6 +115,10 @@ import {
   checkAiBudget,
 } from "./ai_budget";
 import {
+  customChallengeBudgetUnits,
+  customChallengeLevel,
+} from "./custom_challenge";
+import {
   difficultyForLevel,
   sliceForLevel,
 } from "./fixed_level_slicing";
@@ -3040,9 +3044,10 @@ function clampToRange(
 const MAX_WAITING_ASYNC_CHALLENGES = 10;
 
 export const createAsyncPvpMatch = onCall({
-  // Selecting questions reads a whole category pool, which is slower than
-  // a plain write — the client gives up well before this.
-  timeoutSeconds: 60,
+  // A challenge on a custom topic generates its questions here, which
+  // takes as long as generating a topic level.
+  secrets: AI_SECRETS,
+  timeoutSeconds: 180,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -3118,24 +3123,80 @@ export const createAsyncPvpMatch = onCall({
     );
   }
 
-  if (categoryId !== "random") {
-    const categorySnap = await db.collection("fixed_categories")
-      .doc(categoryId).get();
+  const challengerData = challengerSnap.data() || {};
 
-    if (categorySnap.data()?.isActive !== true) {
-      throw new HttpsError("invalid-argument", "Unknown category.");
+  // A custom topic is private to its creator and they may have played all
+  // of it, so its banked questions would hand them the answers. The
+  // challenge gets questions written for it instead, steering clear of
+  // everything banked for the topic, and paid from the challenger's daily
+  // custom-topic limit.
+  const aiTopicId = cleanDocId(request.data?.aiTopicId);
+  let aiTopicTitle: string | null = null;
+  let questions: Record<string, unknown>[];
+
+  if (aiTopicId) {
+    const topicSnap = await db.collection("users").doc(uid)
+      .collection("ai_topics").doc(aiTopicId).get();
+    const topicData = topicSnap.data();
+
+    if (!topicData) {
+      throw await localizedErrorFor(
+        uid, "not-found",
+        "Este tema ya no existe.",
+        "That topic no longer exists."
+      );
     }
-  }
+    if (topicData.status !== "ready") {
+      throw await localizedErrorFor(
+        uid, "failed-precondition",
+        "Este tema no se puede usar para un reto.",
+        "This topic can't be used for a challenge."
+      );
+    }
 
-  const questions = await selectFixedMatchQuestions(
-    categoryId, difficulty, totalQuestions
-  );
+    aiTopicTitle = String(topicData.title || "").slice(0, 60);
+    const poolId = cleanDocId(topicData.poolId);
+    const avoidQuestions = poolId ?
+      await existingPoolQuestionTexts(
+        db.collection("ai_topic_pool").doc(poolId)
+      ) :
+      [];
+
+    await consumeAiBudget(
+      uid, "levels", customChallengeBudgetUnits(totalQuestions)
+    );
+
+    try {
+      questions = (await requestAiQuestionsFromClaude(
+        aiTopicTitle, customChallengeLevel(difficulty),
+        challengerData.languageCode,
+        {count: totalQuestions, avoidQuestions}
+      )).map((question) => ({...question}));
+    } catch (error) {
+      if (error instanceof TopicBlockedError) {
+        throw topicBlockedHttpsError(challengerData.languageCode);
+      }
+      throw error;
+    }
+  } else {
+    if (categoryId !== "random") {
+      const categorySnap = await db.collection("fixed_categories")
+        .doc(categoryId).get();
+
+      if (categorySnap.data()?.isActive !== true) {
+        throw new HttpsError("invalid-argument", "Unknown category.");
+      }
+    }
+
+    questions = await selectFixedMatchQuestions(
+      categoryId, difficulty, totalQuestions
+    );
+  }
 
   if (questions.length === 0) {
     throw new HttpsError("failed-precondition", "No questions available.");
   }
 
-  const challengerData = challengerSnap.data() || {};
   const challengedData = challengedSnap.data() || {};
 
   const challengerName = String(
@@ -3157,8 +3218,9 @@ export const createAsyncPvpMatch = onCall({
     lastUpdatedAt: now,
 
     status: "waiting_challenged",
-    mode: "fixed",
-    categoryId,
+    mode: aiTopicId ? "custom" : "fixed",
+    categoryId: aiTopicId ? "custom" : categoryId,
+    ...(aiTopicId ? {aiTopicId, aiTopicTitle} : {}),
     difficulty,
     totalQuestions: publicQuestions.length,
     timePerQuestionSec,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/ai_topic_service.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
 import '../../theme/app_theme.dart';
@@ -15,8 +16,25 @@ import '../../widgets/profile_avatar_button.dart';
 class _CategoryOption {
   final String id;
   final String name;
+  final bool custom;
 
-  const _CategoryOption({required this.id, required this.name});
+  const _CategoryOption({
+    required this.id,
+    required this.name,
+    this.custom = false,
+  });
+}
+
+const _customTopicPrefix = 'custom:';
+
+/// The category picker's value for one of the player's custom topics.
+String customTopicOptionValue(String topicId) => '$_customTopicPrefix$topicId';
+
+/// The custom topic a picker value names, or null for a fixed category.
+String? customTopicIdFrom(String value) {
+  if (!value.startsWith(_customTopicPrefix)) return null;
+  final id = value.substring(_customTopicPrefix.length);
+  return id.isEmpty ? null : id;
 }
 
 class FriendChallengeSetupScreen extends StatefulWidget {
@@ -52,6 +70,34 @@ class _FriendChallengeSetupScreenState
 
   late final Future<List<_CategoryOption>> _categoriesFuture =
       _loadCategories();
+
+  // Only async challenges can use them: their questions are written for
+  // the challenge, which takes longer than a live invite should wait.
+  late final Future<List<_CategoryOption>> _customTopicsFuture =
+      _loadCustomTopics();
+
+  Future<List<_CategoryOption>> _loadCustomTopics() async {
+    try {
+      final topics = await AiTopicService.instance.readyTopicsForChallenge();
+      return [
+        for (final topic in topics)
+          _CategoryOption(
+            id: customTopicOptionValue(topic.id),
+            name: topic.title,
+            custom: true,
+          ),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  // Held here: a Future.wait built in build() would be a new future on
+  // every rebuild, and the picker would blank out while it resolved.
+  late final Future<List<List<_CategoryOption>>> _allCategoriesFuture =
+      Future.wait([_categoriesFuture, _customTopicsFuture]);
+
+  bool get _customSelected => customTopicIdFrom(_categoryId) != null;
 
   // Mirrors live_menu_screen.dart's _loadCategories — reads the same
   // fixed_categories collection instead of a hand-maintained list that
@@ -119,9 +165,11 @@ class _FriendChallengeSetupScreenState
         return;
       }
 
+      final aiTopicId = customTopicIdFrom(_categoryId);
       final matchId = await _matchService.createAsyncFixedMatch(
         challengedUid: widget.friendUid,
-        categoryId: _categoryId,
+        categoryId: aiTopicId != null ? 'custom' : _categoryId,
+        aiTopicId: aiTopicId,
         difficulty: _difficulty,
         totalQuestions: _totalQuestions,
         timePerQuestionSec: _timePerQuestionSec,
@@ -246,6 +294,9 @@ class _FriendChallengeSetupScreenState
                 onSelectionChanged: (values) {
                   setState(() {
                     _challengeType = values.first;
+                    if (_challengeType == 'realtime' && _customSelected) {
+                      _categoryId = 'random';
+                    }
                   });
                 },
               ),
@@ -264,19 +315,24 @@ class _FriendChallengeSetupScreenState
                 style: context.heading(18),
               ),
               const SizedBox(height: 10),
-              FutureBuilder<List<_CategoryOption>>(
-                future: _categoriesFuture,
+              FutureBuilder<List<List<_CategoryOption>>>(
+                future: _allCategoriesFuture,
                 builder: (context, snap) {
                   final options = [
                     _CategoryOption(
                       id: 'random',
                       name: l10n.friendChallengeCategoryRandom,
                     ),
-                    ...?snap.data,
+                    ...?snap.data?[0],
+                    if (_challengeType == 'async') ...?snap.data?[1],
                   ];
 
                   return DropdownButtonFormField<String>(
-                    initialValue: _categoryId,
+                    key: ValueKey(_challengeType),
+                    initialValue: options.any((o) => o.id == _categoryId)
+                        ? _categoryId
+                        : null,
+                    isExpanded: true,
                     decoration: InputDecoration(
                       labelText: l10n.createMatchCategory,
                       border: const OutlineInputBorder(),
@@ -285,7 +341,20 @@ class _FriendChallengeSetupScreenState
                         .map(
                           (category) => DropdownMenuItem(
                             value: category.id,
-                            child: Text(category.name),
+                            child: Row(
+                              children: [
+                                if (category.custom) ...[
+                                  const Icon(Icons.edit_note, size: 20),
+                                  const SizedBox(width: 8),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    category.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         )
                         .toList(),
@@ -298,6 +367,15 @@ class _FriendChallengeSetupScreenState
                   );
                 },
               ),
+              if (_challengeType == 'async' && _customSelected) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.friendChallengeCustomTopicHint,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 initialValue: _difficulty,
@@ -391,8 +469,20 @@ class _FriendChallengeSetupScreenState
           if (_loading)
             Container(
               color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.25),
-              child: const Center(
-                child: CircularProgressIndicator(),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    if (_customSelected) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        l10n.friendChallengePreparingQuestions,
+                        style: context.heading(16),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
         ],

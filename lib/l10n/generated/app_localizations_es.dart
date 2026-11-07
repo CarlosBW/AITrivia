@@ -1472,6 +1472,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Asíncrono permite que tu amigo juegue cuando pueda. No afecta MMR.';
 
   @override
+  String get friendChallengeCustomTopicHint =>
+      'Se crearán preguntas nuevas de este tema solo para este reto. Usa parte de tu límite diario de temas personalizados.';
+
+  @override
+  String get friendChallengePreparingQuestions => 'Preparando las preguntas…';
+
+  @override
   String get matchLobbyWaitingFriendJoin =>
       'Esperando que tu amigo se una a la sala.';
 

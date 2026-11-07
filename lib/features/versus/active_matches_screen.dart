@@ -399,6 +399,7 @@ class _AsyncMatchTile extends StatelessWidget {
         ),
         subtitle: CategoryNameBuilder(
           categoryId: _category(),
+          customTitle: data['aiTopicTitle'] as String?,
           builder: (context, name) => Text(_subtitle(l10n, name)),
         ),
         trailing: FilledButton.tonal(

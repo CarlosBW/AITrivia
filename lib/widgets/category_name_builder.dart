@@ -4,14 +4,17 @@ import '../l10n/generated/app_localizations.dart';
 import '../services/category_name_service.dart';
 
 /// Builds [builder] with the display name of [categoryId] — "Aleatorio"
-/// for 'random' — instead of the raw id.
+/// for 'random' — instead of the raw id. A match on a custom topic carries
+/// its title in [customTitle], which wins over the id.
 class CategoryNameBuilder extends StatefulWidget {
   final String categoryId;
+  final String? customTitle;
   final Widget Function(BuildContext context, String name) builder;
 
   const CategoryNameBuilder({
     super.key,
     required this.categoryId,
+    this.customTitle,
     required this.builder,
   });
 
@@ -35,6 +38,11 @@ class _CategoryNameBuilderState extends State<CategoryNameBuilder> {
 
   @override
   Widget build(BuildContext context) {
+    final customTitle = widget.customTitle;
+    if (customTitle != null && customTitle.isNotEmpty) {
+      return widget.builder(context, customTitle);
+    }
+
     final id = widget.categoryId;
     if (id.isEmpty || id == 'random') {
       return widget.builder(

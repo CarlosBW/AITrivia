@@ -743,6 +743,8 @@
   },
   "friendChallengeRealtimeHint": "Realtime requires both players online. Matches with friends are casual and don't affect MMR.",
   "friendChallengeAsyncHint": "Async lets your friend play whenever they can. Doesn't affect MMR.",
+  "friendChallengeCustomTopicHint": "New questions on this topic are written just for this challenge. It uses part of your daily custom topic limit.",
+  "friendChallengePreparingQuestions": "Preparing the questions…",
 
   "matchLobbyWaitingFriendJoin": "Waiting for your friend to join the room.",
   "matchLobbyAllReadyStarting": "All set. The match is starting...",

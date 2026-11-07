@@ -477,6 +477,7 @@ class MatchService {
     int difficulty = 1,
     int totalQuestions = 10,
     int timePerQuestionSec = 15,
+    String? aiTopicId,
   }) async {
     if (challengedUid.trim().isEmpty) {
       throw Exception(_l10n.serviceChallengedUidEmpty);
@@ -488,11 +489,16 @@ class MatchService {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
           'createAsyncPvpMatch',
-          options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+          // A custom topic's questions are written for the challenge on
+          // the server, which takes as long as a topic level.
+          options: HttpsCallableOptions(
+            timeout: Duration(seconds: aiTopicId != null ? 150 : 30),
+          ),
         )
         .call({
       'challengedUid': challengedUid,
       'categoryId': categoryId,
+      if (aiTopicId != null) 'aiTopicId': aiTopicId,
       'difficulty': difficulty,
       'totalQuestions': totalQuestions,
       'timePerQuestionSec': timePerQuestionSec,

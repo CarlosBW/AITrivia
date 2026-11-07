@@ -167,6 +167,20 @@ class AiTopicService {
     return _db.collection('users').doc(userId).collection('ai_topics');
   }
 
+  /// The player's ready topics as (id, title), sorted by title — the ones a
+  /// friend challenge can be played on.
+  Future<List<({String id, String title})>> readyTopicsForChallenge() async {
+    final snap = await _topicsCol(uid)
+        .where('status', isEqualTo: 'ready')
+        .limit(50)
+        .get();
+
+    return [
+      for (final doc in snap.docs)
+        (id: doc.id, title: (doc.data()['title'] ?? '').toString()),
+    ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMyAiTopics({
     int limit = 50,
   }) {

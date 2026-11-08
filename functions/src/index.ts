@@ -91,6 +91,10 @@ import {
   reportQuotaAfter,
 } from "./question_reports";
 import {expansionTarget} from "./ai_topic_expansion";
+import {
+  crossUserNotificationId,
+  staleTurnNotifications,
+} from "./notification_ids";
 import {acceptModelQuestions} from "./ai_question_drafts";
 import {
   MAX_REPORT_EMAILS_PER_DAY,
@@ -2476,7 +2480,9 @@ async function notifyOnce(
   const {title, body} = crossUserNotificationText(
     type, targetSnap.data()?.languageCode, senderName
   );
-  const id = [type, senderUid, ids.matchId || ids.inviteId || ""].join("__");
+  const id = crossUserNotificationId(
+    type, senderUid, ids.matchId || ids.inviteId || ""
+  );
   try {
     await db.collection("users").doc(targetUid)
       .collection("notifications").doc(id).create({
@@ -3000,6 +3006,13 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
         resultNotificationsSent: true,
       });
     });
+
+    // The result notification says it all now: a "your turn" left from
+    // whoever finished first only repeated it, and opened the same result.
+    await Promise.all(staleTurnNotifications(
+      challengerUid, challengedUid, matchId
+    ).map(({recipientUid, id}) => db.collection("users").doc(recipientUid)
+      .collection("notifications").doc(id).delete()));
   }
 );
 
@@ -5268,6 +5281,12 @@ async function mayNotify(
     const snap = await db.collection("async_matches").doc(id).get();
     const m = snap.data();
     if (!m) return false;
+    // Both done means the result is already on its way, and a "your turn"
+    // arriving after it would only repeat it.
+    if (type === "match_turn" && m.challengerStatus === "finished" &&
+        m.challengedStatus === "finished") {
+      return false;
+    }
     const uids = [m.challengerUid, m.challengedUid];
     return uids.includes(uid) && uids.includes(targetUid);
   }
@@ -5336,9 +5355,9 @@ export const sendUserNotification = onCall(async (request) => {
   // One notification per sender, type and match or invite, ever. With an
   // auto-id, the same friend request could be re-announced on every call:
   // an unlimited stream of pushes to anyone a request had been sent to.
-  const notificationId = [
-    type, uid, String(data.matchId || data.inviteId || ""),
-  ].join("__");
+  const notificationId = crossUserNotificationId(
+    type, uid, String(data.matchId || data.inviteId || "")
+  );
 
   try {
     await db.collection("users").doc(targetUid)
@@ -11069,6 +11088,28 @@ export const sendFriendRequest = onCall(async (request) => {
   return {sent: true};
 });
 
+/**
+ * Marks the request's notification answered, however it was answered: from
+ * the Friends screen it used to keep its Accept/Reject buttons, which then
+ * only said the request was already processed. The app reads
+ * `data.resolution` the same way when answered from the notification.
+ * @param {FirebaseFirestore.Transaction} tx The answering transaction.
+ * @param {FirebaseFirestore.DocumentSnapshot} snap The notification.
+ * @param {string} resolution "accepted" or "rejected".
+ */
+function resolveFriendRequestNotification(
+  tx: FirebaseFirestore.Transaction,
+  snap: FirebaseFirestore.DocumentSnapshot,
+  resolution: "accepted" | "rejected"
+): void {
+  if (!snap.exists) return;
+  tx.update(snap.ref, {
+    "read": true,
+    "readAt": admin.firestore.FieldValue.serverTimestamp(),
+    "data.resolution": resolution,
+  });
+}
+
 export const acceptFriendRequest = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -11087,11 +11128,14 @@ export const acceptFriendRequest = onCall(async (request) => {
   const requesterFriendRef = requesterRef.collection("friends").doc(uid);
   const requesterSentRequestRef = requesterRef
     .collection("sent_friend_requests").doc(uid);
+  const notificationRef = myRef.collection("notifications")
+    .doc(crossUserNotificationId("friend_request", requesterUid));
 
   await db.runTransaction(async (tx) => {
     const mySnap = await tx.get(myRef);
     const requesterSnap = await tx.get(requesterRef);
     const requestSnap = await tx.get(requestRef);
+    const notificationSnap = await tx.get(notificationRef);
 
     const myLanguageCode = mySnap.data()?.languageCode;
 
@@ -11166,6 +11210,7 @@ export const acceptFriendRequest = onCall(async (request) => {
     tx.update(requestRef, {status: "accepted", updatedAt: now});
     tx.set(requesterSentRequestRef, {status: "accepted", updatedAt: now},
       {merge: true});
+    resolveFriendRequestNotification(tx, notificationSnap, "accepted");
   });
 
   await Promise.all([
@@ -11198,9 +11243,13 @@ export const rejectFriendRequest = onCall(async (request) => {
     .collection("friend_requests").doc(requesterUid);
   const requesterSentRequestRef = db.collection("users").doc(requesterUid)
     .collection("sent_friend_requests").doc(uid);
+  const notificationRef = db.collection("users").doc(uid)
+    .collection("notifications")
+    .doc(crossUserNotificationId("friend_request", requesterUid));
 
   await db.runTransaction(async (tx) => {
     const requestSnap = await tx.get(requestRef);
+    const notificationSnap = await tx.get(notificationRef);
 
     if (!requestSnap.exists) {
       throw await localizedErrorFor(
@@ -11224,6 +11273,7 @@ export const rejectFriendRequest = onCall(async (request) => {
     tx.set(requestRef, {status: "rejected", updatedAt: now}, {merge: true});
     tx.set(requesterSentRequestRef, {status: "rejected", updatedAt: now},
       {merge: true});
+    resolveFriendRequestNotification(tx, notificationSnap, "rejected");
   });
 
   return {rejected: true};

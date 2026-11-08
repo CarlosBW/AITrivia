@@ -42,6 +42,7 @@ class _QuestionReviewScreenState extends State<QuestionReviewScreen> {
       await QuestionReportService.instance.report(
         target: widget.questions[index].reportTarget,
         reason: choice.reason,
+        selectedIndex: widget.questions[index].selectedIndex,
         details: choice.details,
       );
       if (!mounted) return;

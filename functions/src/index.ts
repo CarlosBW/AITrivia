@@ -85,6 +85,7 @@ import {
   QUESTION_REPORT_REASONS,
   ReportedQuestion,
   cleanReportDetails,
+  cleanSelectedIndex,
   fixedReportDocId,
   questionAt,
   reportQuotaAfter,
@@ -92,9 +93,9 @@ import {
 import {expansionTarget} from "./ai_topic_expansion";
 import {acceptModelQuestions} from "./ai_question_drafts";
 import {
+  MAX_REPORT_EMAILS_PER_DAY,
   StoredReport,
-  parseNotifyUids,
-  questionReportAlert,
+  questionReportEmail,
 } from "./question_report_alert";
 import {
   isOpponentUnresponsive,
@@ -9576,6 +9577,7 @@ export const reportAiQuestion = onCall(async (request) => {
 
   return recordAiQuestionReport(uid, {
     topicId, levelNumber, questionId, questionText, reason, details,
+    selectedIndex: request.data?.selectedIndex,
   });
 });
 
@@ -9589,6 +9591,8 @@ export const reportAiQuestion = onCall(async (request) => {
 async function recordAiQuestionReport(uid: string, report: {
   topicId: string; levelNumber: number; questionId: string;
   questionText: string; reason: string; details: string;
+  /** As the client sent it; checked against the question below. */
+  selectedIndex: unknown;
 }): Promise<{reportCount: number; excluded: boolean;
   alreadyReported: boolean}> {
   const {
@@ -9616,6 +9620,9 @@ async function recordAiQuestionReport(uid: string, report: {
   );
   const levelRef = db.collection("ai_topic_pool").doc(poolId)
     .collection("levels").doc(`level_${levelNumber}`);
+  // Its options and answer go in the report, so the team sees what the
+  // player saw rather than just the text.
+  const questionRef = levelRef.collection("questions").doc(questionId);
 
   // Deterministic id keyed on (reporter, pool level, question) so one
   // player can only ever contribute a single report to a given question's
@@ -9632,11 +9639,25 @@ async function recordAiQuestionReport(uid: string, report: {
   const quotaRef = db.collection("question_report_quotas").doc(uid);
 
   return db.runTransaction(async (tx) => {
-    const [levelSnap, existingReportSnap, quotaSnap] = await Promise.all([
-      tx.get(levelRef),
-      tx.get(reportRef),
-      tx.get(quotaRef),
-    ]);
+    const [levelSnap, existingReportSnap, quotaSnap, questionSnap] =
+      await Promise.all([
+        tx.get(levelRef),
+        tx.get(reportRef),
+        tx.get(quotaRef),
+        tx.get(questionRef),
+      ]);
+    const reported = questionAt([questionSnap.data()], 0);
+    const selectedIndex = cleanSelectedIndex(
+      report.selectedIndex, reported?.options.length ?? 0
+    );
+    const whatTheySaw = {
+      ...(reported ? {question: {
+        q: reported.q,
+        options: reported.options,
+        answerIndex: reported.answerIndex,
+      }} : {}),
+      ...(selectedIndex !== undefined ? {selectedIndex} : {}),
+    };
 
     // Only a question that is really in this level: the count lives on the
     // shared level doc, and made-up ids grew it until no write to that
@@ -9662,6 +9683,7 @@ async function recordAiQuestionReport(uid: string, report: {
           // An empty comment keeps the earlier one rather than erasing it.
           ...(details ? {details} : {}),
           questionText,
+          ...whatTheySaw,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         {merge: true}
@@ -9700,6 +9722,7 @@ async function recordAiQuestionReport(uid: string, report: {
       questionText,
       reason,
       details,
+      ...whatTheySaw,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -9755,6 +9778,7 @@ export const reportQuestion = onCall(async (request) => {
     return recordAiQuestionReport(uid, {
       topicId, levelNumber, questionId, reason, details,
       questionText: String(data.questionText || "").slice(0, 500),
+      selectedIndex: data.selectedIndex,
     });
   }
 
@@ -9821,6 +9845,10 @@ export const reportQuestion = onCall(async (request) => {
   ));
   const quotaRef = db.collection("question_report_quotas").doc(uid);
   const reported = question;
+  const selectedIndex = cleanSelectedIndex(
+    data.selectedIndex, reported.options.length
+  );
+  const selected = selectedIndex !== undefined ? {selectedIndex} : {};
 
   const alreadyReported = await db.runTransaction(async (tx) => {
     const [existing, quotaSnap] = await Promise.all([
@@ -9835,6 +9863,7 @@ export const reportQuestion = onCall(async (request) => {
         reason,
         // An empty comment keeps the earlier one rather than erasing it.
         ...(details ? {details} : {}),
+        ...selected,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
       return true;
@@ -9867,6 +9896,7 @@ export const reportQuestion = onCall(async (request) => {
         options: reported.options,
         answerIndex: reported.answerIndex,
       },
+      ...selected,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     return false;
@@ -9875,62 +9905,90 @@ export const reportQuestion = onCall(async (request) => {
   return {alreadyReported};
 });
 
+// Set via `firebase functions:secrets:set RESEND_API_KEY`. Only bound to
+// the two report triggers below.
+const resendApiKey = defineSecret("RESEND_API_KEY");
+
 /**
- * Who hears about new question reports: uids, comma-separated. Asked for
- * on the first deploy and kept in `functions/.env.<project>`; empty means
- * nobody, which leaves reports collected silently as they used to be.
+ * Who report emails come from and go to, kept in
+ * `functions/.env.<project>`. The sender's domain must be verified in
+ * Resend.
  */
-const questionReportNotifyUids = defineString("QUESTION_REPORT_NOTIFY_UIDS", {
-  default: "",
-  description: "UIDs (separados por comas) que reciben un aviso por cada " +
-    "pregunta reportada",
+const reportEmailFrom = defineString("REPORT_EMAIL_FROM", {
+  description: "Remitente de los correos de preguntas reportadas " +
+    "(dominio verificado en Resend)",
+});
+const reportEmailTo = defineString("REPORT_EMAIL_TO", {
+  default: "apps@massivedynamics.pe",
+  description: "Quién recibe los correos de preguntas reportadas",
 });
 
 /**
- * Tells the team a question was reported, as an in-app notification —
- * which [sendPushOnNotificationCreated] then pushes to their phones.
+ * Emails the team about a new question report, within the day's
+ * allowance (see MAX_REPORT_EMAILS_PER_DAY). A failed send is logged, not
+ * retried: the report itself is stored either way.
  * @param {"fixed" | "ai"} kind Which collection the report landed in.
  * @param {string} reportId The report document's id.
  * @param {StoredReport | undefined} report The report document's data.
- * @return {Promise<void>} Resolves once every notification is written.
+ * @return {Promise<void>} Resolves once the email is sent or skipped.
  */
-async function notifyQuestionReport(
+async function emailQuestionReport(
   kind: "fixed" | "ai",
   reportId: string,
   report: StoredReport | undefined
 ): Promise<void> {
-  const uids = parseNotifyUids(questionReportNotifyUids.value());
-  if (!report || uids.length === 0) return;
+  if (!report) return;
 
-  const {title, body} = questionReportAlert(kind, report);
-  const batch = db.batch();
-  for (const uid of uids) {
-    batch.set(db.collection("users").doc(uid).collection("notifications")
-      .doc(), {
-      type: "question_report",
-      title,
-      body,
-      data: {kind, reportId},
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+  const quotaRef = db.collection("question_report_email_quota").doc("daily");
+  const allowed = await db.runTransaction(async (tx) => {
+    const quota = reportQuotaAfter(
+      (await tx.get(quotaRef)).data(), serverDateId(),
+      MAX_REPORT_EMAILS_PER_DAY
+    );
+    if (quota.allowed) tx.set(quotaRef, quota.next);
+    return quota.allowed;
+  });
+  if (!allowed) {
+    console.warn(`Report ${reportId} not emailed: daily email cap reached`);
+    return;
   }
-  await batch.commit();
+
+  const {subject, text, html} = questionReportEmail(kind, reportId, report);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${resendApiKey.value()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: reportEmailFrom.value(),
+      to: [reportEmailTo.value()],
+      subject,
+      text,
+      html,
+    }),
+  });
+  if (!response.ok) {
+    console.error(
+      `Report ${reportId} email failed: ${response.status} ` +
+        `${await response.text()}`
+    );
+  }
 }
 
 // One trigger per collection. Both only fire on creation: a player
 // reporting the same question again updates their report in place, and
 // that shouldn't alert anyone twice.
 export const notifyQuestionReportCreated = onDocumentCreated(
-  "question_reports/{reportId}",
-  (event) => notifyQuestionReport(
+  {document: "question_reports/{reportId}", secrets: [resendApiKey]},
+  (event) => emailQuestionReport(
     "fixed", event.params.reportId, event.data?.data()
   )
 );
 
 export const notifyAiQuestionReportCreated = onDocumentCreated(
-  "ai_question_reports/{reportId}",
-  (event) => notifyQuestionReport(
+  {document: "ai_question_reports/{reportId}", secrets: [resendApiKey]},
+  (event) => emailQuestionReport(
     "ai", event.params.reportId, event.data?.data()
   )
 );

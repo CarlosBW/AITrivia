@@ -96,9 +96,26 @@ class QuestionReportService {
   AppLocalizations get _l10n =>
       l10nFor(LocaleController.instance.locale.value.languageCode);
 
+  /// What `reportQuestion` is sent. [selectedIndex] goes even when null
+  /// (no answer), so the server can tell that from an older app that
+  /// didn't say.
+  static Map<String, dynamic> reportPayload({
+    required Map<String, dynamic> target,
+    required String reason,
+    required String details,
+    required int? selectedIndex,
+  }) =>
+      {
+        ...target,
+        'reason': reason,
+        if (details.trim().isNotEmpty) 'details': details.trim(),
+        'selectedIndex': selectedIndex,
+      };
+
   Future<void> report({
     required Map<String, dynamic> target,
     required String reason,
+    required int? selectedIndex,
     String details = '',
   }) async {
     try {
@@ -107,11 +124,12 @@ class QuestionReportService {
             'reportQuestion',
             options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
           )
-          .call({
-        ...target,
-        'reason': reason,
-        if (details.trim().isNotEmpty) 'details': details.trim(),
-      });
+          .call(reportPayload(
+            target: target,
+            reason: reason,
+            details: details,
+            selectedIndex: selectedIndex,
+          ));
     } catch (e) {
       throw Exception(
         userFacingError(_l10n, e, fallback: _l10n.questionReportFailed),

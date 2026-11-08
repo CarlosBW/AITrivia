@@ -20,6 +20,38 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/category_name_builder.dart';
 import '../../widgets/profile_avatar_button.dart';
 
+/// The action line under a notification, or null when tapping it has
+/// nothing to open: `question_report` notifications (written before
+/// reports went to email instead) only ever offered a dead "Abrir".
+String? notificationCta(AppLocalizations l10n, String type) {
+  switch (type) {
+    case 'question_report':
+      return null;
+    case 'match_invite':
+      return l10n.navPlayNow;
+    case 'match_turn':
+      return l10n.notificationsContinue;
+    case 'match_result':
+      return l10n.notificationsViewResult;
+    case 'friend_request':
+      return l10n.notificationsReview;
+    case 'season_reward':
+      return l10n.weeklyLeagueClaim;
+    case 'achievement_completed':
+      return l10n.notificationsView;
+    case 'rematch_request':
+      return l10n.notificationsView;
+    case 'streak_at_risk':
+      return l10n.navPlayNow;
+    case 'realtime_invite':
+      return l10n.realtimeInvitesAccept;
+    case 'realtime_invite_accepted':
+      return l10n.notificationsOpenLobby;
+    default:
+      return l10n.notificationsOpen;
+  }
+}
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -94,33 +126,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return context.appColors.danger;
       default:
         return Theme.of(context).colorScheme.primary;
-    }
-  }
-
-  String _ctaForType(AppLocalizations l10n, String type) {
-    switch (type) {
-      case 'match_invite':
-        return l10n.navPlayNow;
-      case 'match_turn':
-        return l10n.notificationsContinue;
-      case 'match_result':
-        return l10n.notificationsViewResult;
-      case 'friend_request':
-        return l10n.notificationsReview;
-      case 'season_reward':
-        return l10n.weeklyLeagueClaim;
-      case 'achievement_completed':
-        return l10n.notificationsView;
-      case 'rematch_request':
-        return l10n.notificationsView;
-      case 'streak_at_risk':
-        return l10n.navPlayNow;
-      case 'realtime_invite':
-        return l10n.realtimeInvitesAccept;
-      case 'realtime_invite_accepted':
-        return l10n.notificationsOpenLobby;
-      default:
-        return l10n.notificationsOpen;
     }
   }
 
@@ -450,7 +455,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   title: title,
                   body: body,
                   type: type,
-                  cta: _ctaForType(l10n, type),
+                  cta: notificationCta(l10n, type),
                   read: read,
                   isPvp: type == 'match_invite' ||
                       type == 'match_turn' ||
@@ -490,7 +495,7 @@ class _NotificationTile extends StatelessWidget {
   final String title;
   final String body;
   final String type;
-  final String cta;
+  final String? cta;
   final bool read;
   final bool isPvp;
   final Map<String, dynamic> matchData;
@@ -592,15 +597,17 @@ class _NotificationTile extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    cta,
-                    style: TextStyle(
-                      color: read
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : accentColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: cta == null
+                      ? const SizedBox.shrink()
+                      : Text(
+                          cta!,
+                          style: TextStyle(
+                            color: read
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : accentColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
                 if (onDecline != null)
                   TextButton.icon(

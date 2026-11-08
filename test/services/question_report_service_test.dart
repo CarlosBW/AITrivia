@@ -5,9 +5,21 @@ import 'package:trivia_ia_flutter/services/question_report_service.dart';
 /// carry the right question, the right picked option and the right target.
 void main() {
   final questions = [
-    {'q': '¿2+2?', 'options': ['3', '4', '5'], 'answerIndex': 1},
-    {'q': '¿Capital de Perú?', 'options': ['Lima', 'Cusco'], 'answerIndex': 0},
-    {'q': '¿Color del cielo?', 'options': ['Azul', 'Verde'], 'answerIndex': 0},
+    {
+      'q': '¿2+2?',
+      'options': ['3', '4', '5'],
+      'answerIndex': 1
+    },
+    {
+      'q': '¿Capital de Perú?',
+      'options': ['Lima', 'Cusco'],
+      'answerIndex': 0
+    },
+    {
+      'q': '¿Color del cielo?',
+      'options': ['Azul', 'Verde'],
+      'answerIndex': 0
+    },
   ];
 
   Map<String, dynamic> target(int i, Map<String, dynamic> q) =>
@@ -60,7 +72,11 @@ void main() {
     test('se salta una pregunta mal formada sin perder los índices', () {
       final review = reviewedQuestions(
         questions: [
-          {'q': '', 'options': ['a'], 'answerIndex': 0},
+          {
+            'q': '',
+            'options': ['a'],
+            'answerIndex': 0
+          },
           questions[1],
         ],
         answers: const [],
@@ -68,6 +84,36 @@ void main() {
       );
       expect(review.single.text, '¿Capital de Perú?');
       expect(review.single.reportTarget['questionIndex'], 1);
+    });
+  });
+
+  group('reportPayload', () {
+    test('le dice al servidor que opcion habia elegido el jugador', () {
+      final payload = QuestionReportService.reportPayload(
+        target: {'mode': 'solo', 'questionIndex': 3},
+        reason: 'wrong_answer',
+        details: '  Era otra  ',
+        selectedIndex: 0,
+      );
+      expect(payload, {
+        'mode': 'solo',
+        'questionIndex': 3,
+        'reason': 'wrong_answer',
+        'details': 'Era otra',
+        'selectedIndex': 0,
+      });
+    });
+
+    test('sin respuesta manda null, y sin comentario no manda details', () {
+      final payload = QuestionReportService.reportPayload(
+        target: {'mode': 'solo', 'questionIndex': 3},
+        reason: 'typo',
+        details: '   ',
+        selectedIndex: null,
+      );
+      expect(payload.containsKey('selectedIndex'), isTrue);
+      expect(payload['selectedIndex'], isNull);
+      expect(payload.containsKey('details'), isFalse);
     });
   });
 }

@@ -105,3 +105,19 @@ export function reportQuotaAfter(
   }
   return {allowed: true, next: {dayId: todayId, count: used + 1}};
 }
+
+/**
+ * The option the player had picked, for the team to see what they saw.
+ * @param {unknown} raw What the client sent.
+ * @param {number} optionCount How many options the question has.
+ * @return {number|null|undefined} The option; null if they didn't answer
+ *     (a timeout is banked as -1) or sent something no option matches;
+ *     undefined if the app didn't send it at all (before 1.0.11).
+ */
+export function cleanSelectedIndex(
+  raw: unknown, optionCount: number
+): number | null | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== "number" || !Number.isInteger(raw)) return null;
+  return raw >= 0 && raw < optionCount ? raw : null;
+}

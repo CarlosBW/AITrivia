@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   QUESTION_REPORT_REASONS,
   cleanReportDetails,
+  cleanSelectedIndex,
   fixedReportDocId,
   questionAt,
   reportQuotaAfter,
@@ -114,5 +115,24 @@ describe("reportQuotaAfter", () => {
       reportQuotaAfter({dayId: "2026-10-21", count: 3}, "2026-10-22", MAX),
       {allowed: true, next: {dayId: "2026-10-22", count: 1}}
     );
+  });
+});
+
+describe("cleanSelectedIndex", () => {
+  test("keeps an option the question has", () => {
+    assert.equal(cleanSelectedIndex(0, 4), 0);
+    assert.equal(cleanSelectedIndex(3, 4), 3);
+  });
+
+  test("a timeout or a made-up option reads as no answer", () => {
+    assert.equal(cleanSelectedIndex(-1, 4), null);
+    assert.equal(cleanSelectedIndex(4, 4), null);
+    assert.equal(cleanSelectedIndex(1.5, 4), null);
+    assert.equal(cleanSelectedIndex("2", 4), null);
+    assert.equal(cleanSelectedIndex(null, 4), null);
+  });
+
+  test("an app that doesn't send it leaves it unknown", () => {
+    assert.equal(cleanSelectedIndex(undefined, 4), undefined);
   });
 });

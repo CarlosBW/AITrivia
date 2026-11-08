@@ -4816,6 +4816,18 @@ abstract class AppLocalizations {
   /// **'Reto rechazado'**
   String get notificationsChallengeDeclined;
 
+  /// No description provided for @notificationsFriendRequestAccepted.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud aceptada'**
+  String get notificationsFriendRequestAccepted;
+
+  /// No description provided for @notificationsFriendRequestRejected.
+  ///
+  /// In es, this message translates to:
+  /// **'Solicitud rechazada'**
+  String get notificationsFriendRequestRejected;
+
   /// No description provided for @notificationsContinue.
   ///
   /// In es, this message translates to:
@@ -4827,12 +4839,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ver resultado'**
   String get notificationsViewResult;
-
-  /// No description provided for @notificationsReview.
-  ///
-  /// In es, this message translates to:
-  /// **'Revisar'**
-  String get notificationsReview;
 
   /// No description provided for @notificationsView.
   ///

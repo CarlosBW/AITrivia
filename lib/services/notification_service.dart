@@ -228,6 +228,20 @@ class NotificationService {
     }, SetOptions(merge: true));
   }
 
+  /// Marks a notification read and records how the player answered it
+  /// from the list (a friend request accepted or rejected), so its buttons
+  /// don't come back.
+  Future<void> resolveNotification({
+    required String notificationId,
+    required String resolution,
+  }) async {
+    await _notificationsCol(uid).doc(notificationId).set({
+      'read': true,
+      'readAt': FieldValue.serverTimestamp(),
+      'data': {'resolution': resolution},
+    }, SetOptions(merge: true));
+  }
+
   Future<void> markAllAsRead() async {
     final snap = await _notificationsCol(uid)
         .where('read', isEqualTo: false)

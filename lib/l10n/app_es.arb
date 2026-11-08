@@ -1607,9 +1607,10 @@
   "themePreviewClose": "Cerrar",
 
   "notificationsChallengeDeclined": "Reto rechazado",
+  "notificationsFriendRequestAccepted": "Solicitud aceptada",
+  "notificationsFriendRequestRejected": "Solicitud rechazada",
   "notificationsContinue": "Continuar",
   "notificationsViewResult": "Ver resultado",
-  "notificationsReview": "Revisar",
   "notificationsView": "Ver",
   "notificationsOpen": "Abrir",
   "notificationsOpenLobby": "Abrir sala",

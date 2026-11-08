@@ -2865,13 +2865,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsChallengeDeclined => 'Challenge declined';
 
   @override
+  String get notificationsFriendRequestAccepted => 'Request accepted';
+
+  @override
+  String get notificationsFriendRequestRejected => 'Request declined';
+
+  @override
   String get notificationsContinue => 'Continue';
 
   @override
   String get notificationsViewResult => 'View result';
-
-  @override
-  String get notificationsReview => 'Review';
 
   @override
   String get notificationsView => 'View';

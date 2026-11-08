@@ -13,6 +13,7 @@ import '../versus/match_play_screen.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../../services/match_service.dart';
 import '../../services/realtime_invite_service.dart';
+import '../../services/friend_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
@@ -23,18 +24,32 @@ import '../../widgets/profile_avatar_button.dart';
 /// The action line under a notification, or null when tapping it has
 /// nothing to open: `question_report` notifications (written before
 /// reports went to email instead) only ever offered a dead "Abrir".
-String? notificationCta(AppLocalizations l10n, String type) {
+///
+/// A friend request is answered with its own buttons; once answered, the
+/// line says how (`data.resolution`, see NotificationService).
+String? notificationCta(
+  AppLocalizations l10n,
+  String type, {
+  Map<String, dynamic> data = const {},
+}) {
   switch (type) {
     case 'question_report':
       return null;
+    case 'friend_request':
+      switch (data['resolution']) {
+        case 'accepted':
+          return l10n.notificationsFriendRequestAccepted;
+        case 'rejected':
+          return l10n.notificationsFriendRequestRejected;
+        default:
+          return null;
+      }
     case 'match_invite':
       return l10n.navPlayNow;
     case 'match_turn':
       return l10n.notificationsContinue;
     case 'match_result':
       return l10n.notificationsViewResult;
-    case 'friend_request':
-      return l10n.notificationsReview;
     case 'season_reward':
       return l10n.weeklyLeagueClaim;
     case 'achievement_completed':
@@ -52,6 +67,21 @@ String? notificationCta(AppLocalizations l10n, String type) {
   }
 }
 
+/// Who sent a friend request notification. The server names these
+/// `friend_request__{senderUid}__` (notifyOnce) and puts nothing in
+/// `data`; `fromUid` is honoured in case it ever does.
+String? friendRequestSenderUid(
+  String notificationId,
+  Map<String, dynamic> data,
+) {
+  final fromUid = (data['fromUid'] ?? '').toString();
+  if (fromUid.isNotEmpty) return fromUid;
+
+  final match =
+      RegExp(r'^friend_request__(.+)__$').firstMatch(notificationId);
+  return match?.group(1);
+}
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -67,6 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   late final _notifications = _service.watchMyNotifications();
   final _matchService = MatchService();
   final _realtimeInviteService = RealtimeInviteService.instance;
+  final _friendService = FriendService.instance;
   final Set<String> _decliningIds = {};
 
   bool _markingAll = false;
@@ -147,6 +178,48 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } finally {
       if (mounted) {
         setState(() => _markingAll = false);
+      }
+    }
+  }
+
+  /// Accepts or rejects a friend request right from its notification.
+  /// [_decliningIds] covers both buttons while either is in flight.
+  Future<void> _answerFriendRequest({
+    required String notificationId,
+    required String senderUid,
+    required bool accept,
+  }) async {
+    if (_decliningIds.contains(notificationId)) return;
+
+    setState(() => _decliningIds.add(notificationId));
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    try {
+      if (accept) {
+        await _friendService.acceptFriendRequest(requesterUid: senderUid);
+      } else {
+        await _friendService.rejectFriendRequest(requesterUid: senderUid);
+      }
+      await _service.resolveNotification(
+        notificationId: notificationId,
+        resolution: accept ? 'accepted' : 'rejected',
+      );
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(accept
+              ? l10n.notificationsFriendRequestAccepted
+              : l10n.notificationsFriendRequestRejected),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(userFacingError(l10n, e))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _decliningIds.remove(notificationId));
       }
     }
   }
@@ -265,7 +338,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const FriendsScreen(),
+            // Straight to the received requests, where it can be answered.
+            builder: (_) => const FriendsScreen(initialTab: 3),
           ),
         );
         return;
@@ -430,6 +504,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               final payload = Map<String, dynamic>.from(
                 data['data'] ?? {},
               );
+              final friendRequestFrom = type == 'friend_request' &&
+                      payload['resolution'] == null
+                  ? friendRequestSenderUid(doc.id, payload)
+                  : null;
 
               return Dismissible(
                 key: ValueKey(doc.id),
@@ -455,14 +533,30 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   title: title,
                   body: body,
                   type: type,
-                  cta: notificationCta(l10n, type),
+                  cta: notificationCta(l10n, type, data: payload),
                   read: read,
                   isPvp: type == 'match_invite' ||
                       type == 'match_turn' ||
                       type == 'match_result',
                   matchData: payload,
                   declining: _decliningIds.contains(doc.id),
-                  onDecline: type == 'match_invite'
+                  onAccept: friendRequestFrom == null
+                      ? null
+                      : () => _answerFriendRequest(
+                            notificationId: doc.id,
+                            senderUid: friendRequestFrom,
+                            accept: true,
+                          ),
+                  declineLabel: friendRequestFrom != null
+                      ? l10n.friendsReject
+                      : l10n.realtimeInvitesDecline,
+                  onDecline: friendRequestFrom != null
+                      ? () => _answerFriendRequest(
+                            notificationId: doc.id,
+                            senderUid: friendRequestFrom,
+                            accept: false,
+                          )
+                      : type == 'match_invite'
                       ? () => _declineAsyncInvite(
                             notificationId: doc.id,
                             matchId: (payload['matchId'] ?? '').toString(),
@@ -500,6 +594,8 @@ class _NotificationTile extends StatelessWidget {
   final bool isPvp;
   final Map<String, dynamic> matchData;
   final bool declining;
+  final VoidCallback? onAccept;
+  final String declineLabel;
   final VoidCallback? onDecline;
   final VoidCallback? onTap;
 
@@ -514,6 +610,8 @@ class _NotificationTile extends StatelessWidget {
     required this.isPvp,
     required this.matchData,
     required this.declining,
+    required this.onAccept,
+    required this.declineLabel,
     required this.onDecline,
     required this.onTap,
   });
@@ -621,8 +719,16 @@ class _NotificationTile extends StatelessWidget {
                             ),
                           )
                         : const Icon(Icons.close),
-                    label: Text(l10n.realtimeInvitesDecline),
+                    label: Text(declineLabel),
                   ),
+                if (onAccept != null) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: declining ? null : onAccept,
+                    icon: const Icon(Icons.check),
+                    label: Text(l10n.friendsAccept),
+                  ),
+                ],
               ],
             ),
           ],

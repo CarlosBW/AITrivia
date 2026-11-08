@@ -1579,9 +1579,10 @@
   "themePreviewClose": "Close",
 
   "notificationsChallengeDeclined": "Challenge declined",
+  "notificationsFriendRequestAccepted": "Request accepted",
+  "notificationsFriendRequestRejected": "Request declined",
   "notificationsContinue": "Continue",
   "notificationsViewResult": "View result",
-  "notificationsReview": "Review",
   "notificationsView": "View",
   "notificationsOpen": "Open",
   "notificationsOpenLobby": "Open lobby",

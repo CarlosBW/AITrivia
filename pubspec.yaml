@@ -2,7 +2,7 @@ name: trivia_ia_flutter
 description: "TriviaIA — trivia game with solo play, live and async PvP, weekly leagues, and AI-generated topics."
 publish_to: 'none'
 
-version: 1.0.11+12
+version: 1.0.12+13
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

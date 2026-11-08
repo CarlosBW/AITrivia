@@ -2804,30 +2804,6 @@ abstract class AppLocalizations {
   /// **'VS'**
   String get pvpResultVs;
 
-  /// No description provided for @pvpResultMatchSummary.
-  ///
-  /// In es, this message translates to:
-  /// **'Resumen de la partida'**
-  String get pvpResultMatchSummary;
-
-  /// No description provided for @pvpResultYourScore.
-  ///
-  /// In es, this message translates to:
-  /// **'Tu puntaje'**
-  String get pvpResultYourScore;
-
-  /// No description provided for @pvpResultOpponent.
-  ///
-  /// In es, this message translates to:
-  /// **'Rival'**
-  String get pvpResultOpponent;
-
-  /// No description provided for @pvpResultPerformance.
-  ///
-  /// In es, this message translates to:
-  /// **'Rendimiento'**
-  String get pvpResultPerformance;
-
   /// No description provided for @pvpResultBefore.
   ///
   /// In es, this message translates to:

@@ -1582,18 +1582,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pvpResultVs => 'VS';
 
   @override
-  String get pvpResultMatchSummary => 'Match summary';
-
-  @override
-  String get pvpResultYourScore => 'Your score';
-
-  @override
-  String get pvpResultOpponent => 'Opponent';
-
-  @override
-  String get pvpResultPerformance => 'Performance';
-
-  @override
   String get pvpResultBefore => 'Before';
 
   @override

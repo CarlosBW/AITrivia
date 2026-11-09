@@ -1508,12 +1508,6 @@ abstract class AppLocalizations {
   /// **'Necesitas 1 vida completa para entrar a este nivel.'**
   String get levelPlayNeedFullLife;
 
-  /// No description provided for @levelPlayLifeCheckError.
-  ///
-  /// In es, this message translates to:
-  /// **'Error verificando vidas: {error}'**
-  String levelPlayLifeCheckError(String error);
-
   /// No description provided for @levelPlaySessionCreateError.
   ///
   /// In es, this message translates to:
@@ -1724,18 +1718,6 @@ abstract class AppLocalizations {
   /// **'Nivel finalizado'**
   String get levelPlayLevelFinished;
 
-  /// No description provided for @levelPlayScoreLine.
-  ///
-  /// In es, this message translates to:
-  /// **'Puntaje: {correct} / {total} ({pct})'**
-  String levelPlayScoreLine(int correct, int total, String pct);
-
-  /// No description provided for @levelPlayRankLine.
-  ///
-  /// In es, this message translates to:
-  /// **'Rango: {rank}'**
-  String levelPlayRankLine(String rank);
-
   /// No description provided for @levelPlayRewardsTitle.
   ///
   /// In es, this message translates to:
@@ -1775,7 +1757,7 @@ abstract class AppLocalizations {
   /// No description provided for @levelPlayProgressSaved.
   ///
   /// In es, this message translates to:
-  /// **'✅ Progreso guardado'**
+  /// **'Progreso guardado'**
   String get levelPlayProgressSaved;
 
   /// No description provided for @levelPlayContinueNextLevel.

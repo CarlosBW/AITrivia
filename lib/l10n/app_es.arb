@@ -402,12 +402,6 @@
   "levelPlayWrongLostHalfLife": "❌ Incorrecto - perdiste media vida",
   "levelPlayWrongNoLifeLoss": "❌ Incorrecto - no perdiste vida",
   "levelPlayNeedFullLife": "Necesitas 1 vida completa para entrar a este nivel.",
-  "levelPlayLifeCheckError": "Error verificando vidas: {error}",
-  "@levelPlayLifeCheckError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "levelPlaySessionCreateError": "No se pudo preparar el nivel. Intenta de nuevo.",
   "levelPlaySessionCreateErrorTitle": "Error creando sesión",
   "levelPlayPreparingLevel": "Preparando el nivel...",
@@ -454,20 +448,6 @@
   "levelPlayRankBeginner": "Novato",
   "levelPlayLevelPassed": "¡Nivel aprobado!",
   "levelPlayLevelFinished": "Nivel finalizado",
-  "levelPlayScoreLine": "Puntaje: {correct} / {total} ({pct})",
-  "@levelPlayScoreLine": {
-    "placeholders": {
-      "correct": {"type": "int"},
-      "total": {"type": "int"},
-      "pct": {"type": "String"}
-    }
-  },
-  "levelPlayRankLine": "Rango: {rank}",
-  "@levelPlayRankLine": {
-    "placeholders": {
-      "rank": {"type": "String"}
-    }
-  },
   "levelPlayRewardsTitle": "Recompensas",
   "levelPlayAlreadyPassedBefore": "Este nivel ya había sido aprobado antes.",
   "levelPlayNeed40Percent": "Necesitas al menos 40% de aciertos para aprobar este nivel.",
@@ -479,7 +459,7 @@
     }
   },
   "levelPlayRetrySave": "Reintentar guardado",
-  "levelPlayProgressSaved": "✅ Progreso guardado",
+  "levelPlayProgressSaved": "Progreso guardado",
   "levelPlayContinueNextLevel": "Continuar (Nivel {level})",
   "@levelPlayContinueNextLevel": {
     "placeholders": {

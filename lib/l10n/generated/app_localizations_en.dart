@@ -820,11 +820,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'You need 1 full life to enter this level.';
 
   @override
-  String levelPlayLifeCheckError(String error) {
-    return 'Error checking lives: $error';
-  }
-
-  @override
   String get levelPlaySessionCreateError =>
       'This level could not be prepared. Please try again.';
 
@@ -937,16 +932,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get levelPlayLevelFinished => 'Level finished';
 
   @override
-  String levelPlayScoreLine(int correct, int total, String pct) {
-    return 'Score: $correct / $total ($pct)';
-  }
-
-  @override
-  String levelPlayRankLine(String rank) {
-    return 'Rank: $rank';
-  }
-
-  @override
   String get levelPlayRewardsTitle => 'Rewards';
 
   @override
@@ -969,7 +954,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get levelPlayRetrySave => 'Retry save';
 
   @override
-  String get levelPlayProgressSaved => '✅ Progress saved';
+  String get levelPlayProgressSaved => 'Progress saved';
 
   @override
   String levelPlayContinueNextLevel(int level) {

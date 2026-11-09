@@ -6,6 +6,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../services/life_check_retry.dart';
+import 'level_result_hero.dart';
 import '../../services/life_service.dart';
 import '../../services/player_level_service.dart';
 import '../../services/sfx_service.dart';
@@ -141,6 +143,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
   bool _lifeChecked = false;
   bool _lifeLoading = false;
   String? _lifeGateError;
+
+  /// The life check itself failed (no answer from the server), as opposed
+  /// to [_lifeGateError], which means there really aren't enough lives.
+  String? _lifeCheckError;
 
   bool _endedByNoLives = false;
 
@@ -707,18 +713,22 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     setState(() {
       _lifeLoading = true;
       _lifeGateError = null;
+      _lifeCheckError = null;
     });
 
     try {
-      await LifeService.instance.ensureUserLifeDoc(uid);
-      final entry = await LifeService.instance.tryConsumeLevelEntry(
-        uid,
-        isAiTopic: widget.isAiTopic,
-        categoryId: widget.categoryId,
-        aiTopicId: widget.aiTopicId,
-        levelNumber: widget.levelNumber,
-        preview: true,
-      );
+      // A dropped connection or a cold start gets one quiet second try.
+      final entry = await withConnectionRetry(() async {
+        await LifeService.instance.ensureUserLifeDoc(uid);
+        return LifeService.instance.tryConsumeLevelEntry(
+          uid,
+          isAiTopic: widget.isAiTopic,
+          categoryId: widget.categoryId,
+          aiTopicId: widget.aiTopicId,
+          levelNumber: widget.levelNumber,
+          preview: true,
+        );
+      });
 
       await _syncLivesUiFromFirestore(knownState: entry.state);
 
@@ -730,7 +740,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
 
       _lifeChecked = true;
     } catch (e) {
-      _lifeGateError = l10n.levelPlayLifeCheckError(userFacingError(l10n, e));
+      // Not "no lives": the check never got an answer, so say that, with a
+      // way to try again.
+      _lifeCheckError = userFacingError(l10n, e);
       _lifeChecked = true;
     } finally {
       if (mounted) {
@@ -814,6 +826,16 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
 
               if (_lifeLoading || !_lifeChecked) {
                 return const Center(child: CircularProgressIndicator());
+              }
+
+              if (_lifeCheckError != null) {
+                return LoadErrorView(
+                  message: _lifeCheckError!,
+                  onRetry: () => setState(() {
+                    _lifeCheckError = null;
+                    _lifeChecked = false;
+                  }),
+                );
               }
 
               if (_lifeGateError != null) {
@@ -1495,8 +1517,6 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                 ? 1
                 : 0;
 
-    final pctText = '${(pct * 100).toStringAsFixed(0)}%';
-
     final nextLevel = widget.levelNumber + 1;
     // `_entryFree` is the server saying this level was already in
     // passedLevels when it was opened, so the next one stays unlocked even
@@ -1516,33 +1536,18 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              pct >= 0.4 ? l10n.levelPlayLevelPassed : l10n.levelPlayLevelFinished,
-              style: context.heading(28),
-              textAlign: TextAlign.center,
+            LevelResultHero(
+              title: pct >= 0.4
+                  ? l10n.levelPlayLevelPassed
+                  : l10n.levelPlayLevelFinished,
+              stars: starCount,
+              correct: _correct,
+              total: total,
+              rankLabel: label,
+              celebration:
+                  starCount == 3 ? const _ThreeStarsCelebration() : null,
             ),
-            const SizedBox(height: 10),
-            Stack(
-              alignment: Alignment.topCenter,
-              clipBehavior: Clip.none,
-              children: [
-                _BigStarsRow(count: starCount),
-                if (starCount == 3) const _ThreeStarsCelebration(),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              l10n.levelPlayScoreLine(_correct, total, pctText),
-              style: const TextStyle(fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.levelPlayRankLine(label),
-              style: context.heading(22),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(18),
@@ -1598,15 +1603,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                       (_saved || _saveError != null) &&
                       !_rewardGrantedForLevel) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      pct >= 0.4
+                    ResultNote(
+                      text: pct >= 0.4
                           ? l10n.levelPlayAlreadyPassedBefore
                           : l10n.levelPlayNeed40Percent,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ],
                 ],
@@ -1645,10 +1645,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
             ],
             if (_saved && _saveError == null && !_saving) ...[
               const SizedBox(height: 18),
-              Text(
-                l10n.levelPlayProgressSaved,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              ProgressSavedChip(label: l10n.levelPlayProgressSaved),
             ],
             const SizedBox(height: 24),
             Row(
@@ -1988,47 +1985,6 @@ class _AnimatedRewardNumber extends StatelessWidget {
           style: context.heading(24, color: color),
         );
       },
-    );
-  }
-}
-
-class _BigStarsRow extends StatelessWidget {
-  final int count;
-
-  const _BigStarsRow({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final gradientStart = context.appColors.heroGradientStart;
-    final gradientEnd = context.appColors.heroGradientEnd;
-    final unfilledColor = Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35);
-
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 6,
-      children: List.generate(3, (i) {
-        final filled = i < count;
-        final color = filled
-            ? Color.lerp(gradientStart, gradientEnd, i / 2)!
-            : unfilledColor;
-
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.7, end: 1),
-          duration: Duration(milliseconds: 300 + (i * 140)),
-          curve: Curves.easeOutBack,
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: child,
-            );
-          },
-          child: Icon(
-            filled ? Icons.star_rounded : Icons.star_border_rounded,
-            size: 42,
-            color: color,
-          ),
-        );
-      }),
     );
   }
 }

@@ -379,12 +379,6 @@
   "levelPlayWrongLostHalfLife": "❌ Wrong - you lost half a life",
   "levelPlayWrongNoLifeLoss": "❌ Wrong - you didn't lose any life",
   "levelPlayNeedFullLife": "You need 1 full life to enter this level.",
-  "levelPlayLifeCheckError": "Error checking lives: {error}",
-  "@levelPlayLifeCheckError": {
-    "placeholders": {
-      "error": {"type": "String"}
-    }
-  },
   "levelPlaySessionCreateError": "This level could not be prepared. Please try again.",
   "levelPlaySessionCreateErrorTitle": "Error creating session",
   "levelPlayPreparingLevel": "Getting the level ready...",
@@ -431,20 +425,6 @@
   "levelPlayRankBeginner": "Beginner",
   "levelPlayLevelPassed": "Level passed!",
   "levelPlayLevelFinished": "Level finished",
-  "levelPlayScoreLine": "Score: {correct} / {total} ({pct})",
-  "@levelPlayScoreLine": {
-    "placeholders": {
-      "correct": {"type": "int"},
-      "total": {"type": "int"},
-      "pct": {"type": "String"}
-    }
-  },
-  "levelPlayRankLine": "Rank: {rank}",
-  "@levelPlayRankLine": {
-    "placeholders": {
-      "rank": {"type": "String"}
-    }
-  },
   "levelPlayRewardsTitle": "Rewards",
   "levelPlayAlreadyPassedBefore": "This level had already been passed before.",
   "levelPlayNeed40Percent": "You need at least 40% correct to pass this level.",
@@ -456,7 +436,7 @@
     }
   },
   "levelPlayRetrySave": "Retry save",
-  "levelPlayProgressSaved": "✅ Progress saved",
+  "levelPlayProgressSaved": "Progress saved",
   "levelPlayContinueNextLevel": "Continue (Level {level})",
   "@levelPlayContinueNextLevel": {
     "placeholders": {

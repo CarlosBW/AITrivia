@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/player_avatar_widget.dart';
+import '../../widgets/result_hero_banner.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
@@ -278,8 +279,8 @@ class PvpResultCard extends StatelessWidget {
   }
 }
 
-/// The banner on top: the theme's hero gradient, the result's medal popping
-/// in, and a few sparkles when it's a win.
+/// The banner on top: the theme's hero gradient (see [ResultHeroBanner]),
+/// the result's medal popping in, and sparkles when it's a win.
 class _ResultHero extends StatelessWidget {
   final PvpResultState state;
   final IconData icon;
@@ -303,179 +304,70 @@ class _ResultHero extends StatelessWidget {
     final onHero = colors.onAccent;
     final victory = state == PvpResultState.victory;
 
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [colors.heroGradientStart, colors.heroGradientEnd],
-        ),
-        borderRadius: BorderRadius.circular(context.radii.lg),
-        border: context.surfaces.borderOr(null),
-        boxShadow: context.surfaces.shadowsOr([
-          BoxShadow(
-            color: colors.heroGradientEnd.withValues(alpha: 0.30),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ]),
-      ),
-      child: Stack(
+    return ResultHeroBanner(
+      sparkles: victory,
+      child: Column(
         children: [
-          // Soft rings behind the medal give the flat gradient some depth.
-          Positioned(
-            top: -60,
-            right: -40,
-            child: _Ring(size: 180, color: onHero.withValues(alpha: 0.10)),
-          ),
-          Positioned(
-            bottom: -70,
-            left: -50,
-            child: _Ring(size: 160, color: onHero.withValues(alpha: 0.08)),
-          ),
-          if (victory) ...[
-            _Sparkle(left: 28, top: 26, size: 18, color: onHero),
-            _Sparkle(right: 34, top: 44, size: 14, color: onHero),
-            _Sparkle(left: 52, top: 112, size: 12, color: onHero),
-            _Sparkle(right: 56, top: 120, size: 20, color: onHero),
-          ],
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 26, 20, 22),
-            child: Column(
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.4, end: 1),
-                  duration: const Duration(milliseconds: 700),
-                  curve: Curves.elasticOut,
-                  builder: (context, scale, child) =>
-                      Transform.scale(scale: scale, child: child),
-                  child: Container(
-                    width: 92,
-                    height: 92,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colors.onAccent.withValues(alpha: 0.18),
-                      border: Border.all(
-                        color: onHero.withValues(alpha: 0.55),
-                        width: 2,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: victory
-                            ? colors.reward
-                            : Theme.of(context).colorScheme.surface,
-                        boxShadow: [
-                          BoxShadow(
-                            color: (victory ? colors.reward : accent)
-                                .withValues(alpha: 0.45),
-                            blurRadius: 16,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 40,
-                        color: victory ? colors.onReward : accent,
-                      ),
-                    ),
-                  ),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.4, end: 1),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.elasticOut,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: Container(
+              width: 92,
+              height: 92,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: onHero.withValues(alpha: 0.18),
+                border: Border.all(
+                  color: onHero.withValues(alpha: 0.55),
+                  width: 2,
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: context.heading(32, color: onHero),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: victory
+                      ? colors.reward
+                      : Theme.of(context).colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (victory ? colors.reward : accent)
+                          .withValues(alpha: 0.45),
+                      blurRadius: 16,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: onHero.withValues(alpha: 0.88),
-                  ),
+                child: Icon(
+                  icon,
+                  size: 40,
+                  color: victory ? colors.onReward : accent,
                 ),
-                if (badge.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: onHero.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(context.radii.pill),
-                      border: Border.all(
-                        color: onHero.withValues(alpha: 0.45),
-                      ),
-                    ),
-                    child: Text(
-                      badge,
-                      style: TextStyle(
-                        color: onHero,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: context.heading(32, color: onHero),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: onHero.withValues(alpha: 0.88),
+            ),
+          ),
+          if (badge.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            HeroBadge(label: badge),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-class _Ring extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _Ring({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 18),
-      ),
-    );
-  }
-}
-
-class _Sparkle extends StatelessWidget {
-  final double? left;
-  final double? right;
-  final double top;
-  final double size;
-  final Color color;
-
-  const _Sparkle({
-    this.left,
-    this.right,
-    required this.top,
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      right: right,
-      top: top,
-      child: Icon(
-        Icons.auto_awesome,
-        size: size,
-        color: color.withValues(alpha: 0.7),
       ),
     );
   }

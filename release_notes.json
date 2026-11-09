@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "Nueva pantalla de resultado en los duelos: el ganador lleva corona y los puntajes cuentan hasta el final.\n\nReta a un amigo con un tema personalizado, prueba el nuevo tema Boceto y mira cada tema con Vista previa antes de comprarlo.\n\nArreglos: las solicitudes de amistad respondidas ya no muestran botones y un reto terminado ya no deja un aviso de Tu turno.\n\nPara probar: termina un reto con un amigo; abre la Vista previa de un tema en la Tienda."
+    "text": "Nueva pantalla al terminar un nivel: tus estrellas, aciertos y rango sobre los colores de tu tema.\n\nEn los duelos, la corona siempre va con quien ganó, también si el rival se desconecta.\n\nArreglos: un corte de conexión al entrar a un nivel ya no dice que no tienes vidas, y los retos con tema personalizado esperan lo necesario para prepararse.\n\nPara probar: termina un nivel; reta a un amigo con un tema personalizado."
   },
   {
     "language": "en-US",
-    "text": "New duel result screen: the winner gets a crown and the scores count up.\n\nChallenge a friend on a custom topic, try the new Sketch theme and preview any theme before buying it.\n\nFixes: answered friend requests no longer show buttons, and a finished challenge no longer leaves a Your turn notification.\n\nTo test: finish a challenge with a friend; open a theme Preview in the Store."
+    "text": "New end-of-level screen: your stars, correct answers and rank on your theme's colors.\n\nIn duels, the crown always goes to the winner, even when the opponent disconnects.\n\nFixes: a dropped connection when opening a level no longer says you're out of lives, and custom topic challenges wait long enough to get ready.\n\nTo test: finish a level; challenge a friend on a custom topic."
   }
 ]

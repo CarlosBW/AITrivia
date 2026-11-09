@@ -90,6 +90,28 @@ void main() {
     expect((crown.dx - rival.dx).abs() < (crown.dx - me.dx).abs(), isTrue);
   });
 
+  testWidgets('la corona va con quien gano, aunque tuviera menos puntos',
+      (tester) async {
+    // Un duelo en vivo se gana tambien porque el rival se desconecto.
+    await pump(
+      tester,
+      card(state: PvpResultState.victory, myScore: 3, opponentScore: 5),
+    );
+    final crown = tester.getCenter(find.byIcon(Icons.workspace_premium));
+    final me = tester.getCenter(find.text('blaky_2'));
+    final rival = tester.getCenter(find.text('CarlosBW1989'));
+    expect((crown.dx - me.dx).abs() < (crown.dx - rival.dx).abs(), isTrue);
+  });
+
+  testWidgets('ganar por abandono 0 a 0 tambien lleva corona',
+      (tester) async {
+    await pump(
+      tester,
+      card(state: PvpResultState.victory, myScore: 0, opponentScore: 0),
+    );
+    expect(find.byIcon(Icons.workspace_premium), findsOneWidget);
+  });
+
   testWidgets('en un empate nadie lleva corona', (tester) async {
     await pump(
       tester,

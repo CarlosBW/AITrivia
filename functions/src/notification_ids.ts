@@ -42,3 +42,18 @@ export function staleTurnNotifications(
     },
   ];
 }
+
+/**
+ * Whether a notification was already answered (`data.resolution`, set when
+ * a friend request is accepted or rejected). A request sent again by the
+ * same player reopens it rather than adding a second one: there is only
+ * ever one per sender.
+ * @param {object|undefined} notification The notification's data.
+ * @return {boolean} True if it carries an answer.
+ */
+export function answeredNotification(
+  notification: {data?: Record<string, unknown>} | undefined
+): boolean {
+  const resolution = notification?.data?.resolution;
+  return typeof resolution === "string" && resolution.length > 0;
+}

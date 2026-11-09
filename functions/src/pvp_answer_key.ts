@@ -24,7 +24,8 @@ export type MatchQuestion = Record<string, unknown>;
  * Splits a match's questions into what the players may read and the key.
  * @param {MatchQuestion[]} questions Questions as selected, with answers.
  * @return {{publicQuestions: MatchQuestion[], answerIndices: number[]}}
- * The questions without `answerIndex`, and the answers in the same order
+ * The questions without `answerIndex` or `explanation`, and the answers in
+ * the same order
  * (-1 where a question has none).
  */
 export function splitAnswerKey(questions: MatchQuestion[]): {
@@ -38,6 +39,9 @@ export function splitAnswerKey(questions: MatchQuestion[]): {
     const rest = {...question};
     const raw = rest.answerIndex;
     delete rest.answerIndex;
+    // A generated question's explanation (custom-topic challenges) names
+    // the answer as often as not.
+    delete rest.explanation;
     publicQuestions.push(rest);
     answerIndices.push(
       typeof raw === "number" && Number.isInteger(raw) && raw >= 0 ? raw : -1

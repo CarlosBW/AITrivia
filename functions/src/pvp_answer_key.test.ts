@@ -30,6 +30,18 @@ describe("splitAnswerKey", () => {
     assert.deepEqual(splitAnswerKey(questions).answerIndices, [1, 0]);
   });
 
+  // A custom-topic challenge's questions come from the model with an
+  // explanation, which usually names the answer.
+  test("drops the explanation too: it gives the answer away", () => {
+    const {publicQuestions} = splitAnswerKey([{
+      q: "¿Qué museo tiene una pirámide de vidrio?",
+      options: ["Orsay", "El Louvre"],
+      answerIndex: 1,
+      explanation: "El Louvre tiene la pirámide de I. M. Pei.",
+    }]);
+    assert.equal("explanation" in publicQuestions[0], false);
+  });
+
   test("a question without a usable answer keeps -1, never a guess", () => {
     const {answerIndices} = splitAnswerKey([{q: "x", options: ["a"]}]);
     assert.deepEqual(answerIndices, [-1]);

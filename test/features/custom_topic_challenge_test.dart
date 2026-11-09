@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trivia_ia_flutter/features/versus/friend_challenge_setup_screen.dart';
 import 'package:trivia_ia_flutter/l10n/generated/app_localizations.dart';
+import 'package:trivia_ia_flutter/services/match_service.dart';
 import 'package:trivia_ia_flutter/widgets/category_name_builder.dart';
 
 /// Un reto por turnos puede usar uno de tus temas personalizados. En el
@@ -39,5 +40,16 @@ void main() {
     );
 
     expect(find.text('Dinosaurios'), findsOneWidget);
+  });
+
+  test('la app espera mas que el servidor al preparar un reto personalizado',
+      () {
+    // createAsyncPvpMatch puede tardar hasta 240 s (CUSTOM_CHALLENGE_
+    // TIMEOUT_SECONDS). Rendirse antes mostraba un error aunque el reto se
+    // creaba y se cobraba, y reintentar creaba otro.
+    expect(
+      MatchService.customChallengeTimeout,
+      greaterThan(const Duration(seconds: 240)),
+    );
   });
 }

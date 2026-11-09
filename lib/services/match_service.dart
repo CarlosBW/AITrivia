@@ -68,6 +68,13 @@ class AsyncPvpAnswer {
 }
 
 class MatchService {
+  /// How long to wait for a challenge on a custom topic, whose questions the
+  /// server writes (and may translate) for it. Longer than the function's
+  /// own limit (CUSTOM_CHALLENGE_TIMEOUT_SECONDS, 240 s): giving up first
+  /// showed an error for a challenge the server still created and charged,
+  /// and trying again made a second one.
+  static const Duration customChallengeTimeout = Duration(seconds: 250);
+
   final _db = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
   final _notificationService = NotificationService.instance;
@@ -489,10 +496,10 @@ class MatchService {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
           'createAsyncPvpMatch',
-          // A custom topic's questions are written for the challenge on
-          // the server, which takes as long as a topic level.
           options: HttpsCallableOptions(
-            timeout: Duration(seconds: aiTopicId != null ? 150 : 30),
+            timeout: aiTopicId != null
+                ? customChallengeTimeout
+                : const Duration(seconds: 30),
           ),
         )
         .call({

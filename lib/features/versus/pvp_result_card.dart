@@ -108,12 +108,14 @@ class PvpResultCard extends StatelessWidget {
     return l10n.pvpResultLostByPoints(diff.abs());
   }
 
-  /// Who gets the crown: +1 me, -1 the opponent, 0 nobody (a draw, or the
-  /// opponent's score isn't in yet).
-  int get _leader {
-    if (opponentScore == null || state == PvpResultState.waiting) return 0;
-    return (myScore - opponentScore!).sign;
-  }
+  /// Who gets the crown: +1 me, -1 the opponent, 0 nobody. Taken from the
+  /// result, not the scores: a live duel is also won when the opponent
+  /// disconnects, and an async one by forfeit, whatever the points say.
+  int get _leader => switch (state) {
+        PvpResultState.victory => 1,
+        PvpResultState.defeat => -1,
+        PvpResultState.draw || PvpResultState.waiting => 0,
+      };
 
   @override
   Widget build(BuildContext context) {

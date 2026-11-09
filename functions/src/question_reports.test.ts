@@ -7,6 +7,7 @@ import {
   cleanSelectedIndex,
   fixedReportDocId,
   questionAt,
+  releaseQuotaSlot,
   reportQuotaAfter,
 } from "./question_reports";
 
@@ -134,5 +135,29 @@ describe("cleanSelectedIndex", () => {
 
   test("an app that doesn't send it leaves it unknown", () => {
     assert.equal(cleanSelectedIndex(undefined, 4), undefined);
+  });
+});
+
+describe("releaseQuotaSlot", () => {
+  // A report email that failed to send gives its slot back.
+  test("gives back one of today's", () => {
+    assert.deepEqual(
+      releaseQuotaSlot({dayId: "2026-11-08", count: 3}, "2026-11-08"),
+      {dayId: "2026-11-08", count: 2}
+    );
+  });
+
+  test("never below zero", () => {
+    assert.deepEqual(
+      releaseQuotaSlot({dayId: "2026-11-08", count: 0}, "2026-11-08"),
+      {dayId: "2026-11-08", count: 0}
+    );
+  });
+
+  test("a slot from another day is not today's to give back", () => {
+    assert.equal(
+      releaseQuotaSlot({dayId: "2026-11-07", count: 5}, "2026-11-08"), null
+    );
+    assert.equal(releaseQuotaSlot(undefined, "2026-11-08"), null);
   });
 });

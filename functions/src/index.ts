@@ -88,10 +88,12 @@ import {
   cleanSelectedIndex,
   fixedReportDocId,
   questionAt,
+  releaseQuotaSlot,
   reportQuotaAfter,
 } from "./question_reports";
 import {expansionTarget} from "./ai_topic_expansion";
 import {
+  answeredNotification,
   crossUserNotificationId,
   staleTurnNotifications,
 } from "./notification_ids";
@@ -120,8 +122,11 @@ import {
   checkAiBudget,
 } from "./ai_budget";
 import {
+  CUSTOM_CHALLENGE_TIMEOUT_SECONDS,
   customChallengeBudgetUnits,
+  customChallengeLanguages,
   customChallengeLevel,
+  withEnglishVersion,
 } from "./custom_challenge";
 import {
   difficultyForLevel,
@@ -3007,14 +3012,29 @@ export const finalizeAsyncPvpMatch = onDocumentUpdated(
       });
     });
 
-    // The result notification says it all now: a "your turn" left from
-    // whoever finished first only repeated it, and opened the same result.
-    await Promise.all(staleTurnNotifications(
-      challengerUid, challengedUid, matchId
-    ).map(({recipientUid, id}) => db.collection("users").doc(recipientUid)
-      .collection("notifications").doc(id).delete()));
+    await clearTurnNotifications(challengerUid, challengedUid, matchId);
   }
 );
+
+/**
+ * Drops the "your turn" notifications an async match leaves once it is
+ * settled, however it was settled: the result notification says it all
+ * now, and a "your turn" only repeated it and opened the same result.
+ * @param {string} challengerUid One player.
+ * @param {string} challengedUid The other.
+ * @param {string} matchId The settled match.
+ * @return {Promise<void>} Resolves once both are gone.
+ */
+async function clearTurnNotifications(
+  challengerUid: string,
+  challengedUid: string,
+  matchId: string
+): Promise<void> {
+  await Promise.all(staleTurnNotifications(
+    challengerUid, challengedUid, matchId
+  ).map(({recipientUid, id}) => db.collection("users").doc(recipientUid)
+    .collection("notifications").doc(id).delete()));
+}
 
 // The spread the challenge UI actually offers (friend_challenge_setup_screen
 // and create_match_screen): 5/10/15 questions at 8-20 seconds each, three
@@ -3058,10 +3078,10 @@ function clampToRange(
 const MAX_WAITING_ASYNC_CHALLENGES = 10;
 
 export const createAsyncPvpMatch = onCall({
-  // A challenge on a custom topic generates its questions here, which
-  // takes as long as generating a topic level.
+  // A challenge on a custom topic generates its questions here, and
+  // translates them when the players read different languages.
   secrets: AI_SECRETS,
-  timeoutSeconds: 180,
+  timeoutSeconds: CUSTOM_CHALLENGE_TIMEOUT_SECONDS,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
@@ -3176,17 +3196,30 @@ export const createAsyncPvpMatch = onCall({
       ) :
       [];
 
-    await consumeAiBudget(
-      uid, "levels", customChallengeBudgetUnits(totalQuestions)
+    // Spanish with English alongside when the two read different
+    // languages, like the fixed bank, so each sees the questions in theirs.
+    const languages = customChallengeLanguages(
+      challengerData.languageCode, challengedSnap.data()?.languageCode
     );
+    const units = customChallengeBudgetUnits(totalQuestions);
+    const charged = await consumeAiBudget(uid, "levels", units);
 
     try {
-      questions = (await requestAiQuestionsFromClaude(
+      const generated = await requestAiQuestionsFromClaude(
         aiTopicTitle, customChallengeLevel(difficulty),
-        challengerData.languageCode,
+        languages.generateIn,
         {count: totalQuestions, avoidQuestions}
-      )).map((question) => ({...question}));
+      );
+      const english = languages.addEnglish ?
+        await translateQuestionsToEnglish(generated) : [];
+      questions = generated.map((question, i) =>
+        withEnglishVersion({...question}, english[i]));
+      if (questions.length === 0) {
+        throw new HttpsError("failed-precondition", "No questions available.");
+      }
     } catch (error) {
+      // Nothing was made, so nothing is spent.
+      await refundAiBudget(uid, "levels", units, charged.dateId);
       if (error instanceof TopicBlockedError) {
         throw topicBlockedHttpsError(challengerData.languageCode);
       }
@@ -3628,12 +3661,15 @@ export const expireStaleAsyncMatches = onSchedule(
 async function forfeitStaleAsyncMatch(
   matchRef: FirebaseFirestore.DocumentReference
 ): Promise<void> {
-  await db.runTransaction(async (tx) => {
+  // The two players, once this run settles the match; null if it didn't.
+  const settled = await db.runTransaction(async (tx): Promise<
+    {challengerUid: string; challengedUid: string} | null
+  > => {
     const snap = await tx.get(matchRef);
     const data = snap.data();
 
-    if (!data) return;
-    if (data.rewarded === true) return;
+    if (!data) return null;
+    if (data.rewarded === true) return null;
 
     const challengerFinished = data.challengerStatus === "finished";
     const challengedFinished = data.challengedStatus === "finished";
@@ -3657,7 +3693,7 @@ async function forfeitStaleAsyncMatch(
         rewarded: true,
         ...(data.status === "declined" ? {} : {status: "expired"}),
       });
-      return;
+      return null;
     }
 
     const winnerUid = String(
@@ -3666,7 +3702,7 @@ async function forfeitStaleAsyncMatch(
     const loserUid = String(
       challengerFinished ? data.challengedUid : data.challengerUid
     );
-    if (!winnerUid || !loserUid) return;
+    if (!winnerUid || !loserUid) return null;
 
     const winnerRef = db.collection("users").doc(winnerUid);
     const loserRef = db.collection("users").doc(loserUid);
@@ -3810,7 +3846,18 @@ async function forfeitStaleAsyncMatch(
       read: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    return {
+      challengerUid: String(data.challengerUid),
+      challengedUid: String(data.challengedUid),
+    };
   });
+
+  if (settled) {
+    await clearTurnNotifications(
+      settled.challengerUid, settled.challengedUid, matchRef.id
+    );
+  }
 }
 
 /**
@@ -7911,6 +7958,98 @@ async function generateIntoLockedLevel(
 }
 
 /**
+ * Gives back units [consumeAiBudget] reserved for work that then failed, on
+ * the day they were charged (a refund after midnight mustn't come out of
+ * the new day). Best effort: a failed refund only costs the player units.
+ * @param {string} uid Account that was charged.
+ * @param {AiMeter} meter The meter charged.
+ * @param {number} units How much to give back.
+ * @param {string} dateId The day [consumeAiBudget] charged.
+ * @return {Promise<void>} Resolves once refunded, or the refund failed.
+ */
+async function refundAiBudget(
+  uid: string,
+  meter: AiMeter,
+  units: number,
+  dateId: string
+): Promise<void> {
+  if (units <= 0) return;
+  const globalRef = db.collection("ai_usage").doc(dateId);
+  const refund = {
+    [meter]: admin.firestore.FieldValue.increment(-units),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  try {
+    await Promise.all([
+      globalRef.set(refund, {merge: true}),
+      globalRef.collection("users").doc(uid).set(refund, {merge: true}),
+    ]);
+  } catch (error) {
+    console.error("AI budget refund failed", uid, meter, units, error);
+  }
+}
+
+/**
+ * English versions of Spanish questions, in the same order and with the
+ * options in the same order (the answer's position is shared). A failed
+ * or partial translation leaves the questions Spanish only — the
+ * challenge still plays — so this never throws.
+ * @param {object[]} questions The questions, each `{q, options}`.
+ * @return {Promise<object[]>} One `{q, options}` per question, or an empty
+ * list when there is no usable translation.
+ */
+async function translateQuestionsToEnglish(
+  questions: {q: string; options: string[]}[]
+): Promise<{q?: unknown; options?: unknown}[]> {
+  try {
+    const client = await anthropicClient();
+    const response = await client.messages.create({
+      model: AI_MODEL,
+      max_tokens: 8000,
+      messages: [{
+        role: "user",
+        content: "Translate these trivia questions from Spanish to " +
+          "English. Keep the same number of questions in the same order, " +
+          "and translate each question's options in exactly the order " +
+          "given, one for one. Keep proper names as they are commonly " +
+          "written in English.\n\n" + JSON.stringify(
+          questions.map(({q, options}) => ({q, options}))
+        ),
+      }],
+      output_config: {format: {type: "json_schema", schema: {
+        type: "object",
+        properties: {
+          questions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                q: {type: "string"},
+                options: {type: "array", items: {type: "string"}},
+              },
+              required: ["q", "options"],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ["questions"],
+        additionalProperties: false,
+      }}},
+    });
+
+    const block = response.content.find((b) => b.type === "text");
+    if (!block) return [];
+    const parsed = JSON.parse(block.text) as {questions?: unknown};
+    return Array.isArray(parsed.questions) &&
+      parsed.questions.length === questions.length ?
+      parsed.questions as {q?: unknown; options?: unknown}[] : [];
+  } catch (error) {
+    console.error("Challenge question translation failed", error);
+    return [];
+  }
+}
+
+/**
  * Reserves [units] of a daily Claude spend meter, or throws if today's
  * budget is already gone.
  *
@@ -7927,16 +8066,16 @@ async function generateIntoLockedLevel(
  * @param {string} uid Account to charge.
  * @param {AiMeter} meter Which spend meter to charge.
  * @param {number} units How much to reserve.
- * @return {Promise<void>} Resolves once the units are reserved.
+ * @return {Promise<{dateId: string}>} The day charged, for a refund.
  */
 async function consumeAiBudget(
   uid: string,
   meter: AiMeter,
   units: number
-): Promise<void> {
-  if (units <= 0) return;
-
+): Promise<{dateId: string}> {
   const dateId = serverDateId();
+  if (units <= 0) return {dateId};
+
   const globalRef = db.collection("ai_usage").doc(dateId);
   const perUserRef = globalRef.collection("users").doc(uid);
   const caps = AI_METER_CAPS[meter];
@@ -7966,7 +8105,7 @@ async function consumeAiBudget(
     return result;
   });
 
-  if (verdict.allowed) return;
+  if (verdict.allowed) return {dateId};
 
   // Deliberately distinct messages: "the service is out" is not the
   // player's doing and shouldn't read like an accusation, whereas their
@@ -9944,8 +10083,9 @@ const reportEmailTo = defineString("REPORT_EMAIL_TO", {
 
 /**
  * Emails the team about a new question report, within the day's
- * allowance (see MAX_REPORT_EMAILS_PER_DAY). A failed send is logged, not
- * retried: the report itself is stored either way.
+ * allowance (see MAX_REPORT_EMAILS_PER_DAY). A send that fails gives its
+ * slot back and marks the report `emailFailed`, so the ones nobody heard
+ * about can be found; it isn't retried, since the report is stored anyway.
  * @param {"fixed" | "ai"} kind Which collection the report landed in.
  * @param {string} reportId The report document's id.
  * @param {StoredReport | undefined} report The report document's data.
@@ -9959,10 +10099,10 @@ async function emailQuestionReport(
   if (!report) return;
 
   const quotaRef = db.collection("question_report_email_quota").doc("daily");
+  const dayId = serverDateId();
   const allowed = await db.runTransaction(async (tx) => {
     const quota = reportQuotaAfter(
-      (await tx.get(quotaRef)).data(), serverDateId(),
-      MAX_REPORT_EMAILS_PER_DAY
+      (await tx.get(quotaRef)).data(), dayId, MAX_REPORT_EMAILS_PER_DAY
     );
     if (quota.allowed) tx.set(quotaRef, quota.next);
     return quota.allowed;
@@ -9973,26 +10113,39 @@ async function emailQuestionReport(
   }
 
   const {subject, text, html} = questionReportEmail(kind, reportId, report);
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${resendApiKey.value()}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: reportEmailFrom.value(),
-      to: [reportEmailTo.value()],
-      subject,
-      text,
-      html,
-    }),
-  });
-  if (!response.ok) {
-    console.error(
-      `Report ${reportId} email failed: ${response.status} ` +
-        `${await response.text()}`
-    );
+  let failure = "";
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey.value()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: reportEmailFrom.value(),
+        to: [reportEmailTo.value()],
+        subject,
+        text,
+        html,
+      }),
+    });
+    if (!response.ok) {
+      failure = `${response.status} ${await response.text()}`;
+    }
+  } catch (error) {
+    failure = String(error);
   }
+  if (!failure) return;
+
+  console.error(`Report ${reportId} email failed: ${failure}`);
+  const collection = kind === "ai" ? "ai_question_reports" : "question_reports";
+  await Promise.all([
+    db.runTransaction(async (tx) => {
+      const released = releaseQuotaSlot((await tx.get(quotaRef)).data(), dayId);
+      if (released) tx.set(quotaRef, released);
+    }),
+    db.collection(collection).doc(reportId).update({emailFailed: true}),
+  ]);
 }
 
 // One trigger per collection. Both only fire on creation: a player
@@ -11083,8 +11236,22 @@ export const sendFriendRequest = onCall(async (request) => {
   });
 
   // One notification per sender, ever (notifyOnce): re-sending after a
-  // rejection doesn't push again.
-  await notifyOnce(targetUid, uid, "friend_request", {});
+  // rejection doesn't push again. It does reopen the old one, though —
+  // otherwise it kept saying "rejected" while the new request waited.
+  const notificationRef = db.collection("users").doc(targetUid)
+    .collection("notifications")
+    .doc(crossUserNotificationId("friend_request", uid));
+  const existing = await notificationRef.get();
+  if (answeredNotification(existing.data())) {
+    await notificationRef.update({
+      "read": false,
+      "readAt": admin.firestore.FieldValue.delete(),
+      "data.resolution": admin.firestore.FieldValue.delete(),
+      "createdAt": admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } else {
+    await notifyOnce(targetUid, uid, "friend_request", {});
+  }
   return {sent: true};
 });
 

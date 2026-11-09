@@ -121,3 +121,20 @@ export function cleanSelectedIndex(
   if (typeof raw !== "number" || !Number.isInteger(raw)) return null;
   return raw >= 0 && raw < optionCount ? raw : null;
 }
+
+/**
+ * The counter after giving back one slot [reportQuotaAfter] took, for work
+ * that then failed (a report email Resend didn't send). Only today's: a
+ * slot taken before midnight isn't the new day's to give back.
+ * @param {object|undefined} state The stored counter, if any.
+ * @param {string} todayId Today's date id.
+ * @return {object|null} The counter to store, or null to leave it.
+ */
+export function releaseQuotaSlot(
+  state: {dayId?: unknown; count?: unknown} | undefined,
+  todayId: string
+): {dayId: string; count: number} | null {
+  if (state?.dayId !== todayId) return null;
+  const used = Math.max(0, Math.floor(Number(state.count) || 0));
+  return {dayId: todayId, count: Math.max(0, used - 1)};
+}

@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "Nueva pantalla al terminar un nivel: tus estrellas, aciertos y rango sobre los colores de tu tema.\n\nEn los duelos, la corona siempre va con quien ganó, también si el rival se desconecta.\n\nArreglos: un corte de conexión al entrar a un nivel ya no dice que no tienes vidas, y los retos con tema personalizado esperan lo necesario para prepararse.\n\nPara probar: termina un nivel; reta a un amigo con un tema personalizado."
+    "text": "Nuevo en Android: guarda tu progreso con tu cuenta de Facebook, además de Google. Así recuperas tu partida si cambias de teléfono o reinstalas la app.\n\nEstá en prueba: por ahora solo funciona para algunos testers.\n\nPara probar: en Perfil, toca Guardar mi progreso y elige Continuar con Facebook."
   },
   {
     "language": "en-US",
-    "text": "New end-of-level screen: your stars, correct answers and rank on your theme's colors.\n\nIn duels, the crown always goes to the winner, even when the opponent disconnects.\n\nFixes: a dropped connection when opening a level no longer says you're out of lives, and custom topic challenges wait long enough to get ready.\n\nTo test: finish a level; challenge a friend on a custom topic."
+    "text": "New on Android: save your progress with your Facebook account, as well as Google. Get your game back if you change phones or reinstall the app.\n\nIt's in testing: for now it only works for some testers.\n\nTo test: in Profile, tap Save my progress and choose Continue with Facebook."
   }
 ]

@@ -5,30 +5,18 @@ import {
   FIXED_LEVEL_BANDS,
   FIXED_LEVEL_QUESTION_COUNT,
   difficultyForLevel,
-  levelIndexInBand,
-  sliceForLevel,
+  fixedPoolTarget,
+  nextSeenAfterDraw,
 } from "./fixed_level_slicing";
+import {selectSessionQuestions} from "./ai_question_bank";
 
 /**
- * A pool of positions in shuffled-but-known order.
+ * A pool of question ids, as the fixed pools name them.
  * @param {number} size How many questions the pool holds.
- * @return {number[]} Positions 0..size-1.
+ * @return {string[]} q1..q{size}.
  */
-function pool(size: number): number[] {
-  return [...Array(size).keys()];
-}
-
-/**
- * The levels that read a given difficulty tier.
- * @param {number} difficulty Fixed-pool tier (1-3).
- * @return {number[]} Level numbers in that band, ascending.
- */
-function levelsOf(difficulty: number): number[] {
-  const band = FIXED_LEVEL_BANDS.find((b) => b.difficulty === difficulty);
-  assert.ok(band, `no band for difficulty ${difficulty}`);
-  const out: number[] = [];
-  for (let l = band.firstLevel; l <= band.lastLevel; l++) out.push(l);
-  return out;
+function pool(size: number): string[] {
+  return [...Array(size).keys()].map((i) => `q${i + 1}`);
 }
 
 describe("FIXED_LEVEL_BANDS", () => {
@@ -47,13 +35,18 @@ describe("FIXED_LEVEL_BANDS", () => {
     }
   });
 
-  test("the seeded pool targets are band size x questions per level", () => {
-    // 30/40/30 is what tools/seed_fill_pools.js fills each category to;
-    // if a band changes, that target has to change with it.
-    const targets = FIXED_LEVEL_BANDS.map(
-      (b) => (b.lastLevel - b.firstLevel + 1) * FIXED_LEVEL_QUESTION_COUNT
-    );
-    assert.deepEqual(targets, [30, 40, 30]);
+  test("each pool holds two passes through its band's levels", () => {
+    // 60/80/60 is what tools/seed_fill_pools.js fills each category to:
+    // twice what one run through the band asks, so a replay has fresh
+    // questions to rotate in. If a band changes, the target follows it.
+    assert.deepEqual([1, 2, 3].map(fixedPoolTarget), [60, 80, 60]);
+    for (const band of FIXED_LEVEL_BANDS) {
+      const levels = band.lastLevel - band.firstLevel + 1;
+      assert.equal(
+        fixedPoolTarget(band.difficulty),
+        levels * FIXED_LEVEL_QUESTION_COUNT * 2
+      );
+    }
   });
 });
 
@@ -73,83 +66,75 @@ describe("difficultyForLevel", () => {
   });
 });
 
-describe("levelIndexInBand", () => {
-  test("numbers each band's levels from zero", () => {
+describe("nextSeenAfterDraw", () => {
+  test("adds what was just served to what was seen", () => {
     assert.deepEqual(
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(levelIndexInBand),
-      [0, 1, 2, 0, 1, 2, 3, 0, 1, 2]
+      nextSeenAfterDraw(pool(60), ["q1", "q2"], ["q3", "q4"]),
+      ["q1", "q2", "q3", "q4"]
     );
   });
 
-  test("gives every level in a band a distinct index", () => {
-    // This is the invariant sliceForLevel depends on: two levels sharing a
-    // pool must start at different offsets, or their slates collide.
-    for (const band of FIXED_LEVEL_BANDS) {
-      const indices = levelsOf(band.difficulty).map(levelIndexInBand);
-      assert.equal(
-        new Set(indices).size,
-        indices.length,
-        `difficulty ${band.difficulty} has repeated indices`
-      );
-    }
+  test("once the whole pool is seen, a new round starts from this draw",
+    () => {
+      // Keeping only the latest draw means the next one avoids it, rather
+      // than drawing at random from a pool that is all "seen".
+      const ids = pool(20);
+      const seen = ids.slice(0, 10);
+      const drawn = ids.slice(10, 20);
+      assert.deepEqual(nextSeenAfterDraw(ids, seen, drawn), drawn);
+    });
+
+  test("ignores ids that are no longer in the pool", () => {
+    assert.deepEqual(
+      nextSeenAfterDraw(pool(5), ["q1", "gone"], ["q2"]),
+      ["q1", "q2"]
+    );
   });
 });
 
-describe("sliceForLevel", () => {
-  test("gives every level in a band a disjoint slate at target size", () => {
-    for (const band of FIXED_LEVEL_BANDS) {
-      const levels = levelsOf(band.difficulty);
-      const size = levels.length * FIXED_LEVEL_QUESTION_COUNT;
-      const seen = new Set<number>();
+describe("replaying a band's levels", () => {
+  /**
+   * Plays [times] levels of a band against one pool, as
+   * ensureSoloLevelSession does, and returns each slate.
+   * @param {number} size Pool size.
+   * @param {number} times How many levels are opened.
+   * @return {Array<Array<string>>} The questions of each run.
+   */
+  function play(size: number, times: number): string[][] {
+    const ids = pool(size);
+    let seen: string[] = [];
+    const runs: string[][] = [];
+    for (let run = 0; run < times; run++) {
+      const draw = selectSessionQuestions(
+        ids, seen, 1000 + run, FIXED_LEVEL_QUESTION_COUNT
+      );
+      runs.push(draw.questionIds);
+      seen = nextSeenAfterDraw(ids, seen, draw.questionIds);
+    }
+    return runs;
+  }
 
-      for (const level of levels) {
-        const slice = sliceForLevel(pool(size), level);
-        assert.equal(slice.length, FIXED_LEVEL_QUESTION_COUNT);
-        for (const q of slice) {
-          assert.ok(
-            !seen.has(q),
-            `level ${level} repeats question ${q} from a sibling level`
-          );
-          seen.add(q);
-        }
-      }
-
-      assert.equal(seen.size, size, "the band should consume its whole pool");
+  test("ten questions each time, never one twice in a run", () => {
+    for (const run of play(60, 8)) {
+      assert.equal(run.length, FIXED_LEVEL_QUESTION_COUNT);
+      assert.equal(new Set(run).size, run.length);
     }
   });
 
-  test("never repeats a question inside one level on a short pool", () => {
-    // Pools below the band's needs wrap around; the window is capped at the
-    // pool size so a single level still can't see the same question twice.
-    for (const size of [1, 5, 9, 13, 14]) {
-      for (let level = 1; level <= 10; level++) {
-        const slice = sliceForLevel(pool(size), level);
-        assert.equal(
-          new Set(slice).size,
-          slice.length,
-          `level ${level} on a pool of ${size} repeats a question`
-        );
-      }
-    }
+  test("a 60-question pool serves six runs before any repeat", () => {
+    // The first pass through levels 1-3 and their first replays.
+    const firstSix = play(60, 6).flat();
+    assert.equal(new Set(firstSix).size, 60);
   });
 
-  test("serves the whole pool when it is smaller than a slate", () => {
-    const slice = sliceForLevel(pool(4), 1);
-    assert.equal(slice.length, 4);
-    assert.deepEqual([...slice].sort((a, b) => a - b), [0, 1, 2, 3]);
+  test("the run after a full pass doesn't repeat the one before it", () => {
+    const runs = play(60, 7);
+    const last = new Set(runs[5]);
+    assert.ok(runs[6].every((id) => !last.has(id)));
   });
 
-  test("reads a consecutive window of the shuffled order", () => {
-    // The shuffle decides which questions; this only decides where the
-    // window starts, so the order handed in must come back untouched.
-    const order = [7, 3, 9, 1, 5, 8, 0, 2, 6, 4, 11, 10];
-    assert.deepEqual(sliceForLevel(order, 1), order.slice(0, 10));
-  });
-
-  test("levels of different bands may share an offset safely", () => {
-    // Level 1 and level 4 both start at offset 0, which is fine: they are
-    // slicing difficulty_1 and difficulty_2, never the same list.
-    assert.equal(levelIndexInBand(1), levelIndexInBand(4));
-    assert.notEqual(difficultyForLevel(1), difficultyForLevel(4));
+  test("a pool smaller than a run serves all of it", () => {
+    const [run] = play(4, 1);
+    assert.deepEqual([...run].sort(), pool(4));
   });
 });

@@ -129,8 +129,9 @@ import {
   withEnglishVersion,
 } from "./custom_challenge";
 import {
+  FIXED_LEVEL_QUESTION_COUNT,
   difficultyForLevel,
-  sliceForLevel,
+  nextSeenAfterDraw,
 } from "./fixed_level_slicing";
 import {
   MAX_PLAYER_REPORTS_PER_DAY,
@@ -4776,22 +4777,24 @@ async function loadRandomDailyQuestions(
 }
 
 /**
- * Picks a fixed-category solo level's questions, preferring the cached
- * index over reading the whole difficulty pool.
+ * Draws a fixed-category level's questions for one attempt.
  *
- * Opening a fixed level used to read every question in the pool just to
- * keep ten of them — on the single most common action in the game. The
- * index built for the Daily Challenge already records exactly where each
- * fixed question lives, so the same cached document answers "which ids are
- * in this category at this difficulty", and only the ten actually served
- * get read.
+ * Each player has a record per category and difficulty of the questions
+ * they've been served (`users/{uid}/fixed_seen/{category}_d{difficulty}`).
+ * A level draws the ones they haven't seen first, so the levels of a band
+ * never repeat each other on the first pass, and replaying a level brings
+ * in new questions instead of the same ten. The record itself is only
+ * written when the session is (see [ensureSoloLevelSession]), via
+ * [nextSeenAfterDraw].
  *
- * Both paths run the same seeded pick over ids in the pool's own document
- * order, so which path answered is invisible to the player.
- * @param {string} uid Player, part of the deterministic seed.
- * @param {string} categoryId Fixed category being played.
+ * The pool's ids come from the cached index the Daily Challenge already
+ * keeps, when it covers the category, so only the ten served are read;
+ * otherwise from the whole pool.
+ * @param {string} uid Player.
+ * @param {string} categoryId Fixed category.
  * @param {number} levelNumber Level being opened.
- * @return {Promise<object>} Chosen questions, difficulty used, and seed.
+ * @return {Promise<object>} The questions, the difficulty they came from,
+ * the draw's seed, and what to record as seen.
  */
 async function loadFixedLevelQuestions(
   uid: string,
@@ -4801,21 +4804,46 @@ async function loadFixedLevelQuestions(
   questions: Record<string, unknown>[];
   difficulty: number;
   seed: number;
+  seenRef: FirebaseFirestore.DocumentReference | null;
+  nextSeen: string[];
 }> {
   const preferred = difficultyForLevel(levelNumber);
   const difficulties = Array.from(new Set([preferred, 1, 2, 3]));
-
-  // Seeded per difficulty, not per level: the levels sharing a band have to
-  // agree on the shuffle for sliceForLevel to keep their slates disjoint.
-  // Seeding per level made each one an independent draw from the whole
-  // pool, so two levels in a band overlapped by about three questions.
-  const seedFor = (difficulty: number) =>
-    fnv1a32(`${uid}|${categoryId}|d${difficulty}`);
 
   const questionsRef = (difficulty: number) =>
     db.collection("fixed_pools").doc(categoryId)
       .collection(`difficulty_${difficulty}`).doc("pool")
       .collection("questions");
+
+  const seenRefFor = (difficulty: number) =>
+    db.collection("users").doc(uid)
+      .collection("fixed_seen").doc(`${categoryId}_d${difficulty}`);
+
+  /**
+   * Picks this attempt's ids out of a pool, unseen first.
+   * @param {number} difficulty The pool's tier.
+   * @param {string[]} poolIds Ids in that pool.
+   * @return {Promise<object>} The draw and what to record after it.
+   */
+  const drawFrom = async (difficulty: number, poolIds: string[]) => {
+    const seenRef = seenRefFor(difficulty);
+    const seenIds = (
+      ((await seenRef.get()).data()?.questionIds as unknown[]) || []
+    ).map((id) => String(id));
+    // Varies per attempt, so replays of an exhausted pool differ too.
+    const seed = fnv1a32(
+      `${uid}|${categoryId}|d${difficulty}|${seenIds.length}|${Date.now()}`
+    );
+    const draw = selectSessionQuestions(
+      poolIds, seenIds, seed, FIXED_LEVEL_QUESTION_COUNT
+    );
+    return {
+      ids: draw.questionIds,
+      seed,
+      seenRef,
+      nextSeen: nextSeenAfterDraw(poolIds, seenIds, draw.questionIds),
+    };
+  };
 
   // Only a category the index covers *completely* can be answered from it.
   // A category the entry cap cut short reports empty for the difficulties
@@ -4835,19 +4863,19 @@ async function loadFixedLevelQuestions(
 
     if (ids.length === 0) continue;
 
-    const seed = seedFor(difficulty);
-    const order = seededShuffleIndices(ids.length, seed);
-    const picked = sliceForLevel(order, levelNumber).map((i) => ids[i]);
-
+    const drawn = await drawFrom(difficulty, ids);
     const docs = await db.getAll(
-      ...picked.map((id) => questionsRef(difficulty).doc(id))
+      ...drawn.ids.map((id) => questionsRef(difficulty).doc(id))
     );
     const questions = docs
       .filter((doc) => doc.exists)
       .map((doc) => doc.data() as Record<string, unknown>);
 
-    if (questions.length === picked.length) {
-      return {questions, difficulty, seed};
+    if (questions.length === drawn.ids.length) {
+      return {
+        questions, difficulty, seed: drawn.seed,
+        seenRef: drawn.seenRef, nextSeen: drawn.nextSeen,
+      };
     }
 
     // Fewer questions back than ids asked for means the index outlived the
@@ -4866,15 +4894,21 @@ async function loadFixedLevelQuestions(
     const snap = await questionsRef(difficulty).get();
     if (snap.empty) continue;
 
-    const seed = seedFor(difficulty);
-    const order = seededShuffleIndices(snap.docs.length, seed);
-    const questions = sliceForLevel(order, levelNumber)
-      .map((i) => snap.docs[i].data());
+    const byId = new Map(snap.docs.map((doc) => [doc.id, doc.data()]));
+    const drawn = await drawFrom(difficulty, [...byId.keys()]);
+    const questions = drawn.ids
+      .map((id) => byId.get(id))
+      .filter((q): q is FirebaseFirestore.DocumentData => q !== undefined);
 
-    return {questions, difficulty, seed};
+    return {
+      questions, difficulty, seed: drawn.seed,
+      seenRef: drawn.seenRef, nextSeen: drawn.nextSeen,
+    };
   }
 
-  return {questions: [], difficulty: 0, seed: seedFor(preferred)};
+  return {
+    questions: [], difficulty: 0, seed: 0, seenRef: null, nextSeen: [],
+  };
 }
 
 // How long after the round started an answer is still accepted. The app
@@ -6276,8 +6310,9 @@ export const ensureSoloLevelSession = onCall({
     return {created: true};
   }
 
-  const {questions: chosen, difficulty: usedDifficulty, seed} =
-    await loadFixedLevelQuestions(uid, categoryId, levelNumber);
+  const {
+    questions: chosen, difficulty: usedDifficulty, seed, seenRef, nextSeen,
+  } = await loadFixedLevelQuestions(uid, categoryId, levelNumber);
 
   if (chosen.length === 0) {
     throw await noLevelQuestionsError(uid);
@@ -6298,6 +6333,15 @@ export const ensureSoloLevelSession = onCall({
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     tx.set(answerKeyRef(sessionRef), {answerIndices: split.answerIndices});
+
+    // Recorded with the session, so a draw nobody plays (the transaction
+    // found a session already there) doesn't count as seen.
+    if (seenRef) {
+      tx.set(seenRef, {
+        questionIds: nextSeen,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
   });
 
   return {created: true};

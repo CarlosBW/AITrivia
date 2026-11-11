@@ -4,11 +4,10 @@
  * daily_challenge_dates.ts) so it can be unit-tested without pulling in
  * firebase-admin — nothing here touches Firestore or the clock.
  *
- * Two questions live here, and they have to agree: which difficulty pool a
- * level reads, and which slice of that pool is its own. They used to be
- * separate functions each repeating the band boundaries, with a comment
- * asking future readers to keep them in step. Both now derive from
- * [FIXED_LEVEL_BANDS], so a band can only be changed in one place.
+ * Which difficulty pool a level reads, how big that pool should be, and
+ * how a player's record of what they've seen in it moves forward — all
+ * derived from [FIXED_LEVEL_BANDS], so a band can only be changed in one
+ * place.
  */
 
 /** Questions served per fixed-category solo level. */
@@ -17,10 +16,7 @@ export const FIXED_LEVEL_QUESTION_COUNT = 10;
 /**
  * The difficulty bands of the ten solo levels, in order.
  *
- * Pool sizes are sized to these bands: a band of N levels needs
- * N * FIXED_LEVEL_QUESTION_COUNT questions for its levels to get wholly
- * disjoint slates, which is where the 30/40/30 target per category comes
- * from.
+ * Pool sizes follow these bands — see [fixedPoolTarget].
  */
 export const FIXED_LEVEL_BANDS: ReadonlyArray<{
   difficulty: number;
@@ -55,41 +51,46 @@ export function difficultyForLevel(levelNumber: number): number {
   return bandFor(levelNumber).difficulty;
 }
 
+/** How many runs through a band's levels each pool can serve fresh. */
+const FIXED_POOL_PASSES = 2;
+
 /**
- * Where a level sits inside its difficulty band. Levels 1-3, 4-7 and 8-10
- * all draw from the same pool, so this is what tells them apart.
- * @param {number} levelNumber The solo level number (1-based).
- * @return {number} 0-based position of the level within its band.
+ * How many questions a difficulty's pool should hold: two runs through the
+ * levels of its band (60/80/60), so a replay rotates in questions the
+ * player hasn't seen instead of serving the same ten again. This is what
+ * tools/seed_fill_pools.js fills each category to.
+ * @param {number} difficulty Fixed-pool tier (1-3).
+ * @return {number} Questions the pool should hold.
  */
-export function levelIndexInBand(levelNumber: number): number {
-  return levelNumber - bandFor(levelNumber).firstLevel;
+export function fixedPoolTarget(difficulty: number): number {
+  const band = FIXED_LEVEL_BANDS.find((b) => b.difficulty === difficulty) ??
+    FIXED_LEVEL_BANDS[FIXED_LEVEL_BANDS.length - 1];
+  const levels = band.lastLevel - band.firstLevel + 1;
+  return levels * FIXED_LEVEL_QUESTION_COUNT * FIXED_POOL_PASSES;
 }
 
 /**
- * Takes this level's slate out of a pool already shuffled for its band.
+ * What a player has seen of a pool after one more level is drawn from it.
  *
- * Every level in a band shuffles the pool identically and then reads its
- * own consecutive window of it, so the bands' pool sizes (30/40/30 for
- * bands of 3/4/3 levels) hand each level ten questions none of its
- * siblings get. A pool smaller than the band needs wraps around instead of
- * running short — overlapping again, but only as much as it has to, and
- * never repeating a question inside one level since the window is at most
- * as long as the pool.
- * @param {number[]} order Shuffled pool positions.
- * @param {number} levelNumber Level being opened.
- * @return {number[]} Pool positions for this level, in order.
+ * Levels draw unseen questions first (selectSessionQuestions), so the first
+ * pass through a band never repeats one and a replay brings in new ones.
+ * Once the whole pool has been seen, a new round starts from the draw just
+ * served, so the next level avoids exactly those ten rather than picking at
+ * random from a pool that is all "seen". Ids no longer in the pool are
+ * dropped, so a question deleted from it doesn't linger here.
+ * @param {string[]} poolIds Ids currently in the pool.
+ * @param {string[]} seenIds What the player had seen before this draw.
+ * @param {string[]} drawnIds What this level serves.
+ * @return {string[]} What to store as seen.
  */
-export function sliceForLevel(
-  order: number[], levelNumber: number
-): number[] {
-  const total = order.length;
-  const count = Math.min(FIXED_LEVEL_QUESTION_COUNT, total);
-  const start =
-    (levelIndexInBand(levelNumber) * FIXED_LEVEL_QUESTION_COUNT) % total;
-
-  const picked: number[] = [];
-  for (let i = 0; i < count; i++) {
-    picked.push(order[(start + i) % total]);
+export function nextSeenAfterDraw(
+  poolIds: string[], seenIds: string[], drawnIds: string[]
+): string[] {
+  const inPool = new Set(poolIds);
+  const seen = [...new Set([...seenIds, ...drawnIds])]
+    .filter((id) => inPool.has(id));
+  if (seen.length >= inPool.size) {
+    return drawnIds.filter((id) => inPool.has(id));
   }
-  return picked;
+  return seen;
 }

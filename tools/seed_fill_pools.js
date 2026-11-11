@@ -1,11 +1,16 @@
 /**
- * Rellena los pools de las categorias fijas hasta 30/40/30 (100 por categoria).
+ * Rellena los pools de las categorias fijas hasta 60/80/60 (200 por categoria).
  *
- * El objetivo por dificultad sale de FIXED_LEVEL_BANDS en
- * functions/src/fixed_level_slicing.ts:
- *   niveles 1-3  -> difficulty_1  (3 niveles x 10 preguntas = 30)
- *   niveles 4-7  -> difficulty_2  (4 niveles x 10 preguntas = 40)
- *   niveles 8-10 -> difficulty_3  (3 niveles x 10 preguntas = 30)
+ * El objetivo por dificultad es fixedPoolTarget() en
+ * functions/src/fixed_level_slicing.ts: dos pasadas por los niveles de cada
+ * banda, para que repetir un nivel traiga preguntas que no has visto.
+ *   niveles 1-3  -> difficulty_1  (3 niveles x 10 preguntas x 2 = 60)
+ *   niveles 4-7  -> difficulty_2  (4 niveles x 10 preguntas x 2 = 80)
+ *   niveles 8-10 -> difficulty_3  (3 niveles x 10 preguntas x 2 = 60)
+ *
+ * Las preguntas salen de `fill_pools/` (las que llevaron los pools a
+ * 30/40/30, ya publicadas) y de `expand_pools/` (las de 30/40/30 a
+ * 60/80/60, con su ingles en `en`). Las que ya estan en el pool se saltan.
  *
  * APPEND-ONLY: nunca sobrescribe una pregunta existente. Calcula el primer id
  * libre leyendo el pool y aborta si detectara una colision. Por defecto corre
@@ -18,14 +23,29 @@
 const admin = require("firebase-admin");
 const path = require("path");
 
-const DATA = require("./fill_pools_data");
+const fs = require("fs");
+const FILL = require("./fill_pools_data");
+
+// fill_pools/ y expand_pools/ juntos, por categoria y dificultad.
+const DATA = {};
+for (const cat of Object.keys(FILL)) {
+  const expandFile = path.join(__dirname, "expand_pools", `${cat}.js`);
+  const expand = fs.existsSync(expandFile) ? require(expandFile) : {};
+  DATA[cat] = {};
+  for (const d of [1, 2, 3]) {
+    DATA[cat][`d${d}`] = [
+      ...(FILL[cat][`d${d}`] || []),
+      ...(expand[`d${d}`] || []),
+    ];
+  }
+}
 const {validateQuestion} = require("./question_shape");
 
 const COMMIT = process.argv.includes("--commit");
 const onlyArg = process.argv.find((a) => a.startsWith("--only="));
 const ONLY = onlyArg ? onlyArg.split("=")[1] : null;
 
-const TARGET = {1: 30, 2: 40, 3: 30};
+const TARGET = {1: 60, 2: 80, 3: 60};
 
 admin.initializeApp({
   credential: admin.credential.cert(
@@ -53,6 +73,10 @@ async function run() {
       const list = DATA[cat][`d${d}`] || [];
       list.forEach((q, i) => {
         problems.push(...validateQuestion(q, `${cat}/d${d}[${i}]`));
+        if (q.en && (!Array.isArray(q.en.options) ||
+            q.en.options.length !== q.options.length || !q.en.q)) {
+          problems.push(`${cat}/d${d}[${i}]: el ingles no calza con las opciones`);
+        }
         const key = q.q.trim().toLowerCase();
         if (seenTexts.has(key)) {
           problems.push(`${cat}/d${d}[${i}]: duplicada de ${seenTexts.get(key)}`);
@@ -84,15 +108,11 @@ async function run() {
         return n ? Math.max(m, parseInt(n[1], 10)) : m;
       }, 0);
 
-      const incoming = DATA[cat][`d${d}`] || [];
+      // Las que ya estan publicadas (las de fill_pools/, que llevaron los
+      // pools a 30/40/30) se saltan: solo entran las que faltan.
+      const incoming = (DATA[cat][`d${d}`] || [])
+        .filter((q) => !existingTexts.has(q.q.trim().toLowerCase()));
       const need = Math.max(0, TARGET[d] - snap.size);
-
-      // Choca con una pregunta ya publicada?
-      for (const q of incoming) {
-        if (existingTexts.has(q.q.trim().toLowerCase())) {
-          problems.push(`${cat}/d${d}: "${q.q}" ya existe en el pool`);
-        }
-      }
 
       if (incoming.length !== need) {
         problems.push(
@@ -152,6 +172,8 @@ async function run() {
         q: q.q,
         options: q.options,
         answerIndex: q.answerIndex,
+        // Mismo orden que las opciones en espanol: answerIndex vale para ambas.
+        ...(q.en ? {q_en: q.en.q, options_en: q.en.options} : {}),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Facebook sign-in (linking the anonymous account, see
+     account_link_service.dart). The App ID and client token come from the
+     Meta app's Settings; neither is a secret. The App Secret is not here:
+     it only goes into Firebase Authentication. -->
+<resources>
+    <string name="facebook_app_id" translatable="false">2330689954417573</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb2330689954417573</string>
+    <string name="facebook_client_token" translatable="false">f856585c5c7c0777f58b26cc4ea5e550</string>
+</resources>

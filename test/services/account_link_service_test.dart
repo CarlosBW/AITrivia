@@ -113,4 +113,80 @@ void main() {
       );
     });
   });
+
+  group('providersFor', () {
+    test('Google everywhere, Apple only on its own devices', () {
+      expect(providersFor(onApple: false, facebookReady: false),
+          [AccountProvider.google]);
+      expect(providersFor(onApple: true, facebookReady: false),
+          [AccountProvider.google, AccountProvider.apple]);
+    });
+
+    test('Facebook only once it is configured', () {
+      expect(providersFor(onApple: false, facebookReady: true),
+          [AccountProvider.google, AccountProvider.facebook]);
+      expect(providersFor(onApple: true, facebookReady: true), [
+        AccountProvider.google,
+        AccountProvider.facebook,
+        AccountProvider.apple,
+      ]);
+    });
+  });
+
+  group('providerFromIds', () {
+    test('names the sign-in a game is saved under', () {
+      expect(providerFromIds({'google.com'}), AccountProvider.google);
+      expect(providerFromIds({'apple.com'}), AccountProvider.apple);
+      expect(providerFromIds({'facebook.com'}), AccountProvider.facebook);
+    });
+
+    test('a guest has none', () {
+      expect(providerFromIds({}), isNull);
+      expect(providerFromIds({'anonymous'}), isNull);
+    });
+  });
+
+  group('facebookCredential', () {
+    // Android and iOS with tracking allowed give a classic access token.
+    test('a classic token goes in as an access token', () {
+      final credential = facebookCredential(
+        token: 'access-123',
+        limited: false,
+        rawNonce: 'ignored',
+      );
+      expect(credential.providerId, 'facebook.com');
+      expect(credential.accessToken, 'access-123');
+      expect(credential.idToken, isNull);
+    });
+
+    // iOS without tracking gives a limited OIDC token, which Firebase only
+    // takes as an id token with the nonce it was asked for.
+    test('a limited token goes in as an id token with its raw nonce', () {
+      final credential = facebookCredential(
+        token: 'jwt-456',
+        limited: true,
+        rawNonce: 'raw-nonce',
+      );
+      expect(credential.providerId, 'facebook.com');
+      expect(credential.idToken, 'jwt-456');
+      expect(credential.rawNonce, 'raw-nonce');
+      expect(credential.accessToken, isNull);
+    });
+  });
+
+  group('nonces', () {
+    test('a fresh nonce each time, long enough to guess', () {
+      final a = newRawNonce();
+      final b = newRawNonce();
+      expect(a, isNot(b));
+      expect(a.length, greaterThanOrEqualTo(32));
+    });
+
+    test('Facebook is sent the SHA-256 of the raw nonce, in hex', () {
+      expect(
+        sha256Hex('abc'),
+        'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+      );
+    });
+  });
 }

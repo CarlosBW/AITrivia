@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'Continuar con Apple'**
   String get saveProgressWithApple;
 
+  /// No description provided for @saveProgressWithFacebook.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar con Facebook'**
+  String get saveProgressWithFacebook;
+
   /// No description provided for @saveProgressSaved.
   ///
   /// In es, this message translates to:
@@ -631,6 +637,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Progreso guardado con Apple'**
   String get profileAccountSavedApple;
+
+  /// No description provided for @profileAccountSavedFacebook.
+  ///
+  /// In es, this message translates to:
+  /// **'Progreso guardado con Facebook'**
+  String get profileAccountSavedFacebook;
 
   /// No description provided for @usernamePickerHaveAccount.
   ///

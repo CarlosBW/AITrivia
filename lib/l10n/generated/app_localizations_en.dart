@@ -294,6 +294,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveProgressWithApple => 'Continue with Apple';
 
   @override
+  String get saveProgressWithFacebook => 'Continue with Facebook';
+
+  @override
   String get saveProgressSaved => 'Done, your progress is saved.';
 
   @override
@@ -342,6 +345,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileAccountSavedApple => 'Progress saved with Apple';
+
+  @override
+  String get profileAccountSavedFacebook => 'Progress saved with Facebook';
 
   @override
   String get usernamePickerHaveAccount => 'I already have an account';

@@ -1687,11 +1687,11 @@ class _AccountSectionState extends State<_AccountSection> {
             Icons.cloud_done_outlined,
             color: context.appColors.success,
           ),
-          title: Text(
-            provider == AccountProvider.apple
-                ? l10n.profileAccountSavedApple
-                : l10n.profileAccountSavedGoogle,
-          ),
+          title: Text(switch (provider) {
+            AccountProvider.google => l10n.profileAccountSavedGoogle,
+            AccountProvider.facebook => l10n.profileAccountSavedFacebook,
+            AccountProvider.apple => l10n.profileAccountSavedApple,
+          }),
           subtitle: email == null ? null : Text(email),
         ),
       );

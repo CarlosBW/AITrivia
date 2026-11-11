@@ -1,11 +1,80 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A sign-in the player can attach their game to.
-enum AccountProvider { google, apple }
+enum AccountProvider { google, facebook, apple }
+
+/// Whether Facebook sign-in is set up: its App ID and client token are in
+/// the Android and iOS config (strings.xml, Info.plist) and Facebook is
+/// enabled in Firebase Authentication. Until then it isn't offered.
+const bool kFacebookLoginReady = true;
+
+/// Whether to offer it on iOS too. Off until Meta verifies the business:
+/// until then the Meta app stays in development mode and only its own
+/// roles can sign in, so App Review would find a button that fails.
+const bool kFacebookLoginOnIos = false;
+
+/// The sign-ins to offer, in the order shown. Apple is limited to its own
+/// devices: there it is native, and App Store review requires it wherever
+/// another sign-in is offered.
+List<AccountProvider> providersFor({
+  required bool onApple,
+  required bool facebookReady,
+}) {
+  return [
+    AccountProvider.google,
+    if (facebookReady) AccountProvider.facebook,
+    if (onApple) AccountProvider.apple,
+  ];
+}
+
+/// The sign-in a game is saved under, from the account's provider ids.
+AccountProvider? providerFromIds(Set<String> ids) {
+  if (ids.contains('google.com')) return AccountProvider.google;
+  if (ids.contains('facebook.com')) return AccountProvider.facebook;
+  if (ids.contains('apple.com')) return AccountProvider.apple;
+  return null;
+}
+
+/// The Firebase credential for a Facebook login.
+///
+/// Android, and iOS when the player allows tracking, give a classic access
+/// token. iOS otherwise gives a "limited" OIDC token, which Firebase only
+/// accepts as an id token together with the raw nonce whose hash the login
+/// was asked for.
+OAuthCredential facebookCredential({
+  required String token,
+  required bool limited,
+  required String rawNonce,
+}) {
+  if (limited) {
+    return OAuthProvider('facebook.com').credential(
+      idToken: token,
+      rawNonce: rawNonce,
+    );
+  }
+  return FacebookAuthProvider.credential(token);
+}
+
+/// A random nonce for a limited login: 32 bytes, URL-safe.
+String newRawNonce() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+  return base64UrlEncode(bytes).replaceAll('=', '');
+}
+
+/// SHA-256 of [input] in lowercase hex — what Facebook is sent as the
+/// nonce, so the raw one never leaves the app until Firebase checks it.
+String sha256Hex(String input) =>
+    sha256.convert(utf8.encode(input)).toString();
 
 /// Why attaching a sign-in to the current account did not go through.
 enum LinkFailure {
@@ -77,8 +146,9 @@ class LinkFoundSavedGame extends LinkOutcome {
   final AuthCredential credential;
 }
 
-/// Ties the anonymous account every player starts with to a Google or Apple
-/// sign-in, so the game survives a reinstall or a new phone.
+/// Ties the anonymous account every player starts with to a Google,
+/// Facebook or Apple sign-in, so the game survives a reinstall or a new
+/// phone.
 ///
 /// Linking keeps the same uid, so nothing is migrated: every document the
 /// player owns is already under it.
@@ -100,28 +170,27 @@ class AccountLinkService {
   /// guest already deleted, the saved account not signed in.
   bool get hasSession => _user != null;
 
-  /// What this platform can offer. Apple is limited to its own devices:
-  /// there it is native, and App Store review requires it wherever another
-  /// sign-in is offered.
+  /// What this platform can offer — see [providersFor].
   List<AccountProvider> get availableProviders {
     final onApple = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.macOS);
+    final facebookHere = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            (kFacebookLoginOnIos &&
+                defaultTargetPlatform == TargetPlatform.iOS));
 
-    return [
-      AccountProvider.google,
-      if (onApple) AccountProvider.apple,
-    ];
+    return providersFor(
+      onApple: onApple,
+      facebookReady: kFacebookLoginReady && facebookHere,
+    );
   }
 
   /// The sign-in this game is saved under, or null for a guest.
   AccountProvider? get linkedProvider {
     final ids = _user?.providerData.map((info) => info.providerId).toSet() ??
         const <String>{};
-
-    if (ids.contains('google.com')) return AccountProvider.google;
-    if (ids.contains('apple.com')) return AccountProvider.apple;
-    return null;
+    return providerFromIds(ids);
   }
 
   /// The address shown to the player so they know which account holds
@@ -155,6 +224,10 @@ class AccountLinkService {
           attempted = await _googleCredential();
           if (attempted == null) return const LinkCancelled();
           await user.linkWithCredential(attempted);
+        case AccountProvider.facebook:
+          attempted = await _facebookCredential();
+          if (attempted == null) return const LinkCancelled();
+          await user.linkWithCredential(attempted);
         case AccountProvider.apple:
           await user.linkWithProvider(AppleAuthProvider());
       }
@@ -166,7 +239,8 @@ class AccountLinkService {
         case LinkFailure.alreadyInUse:
           // Firebase hands back a credential good for signing in to the
           // account that owns it. Apple's is single-use, so the one from
-          // the failed attempt cannot stand in for it; Google's can.
+          // the failed attempt cannot stand in for it; Google's and
+          // Facebook's can.
           final existing = e.credential ?? attempted;
           if (existing == null) rethrow;
           return LinkFoundSavedGame(existing);
@@ -206,6 +280,38 @@ class AccountLinkService {
   Future<void> dismissReminder() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_dismissedAtKey, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  /// Runs Facebook's login. Null when the player backs out.
+  ///
+  /// Always asks for a limited login: on iOS that skips the tracking
+  /// prompt (and the ad tracking it would allow); Android ignores it and
+  /// gives a classic token.
+  Future<AuthCredential?> _facebookCredential() async {
+    final rawNonce = newRawNonce();
+    final result = await FacebookAuth.instance.login(
+      permissions: const ['email', 'public_profile'],
+      loginTracking: LoginTracking.limited,
+      nonce: sha256Hex(rawNonce),
+    );
+
+    switch (result.status) {
+      case LoginStatus.cancelled:
+        return null;
+      case LoginStatus.success:
+        final token = result.accessToken;
+        if (token == null) {
+          throw StateError('Facebook login returned no token.');
+        }
+        return facebookCredential(
+          token: token.tokenString,
+          limited: token is LimitedToken,
+          rawNonce: rawNonce,
+        );
+      case LoginStatus.failed:
+      case LoginStatus.operationInProgress:
+        throw StateError('Facebook login failed: ${result.message}');
+    }
   }
 
   /// Runs Google's account picker. Null when the player closes it.

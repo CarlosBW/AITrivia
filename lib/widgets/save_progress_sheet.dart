@@ -150,14 +150,18 @@ class _SaveProgressSheetState extends State<_SaveProgressSheet> {
             for (final provider in providers) ...[
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _link(provider),
-                icon: provider == AccountProvider.apple
-                    ? const Icon(Icons.apple)
-                    : const GoogleLogo(),
-                label: Text(
-                  provider == AccountProvider.apple
-                      ? l10n.saveProgressWithApple
-                      : l10n.saveProgressWithGoogle,
-                ),
+                icon: switch (provider) {
+                  AccountProvider.google => const GoogleLogo(),
+                  // Facebook's own blue, as its brand guidelines ask.
+                  AccountProvider.facebook =>
+                    const Icon(Icons.facebook, color: Color(0xFF1877F2)),
+                  AccountProvider.apple => const Icon(Icons.apple),
+                },
+                label: Text(switch (provider) {
+                  AccountProvider.google => l10n.saveProgressWithGoogle,
+                  AccountProvider.facebook => l10n.saveProgressWithFacebook,
+                  AccountProvider.apple => l10n.saveProgressWithApple,
+                }),
               ),
               const SizedBox(height: 10),
             ],

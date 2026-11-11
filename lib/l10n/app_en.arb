@@ -205,7 +205,6 @@
       "opponent": {"type": "String"}
     }
   },
-  "profileScore": "Score",
   "profileRanked": "Ranked",
   "profileCasual": "Casual",
   "profileErrorLoading": "Error loading profile:\n{error}",

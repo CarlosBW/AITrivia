@@ -461,9 +461,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get profileScore => 'Puntaje';
-
-  @override
   String get profileRanked => 'Clasificado';
 
   @override

@@ -461,9 +461,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get profileScore => 'Score';
-
-  @override
   String get profileRanked => 'Ranked';
 
   @override

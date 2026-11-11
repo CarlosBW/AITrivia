@@ -228,7 +228,6 @@
       "opponent": {"type": "String"}
     }
   },
-  "profileScore": "Puntaje",
   "profileRanked": "Clasificado",
   "profileCasual": "Casual",
   "profileErrorLoading": "Error cargando perfil:\n{error}",

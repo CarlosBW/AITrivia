@@ -854,12 +854,6 @@ abstract class AppLocalizations {
   /// **'vs {opponent}'**
   String profileVsOpponent(String opponent);
 
-  /// No description provided for @profileScore.
-  ///
-  /// In es, this message translates to:
-  /// **'Puntaje'**
-  String get profileScore;
-
   /// No description provided for @profileRanked.
   ///
   /// In es, this message translates to:

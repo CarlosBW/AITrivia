@@ -14,6 +14,7 @@ import '../../services/theme_service.dart';
 import '../../services/avatar_service.dart';
 import '../../services/account_link_service.dart';
 import '../achievements/achievements_screen.dart';
+import 'match_history_card.dart';
 import '../../widgets/buy_coins_button.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
@@ -1410,39 +1411,6 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
     }
   }
 
-  IconData _resultIcon(String result) {
-    switch (result) {
-      case 'victory':
-        return Icons.emoji_events;
-      case 'defeat':
-        return Icons.close;
-      case 'draw':
-        return Icons.handshake;
-      default:
-        return Icons.sports_esports;
-    }
-  }
-
-  Color _resultColor(BuildContext context, String result) {
-    switch (result) {
-      case 'victory':
-        return context.appColors.success;
-      case 'defeat':
-        return context.appColors.danger;
-      case 'draw':
-      default:
-        return Theme.of(context).colorScheme.onSurfaceVariant;
-    }
-  }
-
-  String _deltaText(dynamic value) {
-    final delta =
-        value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
-    if (delta == null) return '';
-    if (delta > 0) return '+$delta MMR';
-    return '$delta MMR';
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1487,141 +1455,33 @@ class _RecentMatchHistoryState extends State<_RecentMatchHistory> {
           children: docs.map((doc) {
             final data = doc.data();
             final result = (data['result'] ?? 'match').toString();
-            final opponent = (data['opponentName'] ?? AppLocalizations.of(context).asyncMatchPlayOpponentFallback).toString();
+            final opponent = (data['opponentName'] ??
+                    l10n.asyncMatchPlayOpponentFallback)
+                .toString();
             final opponentUid = (data['opponentUid'] ?? '').toString();
-            final myScore = ((data['myScore'] ?? 0) as num).toInt();
-            final opponentScore = ((data['opponentScore'] ?? 0) as num).toInt();
             final ranked = data['ranked'] == true;
-            final deltaText = ranked ? _deltaText(data['ratingDelta']) : '';
-            final color = _resultColor(context, result);
-            final resultLabel = _resultText(l10n, result);
+            final delta = data['ratingDelta'];
+            final createdAt = data['createdAt'];
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(context.radii.md),
-                boxShadow: context.surfaces.shadowsOr(null),
-                border: context.surfaces.borderOr(Border.all(
-                  color: color.withValues(alpha: 0.30),
-                )),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        _resultIcon(result),
-                        color: color,
-                        size: 26,
+            return MatchHistoryCard(
+              result: result,
+              resultLabel: _resultText(l10n, result),
+              opponentLine: l10n.profileVsOpponent(opponent),
+              myScore: ((data['myScore'] ?? 0) as num).toInt(),
+              opponentScore: ((data['opponentScore'] ?? 0) as num).toInt(),
+              modeLabel: ranked ? l10n.profileRanked : l10n.profileCasual,
+              ratingDelta: ranked && delta is num ? delta.toInt() : null,
+              playedAt: createdAt is Timestamp ? createdAt.toDate() : null,
+              moreTooltip: l10n.playerActionsReport,
+              // Report or block the opponent of a finished match.
+              onMore: opponentUid.isEmpty
+                  ? null
+                  : () => showPlayerActions(
+                        context,
+                        uid: opponentUid,
+                        name: opponent,
+                        matchId: doc.id,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          resultLabel.toUpperCase(),
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      // Report or block the opponent of a finished match.
-                      if (opponentUid.isNotEmpty)
-                        IconButton(
-                          tooltip: l10n.playerActionsReport,
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.more_vert),
-                          onPressed: () => showPlayerActions(
-                            context,
-                            uid: opponentUid,
-                            name: opponent,
-                            matchId: doc.id,
-                          ),
-                        ),
-                      if (deltaText.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(context.radii.pill),
-                          ),
-                          child: Text(
-                            deltaText,
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.profileVsOpponent(opponent),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(context.radii.sm),
-                            border: context.surfaces.borderOr(null),
-                            boxShadow: context.surfaces.shadowsOr(null),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                l10n.profileScore,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$myScore - $opponentScore',
-                                style: context.heading(22),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(context.radii.sm),
-                          border: context.surfaces.borderOr(null),
-                          boxShadow: context.surfaces.shadowsOr(null),
-                        ),
-                        child: Text(
-                          ranked ? l10n.profileRanked : l10n.profileCasual,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
             );
           }).toList(),
         );

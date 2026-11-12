@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "Revisión general antes del lanzamiento: al repetir un nivel te tocan preguntas nuevas, la app y los niveles abren más rápido y las compras de monedas se acreditan bien.\n\nPvP: las partidas abandonadas se cierran solas y la revancha ya no se queda colgada. La liga semanal ahora baja 25% por semana.\n\nPara probar: comprar monedas, repetir un nivel, abrir la app sin conexión, tocar una notificación y jugar PvP en vivo."
+    "text": "Todas las pantallas de preguntas se ven igual: el tema de la semana, el PvP en vivo y los retos por turnos usan ahora el mismo diseño que los niveles.\n\nIncluye la revisión general de la 1.0.16: preguntas nuevas al repetir un nivel, apertura más rápida, compras de monedas y arreglos de PvP.\n\nPara probar: jugar una ronda del tema de la semana, una partida PvP en vivo y un reto por turnos."
   },
   {
     "language": "en-US",
-    "text": "A full pre-launch pass: replaying a level brings new questions, the app and levels open faster, and coin purchases are credited correctly.\n\nPvP: abandoned matches close on their own and rematches no longer hang. The weekly league now drops 25% each week.\n\nTo test: buy coins, replay a level, open the app offline, tap a notification and play live PvP."
+    "text": "Every question screen now looks the same: the weekly topic, live PvP and turn-based challenges use the same design as levels.\n\nIncludes the 1.0.16 pre-launch pass: new questions when replaying a level, faster opening, coin purchases and PvP fixes.\n\nTo test: play a weekly topic round, a live PvP match and a turn-based challenge."
   }
 ]

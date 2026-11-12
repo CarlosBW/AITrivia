@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -57,13 +58,36 @@ class NotificationService {
     }
   }
 
-  /// Fires when the player opens the app by tapping a push: the one that
-  /// launched it, then any tapped while it runs in the background. Tapping
-  /// one used to just open the app wherever it was.
-  Stream<RemoteMessage> pushTaps() async* {
-    final initial = await FirebaseMessaging.instance.getInitialMessage();
-    if (initial != null) yield initial;
-    yield* FirebaseMessaging.onMessageOpenedApp;
+  final _taps = StreamController<Map<String, dynamic>>.broadcast();
+  bool _tapsWired = false;
+
+  /// Fires with a notification's data when the player taps it: the push
+  /// that launched the app, any tapped while it runs in the background,
+  /// and the ones shown while it is open (see [localNotificationTapped]).
+  /// Tapping one used to just open the app wherever it was.
+  Stream<Map<String, dynamic>> pushTaps() {
+    if (!_tapsWired) {
+      _tapsWired = true;
+      FirebaseMessaging.instance.getInitialMessage().then((initial) {
+        if (initial != null) _taps.add(initial.data);
+      }).catchError((Object _) {});
+      FirebaseMessaging.onMessageOpenedApp.listen(
+        (message) => _taps.add(message.data),
+        onError: (Object _) {},
+      );
+    }
+    return _taps.stream;
+  }
+
+  /// A notification this app displayed itself was tapped.
+  ///
+  /// A push that arrives while the app is open isn't shown by the system:
+  /// the app shows it as a local notification, and those had no tap
+  /// handler at all — tapping one did nothing. [payload] is the push's
+  /// data as [pushPayload] encoded it.
+  void localNotificationTapped(String? payload) {
+    final data = pushDataFromPayload(payload);
+    if (data != null) _taps.add(data);
   }
 
   Future<void> saveFcmToken(String userId, String token) async {
@@ -328,4 +352,33 @@ PushTapTarget pushTapTarget(Map<String, dynamic> data) {
       if (matchId.isNotEmpty) return PushTapTarget.liveLobby(matchId);
   }
   return const PushTapTarget.notifications();
+}
+
+/// A push's data as the payload of the local notification that shows it
+/// while the app is open.
+String pushPayload(Map<String, dynamic> data) => jsonEncode(data);
+
+/// The push data a tapped local notification carries, or null if it has
+/// none — the Daily Challenge reminder, for one, is not about a push.
+Map<String, dynamic>? pushDataFromPayload(String? payload) {
+  if (payload == null || payload.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(payload);
+    return decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// How long a tap that couldn't be acted on is still worth acting on.
+const Duration pendingPushTapLifetime = Duration(minutes: 2);
+
+/// Whether a notification tapped while another screen was on top should
+/// still be opened once the player is back on the tabs.
+///
+/// A tap is not opened over a level or a match in progress; it waits. But
+/// only briefly: opening a challenge twenty minutes after it was tapped,
+/// when a long match finally ends, is no longer what the player asked for.
+bool pendingPushTapIsFresh(DateTime tappedAt, DateTime now) {
+  return now.difference(tappedAt) <= pendingPushTapLifetime;
 }

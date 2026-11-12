@@ -43,4 +43,39 @@ void main() {
         const PushTapTarget.notifications());
     expect(pushTapTarget({}), const PushTapTarget.notifications());
   });
+  // Un push que llega con la app abierta lo muestra la propia app, y esos
+  // avisos no tenían quién atendiera el toque: no hacían nada.
+  test('el aviso mostrado con la app abierta lleva los datos del push', () {
+    final data = {'type': 'match_turn', 'matchId': 'm1'};
+
+    expect(pushDataFromPayload(pushPayload(data)), data);
+    expect(
+      pushTapTarget(pushDataFromPayload(pushPayload(data))!),
+      const PushTapTarget.asyncMatch('m1'),
+    );
+  });
+
+  test('un aviso sin datos (el recordatorio diario) no abre nada', () {
+    expect(pushDataFromPayload(null), isNull);
+    expect(pushDataFromPayload(''), isNull);
+    expect(pushDataFromPayload('no es json'), isNull);
+    expect(pushDataFromPayload('[1, 2]'), isNull);
+  });
+
+  // Un toque con otra pantalla encima espera a que el jugador vuelva a las
+  // pestañas, pero no indefinidamente.
+  test('un toque pendiente vale un par de minutos', () {
+    final tapped = DateTime(2026, 11, 12, 10, 0);
+
+    expect(
+      pendingPushTapIsFresh(tapped, tapped.add(const Duration(seconds: 30))),
+      isTrue,
+    );
+    expect(pendingPushTapIsFresh(tapped, tapped.add(pendingPushTapLifetime)),
+        isTrue);
+    expect(
+      pendingPushTapIsFresh(tapped, tapped.add(const Duration(minutes: 20))),
+      isFalse,
+    );
+  });
 }

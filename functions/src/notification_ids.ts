@@ -57,3 +57,46 @@ export function answeredNotification(
   const resolution = notification?.data?.resolution;
   return typeof resolution === "string" && resolution.length > 0;
 }
+
+/**
+ * Every notification an async match can leave in an inbox once it is over:
+ * the two "your turn" ones and the invitation that started it.
+ *
+ * The invitation used to be written under a random id, so nothing could
+ * find it again: a challenge that was played, declined or expired went on
+ * sitting in the challenged player's inbox, offering a match that was gone.
+ * @param {string} challengerUid Who sent the challenge.
+ * @param {string} challengedUid Who received it.
+ * @param {string} matchId The match.
+ * @return {Array<{recipientUid: string, id: string}>} Where each one is.
+ */
+export function staleAsyncMatchNotifications(
+  challengerUid: string, challengedUid: string, matchId: string
+): {recipientUid: string; id: string}[] {
+  return [
+    ...staleTurnNotifications(challengerUid, challengedUid, matchId),
+    {
+      recipientUid: challengedUid,
+      id: crossUserNotificationId("match_invite", challengerUid, matchId),
+    },
+  ];
+}
+
+/**
+ * The notification a live challenge left with the invited player. It is
+ * only worth anything while the invite is pending: accepted, declined,
+ * withdrawn or expired, it offered a challenge that could no longer be
+ * taken.
+ * @param {string} fromUid Who sent the challenge.
+ * @param {string} toUid Who was invited.
+ * @param {string} inviteId The invite.
+ * @return {{recipientUid: string, id: string}} Where it is.
+ */
+export function realtimeInviteNotification(
+  fromUid: string, toUid: string, inviteId: string
+): {recipientUid: string; id: string} {
+  return {
+    recipientUid: toUid,
+    id: crossUserNotificationId("realtime_invite", fromUid, inviteId),
+  };
+}

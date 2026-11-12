@@ -67,15 +67,41 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   StreamSubscription<Object>? _pushTaps;
 
+  // A notification tapped while another screen was on top, kept until the
+  // player is back here — see [_openPendingPushTap].
+  PushTapTarget? _pendingPushTap;
+  DateTime? _pendingPushTapAt;
+
   @override
   void initState() {
     super.initState();
-    _pushTaps = NotificationService.instance.pushTaps().listen((message) {
+    _pushTaps = NotificationService.instance.pushTaps().listen((data) {
+      if (!mounted) return;
       // Only from the tabs themselves: on top of a live match or a level
-      // in progress it would cover the game the player came back to.
-      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
-        _openPushTarget(pushTapTarget(message.data));
-      }
+      // in progress it would cover the game the player came back to. It
+      // used to be dropped there, so from any other screen — the profile,
+      // the shop, a level list — tapping a notification did nothing. Now
+      // it waits for the player to be back.
+      _pendingPushTap = pushTapTarget(data);
+      _pendingPushTapAt = DateTime.now();
+      _openPendingPushTap();
+    });
+  }
+
+  void _openPendingPushTap() {
+    final target = _pendingPushTap;
+    final tappedAt = _pendingPushTapAt;
+    if (target == null || tappedAt == null) return;
+    if (ModalRoute.isCurrentOf(context) != true) return;
+
+    _pendingPushTap = null;
+    _pendingPushTapAt = null;
+    if (!pendingPushTapIsFresh(tappedAt, DateTime.now())) return;
+
+    // After this frame: this also runs from didChangeDependencies, where
+    // pushing a route is not allowed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _openPushTarget(target);
     });
   }
 
@@ -89,6 +115,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _tourPending = false;
       _startTour();
     }
+    _openPendingPushTap();
   }
 
   Future<void> _startTour() async {

@@ -20,6 +20,7 @@ import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
 import 'services/locale_controller.dart';
 import 'services/daily_challenge_service.dart';
+import 'services/notification_service.dart';
 
 /// The app's notification channel, named in the player's language — it is
 /// what Android shows under the app's notification settings, and it was
@@ -168,7 +169,12 @@ Future<void> _setupNotifications() async {
       iOS: iosInit,
     );
 
-    await localNotifications.initialize(settings);
+    await localNotifications.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (response) => NotificationService
+          .instance
+          .localNotificationTapped(response.payload),
+    );
 
     await localNotifications
         .resolvePlatformSpecificImplementation<
@@ -201,6 +207,8 @@ Future<void> _setupNotifications() async {
             ),
             iOS: const DarwinNotificationDetails(),
           ),
+          // What tapping it opens — see localNotificationTapped.
+          payload: pushPayload(message.data),
         );
       } catch (e) {
         debugPrint('Foreground notification display failed: $e');

@@ -100,7 +100,8 @@ import {
 import {
   answeredNotification,
   crossUserNotificationId,
-  staleTurnNotifications,
+  realtimeInviteNotification,
+  staleAsyncMatchNotifications,
 } from "./notification_ids";
 import {acceptModelQuestions} from "./ai_question_drafts";
 import {
@@ -2709,9 +2710,12 @@ export const acceptRealtimeInvite = onCall({timeoutSeconds: 60},
       });
     });
 
-    await notifyOnce(fromUid, uid, "realtime_invite_accepted", {
-      inviteId: inviteRef.id, matchId: matchRef.id,
-    });
+    await Promise.all([
+      notifyOnce(fromUid, uid, "realtime_invite_accepted", {
+        inviteId: inviteRef.id, matchId: matchRef.id,
+      }),
+      clearRealtimeInviteNotification(fromUid, uid, inviteRef.id),
+    ]);
     return {matchId: matchRef.id};
   });
 
@@ -2726,9 +2730,9 @@ export const closeRealtimeInvite = onCall(async (request) => {
   const inviteRef = db.collection("realtime_invites")
     .doc(requiredDocId(request.data?.inviteId));
 
-  await db.runTransaction(async (tx) => {
+  const closed = await db.runTransaction(async (tx) => {
     const data = (await tx.get(inviteRef)).data();
-    if (!data || data.status !== "pending") return;
+    if (!data || data.status !== "pending") return null;
     if (data.toUid !== uid && data.fromUid !== uid) {
       throw new HttpsError("permission-denied", "Not your invite.");
     }
@@ -2736,9 +2740,33 @@ export const closeRealtimeInvite = onCall(async (request) => {
       status: data.toUid === uid ? "declined" : "cancelled",
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+    return {fromUid: String(data.fromUid), toUid: String(data.toUid)};
   });
+  if (closed) {
+    await clearRealtimeInviteNotification(
+      closed.fromUid, closed.toUid, inviteRef.id
+    );
+  }
   return {ok: true};
 });
+
+/**
+ * Removes the notification a live challenge left with the invited player,
+ * once the invite is no longer pending — see realtimeInviteNotification.
+ * @param {string} fromUid Who sent the challenge.
+ * @param {string} toUid Who was invited.
+ * @param {string} inviteId The invite.
+ * @return {Promise<void>} Resolves once it is gone.
+ */
+async function clearRealtimeInviteNotification(
+  fromUid: string, toUid: string, inviteId: string
+): Promise<void> {
+  const {recipientUid, id} =
+    realtimeInviteNotification(fromUid, toUid, inviteId);
+  if (!fromUid || !recipientUid) return;
+  await db.collection("users").doc(recipientUid)
+    .collection("notifications").doc(id).delete();
+}
 
 /**
  * Async (deferred) 1v1 matches never carry a ranked/affectsPvpRating flag
@@ -3098,7 +3126,7 @@ async function clearTurnNotifications(
   challengedUid: string,
   matchId: string
 ): Promise<void> {
-  await Promise.all(staleTurnNotifications(
+  await Promise.all(staleAsyncMatchNotifications(
     challengerUid, challengedUid, matchId
   ).map(({recipientUid, id}) => db.collection("users").doc(recipientUid)
     .collection("notifications").doc(id).delete()));
@@ -3370,8 +3398,12 @@ export const createAsyncPvpMatch = onCall({
     "match_invite", challengedData.languageCode, challengerName
   );
 
+  // Under a known id, so it can be removed once the match is over — see
+  // staleAsyncMatchNotifications.
   await db.collection("users").doc(challengedUid)
-    .collection("notifications").add({
+    .collection("notifications")
+    .doc(crossUserNotificationId("match_invite", uid, matchRef.id))
+    .set({
       type: "match_invite",
       title,
       body,
@@ -3770,7 +3802,11 @@ async function forfeitStaleAsyncMatch(
         rewarded: true,
         ...(outcome === "expire" ? {status: "expired"} : {}),
       });
-      return null;
+      // No result to give, but its notifications are stale all the same.
+      return {
+        challengerUid: String(data.challengerUid || ""),
+        challengedUid: String(data.challengedUid || ""),
+      };
     }
 
     const winnerUid = String(
@@ -3930,7 +3966,7 @@ async function forfeitStaleAsyncMatch(
     };
   });
 
-  if (settled) {
+  if (settled && settled.challengerUid && settled.challengedUid) {
     await clearTurnNotifications(
       settled.challengerUid, settled.challengedUid, matchRef.id
     );
@@ -11796,6 +11832,15 @@ export const expireStaleRealtimeInvites = onSchedule(
         status: "expired",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      // The invitation it left in the invited player's inbox goes with it.
+      const {recipientUid, id} = realtimeInviteNotification(
+        String(doc.data().fromUid || ""), String(doc.data().toUid || ""),
+        doc.id
+      );
+      if (recipientUid) {
+        batch.delete(db.collection("users").doc(recipientUid)
+          .collection("notifications").doc(id));
+      }
     }
     await batch.commit();
   }

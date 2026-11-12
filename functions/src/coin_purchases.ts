@@ -30,15 +30,28 @@ export type PlayPurchaseVerdict =
  * pending — a cash or bank method that can take days to clear, or never
  * does. Anything else, including a missing field, is treated as unpaid:
  * a payment check that defaults to yes is not a payment check.
+ *
+ * When Play says which product the token bought, it has to be the pack
+ * being claimed: the token of the cheapest pack must not be credited as
+ * the most expensive one.
  * @param {unknown} body The JSON Play returned.
+ * @param {string} productId The pack the app is claiming.
  * @return {PlayPurchaseVerdict} Whether it was paid, and the details kept.
  */
-export function judgePlayProductPurchase(body: unknown): PlayPurchaseVerdict {
+export function judgePlayProductPurchase(
+  body: unknown,
+  productId: string
+): PlayPurchaseVerdict {
   if (body === null || typeof body !== "object") {
     return {ok: false, reason: "not-purchased"};
   }
 
   const purchase = body as Record<string, unknown>;
+
+  if (typeof purchase.productId === "string" &&
+      purchase.productId !== productId) {
+    return {ok: false, reason: "not-purchased"};
+  }
 
   if (purchase.purchaseState === 2) return {ok: false, reason: "pending"};
   if (purchase.purchaseState !== 0) {

@@ -5,6 +5,7 @@ import {
   MAX_PLAYER_REPORTS_PER_DAY,
   PLAYER_REPORT_REASONS,
   playerReportDocId,
+  reservationViolates,
   usernameViolation,
 } from "./player_safety";
 
@@ -73,5 +74,22 @@ describe("player reports", () => {
   test("caps reports per day", () => {
     assert.ok(MAX_PLAYER_REPORTS_PER_DAY > 0);
     assert.ok(MAX_PLAYER_REPORTS_PER_DAY <= 30);
+  });
+});
+
+describe("reservationViolates", () => {
+  // Regression: only the free-text field was checked, so the reserved id
+  // went through next to a harmless one.
+  test("a reserved id is caught whatever the field says", () => {
+    assert.equal(reservationViolates("admin", "Carlos"), true);
+  });
+
+  test("a bad field is caught too", () => {
+    assert.equal(reservationViolates("carlos", "Admin"), true);
+  });
+
+  test("an ordinary name is left alone", () => {
+    assert.equal(reservationViolates("carlosbw", "CarlosBW"), false);
+    assert.equal(reservationViolates("carlosbw", ""), false);
   });
 });

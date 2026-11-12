@@ -68,13 +68,11 @@ class AppLifecyclePresenceObserver extends WidgetsBindingObserver {
     if (FirebaseAuth.instance.currentUser == null) return;
 
     if (state == AppLifecycleState.resumed) {
-      PresenceService.instance.setOnline();
+      PresenceService.instance.resume();
       return;
     }
 
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached ||
-        state == AppLifecycleState.inactive) {
+    if (lifecycleMeansAway(state)) {
       PresenceService.instance.setOffline();
     }
   }

@@ -285,6 +285,25 @@ service cloud.firestore {
         && !('ownedThemes' in request.resource.data);
     }
 
+    // What an account may wear on the day it is created. `update` checks
+    // an equip against what the stored doc has unlocked, but `create` has
+    // no stored doc, and these three fields went unchecked: a modified
+    // client could open an account already wearing a paid theme, or the
+    // Master frame and avatar. A new account is in Silver with the eight
+    // starting avatars and the free theme.
+    function newUserCosmeticsValid() {
+      let d = request.resource.data;
+      return (!('avatarId' in d)
+              || d.avatarId in [
+                   'avatar_1', 'avatar_2', 'avatar_3', 'avatar_4',
+                   'avatar_5', 'avatar_6', 'avatar_7', 'avatar_8'
+                 ]
+              || d.avatarId in pvpAvatarsForLeague('silver'))
+        && (!('equippedFrame' in d)
+            || d.equippedFrame in unlockedFramesForLeague('silver'))
+        && (!('equippedTheme' in d) || d.equippedTheme == 'default');
+    }
+
     match /users/{userId} {
       // Deliberately readable by any signed-in player: the friends list,
       // leaderboards and profile views all read other players' docs. That
@@ -297,6 +316,7 @@ service cloud.firestore {
         && request.resource.data.coins == 0
         && request.resource.data.xp == 0
         && newUserEconomyFieldsValid()
+        && newUserCosmeticsValid()
         && usernameFieldsValid();
 
       allow update: if request.auth != null

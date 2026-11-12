@@ -232,3 +232,37 @@ export function resolveAnswer(
     finished,
   };
 }
+
+/** How the sweep closes an async match left untouched for a week. */
+export type StaleAsyncMatchOutcome =
+  /** Declined: already over, only marked as settled. */
+  | "close"
+  /** Nobody is owed a result: closed as expired. */
+  | "expire"
+  /** The side that played wins; the one that walked away loses. */
+  | "forfeit";
+
+/**
+ * Decides what a week of silence does to an async match.
+ *
+ * A forfeit used to hit whoever hadn't finished, including a challenged
+ * player who never opened the challenge at all: ignoring an invitation
+ * cost a defeat, and handed the challenger a win and its coins for a match
+ * nobody played against them. Only a player who took their seat can
+ * forfeit it — the challenger, who started the match, or a challenged
+ * player who began their round and left it.
+ * @param {object} p The match as the sweep found it.
+ * @return {StaleAsyncMatchOutcome} What to do.
+ */
+export function staleAsyncMatchOutcome(p: {
+  declined: boolean;
+  challengerFinished: boolean;
+  challengedFinished: boolean;
+  /** The challenged player opened at least one question. */
+  challengedStarted: boolean;
+}): StaleAsyncMatchOutcome {
+  if (p.declined) return "close";
+  if (p.challengerFinished === p.challengedFinished) return "expire";
+  if (p.challengerFinished && !p.challengedStarted) return "expire";
+  return "forfeit";
+}

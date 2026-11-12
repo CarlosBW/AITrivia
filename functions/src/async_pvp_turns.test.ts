@@ -7,6 +7,7 @@ import {
   TurnState,
   openTurn,
   resolveAnswer,
+  staleAsyncMatchOutcome,
 } from "./async_pvp_turns";
 import {TIMED_OUT_ANSWER} from "./quiz_answers";
 
@@ -244,5 +245,43 @@ describe("resolveAnswer", () => {
     assert.equal(resolveAnswer(live, -1, 2).kind, "out-of-range");
     assert.equal(resolveAnswer(live, 10, 2).kind, "out-of-range");
     assert.equal(resolveAnswer(live, 1.5, 2).kind, "out-of-range");
+  });
+});
+
+describe("staleAsyncMatchOutcome", () => {
+  const base = {
+    declined: false,
+    challengerFinished: true,
+    challengedFinished: false,
+    challengedStarted: false,
+  };
+
+  // Regression: a challenge nobody opened ended, a week later, as a defeat
+  // for the player who ignored it and a paid win for the one who sent it.
+  test("a challenge that was never opened just expires", () => {
+    assert.equal(staleAsyncMatchOutcome(base), "expire");
+  });
+
+  test("a challenged player who started and left forfeits", () => {
+    assert.equal(
+      staleAsyncMatchOutcome({...base, challengedStarted: true}), "forfeit"
+    );
+  });
+
+  test("a challenger who never played their own challenge forfeits", () => {
+    assert.equal(staleAsyncMatchOutcome({
+      ...base, challengerFinished: false, challengedFinished: true,
+      challengedStarted: true,
+    }), "forfeit");
+  });
+
+  test("a match neither side finished expires", () => {
+    assert.equal(staleAsyncMatchOutcome({
+      ...base, challengerFinished: false, challengedStarted: true,
+    }), "expire");
+  });
+
+  test("a declined challenge is only closed", () => {
+    assert.equal(staleAsyncMatchOutcome({...base, declined: true}), "close");
   });
 });

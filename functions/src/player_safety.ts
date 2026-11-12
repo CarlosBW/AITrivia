@@ -142,3 +142,24 @@ export function playerReportDocId(
 ): string {
   return `${reporterUid}__${targetUid}`;
 }
+
+/**
+ * Whether a name reservation is for a name nobody may hold.
+ *
+ * The reservation's id is the name itself, lowercased; its `username`
+ * field is whatever the client wrote next to it. Only the field used to
+ * be checked, so reserving "admin" with a harmless `username` went
+ * through. Both are checked: the id is the name in force, and the field
+ * keeps the capitals that separate words.
+ * @param {string} usernameLower The reservation's document id.
+ * @param {string} claimed Its `username` field.
+ * @return {boolean} True if the reservation has to be undone.
+ */
+export function reservationViolates(
+  usernameLower: string,
+  claimed: string
+): boolean {
+  return [usernameLower, claimed].some(
+    (name) => name !== "" && usernameViolation(name) !== null
+  );
+}

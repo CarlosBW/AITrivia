@@ -77,6 +77,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
     if (!_navigatingToMatch) {
       _presenceService.setAvailable();
+      // Leaving the lobby closes the room. The other player only noticed
+      // through this one's presence going stale, and it doesn't: they are
+      // still in the app, just not here. The server ignores this for a
+      // match that already started or was cancelled.
+      unawaited(
+        _service.cancelWaitingMatch(widget.matchId).catchError((_) {}),
+      );
     }
 
     super.dispose();

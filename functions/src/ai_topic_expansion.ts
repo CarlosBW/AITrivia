@@ -30,3 +30,42 @@ export function expansionTarget(params: {
   }
   return {ok: true, newTarget: currentTarget + perExpansion};
 }
+
+/**
+ * The level a look-ahead generation may be asked from.
+ *
+ * The app reports the level being played and the server generates a few
+ * past it. The number was taken as sent, so a modified client reporting a
+ * high one had every remaining level generated at once — real model calls
+ * for levels the player was nowhere near. It can't be past the level after
+ * the last one actually passed, which is the deepest one they can open.
+ * @param {number} reportedLevel The level the app says is being played.
+ * @param {number[]} passedLevels Levels this player has passed.
+ * @return {number} The level to generate ahead of.
+ */
+export function trustedBufferLevel(
+  reportedLevel: number,
+  passedLevels: number[]
+): number {
+  const deepestPlayable = Math.max(0, ...passedLevels) + 1;
+  return Math.max(0, Math.min(Math.floor(reportedLevel), deepestPlayable));
+}
+
+/**
+ * Coins to give back from an "add more questions" purchase.
+ *
+ * The price is per level, paid up front. A level counts as delivered only
+ * if it actually gained questions: one whose whole batch was discarded as
+ * repeats used to be charged like any other, for nothing.
+ * @param {number} cost What was charged.
+ * @param {number} costPerLevel The price of one level.
+ * @param {number} levelsDelivered Levels that gained at least a question.
+ * @return {number} The refund, never negative.
+ */
+export function undeliveredRefund(
+  cost: number,
+  costPerLevel: number,
+  levelsDelivered: number
+): number {
+  return Math.max(0, cost - Math.max(0, levelsDelivered) * costPerLevel);
+}

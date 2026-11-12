@@ -104,6 +104,46 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  await t.test("el avatar y el marco con que empieza la app valen", async () => {
+    // Lo que escribe user_bootstrap.dart además de lo de arriba.
+    await assertSucceeds(
+      setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({
+        avatarId: "avatar_1", equippedFrame: "silver",
+      }))
+    );
+  });
+
+  // `update` valida lo que se equipa contra lo desbloqueado, pero `create`
+  // no tenía contra qué: una cuenta nueva podía nacer con cosméticos de
+  // pago o de la liga más alta.
+  await t.test("no puede empezar con un avatar que no tiene", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({avatarId: "pvp_master"}))
+    );
+  });
+
+  await t.test("no puede empezar con el marco de otra liga", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({equippedFrame: "master"}))
+    );
+  });
+
+  await t.test("no puede empezar con un tema de pago puesto", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({equippedTheme: "cyberpunk"}))
+    );
+  });
+
+  await t.test("puede empezar con el tema gratuito", async () => {
+    await assertSucceeds(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({equippedTheme: "default"}))
+    );
+  });
+
   await t.test("no puede empezar con monedas", async () => {
     await assertFails(
       setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({coins: 5000}))

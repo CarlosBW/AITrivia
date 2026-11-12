@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 
 import 'locale_controller.dart';
 import '../l10n/generated/app_localizations.dart';
@@ -32,6 +33,11 @@ class PresenceService {
   String _lastStatus = 'online';
   bool _lastInMatch = false;
 
+  // What the player was doing before the app went to the background, so
+  // coming back picks it up again — see [resume].
+  String _activeStatus = 'online';
+  bool _activeInMatch = false;
+
   static const Duration heartbeatInterval = Duration(seconds: 15);
   static const Duration onlineMaxAge = Duration(seconds: 45);
 
@@ -56,6 +62,19 @@ class PresenceService {
       status: 'online',
       inMatch: false,
     );
+
+    _startHeartbeat();
+  }
+
+  /// Back from the background: the presence the player had before leaving,
+  /// not a flat "online".
+  ///
+  /// Returning used to mark the player online whatever they were doing. In
+  /// the middle of a search that made them unmatchable — matchmaking only
+  /// pairs players whose presence says they are searching — while the
+  /// screen went on saying "Searching…".
+  Future<void> resume() async {
+    await _setPresence(status: _activeStatus, inMatch: _activeInMatch);
 
     _startHeartbeat();
   }
@@ -106,6 +125,10 @@ class PresenceService {
 
     _lastStatus = status;
     _lastInMatch = inMatch;
+    if (status != 'offline') {
+      _activeStatus = status;
+      _activeInMatch = inMatch;
+    }
 
     final ref = _userRef(uid);
 
@@ -202,4 +225,15 @@ class PresenceService {
 
     return diff <= onlineMaxAge;
   }
+}
+
+/// Whether an app lifecycle change means the player has left.
+///
+/// Not `inactive`: that is the notification shade, a permission dialog, an
+/// incoming call, the app switcher on its way somewhere — the app is still
+/// on screen. Treating it as leaving marked a player offline for pulling
+/// the shade down mid-search, and nothing brought their search back.
+bool lifecycleMeansAway(AppLifecycleState state) {
+  return state == AppLifecycleState.paused ||
+      state == AppLifecycleState.detached;
 }

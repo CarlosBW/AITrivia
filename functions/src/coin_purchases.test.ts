@@ -19,9 +19,29 @@ const purchased = {
   acknowledgementState: 0,
 };
 
+const PACK = "coins_pack_small";
+
 describe("judgePlayProductPurchase", () => {
+  // The token is looked up under the pack the app claims, and the answer
+  // names the product it really bought.
+  test("a token bought for another pack is not this pack", () => {
+    assert.deepEqual(
+      judgePlayProductPurchase(
+        {...purchased, productId: "coins_pack_small"}, "coins_pack_large"
+      ),
+      {ok: false, reason: "not-purchased"}
+    );
+  });
+
+  test("a token for the pack claimed is accepted", () => {
+    const verdict = judgePlayProductPurchase(
+      {...purchased, productId: PACK}, PACK
+    );
+    assert.equal(verdict.ok, true);
+  });
+
   test("accepts a completed purchase and keeps what support needs", () => {
-    const verdict = judgePlayProductPurchase(purchased);
+    const verdict = judgePlayProductPurchase(purchased, PACK);
 
     assert.equal(verdict.ok, true);
     if (!verdict.ok) return;
@@ -32,7 +52,9 @@ describe("judgePlayProductPurchase", () => {
   });
 
   test("a cancelled purchase is not paid for", () => {
-    const verdict = judgePlayProductPurchase({...purchased, purchaseState: 1});
+    const verdict = judgePlayProductPurchase(
+      {...purchased, purchaseState: 1}, PACK
+    );
 
     assert.deepEqual(verdict, {ok: false, reason: "not-purchased"});
   });
@@ -40,7 +62,9 @@ describe("judgePlayProductPurchase", () => {
   test("a pending purchase has not been paid yet", () => {
     // Cash payment methods leave a purchase pending for days. Crediting it
     // now would hand out coins for money that may never arrive.
-    const verdict = judgePlayProductPurchase({...purchased, purchaseState: 2});
+    const verdict = judgePlayProductPurchase(
+      {...purchased, purchaseState: 2}, PACK
+    );
 
     assert.deepEqual(verdict, {ok: false, reason: "pending"});
   });
@@ -50,16 +74,16 @@ describe("judgePlayProductPurchase", () => {
     void _dropped;
 
     assert.deepEqual(
-      judgePlayProductPurchase(noState),
+      judgePlayProductPurchase(noState, PACK),
       {ok: false, reason: "not-purchased"}
     );
     assert.deepEqual(
-      judgePlayProductPurchase({...purchased, purchaseState: "0"}),
+      judgePlayProductPurchase({...purchased, purchaseState: "0"}, PACK),
       {ok: false, reason: "not-purchased"},
       "only the number 0 means purchased"
     );
     assert.deepEqual(
-      judgePlayProductPurchase(null),
+      judgePlayProductPurchase(null, PACK),
       {ok: false, reason: "not-purchased"}
     );
   });
@@ -68,7 +92,7 @@ describe("judgePlayProductPurchase", () => {
     const verdict = judgePlayProductPurchase({
       ...purchased,
       consumptionState: 1,
-    });
+    }, PACK);
 
     assert.equal(verdict.ok, true);
     if (!verdict.ok) return;
@@ -76,7 +100,9 @@ describe("judgePlayProductPurchase", () => {
   });
 
   test("marks license-tester purchases as test", () => {
-    const verdict = judgePlayProductPurchase({...purchased, purchaseType: 0});
+    const verdict = judgePlayProductPurchase(
+      {...purchased, purchaseType: 0}, PACK
+    );
 
     assert.equal(verdict.ok, true);
     if (!verdict.ok) return;
@@ -87,7 +113,7 @@ describe("judgePlayProductPurchase", () => {
     const {orderId: _o, purchaseTimeMillis: _t, ...bare} = purchased;
     void _o;
     void _t;
-    const verdict = judgePlayProductPurchase(bare);
+    const verdict = judgePlayProductPurchase(bare, PACK);
 
     assert.equal(verdict.ok, true);
     if (!verdict.ok) return;

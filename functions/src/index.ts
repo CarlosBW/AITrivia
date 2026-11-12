@@ -78,6 +78,7 @@ import {
 import {
   openTurn,
   resolveAnswer,
+  staleAsyncMatchOutcome,
 } from "./async_pvp_turns";
 import {answerCharge, lastBankedAnswerWrong} from "./life_costs";
 import {
@@ -91,7 +92,11 @@ import {
   releaseQuotaSlot,
   reportQuotaAfter,
 } from "./question_reports";
-import {expansionTarget} from "./ai_topic_expansion";
+import {
+  expansionTarget,
+  trustedBufferLevel,
+  undeliveredRefund,
+} from "./ai_topic_expansion";
 import {
   answeredNotification,
   crossUserNotificationId,
@@ -109,6 +114,13 @@ import {
   splitAnswerKey,
 } from "./pvp_answer_key";
 import {
+  liveMatchIsOverdue,
+  liveSearchIsAbandoned,
+  overdueLiveMatchOutcome,
+  pvpCooldownActive,
+  rematchRequestIsFresh,
+} from "./live_match_rules";
+import {
   DailyPoolEntry,
   matchCandidates,
   dailyEntryKey,
@@ -120,6 +132,8 @@ import {
   AI_METER_CAPS,
   AiMeter,
   checkAiBudget,
+  AI_TOPIC_CREATION_LOCK_MS,
+  creationLockHeld,
 } from "./ai_budget";
 import {
   CUSTOM_CHALLENGE_TIMEOUT_SECONDS,
@@ -138,6 +152,7 @@ import {
   PLAYER_REPORT_REASONS,
   playerReportDocId,
   usernameViolation,
+  reservationViolates,
 } from "./player_safety";
 import {
   asyncMatchScrub,
@@ -1837,6 +1852,13 @@ export const tryFindLiveOpponent = onCall(async (request) => {
       if ((meTx?.ranked === true) !== ranked) return false;
       if ((oppTx?.ranked === true) !== ranked) return false;
 
+      // The abandon cooldown, from the user docs: the app checks it before
+      // queueing, which a modified client simply doesn't.
+      const nowMs = Date.now();
+      if (ranked && [meUser, oppUser].some((user) => pvpCooldownActive(
+        timestampMillis(user.pvpCooldownUntil), nowMs
+      ))) return false;
+
       // Ratings from the user docs, which only the server writes; the
       // queue docs carry a copy the client wrote and could inflate.
       const myRating = safeInt(meUser.pvpRating, DEFAULT_RATING);
@@ -2302,6 +2324,15 @@ export const submitLiveMatchAnswer = onCall(async (request) => {
       patch[`players.${uid}.deadlines.${resolution.nextIndex}`] =
         resolution.nextDeadlineMs;
     }
+    // The last answer closes the round here rather than waiting for the
+    // app's finishLiveMatch call. A player whose app closed between the
+    // two had answered everything and was never "finished": the match
+    // could neither settle nor be claimed, and stayed open for good.
+    if (resolution.finished) {
+      patch[`players.${uid}.finished`] = true;
+      patch[`players.${uid}.finishedAt`] =
+        admin.firestore.FieldValue.serverTimestamp();
+    }
     tx.update(matchRef, patch);
 
     return {
@@ -2396,65 +2427,94 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
     // A rematch is casual even after a ranked match: the same two players
     // trading ranked wins back and forth was a way to farm rating.
     const ranked = false;
-    // Chosen up front so the rematch can be written in the same
-    // transaction that decides it, with nothing left half-done.
-    const questions = old.rematchRequests?.[opponentUid] === true ?
-      await selectFixedMatchQuestions(
-        params.categoryId, params.difficulty, params.totalQuestions
-      ) : [];
+    // A request only stands for a few minutes — see rematchRequestIsFresh.
+    const opponentAsked = (data: FirebaseFirestore.DocumentData) =>
+      data.rematchRequests?.[opponentUid] === true && rematchRequestIsFresh(
+        data.rematchRequestedAtMs?.[opponentUid], Date.now()
+      );
 
-    const result = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(oldRef);
-      const data = snap.data() || {};
-      if (data.rematchMatchId) {
-        return {rematchMatchId: String(data.rematchMatchId), notify: false};
-      }
+    // Chosen outside the transaction that decides the rematch, so it can
+    // be written there with nothing left half-done.
+    const loadQuestions = () => selectFixedMatchQuestions(
+      params.categoryId, params.difficulty, params.totalQuestions
+    );
 
-      const requests = {...(data.rematchRequests || {}), [uid]: true};
-      const both = requests[opponentUid] === true;
+    const attempt = (questions: Record<string, unknown>[]) =>
+      db.runTransaction(async (tx) => {
+        const snap = await tx.get(oldRef);
+        const data = snap.data() || {};
+        if (data.rematchMatchId) {
+          return {
+            rematchMatchId: String(data.rematchMatchId),
+            notify: false, needsQuestions: false,
+          };
+        }
 
-      if (!both || questions.length === 0) {
+        const both = opponentAsked(data);
+
+        if (!both || questions.length === 0) {
+          tx.update(oldRef, {
+            [`rematchRequests.${uid}`]: true,
+            [`rematchRequestedAtMs.${uid}`]: Date.now(),
+            // An expired request from the other side is cleared, so the app
+            // stops showing it as standing.
+            ...(!both && data.rematchRequests?.[opponentUid] === true ? {
+              [`rematchRequests.${opponentUid}`]:
+              admin.firestore.FieldValue.delete(),
+            } : {}),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          return {rematchMatchId: null, notify: !both, needsQuestions: both};
+        }
+
+        const [meSnap, oppSnap] = await Promise.all([
+          tx.get(db.collection("users").doc(uid)),
+          tx.get(db.collection("users").doc(opponentUid)),
+        ]);
+        const hostUid = String(data.hostUid);
+        const guestUid = String(data.guestUid);
+        const seats: Record<string, Record<string, unknown>> = {
+          [uid]: {...liveSeatFor(meSnap.data() || {}), ready: true},
+          [opponentUid]: {...liveSeatFor(oppSnap.data() || {}), ready: true},
+        };
+
+        const newRef = db.collection("matches").doc();
+        writeLiveMatch(tx, newRef, {
+          hostUid,
+          guestUid,
+          hostSeat: seats[hostUid],
+          guestSeat: seats[guestUid],
+          params,
+          ranked,
+          questions,
+          status: "playing",
+          extra: {
+            matchmakingType: String(data.matchmakingType || "") ||
+            (ranked ? "ranked_rematch" : "casual_rematch"),
+            previousMatchId: matchId,
+          },
+        });
         tx.update(oldRef, {
           [`rematchRequests.${uid}`]: true,
+          rematchMatchId: newRef.id,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
-        return {rematchMatchId: null, notify: !both};
-      }
-
-      const [meSnap, oppSnap] = await Promise.all([
-        tx.get(db.collection("users").doc(uid)),
-        tx.get(db.collection("users").doc(opponentUid)),
-      ]);
-      const hostUid = String(data.hostUid);
-      const guestUid = String(data.guestUid);
-      const seats: Record<string, Record<string, unknown>> = {
-        [uid]: {...liveSeatFor(meSnap.data() || {}), ready: true},
-        [opponentUid]: {...liveSeatFor(oppSnap.data() || {}), ready: true},
-      };
-
-      const newRef = db.collection("matches").doc();
-      writeLiveMatch(tx, newRef, {
-        hostUid,
-        guestUid,
-        hostSeat: seats[hostUid],
-        guestSeat: seats[guestUid],
-        params,
-        ranked,
-        questions,
-        status: "playing",
-        extra: {
-          matchmakingType: String(data.matchmakingType || "") ||
-            (ranked ? "ranked_rematch" : "casual_rematch"),
-          previousMatchId: matchId,
-        },
+        return {
+          rematchMatchId: newRef.id, notify: false, needsQuestions: false,
+        };
       });
-      tx.update(oldRef, {
-        [`rematchRequests.${uid}`]: true,
-        rematchMatchId: newRef.id,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      return {rematchMatchId: newRef.id, notify: false};
-    });
+
+    let result = await attempt(
+      opponentAsked(old) ? await loadQuestions() : []
+    );
+    // Both asked at the same moment: neither call saw the other's request
+    // when it chose whether to load questions, so each recorded its own
+    // and created nothing, and both players waited on a rematch that was
+    // never coming. Whichever call finds both requests in place goes round
+    // once more with the questions.
+    if (result.needsQuestions) {
+      result = await attempt(await loadQuestions());
+    }
 
     if (result.notify) {
       await notifyOnce(opponentUid, uid, "rematch_request", {matchId});
@@ -3682,17 +3742,26 @@ async function forfeitStaleAsyncMatch(
     // left `rewarded: false`, it matched the sweep's query forever, and
     // once a hundred of them piled up the oldest-first page held nothing
     // else and real forfeits were never reached.
-    if (
-      data.status === "declined" ||
-      challengerFinished === challengedFinished
-    ) {
+    const challengedSide = (data.challenged &&
+      typeof data.challenged === "object") ?
+      data.challenged as Record<string, unknown> : {};
+    const outcome = staleAsyncMatchOutcome({
+      declined: data.status === "declined",
+      challengerFinished,
+      challengedFinished,
+      challengedStarted:
+        Object.keys(challengedSide.deadlines || {}).length > 0 ||
+        Object.keys(challengedSide.answers || {}).length > 0,
+    });
+
+    if (outcome !== "forfeit") {
       // A never-played challenge is also closed as expired: left as
       // `waiting_challenged` it still counted against the challenger's
       // open challenges, so they could never re-challenge that player, and
       // ten of them blocked new challenges for good.
       tx.update(matchRef, {
         rewarded: true,
-        ...(data.status === "declined" ? {} : {status: "expired"}),
+        ...(outcome === "expire" ? {status: "expired"} : {}),
       });
       return null;
     }
@@ -7202,7 +7271,8 @@ export const verifyCoinPurchase = onCall(async (request) => {
   } else if (source === "google_play") {
     // On Android, serverVerificationData is the purchase token.
     const play = judgePlayProductPurchase(
-      await fetchPlayProductPurchase(uid, productId, verificationData)
+      await fetchPlayProductPurchase(uid, productId, verificationData),
+      productId
     );
 
     if (!play.ok) {
@@ -8873,6 +8943,33 @@ export const createAiTopic = onCall({
     );
   }
 
+  // One creation per account at a time — see creationLockHeld. Only a
+  // creation that generates takes it; reusing a pool entry calls no model.
+  const lockRef = db.collection("ai_topic_locks").doc(uid);
+  const releaseLock = async () => {
+    if (!reuseFromPool) await lockRef.delete().catch(() => undefined);
+  };
+
+  if (!reuseFromPool) {
+    const locked = await db.runTransaction(async (tx) => {
+      const nowMs = Date.now();
+      const lockSnap = await tx.get(lockRef);
+      if (creationLockHeld(safeInt(lockSnap.data()?.untilMs, 0), nowMs)) {
+        return false;
+      }
+      tx.set(lockRef, {untilMs: nowMs + AI_TOPIC_CREATION_LOCK_MS});
+      return true;
+    });
+
+    if (!locked) {
+      throw localizedError(
+        userData.languageCode, "failed-precondition",
+        "Ya estás creando un tema. Espera a que termine.",
+        "You're already creating a topic. Wait for it to finish."
+      );
+    }
+  }
+
   if (!reuseFromPool) {
     // Deterministic level doc ids (level_1, level_2, ...) make this
     // self-healing: unlike the old per-user flow, a failure here is never
@@ -8900,6 +8997,7 @@ export const createAiTopic = onCall({
         avoidQuestions = [...avoidQuestions, ...added];
       }
     } catch (error) {
+      await releaseLock();
       if (error instanceof TopicBlockedError) {
         throw topicBlockedHttpsError(userData.languageCode);
       }
@@ -9028,7 +9126,7 @@ export const createAiTopic = onCall({
     );
 
     return {topicId: topicRef.id};
-  });
+  }).finally(releaseLock);
 });
 
 export const regenerateAiTopicQuestions = onCall({
@@ -9145,6 +9243,26 @@ export const regenerateAiTopicQuestions = onCall({
   let paidLevelsDelivered = 0;
   let questionsAdded = 0;
 
+  /**
+   * Gives back the price of the levels that gained nothing.
+   * @return {Promise<number>} Coins refunded.
+   */
+  const refundUndelivered = async (): Promise<number> => {
+    const refund = undeliveredRefund(
+      cost, REGENERATE_AI_QUESTIONS_COST_PER_LEVEL, paidLevelsDelivered
+    );
+    if (refund > 0) {
+      await userRef.set(
+        {
+          coins: admin.firestore.FieldValue.increment(refund),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        {merge: true}
+      );
+    }
+    return refund;
+  };
+
   try {
     let avoidQuestions = await existingPoolQuestionTexts(poolRef);
 
@@ -9159,25 +9277,15 @@ export const regenerateAiTopicQuestions = onCall({
 
       avoidQuestions = [...avoidQuestions, ...added];
       questionsAdded += added.length;
-      paidLevelsDelivered++;
+      // A level whose batch was all repeats delivered nothing.
+      if (added.length > 0) paidLevelsDelivered++;
     }
   } catch (error) {
     // Refund only what wasn't delivered. Generated questions are already
     // durable in the shared pool, so refunding the full price after a
     // failure partway through would hand over those levels for free — to
     // this player and to everyone else reusing the same pool entry.
-    const refund =
-      cost - paidLevelsDelivered * REGENERATE_AI_QUESTIONS_COST_PER_LEVEL;
-
-    if (refund > 0) {
-      await userRef.set(
-        {
-          coins: admin.firestore.FieldValue.increment(refund),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        {merge: true}
-      );
-    }
+    await refundUndelivered();
 
     if (error instanceof TopicBlockedError) {
       await topicRef.set(
@@ -9205,7 +9313,10 @@ export const regenerateAiTopicQuestions = onCall({
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});
 
-  return {success: true, questionsCount: bankedQuestions};
+  // Generation succeeded, but a level can still have come back empty.
+  const refundedCoins = await refundUndelivered();
+
+  return {success: true, questionsCount: bankedQuestions, refundedCoins};
 });
 
 /**
@@ -9534,16 +9645,24 @@ export const ensureAiTopicLevelsGenerated = onCall({
   if (!topicId) {
     throw new HttpsError("invalid-argument", "Missing topicId.");
   }
-  const completedLevel = safeInt(request.data?.completedLevel, 0);
-
-  const topicRef = db.collection("users").doc(uid)
-    .collection("ai_topics").doc(topicId);
-  const topicSnap = await topicRef.get();
+  const userRef = db.collection("users").doc(uid);
+  const topicRef = userRef.collection("ai_topics").doc(topicId);
+  const [topicSnap, progressSnap] = await Promise.all([
+    topicRef.get(),
+    userRef.collection("progress_ai").doc(topicId).get(),
+  ]);
   const topicData = topicSnap.data();
 
   if (!topicData || topicData.status !== "ready") {
     return {generatedLevels: safeInt(topicData?.generatedLevels, 0)};
   }
+
+  // Not the number as sent — see trustedBufferLevel.
+  const completedLevel = trustedBufferLevel(
+    safeInt(request.data?.completedLevel, 0),
+    ((progressSnap.data()?.passedLevels as unknown[]) || [])
+      .map((entry) => safeInt(entry, 0))
+  );
 
   // `generatedLevels` on the per-user topic doc means "how deep *this
   // user* has unlocked" — it's capped by, but doesn't have to equal,
@@ -11036,7 +11155,9 @@ export const enforceUsernamePolicy = onDocumentCreated(
     const data = reservation.data();
     const uid = String(data?.uid || "");
     const username = String(data?.username || event.params.usernameLower);
-    if (!uid || usernameViolation(username) === null) return;
+    if (!uid || !reservationViolates(
+      event.params.usernameLower, String(data?.username || "")
+    )) return;
 
     console.warn(`Refused username "${username}" for ${uid}`);
     const fallback = `Player${uid.slice(0, 8)}`;
@@ -11538,6 +11659,106 @@ export const removeFriend = onCall(async (request) => {
  * it — a client-side version of this (which existed before, unreachable
  * from any screen) could never have actually worked for that reason.
  */
+/**
+ * A Firestore timestamp as epoch millis, or null if it isn't one.
+ * @param {unknown} value The stored field.
+ * @return {number|null} Millis.
+ */
+function timestampMillis(value: unknown): number | null {
+  return value instanceof admin.firestore.Timestamp ? value.toMillis() : null;
+}
+
+/**
+ * Closes live matches nobody is playing any more, and queue entries left
+ * behind by a closed app.
+ *
+ * A match only ever closed from a player's own app: by finishing, or by
+ * claiming the other's disconnect. One both had left, one whose finisher
+ * was gone before the other stalled, and a lobby abandoned by both stayed
+ * `playing` / `waiting` for good — see live_match_rules.ts for the rules.
+ */
+export const sweepStaleLiveMatches = onSchedule(
+  {schedule: "*/10 * * * *"},
+  async () => {
+    const nowMs = Date.now();
+
+    const [matchesSnap, searchSnap] = await Promise.all([
+      db.collection("matches")
+        .where("status", "in", ["waiting", "playing"])
+        .limit(300)
+        .get(),
+      db.collection("live_search")
+        .where("status", "==", "searching")
+        .limit(300)
+        .get(),
+    ]);
+
+    for (const doc of matchesSnap.docs) {
+      const seen = doc.data();
+      if (!liveMatchIsOverdue({
+        status: String(seen.status || ""),
+        createdAtMs: timestampMillis(seen.createdAt),
+        startAtMs: timestampMillis(seen.startAt),
+        questionCount: Array.isArray(seen.questions) ?
+          seen.questions.length : 0,
+        timePerQuestionSec: safeInt(seen.timePerQuestionSec, 15),
+        nowMs,
+      })) continue;
+
+      await db.runTransaction(async (tx) => {
+        const data = (await tx.get(doc.ref)).data();
+        if (!data) return;
+        const status = String(data.status || "");
+        // Re-read inside the transaction: it may have moved on since.
+        if (status !== String(seen.status || "")) return;
+
+        const stamp = admin.firestore.FieldValue.serverTimestamp();
+        const hostUid = String(data.hostUid || "");
+        const guestUid = String(data.guestUid || "");
+        const players = data.players || {};
+        const outcome = status === "playing" && hostUid && guestUid ?
+          overdueLiveMatchOutcome(
+            players[hostUid]?.finished === true,
+            players[guestUid]?.finished === true
+          ) : "cancel";
+
+        if (outcome === "cancel") {
+          tx.update(doc.ref, {
+            status: "cancelled", finishReason: "abandoned", updatedAt: stamp,
+          });
+          return;
+        }
+        // Both rounds closed but never settled: the write re-runs
+        // finalizePvpMatch, which is the only thing that pays out.
+        if (outcome === "settle") {
+          tx.update(doc.ref, {updatedAt: stamp});
+          return;
+        }
+        // The same result claimOpponentDisconnected gives.
+        tx.update(doc.ref, {
+          winnerUid: outcome === "host-wins" ? hostUid : guestUid,
+          finishReason: "opponent_disconnected",
+          [`players.${hostUid}.finished`]: true,
+          [`players.${guestUid}.finished`]: true,
+          updatedAt: stamp,
+        });
+      });
+    }
+
+    const abandoned = searchSnap.docs.filter((doc) => liveSearchIsAbandoned(
+      timestampMillis(doc.data().lastHeartbeatAt) ??
+        timestampMillis(doc.data().updatedAt),
+      nowMs
+    ));
+    // Each on its own, and only if untouched since it was read: a player
+    // who started searching again in between must not be stopped.
+    await Promise.all(abandoned.map((doc) => doc.ref.update({
+      status: "stopped",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {lastUpdateTime: doc.updateTime}).catch(() => undefined)));
+  }
+);
+
 export const expireStaleRealtimeInvites = onSchedule(
   {schedule: "*/10 * * * *"},
   async () => {

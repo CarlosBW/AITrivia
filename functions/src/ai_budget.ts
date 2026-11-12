@@ -81,3 +81,26 @@ export function checkAiBudget(params: {
   }
   return {allowed: true};
 }
+
+/**
+ * How long one account's topic creation holds its lock: a little over the
+ * function's own time limit, so a call that died releases it by itself.
+ */
+export const AI_TOPIC_CREATION_LOCK_MS = 6 * 60 * 1000;
+
+/**
+ * Whether this account is already creating a topic.
+ *
+ * Creation generates first and charges after, so several calls sent at
+ * once each generated their levels and only one of them could pay: the
+ * rest were model calls nobody was charged for. One creation at a time.
+ * @param {number} lockedUntilMs When the lock in place expires; 0 if none.
+ * @param {number} nowMs Now.
+ * @return {boolean} True if a new creation has to wait.
+ */
+export function creationLockHeld(
+  lockedUntilMs: number,
+  nowMs: number
+): boolean {
+  return Number.isFinite(lockedUntilMs) && lockedUntilMs > nowMs;
+}

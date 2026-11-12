@@ -5,6 +5,7 @@ import {
   AI_METER_CAPS,
   AiMeterCaps,
   checkAiBudget,
+  creationLockHeld,
 } from "./ai_budget";
 
 const caps: AiMeterCaps = {global: 100, perUser: 10};
@@ -90,5 +91,21 @@ describe("AI_METER_CAPS", () => {
     // A topic is ten levels; a player who can't finish one they paid for
     // would be a worse bug than the abuse this guards against.
     assert.ok(AI_METER_CAPS.levels.perUser >= 10);
+  });
+});
+
+describe("creationLockHeld", () => {
+  const NOW = 1_700_000_000_000;
+
+  // Regression: creations sent together each generated their levels, and
+  // only one could be charged for them.
+  test("a creation in flight makes the next one wait", () => {
+    assert.equal(creationLockHeld(NOW + 60_000, NOW), true);
+  });
+
+  test("no lock, or one that ran out, lets it through", () => {
+    assert.equal(creationLockHeld(0, NOW), false);
+    assert.equal(creationLockHeld(NOW, NOW), false);
+    assert.equal(creationLockHeld(NOW - 1, NOW), false);
   });
 });

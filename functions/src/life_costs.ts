@@ -141,3 +141,22 @@ export function lastBankedAnswerWrong(results: unknown): boolean {
   const last = entries.reduce((a, b) => (b.index > a.index ? b : a));
   return (last.verdict as {correct?: unknown} | null)?.correct !== true;
 }
+
+/**
+ * Where the regeneration clock stands after a life is added (bought).
+ *
+ * It keeps running from where it was. Buying a life used to restart it,
+ * so a player seconds away from their next half life paid coins and also
+ * lost the time already waited. Only reaching the maximum resets it:
+ * nothing regenerates at full.
+ * @param {object} p The clock and the balance after the gain.
+ * @return {number} The tick to store, epoch ms.
+ */
+export function tickAfterLifeGain(p: {
+  lastTickMs: number;
+  newUnits: number;
+  maxUnits: number;
+  nowMs: number;
+}): number {
+  return p.newUnits >= p.maxUnits ? p.nowMs : p.lastTickMs;
+}

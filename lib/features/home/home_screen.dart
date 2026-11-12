@@ -121,7 +121,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      await LifeService.instance.ensureUserLifeDoc(uid);
       final state = await LifeService.instance.refreshLives(uid);
 
       if (!mounted) return;

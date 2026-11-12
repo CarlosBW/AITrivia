@@ -93,6 +93,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
 
   bool _rematchPromptShowing = false;
 
+  // The player answered "later": the result screen rebuilds every few
+  // seconds, and each rebuild used to bring the same dialog back.
+  bool _rematchPromptDismissed = false;
+
   /// Whether leaving now abandons a match still being played. Written by
   /// `build`, read when the player tries to go back.
   bool _matchInProgress = false;
@@ -286,7 +290,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
     required bool myRematchAccepted,
     required bool opponentRematchAccepted,
   }) async {
-    if (_rematchPromptShowing) return;
+    if (_rematchPromptShowing || _rematchPromptDismissed) return;
     if (myRematchAccepted) return;
     if (!opponentRematchAccepted) return;
 
@@ -303,6 +307,7 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
           actions: [
             TextButton(
               onPressed: () {
+                _rematchPromptDismissed = true;
                 Navigator.pop(dialogContext);
               },
               child: Text(l10n.navLater),
@@ -1122,6 +1127,10 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       final resultLabel =
           winnerUid == null ? 'draw' : (winnerUid == uid ? 'win' : 'loss');
 
+      // Once, with the result. It sat further down behind a check of the
+      // flag set just above, so it could never run.
+      if (winnerUid == uid) SfxService.instance.playReward();
+
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         try {
           await AnalyticsService.instance.logPvpMatchComplete(
@@ -1144,7 +1153,6 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
       title = l10n.matchPlayDrawTitle;
       subtitle = l10n.matchPlayDrawSubtitle;
     } else if (winnerUid == uid) {
-      if (!_resultLogged) SfxService.instance.playReward();
       state = PvpResultState.victory;
       title = l10n.matchPlayVictoryTitle;
       subtitle = affectsPvpRating

@@ -71,12 +71,6 @@ class LifeService {
     return '$whole${decimalSeparator}5';
   }
 
-  // lifeUnits/maxLifeUnits/lifeRegenSeconds/lastLifeTickAt are protected
-  // fields in firestore.rules now, and every Cloud Function below already
-  // defaults them when missing — there's nothing left for the client to
-  // proactively create here.
-  Future<void> ensureUserLifeDoc(String uid) async {}
-
   Map<String, dynamic> _stateFromData(
     Map<String, dynamic> data, {
     Timestamp? now,
@@ -212,17 +206,16 @@ class LifeService {
   /// the player already passed is free (see `consumeLevelEntryLife`). Weekly
   /// Topic rounds have no level to have passed and omit it.
   ///
-  /// With [preview] nothing is spent — it only answers whether the player
-  /// can afford the level and whether it's free. The play screen uses that
-  /// to gate on open and then charges once the first answer is given, so
-  /// backing out of a level costs nothing.
+  /// Nothing is spent — it only answers whether the player can afford the
+  /// level and whether it's free. The play screen uses that to gate on
+  /// open; the entry is charged once the first answer is given, so backing
+  /// out of a level costs nothing.
   Future<LifeEntryResult> tryConsumeLevelEntry(
     String uid, {
     bool? isAiTopic,
     String? categoryId,
     String? aiTopicId,
     int? levelNumber,
-    bool preview = false,
   }) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable(
@@ -234,7 +227,9 @@ class LifeService {
       if (categoryId != null) 'categoryId': categoryId,
       if (aiTopicId != null) 'aiTopicId': aiTopicId,
       if (levelNumber != null) 'levelNumber': levelNumber,
-      if (preview) 'preview': true,
+      // Read by servers from before the charge moved to the first
+      // answer; without it they spent the life on open.
+      'preview': true,
     });
 
     final data = Map<String, dynamic>.from(result.data as Map);
@@ -245,25 +240,8 @@ class LifeService {
     );
   }
 
-  /// `uid`/`cost` are kept for call-site compatibility but ignored — the
-  /// exchange now happens server-side (Cloud Function `buyFullLife`) since
-  /// `coins` is a protected field the client can no longer write directly.
-  /// The server uses its own mirrored cost constant, never this argument.
-  Future<bool> buyFullLife({
-    required String uid,
-    required int cost,
-  }) async {
-    try {
-      await buyLife();
-      return true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  /// [buyFullLife] for a caller that shows why it failed: the server says
-  /// whether the lives were already full or the coins short, and a bare
-  /// `false` dropped that.
+  /// Buys one life with coins. Throws with the server's reason when it
+  /// can't: the lives were already full, or the coins short.
   Future<void> buyLife() async {
     await FirebaseFunctions.instance
         .httpsCallable(

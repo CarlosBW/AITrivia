@@ -10,6 +10,7 @@ import {
   DAILY_STREAK_14_DAYS_COINS,
   xpRequiredForLevel,
   levelForXp,
+  levelUpBonus,
   calculateLevelRewards,
   calculateDailyCoinsEarned,
   calculateDailyXpEarned,
@@ -206,4 +207,25 @@ test("nivel: termina con un XP corrupto pero finito", () => {
   assert.ok(Number.isFinite(levelForXp(Number.MAX_VALUE)));
   assert.ok(Number.isFinite(levelForXp(1e300)));
   assert.ok(Number.isFinite(levelForXp(Number.MAX_SAFE_INTEGER)));
+});
+
+// El bono por subir de nivel solo se pagaba en el Reto Diario; ahora sale
+// de aquí para cualquier XP que se otorgue.
+test("bono de nivel: nada si el XP no cruza de nivel", () => {
+  assert.equal(levelUpBonus(0, xpRequiredForLevel(1) - 1, 15), 0);
+});
+
+test("bono de nivel: se paga al cruzar de nivel", () => {
+  assert.equal(levelUpBonus(0, xpRequiredForLevel(1), 15), 15);
+  assert.equal(levelUpBonus(xpRequiredForLevel(1) - 1, 1, 15), 15);
+});
+
+test("bono de nivel: uno por cada nivel ganado de una vez", () => {
+  const twoLevels = xpRequiredForLevel(1) + xpRequiredForLevel(2);
+  assert.equal(levelUpBonus(0, twoLevels, 15), 30);
+});
+
+test("bono de nivel: sin XP no hay bono", () => {
+  assert.equal(levelUpBonus(500, 0, 15), 0);
+  assert.equal(levelUpBonus(500, -20, 15), 0);
 });

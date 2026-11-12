@@ -164,4 +164,34 @@ void main() {
       expect(parseAnswerMap(<String, dynamic>{}), isEmpty);
     });
   });
+
+  group('matchLeftBehindByStop', () {
+    test('una búsqueda que seguía buscando no deja partida', () {
+      expect(
+        matchLeftBehindByStop({'status': 'searching', 'matchId': null}),
+        isNull,
+      );
+    });
+
+    // Cancelar justo cuando el servidor emparejaba dejaba al rival
+    // esperando en el lobby a alguien que ya se había ido.
+    test('una búsqueda recién emparejada deja su partida por cancelar', () {
+      expect(
+        matchLeftBehindByStop({'status': 'matched', 'matchId': 'm1'}),
+        'm1',
+      );
+    });
+
+    test('sin entrada, o ya detenida, no hay nada que cancelar', () {
+      expect(matchLeftBehindByStop(null), isNull);
+      expect(
+        matchLeftBehindByStop({'status': 'stopped', 'matchId': null}),
+        isNull,
+      );
+      expect(
+        matchLeftBehindByStop({'status': 'matched', 'matchId': ''}),
+        isNull,
+      );
+    });
+  });
 }

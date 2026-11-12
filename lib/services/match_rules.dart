@@ -99,3 +99,18 @@ Map<int, int> parseAnswerMap(Object? raw) {
   });
   return parsed;
 }
+
+/// The match to cancel when a search is stopped, if the server had just
+/// paired it.
+///
+/// Stopping a search and being matched can cross: the player taps cancel,
+/// or backgrounds the app, in the same moment the server writes the match.
+/// The stop used to wipe `matchId` from the queue entry and leave — so the
+/// match stayed open and the opponent sat in its lobby waiting for someone
+/// who had gone. [queue] is the `live_search` entry as read just before
+/// stopping it.
+String? matchLeftBehindByStop(Map<String, dynamic>? queue) {
+  if (queue == null || queue['status'] != 'matched') return null;
+  final matchId = queue['matchId'];
+  return matchId is String && matchId.isNotEmpty ? matchId : null;
+}

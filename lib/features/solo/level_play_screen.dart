@@ -392,10 +392,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     setState(() => _buyingLife = true);
 
     try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: uid,
-        cost: _buyLifeCost,
-      );
+      // Kept to say why it failed: every failure used to read as "not
+      // enough coins", a dropped connection included.
+      Object? failure;
+      try {
+        await LifeService.instance.buyLife();
+      } catch (e) {
+        failure = e;
+      }
+      final success = failure == null;
 
       await _syncLivesUiFromFirestore();
 
@@ -406,7 +411,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.soloNotEnoughCoins),
+            content: Text(
+              userFacingError(
+                l10n,
+                failure,
+                fallback: l10n.coinShopPurchaseFailed,
+              ),
+            ),
           ),
         );
         return;
@@ -436,10 +447,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     setState(() => _buyingLife = true);
 
     try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: uid,
-        cost: _buyLifeCost,
-      );
+      // Kept to say why it failed: every failure used to read as "not
+      // enough coins", a dropped connection included.
+      Object? failure;
+      try {
+        await LifeService.instance.buyLife();
+      } catch (e) {
+        failure = e;
+      }
+      final success = failure == null;
 
       await _syncLivesUiFromFirestore();
 
@@ -450,7 +466,13 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       if (!success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.soloNotEnoughCoins),
+            content: Text(
+              userFacingError(
+                l10n,
+                failure,
+                fallback: l10n.coinShopPurchaseFailed,
+              ),
+            ),
           ),
         );
         return;
@@ -764,14 +786,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     try {
       // A dropped connection or a cold start gets one quiet second try.
       final entry = await withConnectionRetry(() async {
-        await LifeService.instance.ensureUserLifeDoc(uid);
         return LifeService.instance.tryConsumeLevelEntry(
           uid,
           isAiTopic: widget.isAiTopic,
           categoryId: widget.categoryId,
           aiTopicId: widget.aiTopicId,
           levelNumber: widget.levelNumber,
-          preview: true,
         );
       });
 

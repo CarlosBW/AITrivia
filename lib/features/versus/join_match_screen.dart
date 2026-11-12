@@ -48,6 +48,7 @@ class _JoinMatchScreenState extends State<JoinMatchScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = userFacingError(AppLocalizations.of(context), e);
       });

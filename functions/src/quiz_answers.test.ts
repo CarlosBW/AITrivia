@@ -5,6 +5,7 @@ import {
   TIMED_OUT_ANSWER,
   mergeRecordedAnswers,
   resumeIndexFromBanked,
+  isCorrectAnswer,
   openWeeklyRound,
   isSoloRunSubmittable,
   maxAnswersForElapsed,
@@ -238,5 +239,22 @@ describe("openWeeklyRound", () => {
       questions: [{q: "a", options: ["x", "y"], answerIndex: 1}],
     };
     assert.equal(openWeeklyRound(keyed, "2026-11-09", "cine"), null);
+  });
+});
+
+describe("isCorrectAnswer", () => {
+  test("the right option is right, another is wrong", () => {
+    assert.equal(isCorrectAnswer(2, 2), true);
+    assert.equal(isCorrectAnswer(1, 2), false);
+  });
+
+  test("running out of time is never right", () => {
+    assert.equal(isCorrectAnswer(TIMED_OUT_ANSWER, 2), false);
+  });
+
+  // Regression: a missing key reads as -1, the same value a timeout is
+  // banked as, so the two matched and the timeout scored.
+  test("a timeout on a question with no key is not a point", () => {
+    assert.equal(isCorrectAnswer(TIMED_OUT_ANSWER, -1), false);
   });
 });

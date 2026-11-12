@@ -51,7 +51,6 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
   bool _isNavigating = false;
 
   Future<bool> _ensureHasLives() async {
-    await LifeService.instance.ensureUserLifeDoc(_uid);
     final lifeState = await LifeService.instance.refreshLives(_uid);
 
     final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;

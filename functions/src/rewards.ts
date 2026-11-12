@@ -159,3 +159,24 @@ export function calculateDailyStreakBonusCoins(streak: number): number {
   if (streak > 0 && streak % 3 === 0) return DAILY_STREAK_3_DAYS_COINS;
   return 0;
 }
+
+/**
+ * Coins for the levels a grant of XP takes a player through.
+ *
+ * Levelling up paid this bonus only when it happened on a Daily Challenge:
+ * the same XP earned from a level, a ranked match or an achievement crossed
+ * the same threshold and paid nothing. Every XP grant goes through here.
+ * @param {number} oldXp XP before the grant.
+ * @param {number} gainedXp XP being granted.
+ * @param {number} coinsPerLevel The bonus for each level gained.
+ * @return {number} Coins to add; 0 when no level was gained.
+ */
+export function levelUpBonus(
+  oldXp: number,
+  gainedXp: number,
+  coinsPerLevel: number
+): number {
+  if (!(gainedXp > 0)) return 0;
+  const levels = levelForXp(oldXp + gainedXp) - levelForXp(oldXp);
+  return Math.max(0, levels) * coinsPerLevel;
+}

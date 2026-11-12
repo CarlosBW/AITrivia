@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   answerCharge, lastBankedAnswerWrong, resolveWrongAnswerSpend,
+  tickAfterLifeGain,
 } from "./life_costs";
 
 // Mirrors index.ts: WRONG_ANSWER_COST_UNITS / NEW_PLAYER_GRACE_LEVELS.
@@ -197,5 +198,23 @@ describe("lastBankedAnswerWrong", () => {
   test("a verdict that isn't a clear yes counts as a miss", () => {
     assert.equal(lastBankedAnswerWrong({"0": {}}), true);
     assert.equal(lastBankedAnswerWrong({"0": null}), true);
+  });
+});
+
+describe("tickAfterLifeGain", () => {
+  const NOW = 1_700_000_000_000;
+
+  // Regression: buying a life restarted the clock, throwing away the time
+  // already waited towards the next half life.
+  test("a bought life leaves the clock where it was", () => {
+    assert.equal(tickAfterLifeGain({
+      lastTickMs: NOW - 80_000, newUnits: 6, maxUnits: 20, nowMs: NOW,
+    }), NOW - 80_000);
+  });
+
+  test("reaching the maximum resets it", () => {
+    assert.equal(tickAfterLifeGain({
+      lastTickMs: NOW - 80_000, newUnits: 20, maxUnits: 20, nowMs: NOW,
+    }), NOW);
   });
 });

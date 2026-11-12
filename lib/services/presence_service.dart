@@ -166,27 +166,6 @@ class PresenceService {
 
 
 
-  Future<Map<String, dynamic>?> getMyPresence() async {
-    final snap = await _userRef(uid).get().timeout(_presenceWriteTimeout);
-    final data = snap.data();
-    final presence = data?['presence'];
-
-    if (presence is Map) {
-      return Map<String, dynamic>.from(presence);
-    }
-
-    return null;
-  }
-
-  Future<void> refreshHeartbeatNow() async {
-    try {
-      await _setPresence(
-        status: _lastStatus,
-        inMatch: _lastInMatch,
-      );
-    } catch (_) {}
-  }
-
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchUserPresence({
     required String userId,
   }) {

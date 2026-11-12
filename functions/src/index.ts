@@ -32,6 +32,7 @@ import {
   calculateDailyXpEarned,
   calculateDailyScore,
   calculateDailyStreakBonusCoins,
+  levelUpBonus,
 } from "./rewards";
 import {
   dailySubmissionCheck,
@@ -59,6 +60,7 @@ import {
 } from "./ai_question_bank";
 import {
   TIMED_OUT_ANSWER,
+  isCorrectAnswer,
   isSoloRunSubmittable,
   maxAnswersForElapsed,
   mergeRecordedAnswers,
@@ -80,7 +82,11 @@ import {
   resolveAnswer,
   staleAsyncMatchOutcome,
 } from "./async_pvp_turns";
-import {answerCharge, lastBankedAnswerWrong} from "./life_costs";
+import {
+  answerCharge,
+  lastBankedAnswerWrong,
+  tickAfterLifeGain,
+} from "./life_costs";
 import {
   MAX_QUESTION_REPORTS_PER_DAY,
   QUESTION_REPORT_REASONS,
@@ -428,7 +434,7 @@ function computeVerifiedPvpScore(questions: unknown, answers: unknown): number {
     );
     const selected = answerMap[String(i)];
     if (selected === undefined) continue;
-    if (safeInt(selected, -2) === correctIndex) score++;
+    if (isCorrectAnswer(safeInt(selected, -2), correctIndex)) score++;
   }
   return score;
 }
@@ -1072,12 +1078,21 @@ export const finalizePvpMatch = onDocumentUpdated(
           guestUser, guestReward.coinsEarned
         );
 
+        // The level-up bonus rides on top of the daily PvP coin cap: it
+        // pays for the level, not for the match.
+        const hostCoinsPaid = hostCoinClamp.payable + levelUpBonus(
+          safeInt(hostUser.xp, 0), hostReward.xpEarned, DAILY_LEVEL_UP_COINS
+        );
+        const guestCoinsPaid = guestCoinClamp.payable + levelUpBonus(
+          safeInt(guestUser.xp, 0), guestReward.xpEarned, DAILY_LEVEL_UP_COINS
+        );
+
         ratingResults[hostUid] = {
           oldRating: hostOldRating,
           newRating: hostReward.newRating,
           ratingDelta: hostReward.ratingDelta,
           xpEarned: hostReward.xpEarned,
-          coinsEarned: hostCoinClamp.payable,
+          coinsEarned: hostCoinsPaid,
           winStreak: hostReward.newStreak,
           oldLeagueName: hostReward.oldLeague.name,
           newLeagueName: hostReward.newLeague.name,
@@ -1088,7 +1103,7 @@ export const finalizePvpMatch = onDocumentUpdated(
           newRating: guestReward.newRating,
           ratingDelta: guestReward.ratingDelta,
           xpEarned: guestReward.xpEarned,
-          coinsEarned: guestCoinClamp.payable,
+          coinsEarned: guestCoinsPaid,
           winStreak: guestReward.newStreak,
           oldLeagueName: guestReward.oldLeague.name,
           newLeagueName: guestReward.newLeague.name,
@@ -1110,11 +1125,11 @@ export const finalizePvpMatch = onDocumentUpdated(
             ...bestLeaguePatch(hostUser, hostReward.newLeague),
             xp: admin.firestore.FieldValue.increment(hostReward.xpEarned),
             coins: admin.firestore.FieldValue.increment(
-              hostCoinClamp.payable
+              hostCoinsPaid
             ),
             ...hostCoinClamp.patch,
             lastRankedXpEarned: hostReward.xpEarned,
-            lastRankedCoinsEarned: hostCoinClamp.payable,
+            lastRankedCoinsEarned: hostCoinsPaid,
             ...(matchQuestionCount > 0 ? {
               correctAnswers: admin.firestore.FieldValue.increment(hostScore),
               wrongAnswers:
@@ -1153,11 +1168,11 @@ export const finalizePvpMatch = onDocumentUpdated(
             ...bestLeaguePatch(guestUser, guestReward.newLeague),
             xp: admin.firestore.FieldValue.increment(guestReward.xpEarned),
             coins: admin.firestore.FieldValue.increment(
-              guestCoinClamp.payable
+              guestCoinsPaid
             ),
             ...guestCoinClamp.patch,
             lastRankedXpEarned: guestReward.xpEarned,
-            lastRankedCoinsEarned: guestCoinClamp.payable,
+            lastRankedCoinsEarned: guestCoinsPaid,
             ...(matchQuestionCount > 0 ? {
               correctAnswers: admin.firestore.FieldValue.increment(guestScore),
               wrongAnswers:
@@ -2089,7 +2104,6 @@ export const createPrivateLiveMatch = onCall({timeoutSeconds: 60},
     // room, join it with a second account and win by default, over and
     // over; ranked play only comes from public matchmaking, which pairs
     // by rating.
-    const ranked = false;
     await assertActiveCategory(params.categoryId);
 
     const userSnap = await db.collection("users").doc(uid).get();
@@ -2110,10 +2124,10 @@ export const createPrivateLiveMatch = onCall({timeoutSeconds: 60},
       hostSeat: liveSeatFor(user),
       guestSeat: null,
       params,
-      ranked,
+      ranked: false,
       questions,
       status: "waiting",
-      extra: {matchType: ranked ? "ranked_private" : "private"},
+      extra: {matchType: "private"},
     });
     await batch.commit();
 
@@ -2214,7 +2228,9 @@ function verdictsFor(
   for (const [key, selected] of Object.entries(answers)) {
     const i = parseInt(key, 10);
     if (Number.isNaN(i) || i < 0 || i >= keyed.length) continue;
-    out[key] = safeInt(selected, -2) === safeInt(keyed[i].answerIndex, -1);
+    out[key] = isCorrectAnswer(
+      safeInt(selected, -2), safeInt(keyed[i].answerIndex, -1)
+    );
   }
   return out;
 }
@@ -2346,7 +2362,7 @@ export const submitLiveMatchAnswer = onCall(async (request) => {
     return {
       storedIndex: resolution.storedIndex,
       correctIndex,
-      correct: resolution.storedIndex === correctIndex,
+      correct: isCorrectAnswer(resolution.storedIndex, correctIndex),
       timedOut: resolution.timedOut,
       nextIndex: resolution.nextIndex,
       nextRemainingMs: resolution.nextRemainingMs,
@@ -2434,7 +2450,6 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
     const params = clampLiveMatchParams(old);
     // A rematch is casual even after a ranked match: the same two players
     // trading ranked wins back and forth was a way to farm rating.
-    const ranked = false;
     // A request only stands for a few minutes — see rematchRequestIsFresh.
     const opponentAsked = (data: FirebaseFirestore.DocumentData) =>
       data.rematchRequests?.[opponentUid] === true && rematchRequestIsFresh(
@@ -2493,12 +2508,12 @@ export const requestLiveRematch = onCall({timeoutSeconds: 60},
           hostSeat: seats[hostUid],
           guestSeat: seats[guestUid],
           params,
-          ranked,
+          ranked: false,
           questions,
           status: "playing",
           extra: {
             matchmakingType: String(data.matchmakingType || "") ||
-            (ranked ? "ranked_rematch" : "casual_rematch"),
+            "casual_rematch",
             previousMatchId: matchId,
           },
         });
@@ -3469,7 +3484,11 @@ function asyncMatchContextFor(
   }
 
   if (String(data.status || "") === "declined") {
-    throw new HttpsError("failed-precondition", "Challenge was declined.");
+    // The reason lets the app say what happened: a bare error read as a
+    // dropped connection, with a "retry" that could never work.
+    throw new HttpsError("failed-precondition", "Challenge was declined.", {
+      reason: "challenge_declined",
+    });
   }
 
   const role: AsyncMatchRole =
@@ -3642,7 +3661,7 @@ export const submitAsyncPvpAnswer = onCall(async (request) => {
     return {
       storedIndex: resolution.storedIndex,
       correctIndex,
-      correct: resolution.storedIndex === correctIndex,
+      correct: isCorrectAnswer(resolution.storedIndex, correctIndex),
       timedOut: resolution.timedOut,
       nextIndex: resolution.nextIndex,
       nextRemainingMs: resolution.nextRemainingMs,
@@ -4240,7 +4259,7 @@ function computeVerifiedQuizResult(
 
     totalAnswered++;
     const correctIndex = safeInt(q.answerIndex ?? q.correctIndex, -1);
-    if (a.selectedIndex === correctIndex) correct++;
+    if (isCorrectAnswer(a.selectedIndex, correctIndex)) correct++;
   }
 
   return {correct, totalAnswered};
@@ -5089,7 +5108,11 @@ export const answerDailyQuestion = onCall(async (request) => {
     const key = String(questionIndex);
     if (Object.prototype.hasOwnProperty.call(banked, key)) {
       const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
-      return {correct: stored === correctIndex, correctIndex, remainingMs};
+      return {
+        correct: isCorrectAnswer(stored, correctIndex),
+        correctIndex,
+        remainingMs,
+      };
     }
 
     if (dailyAnswerTooLate(startedAtMs, durationMs, now,
@@ -5099,7 +5122,7 @@ export const answerDailyQuestion = onCall(async (request) => {
       });
     }
 
-    const correct = selectedIndex === correctIndex;
+    const correct = isCorrectAnswer(selectedIndex, correctIndex);
     tx.set(dailyRef, {
       answers: {[key]: selectedIndex},
       results: {[key]: {correct, correctIndex}},
@@ -6074,6 +6097,13 @@ export const submitSoloLevelResult = onCall(async (request) => {
       grantedCoins += COMPLETE_FIXED_CATEGORY_COINS;
     }
 
+    // Levelling up pays its bonus whatever the XP came from — see
+    // levelUpBonus. Counted into the coins the result screen shows.
+    const levelUpBonusCoins = levelUpBonus(
+      prevUserXp, grantedXp, DAILY_LEVEL_UP_COINS
+    );
+    grantedCoins += levelUpBonusCoins;
+
     const progressPatch: Record<string, unknown> = {
       completedLevels: Array.from(prevCompleted).sort((a, b) => a - b),
       passedLevels: Array.from(prevPassed).sort((a, b) => a - b),
@@ -6148,6 +6178,7 @@ export const submitSoloLevelResult = onCall(async (request) => {
     return {
       grantedXp,
       grantedCoins,
+      levelUpBonusCoins,
       passed: passedLevel,
       newlyPassed,
       userTotalXp: prevUserXp + grantedXp,
@@ -6536,7 +6567,7 @@ export const answerSoloQuestion = onCall(async (request) => {
     if (Object.prototype.hasOwnProperty.call(banked, key)) {
       const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
       return {
-        correct: stored === correctIndex,
+        correct: isCorrectAnswer(stored, correctIndex),
         correctIndex,
         alreadyAnswered: true,
         entryCharged: false,
@@ -6549,7 +6580,7 @@ export const answerSoloQuestion = onCall(async (request) => {
     const passed = ((progressSnap.data()?.passedLevels as unknown[]) || [])
       .map((entry) => safeInt(entry, 0));
     const replayFree = passed.includes(levelNumber);
-    const correct = selectedIndex === correctIndex;
+    const correct = isCorrectAnswer(selectedIndex, correctIndex);
 
     const charge = answerCharge({
       chargeEntry: firstOfRun && !replayFree,
@@ -6625,7 +6656,9 @@ async function moveSessionKeyOut(
   for (const [index, selected] of Object.entries(banked)) {
     const correctIndex = split.answerIndices[safeInt(index, -1)] ?? -1;
     results[index] = {
-      correct: safeInt(selected, TIMED_OUT_ANSWER) === correctIndex,
+      correct: isCorrectAnswer(
+        safeInt(selected, TIMED_OUT_ANSWER), correctIndex
+      ),
       correctIndex,
     };
   }
@@ -6690,7 +6723,7 @@ export const claimAchievementReward = onCall(async (request) => {
   );
 
   return db.runTransaction(async (tx) => {
-    const snap = await tx.get(achievementRef);
+    const [snap, userSnap] = await tx.getAll(achievementRef, userRef);
     const data = snap.data();
 
     // localizedErrorFor's read isn't part of this transaction, which is
@@ -6721,7 +6754,13 @@ export const claimAchievementReward = onCall(async (request) => {
     tx.set(
       userRef,
       {
-        coins: admin.firestore.FieldValue.increment(achievement.rewardCoins),
+        // With the level-up bonus, if this XP takes them up a level.
+        coins: admin.firestore.FieldValue.increment(
+          achievement.rewardCoins + levelUpBonus(
+            safeInt(userSnap.data()?.xp, 0), achievement.rewardXp,
+            DAILY_LEVEL_UP_COINS
+          )
+        ),
         xp: admin.firestore.FieldValue.increment(achievement.rewardXp),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
@@ -6836,20 +6875,6 @@ function computeLifeState(
 }
 
 /**
- * Mirrors life_service.dart's `_stateFromData` (lifeUnits/maxLifeUnits
- * portion only — buyFullLife doesn't need the countdown fields).
- * @param {Record<string, unknown>} data User document data.
- * @return {{lifeUnits:number, maxLifeUnits:number}} Current life state,
- * accounting for regen elapsed since the last tick.
- */
-function computeLifeUnits(
-  data: Record<string, unknown>
-): {lifeUnits: number; maxLifeUnits: number} {
-  const {lifeUnits, maxLifeUnits} = computeLifeState(data, Date.now());
-  return {lifeUnits, maxLifeUnits};
-}
-
-/**
  * @param {LifeState} state Computed life state.
  * @return {Record<string, unknown>} JSON-safe response shape for the
  * client — `lastLifeTickAtMs` instead of a Firestore Timestamp, since
@@ -6937,12 +6962,6 @@ export const consumeLevelEntryLife = onCall(async (request) => {
   const aiTopicId = cleanDocId(request.data?.aiTopicId) || null;
   const levelNumber = safeInt(request.data?.levelNumber, -1);
 
-  // Answers "would this cost a life?" without spending one. The play screen
-  // asks on open so it can gate a player who can't afford the level, then
-  // charges for real once they actually answer — opening a level and backing
-  // out used to cost a life for nothing.
-  const preview = request.data?.preview === true;
-
   const userRef = db.collection("users").doc(uid);
 
   const progressRef = levelNumber < 1 ? null :
@@ -6980,24 +6999,10 @@ export const consumeLevelEntryLife = onCall(async (request) => {
       return {ok: false, replayFree: false, ...lifeStateResponse(state)};
     }
 
-    if (preview) {
-      return {ok: true, replayFree: false, ...lifeStateResponse(state)};
-    }
-
-    const wasFull = state.lifeUnits >= state.maxLifeUnits;
-    const newUnits = state.lifeUnits - LEVEL_ENTRY_COST_UNITS;
-    const newTickMs = (wasFull && newUnits < state.maxLifeUnits) ?
-      Date.now() : state.lastTickMs;
-
-    tx.set(userRef, {
-      lifeUnits: newUnits,
-      maxLifeUnits: state.maxLifeUnits,
-      lifeRegenSeconds: state.lifeRegenSeconds,
-      lastLifeTickAt: admin.firestore.Timestamp.fromMillis(newTickMs),
-    }, {merge: true});
-
-    return {ok: true, replayFree: false,
-      ...lifeStateResponse(stateAfterSpend(state, newUnits, newTickMs))};
+    // Nothing is spent here. The entry is charged with the first answer
+    // (answerSoloQuestion), so this only says whether the player can
+    // afford the level; the branch that charged on open is gone.
+    return {ok: true, replayFree: false, ...lifeStateResponse(state)};
   });
 });
 
@@ -7014,7 +7019,9 @@ export const buyFullLife = onCall(async (request) => {
     const data = snap.data() || {};
 
     const coins = safeInt(data.coins, 0);
-    const {lifeUnits, maxLifeUnits} = computeLifeUnits(data);
+    const nowMs = Date.now();
+    const state = computeLifeState(data, nowMs);
+    const {lifeUnits, maxLifeUnits} = state;
 
     if (coins < BUY_FULL_LIFE_COST) {
       throw localizedError(
@@ -7040,7 +7047,14 @@ export const buyFullLife = onCall(async (request) => {
         coins: newCoins,
         lifeUnits: newLifeUnits,
         maxLifeUnits,
-        lastLifeTickAt: admin.firestore.Timestamp.now(),
+        lastLifeTickAt: admin.firestore.Timestamp.fromMillis(
+          tickAfterLifeGain({
+            lastTickMs: state.lastTickMs,
+            newUnits: newLifeUnits,
+            maxUnits: maxLifeUnits,
+            nowMs,
+          })
+        ),
       },
       {merge: true}
     );
@@ -10784,12 +10798,14 @@ export const answerWeeklyQuestion = onCall(async (request) => {
     if (Object.prototype.hasOwnProperty.call(banked, key)) {
       const stored = safeInt(banked[key], TIMED_OUT_ANSWER);
       return {
-        correct: stored === correctIndex, correctIndex, lifeLost: false,
+        correct: isCorrectAnswer(stored, correctIndex),
+        correctIndex,
+        lifeLost: false,
         ...lifeStateResponse(state),
       };
     }
 
-    const correct = selectedIndex === correctIndex;
+    const correct = isCorrectAnswer(selectedIndex, correctIndex);
     const charge = answerCharge({
       chargeEntry: false,
       lifeUnits: state.lifeUnits,
@@ -12027,7 +12043,12 @@ async function scrubSharedAccountData(
  * see scrubSharedAccountData. public/delete-account.html and
  * public/privacy.html describe this to players; keep them in step.
  */
-export const deleteMyAccount = onCall(async (request) => {
+export const deleteMyAccount = onCall({
+  // It walks every match, invite, friend and leaderboard row the account
+  // touched; at the 60s default a long-standing account could be cut off
+  // halfway through its own deletion.
+  timeoutSeconds: 300,
+}, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");

@@ -9,6 +9,7 @@ import '../../services/match_service.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/player_avatar_widget.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../l10n/user_facing_error.dart';
 import '../../services/locale_controller.dart';
 import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
@@ -87,6 +88,21 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     }
 
     super.dispose();
+  }
+
+  /// Marks me ready or not. A failed call used to go nowhere: the button
+  /// just didn't change, with nothing to say why.
+  Future<void> _setReady(bool ready) async {
+    try {
+      await _service.setReady(widget.matchId, ready);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(userFacingError(AppLocalizations.of(context), e)),
+        ),
+      );
+    }
   }
 
   Future<void> _checkOpponentPresence() async {
@@ -195,7 +211,6 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser!.uid;
-    final service = MatchService();
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -402,12 +417,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     child: FilledButton.icon(
                       onPressed: !hasGuest || myReady
                           ? null
-                          : () async {
-                              await service.setReady(
-                                widget.matchId,
-                                true,
-                              );
-                            },
+                          : () => _setReady(true),
                       icon: Icon(
                         myReady
                             ? Icons.hourglass_top
@@ -427,12 +437,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: () async {
-                          await service.setReady(
-                            widget.matchId,
-                            false,
-                          );
-                        },
+                        onPressed: () => _setReady(false),
                         child: Text(l10n.matchLobbyCancelReady),
                       ),
                     ),

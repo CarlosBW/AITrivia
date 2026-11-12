@@ -224,3 +224,21 @@ export function openWeeklyRound(
     results: map(data.results),
   };
 }
+
+/**
+ * Whether a banked answer is the right one.
+ *
+ * Not a bare comparison: a question whose key is missing reads as -1, and
+ * so does an answer the clock ran out on (TIMED_OUT_ANSWER). Compared
+ * directly, running out of time on a question without a key counted as
+ * getting it right.
+ * @param {number} selected The option banked, or TIMED_OUT_ANSWER.
+ * @param {number} correctIndex The question's right option; -1 if unknown.
+ * @return {boolean} True only for a real option that is the right one.
+ */
+export function isCorrectAnswer(
+  selected: number,
+  correctIndex: number
+): boolean {
+  return correctIndex >= 0 && selected === correctIndex;
+}

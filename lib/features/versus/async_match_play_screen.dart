@@ -80,6 +80,10 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   bool _answerInFlight = false;
   bool _openingTurn = false;
   bool _turnError = false;
+
+  // The turn couldn't be opened because the opponent declined the
+  // challenge — not a connection problem, and nothing to retry.
+  bool _challengeDeclined = false;
   bool _submittedFinal = false;
   bool _presenceInitialized = false;
   bool _leavingScreen = false;
@@ -338,9 +342,12 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
         _turnError = false;
         _resetPerQuestion();
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _turnError = true);
+      setState(() {
+        _turnError = true;
+        _challengeDeclined = isChallengeDeclinedError(e);
+      });
     } finally {
       _openingTurn = false;
     }
@@ -949,6 +956,33 @@ class _AsyncMatchPlayScreenState extends State<AsyncMatchPlayScreen> {
   /// closing the round.
   Widget _buildTurnErrorCard(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // A declined challenge used to land here too, as a connection error
+    // with a retry that could never work.
+    if (_challengeDeclined) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.block, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                l10n.notificationsChallengeDeclined,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.livesGoBack),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Center(
       child: Padding(

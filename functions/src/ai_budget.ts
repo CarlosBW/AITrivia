@@ -40,7 +40,10 @@ export interface AiMeterCaps {
  * their worst case a fraction of that.
  */
 export const AI_METER_CAPS: Record<AiMeter, AiMeterCaps> = {
-  levels: {global: 5000, perUser: 50},
+  // 75 levels a day per account: 50 stopped a player partway through a
+  // topic on a long session of new AI levels, and nothing about that is
+  // abuse. Still seven full ten-level topics' worth.
+  levels: {global: 5000, perUser: 75},
   suggestions: {global: 2000, perUser: 30},
 };
 

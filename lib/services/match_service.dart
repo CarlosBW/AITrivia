@@ -181,24 +181,37 @@ class MatchService {
   Future<void> stopLiveSearch() async {
     final ref = _liveSearchRef(uid);
 
-    final snap = await ref.get();
-    final data = snap.data();
+    // In a transaction, so a match the server writes while this runs is
+    // seen rather than overwritten — see [rules.matchLeftBehindByStop].
+    final leftBehind = await _db.runTransaction<String?>((tx) async {
+      final data = (await tx.get(ref)).data();
 
-    // Evita writes duplicados si ya está detenido.
-    if (data != null &&
-        (data['status'] ?? '') == 'stopped' &&
-        data['matchId'] == null &&
-        data['opponentUid'] == null) {
-      return;
+      // Evita writes duplicados si ya está detenido.
+      if (data != null &&
+          (data['status'] ?? '') == 'stopped' &&
+          data['matchId'] == null &&
+          data['opponentUid'] == null) {
+        return null;
+      }
+
+      tx.set(ref, {
+        'status': 'stopped',
+        'matchId': null,
+        'opponentUid': null,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastHeartbeatAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return rules.matchLeftBehindByStop(data);
+    });
+
+    if (leftBehind != null) {
+      // Best-effort: the server only cancels a match still in its lobby,
+      // and its own sweep closes one this misses.
+      try {
+        await cancelWaitingMatch(leftBehind);
+      } catch (_) {}
     }
-
-    await ref.set({
-      'status': 'stopped',
-      'matchId': null,
-      'opponentUid': null,
-      'updatedAt': FieldValue.serverTimestamp(),
-      'lastHeartbeatAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> updateLiveSearchHeartbeat() async {
@@ -278,11 +291,6 @@ class MatchService {
     return rules.formatCooldownRemaining(
       cooldownUntil.toDate().difference(DateTime.now()),
     );
-  }
-
-  Future<Timestamp?> getActivePvpCooldownUntil() async {
-    final snap = await _userRef(uid).get();
-    return _activePvpCooldownUntil(snap.data());
   }
 
   DocumentReference<Map<String, dynamic>> _userRef(String userId) =>
@@ -718,4 +726,12 @@ class MatchService {
         .limit(limit)
         .snapshots();
   }
+}
+
+/// Whether a failed async-match call says the challenge was declined (the
+/// server marks it with `details.reason`), rather than not getting through.
+bool isChallengeDeclinedError(Object error) {
+  if (error is! FirebaseFunctionsException) return false;
+  final details = error.details;
+  return details is Map && details['reason'] == 'challenge_declined';
 }

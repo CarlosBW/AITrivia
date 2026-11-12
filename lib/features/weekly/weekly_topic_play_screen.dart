@@ -12,8 +12,11 @@ import '../../l10n/user_facing_error.dart';
 import '../../l10n/localized_content.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_illustration.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../widgets/question_answer_card.dart';
+import '../../widgets/segmented_progress.dart';
 import '../review/question_review_screen.dart';
 import '../../l10n/lives_format.dart';
 
@@ -53,7 +56,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
   int? _revealedIndex;
   bool _awaitingVerdict = false;
   final Map<int, int> _correctIndexByQuestion = {};
-  bool? _lastCorrect;
   Color _flashColor = Colors.transparent;
 
   int _lifeUnits = 0;
@@ -205,7 +207,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       _flashColor = isCorrect
           ? context.appColors.success.withValues(alpha: 0.18)
           : context.appColors.danger.withValues(alpha: 0.18);
-      _lastCorrect = isCorrect;
       _lifeUnits = lifeUnits;
       if (runEndsOutOfLives(
         lifeUnits: lifeUnits,
@@ -235,7 +236,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       _index++;
       _selectedIndex = null;
       _revealedIndex = null;
-      _lastCorrect = null;
       _flashColor = Colors.transparent;
     });
   }
@@ -317,29 +317,15 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
     }
   }
 
-  Color _buttonColor(int index) {
-    final primary = Theme.of(context).colorScheme.primary;
-    if (_selectedIndex == null) return primary;
-    // Picked, waiting for the verdict: only the pick stands out.
-    if (_revealedIndex == null) {
-      return index == _selectedIndex
-          ? Color.lerp(primary, Colors.black, 0.3)!
-          : primary;
-    }
-    if (index == _revealedIndex) return context.appColors.success;
-    if (index == _selectedIndex) {
-      return _lastCorrect == true ? context.appColors.success : context.appColors.danger;
-    }
-    return Theme.of(context).colorScheme.surfaceContainerHighest;
-  }
-
-  Color _buttonTextColor(int index) {
-    if (_revealedIndex != null &&
-        index != _revealedIndex &&
-        index != _selectedIndex) {
-      return Theme.of(context).colorScheme.onSurfaceVariant;
-    }
-    return context.appColors.onAccent;
+  /// One entry per question for the progress bar: right, wrong, or not
+  /// answered yet. Answers go in question order.
+  List<bool?> _questionResults() {
+    return [
+      for (var i = 0; i < _questions.length; i++)
+        i < _answers.length && _correctIndexByQuestion[i] != null
+            ? _answers[i]['selectedIndex'] == _correctIndexByQuestion[i]
+            : null,
+    ];
   }
 
   @override
@@ -380,6 +366,7 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
     final q = _questions[_index];
     final options = _options(q);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -395,15 +382,63 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
         height: double.infinity,
         color: _flashColor,
         child: AbsorbPointer(
-          absorbing: _submitting,
+          absorbing: _submitting || _selectedIndex != null,
           // Scrolls instead of fitting with a Spacer: a long question with
           // four long answers overflowed a small phone or a large font.
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                SegmentedProgress(
+                  results: _questionResults(),
+                  current: _index,
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
+                    CategoryIllustration(
+                      categoryId: widget.categoryId,
+                      name: widget.categoryName,
+                      size: 40,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.categoryName.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: context.readableOnOwnTint(
+                                colorScheme.primary,
+                                wash: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.levelPlayQuestionOfTotal(
+                              _index + 1,
+                              _questions.length,
+                            ),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Where a level shows its clock: a round has none, and
+                    // what runs out here is lives.
                     Icon(
                       Icons.favorite,
                       color: context.appColors.danger,
@@ -411,87 +446,30 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      AppLocalizations.of(context).lives(_lifeUnits),
+                      l10n.lives(_lifeUnits),
                       style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    Text(
-                      l10n.weeklyTopicRoundQuestionCount(
-                        _index + 1,
-                        _questions.length,
-                      ),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  _questionText(q),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
+                const SizedBox(height: 22),
+                // The same card as a level and the Daily Challenge. This
+                // screen used to draw its own plain buttons.
+                QuestionAnswerCard(
+                  qText: _questionText(q),
+                  options: options,
+                  answerIndex: _revealedIndex ?? -1,
+                  selectedIndex: _selectedIndex,
+                  locked: _revealedIndex != null,
+                  pending: _awaitingVerdict,
+                  onTapAnswer: _answer,
                 ),
-                const SizedBox(height: 24),
-                ...List.generate(options.length, (i) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        // The disabled colours too: once an answer is
-                        // picked every option is disabled, and a disabled
-                        // button ignores backgroundColor, so the right and
-                        // wrong answers were never shown.
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _buttonColor(i),
-                          foregroundColor: _buttonTextColor(i),
-                          disabledBackgroundColor:
-                              _buttonColor(i),
-                          disabledForegroundColor:
-                              _buttonTextColor(i),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 16,
-                          ),
-                        ),
-                        onPressed: _selectedIndex != null || _submitting
-                            ? null
-                            : () => _answer(i),
-                        child: _awaitingVerdict && i == _selectedIndex
-                            // Sent, not judged yet: a slow verdict otherwise
-                            // looked like a tap that didn't register.
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      options[i],
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: _buttonTextColor(i),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Text(options[i], textAlign: TextAlign.center),
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 24),
-                CountPill(
-                  icon: Icons.check_circle_rounded,
-                  label: l10n.playCorrectCount(_correct),
-                  color: context.appColors.success,
+                const SizedBox(height: 12),
+                Center(
+                  child: CountPill(
+                    icon: Icons.check_circle_rounded,
+                    label: l10n.playCorrectCount(_correct),
+                    color: context.appColors.success,
+                  ),
                 ),
                 if (_submitFailed) ...[
                   const SizedBox(height: 16),

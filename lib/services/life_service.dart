@@ -273,3 +273,16 @@ class LifeService {
         .call();
   }
 }
+
+/// Whether a run is over for lack of lives after an answer.
+///
+/// Only a miss ends it. The entry costs a whole life, so a player holding
+/// exactly one is at zero as soon as they pay it, and ending the run on the
+/// balance alone meant that life bought a single question. Mirrors
+/// `answerCharge` in functions/src/life_costs.ts, which is what enforces it.
+bool runEndsOutOfLives({
+  required int lifeUnits,
+  required bool answeredCorrectly,
+}) {
+  return lifeUnits <= 0 && !answeredCorrectly;
+}

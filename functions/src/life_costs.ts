@@ -58,7 +58,7 @@ export function resolveWrongAnswerSpend(
 
 /** What answering one question does to the player's lives. */
 export interface AnswerCharge {
-  /** Not allowed: too little life for the entry, or none left at all. */
+  /** Not allowed: too little life for the entry, or out after a miss. */
   refused: boolean;
   newUnits: number;
   /** The level's entry was paid with this answer. */
@@ -74,6 +74,13 @@ export interface AnswerCharge {
  * Both used to be separate calls the client chose to make, so a modified
  * client simply didn't, and played without lives. Answering is judged on
  * the server now, and this is charged in the same step.
+ *
+ * Running out ends a run on a miss, not on the balance alone. The entry is
+ * a whole life, so a player holding exactly one is at zero the moment they
+ * pay it; refusing every answer at zero meant that life bought a single
+ * question. At zero the run goes on until the first wrong answer — which
+ * has nothing left to take — and only then is the next one refused, until
+ * the player has life again.
  * @param {object} params The run and the answer.
  * @return {AnswerCharge} What to store and tell the player.
  */
@@ -84,6 +91,8 @@ export function answerCharge(params: {
   wrongCost: number;
   gamesPlayed: number;
   graceLevels: number;
+  /** The run's previous answer was wrong — see [lastBankedAnswerWrong]. */
+  lastAnswerWrong: boolean;
   correct: boolean;
 }): AnswerCharge {
   const held = Math.max(0, Math.floor(params.lifeUnits));
@@ -92,7 +101,9 @@ export function answerCharge(params: {
   };
 
   if (params.chargeEntry && held < params.entryCost) return refused;
-  if (!params.chargeEntry && held <= 0) return refused;
+  if (!params.chargeEntry && held <= 0 && params.lastAnswerWrong) {
+    return refused;
+  }
 
   const afterEntry = params.chargeEntry ? held - params.entryCost : held;
   if (params.correct) {
@@ -109,4 +120,24 @@ export function answerCharge(params: {
     refused: false, newUnits: spend.newUnits,
     entryCharged: params.chargeEntry, lifeLost: spend.lifeLost,
   };
+}
+
+/**
+ * Whether the most recent answer banked in a run was wrong.
+ *
+ * Questions are answered in order, so the highest index banked is the
+ * latest answer. Anything but a clear `correct: true` counts as a miss.
+ * @param {unknown} results The session's `results` map, by question index.
+ * @return {boolean} False when nothing has been banked yet.
+ */
+export function lastBankedAnswerWrong(results: unknown): boolean {
+  if (results === null || typeof results !== "object") return false;
+
+  const entries = Object.entries(results as Record<string, unknown>)
+    .map(([index, verdict]) => ({index: Number(index), verdict}))
+    .filter((entry) => Number.isInteger(entry.index));
+  if (entries.length === 0) return false;
+
+  const last = entries.reduce((a, b) => (b.index > a.index ? b : a));
+  return (last.verdict as {correct?: unknown} | null)?.correct !== true;
 }

@@ -325,6 +325,7 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
     try {
       final result = await _service.saveResult(
         uid: widget.uid,
+        dateId: _dateId,
         correct: _correct,
         totalAnswered: _totalAnswered,
       );

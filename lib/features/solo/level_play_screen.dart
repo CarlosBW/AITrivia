@@ -313,10 +313,12 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     });
   }
 
-  /// As [_syncLivesUiFromFirestore], but also ends the level when the bar
-  /// hits zero. [knownState] serves the same purpose here.
+  /// As [_syncLivesUiFromFirestore], but also ends the level when a miss
+  /// leaves the bar at zero — see [runEndsOutOfLives]. [knownState] serves
+  /// the same purpose here.
   Future<void> _refreshLivesAndStopIfEmpty({
     Map<String, dynamic>? knownState,
+    required bool answeredCorrectly,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -335,7 +337,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       _secondsToNextHalfLife = state['secondsToNextHalfLife'] as int?;
       _lastLifeTickAt = state['lastLifeTickAt'] as Timestamp?;
 
-      if (lifeUnits <= 0) {
+      if (runEndsOutOfLives(
+        lifeUnits: lifeUnits,
+        answeredCorrectly: answeredCorrectly,
+      )) {
         _endedByNoLives = true;
         _locked = true;
         _answerSubmitting = false;
@@ -551,7 +556,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       }
 
       if (verdict.lifeState != null) {
-        await _refreshLivesAndStopIfEmpty(knownState: verdict.lifeState);
+        await _refreshLivesAndStopIfEmpty(
+          knownState: verdict.lifeState,
+          answeredCorrectly: verdict.correct,
+        );
       }
       if (!mounted) return;
 
@@ -862,7 +870,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                   }
 
                   if (!sesExists) {
-                    if (!_creatingSession) {
+                    if (shouldStartLevelSession(
+                      creating: _creatingSession,
+                      hasError: _sessionError != null,
+                    )) {
                       _creatingSession = true;
                       Future.microtask(() async {
                         try {

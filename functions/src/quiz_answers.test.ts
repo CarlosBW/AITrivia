@@ -5,7 +5,7 @@ import {
   TIMED_OUT_ANSWER,
   mergeRecordedAnswers,
   resumeIndexFromBanked,
-  sessionAfterSubmit,
+  openWeeklyRound,
   isSoloRunSubmittable,
   maxAnswersForElapsed,
   scoreNewAnswers,
@@ -100,79 +100,6 @@ describe("resumeIndexFromBanked", () => {
   });
 });
 
-describe("sessionAfterSubmit", () => {
-  const questions = [
-    {q: "a", options: ["x", "y"], answerIndex: 0},
-    {q: "b", options: ["x", "y"], answerIndex: 1},
-  ];
-
-  // Regression: a fixed-category session outlives its submission, and it
-  // used to keep every banked answer. Reopening the level resumed past the
-  // last question, so the client submitted the same run again without
-  // showing a single question — a fresh XP grant per reopen, and a failed
-  // level that could never be replayed.
-  test("a submitted session reopens at the first question", () => {
-    const session = {
-      categoryId: "cine",
-      levelNumber: 1,
-      questions,
-      answers: {"0": 1, "1": 1},
-    };
-    assert.equal(resumeIndexFromBanked(session.answers), 2);
-
-    const reopened = sessionAfterSubmit(session);
-
-    assert.equal(
-      resumeIndexFromBanked(
-        reopened.answers as Record<string, unknown> | undefined
-      ),
-      0
-    );
-  });
-
-  // The server's verdicts on the last run would show a replay as already
-  // judged.
-  test("drops the last run's verdicts too", () => {
-    const reopened = sessionAfterSubmit({
-      questions,
-      answers: {"0": 1},
-      results: {"0": {correct: false, correctIndex: 0}},
-    });
-    assert.equal(reopened.results, undefined);
-  });
-
-  test("keeps the slate and everything else about the session", () => {
-    const reopened = sessionAfterSubmit({
-      categoryId: "cine",
-      levelNumber: 1,
-      seed: 42,
-      questions,
-      answers: {"0": 1},
-    });
-
-    assert.deepEqual(reopened, {
-      categoryId: "cine",
-      levelNumber: 1,
-      seed: 42,
-      questions,
-    });
-  });
-
-  test("leaves a session with nothing banked as it was", () => {
-    const session = {categoryId: "cine", questions};
-
-    assert.deepEqual(sessionAfterSubmit(session), session);
-  });
-
-  test("does not modify the session it was given", () => {
-    const session = {questions, answers: {"0": 1}};
-
-    sessionAfterSubmit(session);
-
-    assert.deepEqual(session.answers, {"0": 1});
-  });
-});
-
 describe("isSoloRunSubmittable", () => {
   const start = 1_000_000;
 
@@ -207,17 +134,6 @@ describe("isSoloRunSubmittable", () => {
     assert.equal(
       isSoloRunSubmittable({"0": 1, "1": 1}, undefined, start), true
     );
-  });
-});
-
-describe("sessionAfterSubmit clears the run clock", () => {
-  test("the next run starts its own clock", () => {
-    const reopened = sessionAfterSubmit({
-      questions: [],
-      answers: {"0": 1},
-      runStartedAtMs: 123,
-    });
-    assert.equal("runStartedAtMs" in reopened, false);
   });
 });
 
@@ -269,5 +185,58 @@ describe("maxAnswersForElapsed", () => {
 
   test("a clock going backwards still allows one", () => {
     assert.equal(maxAnswersForElapsed(-5_000, 60), 1);
+  });
+});
+
+describe("openWeeklyRound", () => {
+  const round = {
+    weekId: "2026-11-09",
+    categoryId: "cine",
+    questions: [{q: "a", options: ["x", "y"]}, {q: "b", options: ["x", "y"]}],
+    answers: {"0": 1},
+    results: {"0": {correct: false, correctIndex: 0}},
+  };
+
+  // Regression: every draw paid a life and replaced the round in progress,
+  // so leaving at question 7 (or a retried call) lost the answers and the
+  // life with them.
+  test("a round left open for this topic is handed back", () => {
+    assert.deepEqual(openWeeklyRound(round, "2026-11-09", "cine"), {
+      questions: round.questions,
+      answers: round.answers,
+      results: round.results,
+    });
+  });
+
+  test("a round nobody answered yet is handed back too", () => {
+    const fresh = {...round, answers: {}, results: {}};
+    assert.deepEqual(
+      openWeeklyRound(fresh, "2026-11-09", "cine")?.answers, {}
+    );
+  });
+
+  test("no round, no resume", () => {
+    assert.equal(openWeeklyRound(undefined, "2026-11-09", "cine"), null);
+  });
+
+  test("last week's round is not this week's", () => {
+    assert.equal(openWeeklyRound(round, "2026-11-16", "cine"), null);
+    assert.equal(openWeeklyRound(round, "2026-11-09", "arte"), null);
+  });
+
+  test("a round without questions is drawn again", () => {
+    assert.equal(
+      openWeeklyRound({...round, questions: []}, "2026-11-09", "cine"), null
+    );
+  });
+
+  // The questions go back to the app as they are, so a round that still
+  // carries its key inline must never be the one returned.
+  test("a round holding its own answer key is not handed back", () => {
+    const keyed = {
+      ...round,
+      questions: [{q: "a", options: ["x", "y"], answerIndex: 1}],
+    };
+    assert.equal(openWeeklyRound(keyed, "2026-11-09", "cine"), null);
   });
 });

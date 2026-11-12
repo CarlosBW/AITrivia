@@ -96,12 +96,11 @@ class _AuthGateState extends State<AuthGate> {
     // crediting is a callable, and that needs the signed-in user.
     PurchaseService.instance.start();
 
-    // Nice to have, never a reason not to open the app: these used to be
-    // awaited bare, so a failure in either stopped the launch.
-    try {
-      await MatchService().recoverMyRealtimeStateOnAppStart();
-      await PresenceService.instance.setOnline();
-    } catch (_) {}
+    // Nice to have, never a reason not to open the app — so not waited
+    // for either. Both end in Firestore writes, which only complete once
+    // the server confirms them: awaited, they added their round trips to
+    // every launch, and with no connection the launch never finished.
+    unawaited(_recoverRealtimeState());
 
     unawaited(NotificationService.instance.registerPushToken(uid));
 
@@ -113,6 +112,13 @@ class _AuthGateState extends State<AuthGate> {
       _loading = false;
       _error = null;
     });
+  }
+
+  Future<void> _recoverRealtimeState() async {
+    try {
+      await MatchService().recoverMyRealtimeStateOnAppStart();
+      await PresenceService.instance.setOnline();
+    } catch (_) {}
   }
 
   Future<T> _runWithFirestoreRetry<T>(

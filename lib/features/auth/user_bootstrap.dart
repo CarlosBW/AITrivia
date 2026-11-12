@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -183,7 +185,13 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
   // sets the celebration-popup fields home_screen.dart watches for; the
   // life fields default themselves (via `refreshUserLives` et al.) the
   // first time any life-gated screen is opened.
-  await ref.set(
+  //
+  // Not awaited. A Firestore write only completes when the server confirms
+  // it, so waiting here held every launch on a round trip — and without a
+  // connection it never came back at all: the app sat on its opening
+  // spinner forever. The write is applied locally at once and sent when
+  // there is a connection; nothing below depends on it having landed.
+  unawaited(ref.set(
     {
       // No `freeTopicPasses` backfill: it is server-owned now, and
       // createAiTopic already treats a missing one as the first free pass.
@@ -207,7 +215,7 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
       'updatedAt': FieldValue.serverTimestamp(),
     },
     SetOptions(merge: true),
-  );
+  ).catchError((_) {}));
 
   if (loginStreakIncreased) {
     try {

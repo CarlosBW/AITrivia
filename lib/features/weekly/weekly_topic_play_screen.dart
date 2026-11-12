@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/answer_service.dart';
+import '../../services/life_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/weekly_topic_service.dart';
@@ -89,11 +90,38 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
       if (!mounted) return;
 
+      // A round left open comes back with its answers: pick it up where it
+      // stopped rather than from the top.
+      final progress = round.progress;
+      final allAnswered = progress.answered >= round.questions.length;
+
       setState(() {
         _questions = round.questions;
         _lifeUnits = round.lifeUnits;
+        _correct = progress.correct;
+        _correctIndexByQuestion
+          ..clear()
+          ..addAll(progress.correctIndexByQuestion);
+        _answers
+          ..clear()
+          ..addAll([
+            for (var i = 0;
+                i < progress.answered && i < round.questions.length;
+                i++)
+              {
+                'sourceDifficulty': round.questions[i]['sourceDifficulty'],
+                'sourceQuestionId': round.questions[i]['sourceQuestionId'],
+                'selectedIndex': progress.selected[i],
+              },
+          ]);
+        // The last question stays on screen while a fully answered round
+        // is sent, so the index never runs past the list.
+        _index = allAnswered ? round.questions.length - 1 : progress.answered;
         _loading = false;
       });
+
+      // Everything was answered and only the saving was missing.
+      if (allAnswered) await _finish();
     } on NoLivesException {
       if (mounted) Navigator.pop(context);
     } catch (_) {
@@ -179,7 +207,12 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
           : context.appColors.danger.withValues(alpha: 0.18);
       _lastCorrect = isCorrect;
       _lifeUnits = lifeUnits;
-      if (lifeUnits <= 0 && !isCorrect) _endedByNoLives = true;
+      if (runEndsOutOfLives(
+        lifeUnits: lifeUnits,
+        answeredCorrectly: isCorrect,
+      )) {
+        _endedByNoLives = true;
+      }
 
       if (isCorrect) _correct++;
 

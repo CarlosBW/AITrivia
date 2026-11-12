@@ -67,4 +67,30 @@ void main() {
       isFalse,
     );
   });
+  // Regression: a failed attempt cleared "creating" and rebuilt, and the
+  // rebuild started another attempt before reaching the error view. The
+  // player looked at "Retry" while the app called the server in a loop —
+  // on an AI level, possibly a paid generation per turn.
+  group('shouldStartLevelSession', () {
+    test('starts when nothing is in flight and nothing failed', () {
+      expect(
+        shouldStartLevelSession(creating: false, hasError: false),
+        isTrue,
+      );
+    });
+
+    test('never starts a second attempt alongside one in flight', () {
+      expect(
+        shouldStartLevelSession(creating: true, hasError: false),
+        isFalse,
+      );
+    });
+
+    test('waits for the player once an error is on screen', () {
+      expect(
+        shouldStartLevelSession(creating: false, hasError: true),
+        isFalse,
+      );
+    });
+  });
 }

@@ -64,29 +64,6 @@ export function mergeRecordedAnswers(
 }
 
 /**
- * What a session that outlives its submission should hold afterwards: the
- * same slate, with nothing banked.
- *
- * Banked answers belong to one run. A fixed-category session is kept after
- * it is submitted (its slate is deterministic, so there is nothing to
- * re-roll), and while it also kept the answers, reopening the level
- * resumed past the last question: the client submitted the same run again
- * without showing a question, which paid the replay XP on every reopen and
- * left a failed level impossible to replay.
- * @param {Record<string, unknown>} session The session doc as scored.
- * @return {Record<string, unknown>} The doc to store, without `answers`.
- */
-export function sessionAfterSubmit(
-  session: Record<string, unknown>
-): Record<string, unknown> {
-  const rest = {...session};
-  delete rest.answers;
-  delete rest.results;
-  delete rest.runStartedAtMs;
-  return rest;
-}
-
-/**
  * The fastest a run's answers may be banked: about one per second.
  *
  * Nobody reads a question and four options in less, and it is far below
@@ -99,10 +76,9 @@ export const MIN_MS_BETWEEN_BANKED_ANSWERS = 800;
  * answer banked since the last submission, and banked no faster than
  * [MIN_MS_BETWEEN_BANKED_ANSWERS] apart on average.
  *
- * A fixed-category session outlives its submission, so without this a
- * script could submit the same level in a loop — the answer key is
- * readable — and collect XP and question stats on every call. Now each
- * submission needs a new run, and a run takes real time to bank.
+ * Without this a script could submit a level in a loop and collect XP and
+ * question stats on every call. Each submission needs a run, and a run
+ * takes real time to bank.
  * @param {Record<string, unknown>|undefined} banked The session's banked
  * `answers` map.
  * @param {number|undefined} runStartedAtMs When the run's first answer was
@@ -199,4 +175,52 @@ export function maxAnswersForElapsed(elapsedMs: number, limit: number): number {
   const byTime = Math.floor(Math.max(0, elapsedMs) /
     MIN_MS_BETWEEN_BANKED_ANSWERS) + 1;
   return Math.min(limit, byTime);
+}
+
+/** A Weekly Topic round in progress, as the app gets it back. */
+export interface OpenWeeklyRound {
+  questions: Record<string, unknown>[];
+  /** Option picked per question index. */
+  answers: Record<string, unknown>;
+  /** The server's verdict per question index. */
+  results: Record<string, unknown>;
+}
+
+/**
+ * The round a player left open for this week's topic, or null if a new one
+ * has to be drawn.
+ *
+ * Drawing pays the entry life and replaces the stored round, so drawing
+ * again while one was open threw away its answers and charged twice — on
+ * leaving mid-round, on the app being closed, and on a call retried after
+ * a timeout. An open round is resumed instead; only submitting ends it.
+ * @param {unknown} round The stored round doc's data, if any.
+ * @param {string} weekId The week being played.
+ * @param {string} categoryId The week's category.
+ * @return {OpenWeeklyRound | null} The round to resume.
+ */
+export function openWeeklyRound(
+  round: unknown,
+  weekId: string,
+  categoryId: string
+): OpenWeeklyRound | null {
+  if (round === null || typeof round !== "object") return null;
+
+  const data = round as Record<string, unknown>;
+  if (data.weekId !== weekId || data.categoryId !== categoryId) return null;
+
+  const questions = Array.isArray(data.questions) ?
+    data.questions as Record<string, unknown>[] : [];
+  if (questions.length === 0) return null;
+  if (questions.some((q) => q && "answerIndex" in q)) return null;
+
+  const map = (value: unknown) =>
+    (value !== null && typeof value === "object") ?
+      value as Record<string, unknown> : {};
+
+  return {
+    questions,
+    answers: map(data.answers),
+    results: map(data.results),
+  };
 }

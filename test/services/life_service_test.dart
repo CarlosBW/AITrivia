@@ -103,4 +103,27 @@ void main() {
       expect(LifeService.newPlayerGraceLevels, 2);
     });
   });
+  // The entry costs a whole life, so a player with exactly one is at zero
+  // the moment they pay it. Ending the run at zero regardless meant that
+  // life bought a single question. The server's rule is the same one — see
+  // `answerCharge` in functions/src/life_costs.ts.
+  group('runEndsOutOfLives', () {
+    test('a miss at zero ends the run', () {
+      expect(runEndsOutOfLives(lifeUnits: 0, answeredCorrectly: false), isTrue);
+    });
+
+    test('a right answer at zero keeps it going', () {
+      expect(
+        runEndsOutOfLives(lifeUnits: 0, answeredCorrectly: true),
+        isFalse,
+      );
+    });
+
+    test('a miss with life left keeps it going', () {
+      expect(
+        runEndsOutOfLives(lifeUnits: 1, answeredCorrectly: false),
+        isFalse,
+      );
+    });
+  });
 }

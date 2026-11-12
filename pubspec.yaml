@@ -27,6 +27,7 @@ dependencies:
   timezone: ^0.9.4
   audioplayers: ^5.2.1
   in_app_purchase: ^3.2.0
+  in_app_purchase_android: ^0.5.0
   intl: ^0.20.2
   shared_preferences: ^2.3.2
   url_launcher: ^6.3.1

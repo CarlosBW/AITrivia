@@ -26,3 +26,16 @@ bool shouldRetryLevelSession({
 /// isn't a Functions one at all, such as a dropped socket.
 const _connectionErrors = {null, 'unavailable', 'internal', 'unknown',
     'cancelled', 'aborted'};
+
+/// Whether the level screen should ask the server for the session now.
+///
+/// Not while an attempt is in flight, and not while a failed one is on
+/// screen: the build that shows the error is the same one that would start
+/// the next attempt, so without the second check a failure retried itself
+/// forever behind the "Retry" button. The button clears the error.
+bool shouldStartLevelSession({
+  required bool creating,
+  required bool hasError,
+}) {
+  return !creating && !hasError;
+}

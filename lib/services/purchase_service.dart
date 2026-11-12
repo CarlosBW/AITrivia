@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 import 'economy_service.dart';
 
@@ -68,6 +69,29 @@ class PurchaseService {
       _started = true;
     } catch (_) {
       // No store on this platform — see [isAvailable]. Nothing to hear.
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      unawaited(_redeliverUnfinishedPurchases());
+    }
+  }
+
+  /// Asks Play for the purchases this app hasn't consumed yet.
+  ///
+  /// Play only reports a purchase on its own while the app is open and
+  /// listening. One that was paid but not credited (the verification
+  /// failed, the app was closed, a cash payment cleared days later) is not
+  /// handed back on the next launch unless it is asked for — and until it
+  /// is consumed, Play won't sell that pack to the player again. They come
+  /// back through [_handlePurchaseUpdates] as `restored`. Apple re-delivers
+  /// unfinished transactions by itself, and asking there can prompt for
+  /// the Apple ID password.
+  Future<void> _redeliverUnfinishedPurchases() async {
+    try {
+      await _iap.restorePurchases();
+    } catch (_) {
+      // Tried again on the next launch.
     }
   }
 
@@ -86,7 +110,10 @@ class PurchaseService {
   Future<void> buy(ProductDetails product) async {
     final purchaseParam = PurchaseParam(productDetails: product);
     // Coins are consumable — the player can buy the same pack again.
-    await _iap.buyConsumable(purchaseParam: purchaseParam);
+    await _iap.buyConsumable(
+      purchaseParam: purchaseParam,
+      autoConsume: autoConsumeOnBuy(defaultTargetPlatform),
+    );
   }
 
   Future<void> _handlePurchaseUpdates(
@@ -103,6 +130,7 @@ class PurchaseService {
       // retried. Completing it there would take the player's money and
       // give them nothing, with no way to recover it.
       var safeToComplete = false;
+      var credited = false;
 
       switch (purchase.status) {
         case PurchaseStatus.pending:
@@ -141,13 +169,29 @@ class PurchaseService {
 
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          safeToComplete = await _verifyAndCredit(purchase);
+          credited = await _verifyAndCredit(purchase);
+          safeToComplete = credited;
           break;
       }
 
-      if (safeToComplete && purchase.pendingCompletePurchase) {
+      if (credited && purchase is GooglePlayPurchaseDetails) {
+        // On Play, completePurchase only acknowledges; a coin pack has to
+        // be consumed or it can't be bought again. See [autoConsumeOnBuy].
+        await _consumeOnPlay(purchase);
+      } else if (safeToComplete && purchase.pendingCompletePurchase) {
         await _iap.completePurchase(purchase);
       }
+    }
+  }
+
+  Future<void> _consumeOnPlay(GooglePlayPurchaseDetails purchase) async {
+    try {
+      await _iap
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+          .consumePurchase(purchase);
+    } catch (_) {
+      // Left unconsumed: the next launch gets it back, the server answers
+      // that it is already credited, and it is consumed then.
     }
   }
 
@@ -193,6 +237,19 @@ class PurchaseService {
       return false;
     }
   }
+}
+
+/// Whether the store plugin may consume a coin pack by itself as soon as
+/// it is bought.
+///
+/// Not on Android. There the plugin consumed the purchase before this app
+/// had it verified, and the server refuses a consumed purchase it never
+/// credited — that is exactly what a replayed token looks like — so the
+/// player paid and got nothing. Consuming is done here instead, once the
+/// coins are credited. On Apple there is nothing to consume and the plugin
+/// asserts the flag is left on.
+bool autoConsumeOnBuy(TargetPlatform platform) {
+  return platform != TargetPlatform.android;
 }
 
 class PurchaseResult {

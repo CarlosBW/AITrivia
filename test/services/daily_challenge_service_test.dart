@@ -141,4 +141,32 @@ void main() {
       expect(await service.playedTodayOnThisDevice(), isFalse);
     });
   });
+  // Regression: a run that started before midnight and ended after it was
+  // submitted under the new day's date, where the server has no session —
+  // the run couldn't be saved and the streak broke. The result is filed
+  // under the day the run belongs to, and so is its week.
+  group('weekIdForDateId', () {
+    test('a Monday is its own week', () {
+      expect(weekIdForDateId('2026-11-09'), '2026-11-09');
+    });
+
+    test('a Sunday belongs to the week that started six days before', () {
+      expect(weekIdForDateId('2026-11-15'), '2026-11-09');
+    });
+
+    test('a Sunday run saved on Monday stays in its own week', () {
+      expect(weekIdForDateId('2026-11-15'), isNot(weekIdForDateId('2026-11-16')));
+    });
+
+    test('crosses month and year boundaries', () {
+      expect(weekIdForDateId('2027-01-01'), '2026-12-28');
+    });
+
+    test('matches currentWeekId for the same day', () {
+      expect(
+        weekIdForDateId(service.todayDateId(DateTime(2026, 8, 22, 23, 59))),
+        '2026-08-17',
+      );
+    });
+  });
 }

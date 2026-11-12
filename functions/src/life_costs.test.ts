@@ -1,7 +1,9 @@
 import {test, describe} from "node:test";
 import assert from "node:assert/strict";
 
-import {answerCharge, resolveWrongAnswerSpend} from "./life_costs";
+import {
+  answerCharge, lastBankedAnswerWrong, resolveWrongAnswerSpend,
+} from "./life_costs";
 
 // Mirrors index.ts: WRONG_ANSWER_COST_UNITS / NEW_PLAYER_GRACE_LEVELS.
 const COST = 1;
@@ -89,6 +91,7 @@ describe("answerCharge", () => {
     wrongCost: 1,
     gamesPlayed: PAST_GRACE,
     graceLevels: GRACE_LEVELS,
+    lastAnswerWrong: false,
   };
 
   test("the first answer of a run pays the entry", () => {
@@ -119,11 +122,45 @@ describe("answerCharge", () => {
     assert.equal(out.newUnits, 1);
   });
 
-  test("no answer at all once out of lives", () => {
+  test("no answer once a miss has left the player out of lives", () => {
     const out = answerCharge({
-      ...base, chargeEntry: false, lifeUnits: 0, correct: true,
+      ...base, chargeEntry: false, lifeUnits: 0, lastAnswerWrong: true,
+      correct: true,
     });
     assert.equal(out.refused, true);
+  });
+
+  // Regression: the entry costs a whole life, so a player holding exactly
+  // one paid it and was left at zero — and "at zero" refused every answer
+  // after the first. One life bought one question (and none at all in the
+  // Weekly Topic, where the entry is paid on the draw).
+  test("an entry that took the last life still buys the run", () => {
+    const first = answerCharge({...base, lifeUnits: 2, correct: true});
+    assert.equal(first.refused, false);
+    assert.equal(first.newUnits, 0);
+
+    const second = answerCharge({
+      ...base, chargeEntry: false, lifeUnits: first.newUnits, correct: true,
+    });
+    assert.equal(second.refused, false);
+    assert.equal(second.newUnits, 0);
+  });
+
+  test("at zero, the first miss is banked and costs nothing more", () => {
+    const out = answerCharge({
+      ...base, chargeEntry: false, lifeUnits: 0, correct: false,
+    });
+    assert.equal(out.refused, false);
+    assert.equal(out.newUnits, 0);
+    assert.equal(out.lifeLost, false);
+  });
+
+  test("life bought after a miss lets the run go on", () => {
+    const out = answerCharge({
+      ...base, chargeEntry: false, lifeUnits: 2, lastAnswerWrong: true,
+      correct: true,
+    });
+    assert.equal(out.refused, false);
   });
 
   test("the new-player grace still makes a wrong answer free", () => {
@@ -132,5 +169,33 @@ describe("answerCharge", () => {
     });
     assert.equal(out.newUnits, 10);
     assert.equal(out.lifeLost, false);
+  });
+});
+
+describe("lastBankedAnswerWrong", () => {
+  test("nothing banked is not a miss", () => {
+    assert.equal(lastBankedAnswerWrong(undefined), false);
+    assert.equal(lastBankedAnswerWrong({}), false);
+  });
+
+  test("reads the verdict of the highest question answered", () => {
+    assert.equal(lastBankedAnswerWrong({
+      "0": {correct: false}, "1": {correct: true},
+    }), false);
+    assert.equal(lastBankedAnswerWrong({
+      "0": {correct: true}, "1": {correct: false},
+    }), true);
+  });
+
+  // Map keys are strings: "10" sorts before "9" unless compared as numbers.
+  test("orders questions by number, not by text", () => {
+    assert.equal(lastBankedAnswerWrong({
+      "9": {correct: false}, "10": {correct: true},
+    }), false);
+  });
+
+  test("a verdict that isn't a clear yes counts as a miss", () => {
+    assert.equal(lastBankedAnswerWrong({"0": {}}), true);
+    assert.equal(lastBankedAnswerWrong({"0": null}), true);
   });
 });

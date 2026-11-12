@@ -62,8 +62,8 @@ import {
   isSoloRunSubmittable,
   maxAnswersForElapsed,
   mergeRecordedAnswers,
+  openWeeklyRound,
   scoreNewAnswers,
-  sessionAfterSubmit,
 } from "./quiz_answers";
 import {
   decideCoinCredit,
@@ -79,7 +79,7 @@ import {
   openTurn,
   resolveAnswer,
 } from "./async_pvp_turns";
-import {answerCharge} from "./life_costs";
+import {answerCharge, lastBankedAnswerWrong} from "./life_costs";
 import {
   MAX_QUESTION_REPORTS_PER_DAY,
   QUESTION_REPORT_REASONS,
@@ -5984,18 +5984,15 @@ export const submitSoloLevelResult = onCall(async (request) => {
 
     tx.set(progressRef, progressPatch, {merge: true});
 
-    // AI levels re-roll on replay: dropping the finished session makes the
-    // next `ensureSoloLevelSession` draw a fresh slate from the level's
-    // accumulated bank instead of handing back the same ten questions
-    // forever. Fixed categories keep their session — their slate is a
-    // deterministic seeded shuffle of a large static pool, so re-rolling
-    // would only churn reads for no new content. What they can't keep is
-    // this run's banked answers — see `sessionAfterSubmit`.
-    if (isAiTopic) {
-      tx.delete(sessionRef);
-    } else if (sessionData) {
-      tx.set(sessionRef, sessionAfterSubmit(sessionData));
-    }
+    // Levels re-roll on replay: dropping the finished session makes the
+    // next `ensureSoloLevelSession` draw a fresh slate — from the level's
+    // accumulated bank for an AI topic, from the questions this player
+    // hasn't seen for a fixed category (`loadFixedLevelQuestions`) —
+    // instead of handing back the same ten questions forever. Fixed
+    // categories used to keep theirs, which left that rotation unreachable
+    // on a replay and, since this call returns the answer key, made the
+    // retry of a failed level a guaranteed perfect score.
+    tx.delete(sessionRef);
 
     // gamesPlayed increments once per level attempt (pass or fail), same
     // semantics as submitDailyChallengeResult's increment — it gates
@@ -6442,6 +6439,7 @@ export const answerSoloQuestion = onCall(async (request) => {
       wrongCost: WRONG_ANSWER_COST_UNITS,
       gamesPlayed: safeInt(userData.gamesPlayed, 0),
       graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      lastAnswerWrong: lastBankedAnswerWrong(session.results),
       correct,
     });
     if (charge.refused) {
@@ -10402,10 +10400,13 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Invalid round request.");
   }
 
-  const [topicSnap, participationSnap] = await Promise.all([
+  const userRef = db.collection("users").doc(uid);
+  const roundRef = weeklyRoundRef(uid);
+
+  const [topicSnap, participationSnap, openRoundSnap] = await Promise.all([
     db.collection("weekly_topics").doc("current").get(),
-    db.collection("users").doc(uid)
-      .collection("weekly_participation").doc(weekId).get(),
+    userRef.collection("weekly_participation").doc(weekId).get(),
+    roundRef.get(),
   ]);
   const topicData = topicSnap.data();
   if (
@@ -10417,6 +10418,20 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
       "Este tema de la semana ya terminó.",
       "This weekly topic has ended."
     );
+  }
+
+  // A round left open is resumed, not replaced: its entry is already paid
+  // and its answers are banked — see `openWeeklyRound`.
+  const openRound = openWeeklyRound(openRoundSnap.data(), weekId, categoryId);
+  if (openRound) {
+    const userSnap = await userRef.get();
+    return {
+      ...openRound,
+      resumed: true,
+      ...lifeStateResponse(
+        computeLifeState(userSnap.data() || {}, Date.now())
+      ),
+    };
   }
 
   const used = new Set<string>(
@@ -10480,8 +10495,6 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
   // gets the questions without them and learns each verdict from
   // answerWeeklyQuestion. Drawing pays the entry, as opening a Solo level
   // does on its first answer.
-  const userRef = db.collection("users").doc(uid);
-  const roundRef = weeklyRoundRef(uid);
   const split = splitAnswerKey(questions);
 
   const lives = await db.runTransaction(async (tx) => {
@@ -10496,6 +10509,7 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
       wrongCost: WRONG_ANSWER_COST_UNITS,
       gamesPlayed: safeInt(userData.gamesPlayed, 0),
       graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      lastAnswerWrong: false,
       correct: true,
     });
     if (charge.refused) throw noLivesError(userData.languageCode);
@@ -10612,6 +10626,7 @@ export const answerWeeklyQuestion = onCall(async (request) => {
       wrongCost: WRONG_ANSWER_COST_UNITS,
       gamesPlayed: safeInt(userData.gamesPlayed, 0),
       graceLevels: NEW_PLAYER_GRACE_LEVELS,
+      lastAnswerWrong: lastBankedAnswerWrong(round.results),
       correct,
     });
     if (charge.refused) throw noLivesError(userData.languageCode);

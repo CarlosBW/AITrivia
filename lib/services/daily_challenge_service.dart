@@ -286,13 +286,17 @@ class DailyChallengeService {
   /// session) against the session doc's own `questions`, so a modified
   /// client reporting an inflated correct count can no longer affect the
   /// real result.
+  ///
+  /// [dateId] is the day the run was started on (its session's), not the
+  /// day it is saved on: a run that crosses midnight still belongs to the
+  /// day whose session holds its answers.
   Future<DailyChallengeSaveResult> saveResult({
     required String uid,
+    required String dateId,
     required int correct,
     required int totalAnswered,
   }) async {
-    final dateId = todayDateId();
-    final weekId = WeeklyLeagueService.instance.currentWeekId();
+    final weekId = weekIdForDateId(dateId);
 
     final callable = FirebaseFunctions.instance.httpsCallable(
       'submitDailyChallengeResult',
@@ -357,4 +361,16 @@ class DailyChallengeService {
       debugPrint('Daily retention hook sync failed: $e');
     }
   }
+}
+
+/// The week (its Monday, `YYYY-MM-DD`) that the day [dateId] falls in —
+/// what the server expects next to a Daily Challenge result's date (see
+/// `weekIdForDateId` in functions/src/daily_challenge_dates.ts).
+String weekIdForDateId(String dateId) {
+  final parts = dateId.split('-').map(int.parse).toList();
+  // Noon, so stepping back whole days to Monday can't slip a date across
+  // a daylight-saving change.
+  return WeeklyLeagueService.instance.currentWeekId(
+    DateTime(parts[0], parts[1], parts[2], 12),
+  );
 }

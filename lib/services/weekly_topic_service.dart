@@ -55,8 +55,16 @@ class WeeklyTopicService {
   /// balance after it; throws [NoLivesException] when there isn't enough.
   /// The questions come without their answers: each one is judged by
   /// [AnswerService.answerWeekly].
-  Future<({List<Map<String, dynamic>> questions, int lifeUnits})>
-      loadRandomRound({
+  ///
+  /// A round left open (the screen was closed, or the app was) comes back
+  /// as it was instead of a new one being drawn and paid for; `progress`
+  /// says where it stopped.
+  Future<
+      ({
+        List<Map<String, dynamic>> questions,
+        int lifeUnits,
+        WeeklyRoundProgress progress,
+      })> loadRandomRound({
     required String uid,
     required String weekId,
     required String categoryId,
@@ -83,6 +91,10 @@ class WeeklyTopicService {
           .map((q) => Map<String, dynamic>.from(q as Map))
           .toList(),
       lifeUnits: ((data['lifeUnits'] ?? 0) as num).toInt(),
+      progress: WeeklyRoundProgress.fromBanked(
+        data['answers'],
+        data['results'],
+      ),
     );
   }
 
@@ -161,5 +173,53 @@ class WeeklyTopicService {
         .call({'weekId': weekId});
 
     return (result.data as Map)['claimed'] == true;
+  }
+}
+
+/// How far into a Weekly Topic round the player already is, from what the
+/// server banked (`answers` and `results` of `drawWeeklyTopicRound`).
+class WeeklyRoundProgress {
+  /// The option picked for each question answered, in question order.
+  final List<int> selected;
+
+  /// The right option of each question answered.
+  final Map<int, int> correctIndexByQuestion;
+
+  final int correct;
+
+  const WeeklyRoundProgress({
+    required this.selected,
+    required this.correctIndexByQuestion,
+    required this.correct,
+  });
+
+  /// Questions already answered — the index of the one to show next.
+  int get answered => selected.length;
+
+  /// Reads the banked maps, keyed by question index. Answers are banked in
+  /// order, so reading stops at the first question without one.
+  factory WeeklyRoundProgress.fromBanked(Object? answers, Object? results) {
+    final banked = answers is Map ? answers : const {};
+    final verdicts = results is Map ? results : const {};
+
+    final selected = <int>[];
+    final correctIndexByQuestion = <int, int>{};
+    var correct = 0;
+
+    for (var i = 0; banked['$i'] is num; i++) {
+      selected.add((banked['$i'] as num).toInt());
+
+      final verdict = verdicts['$i'];
+      if (verdict is! Map) continue;
+      if (verdict['correct'] == true) correct++;
+      final correctIndex = verdict['correctIndex'];
+      if (correctIndex is num) correctIndexByQuestion[i] = correctIndex.toInt();
+    }
+
+    return WeeklyRoundProgress(
+      selected: selected,
+      correctIndexByQuestion: correctIndexByQuestion,
+      correct: correct,
+    );
   }
 }

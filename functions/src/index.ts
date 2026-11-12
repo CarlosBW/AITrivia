@@ -369,12 +369,18 @@ function answerKeyRef(
  * @param {FirebaseFirestore.DocumentReference} matchRef The match.
  * @param {FirebaseFirestore.DocumentData} data The match doc.
  * @param {FirebaseFirestore.Transaction} [tx] The running transaction.
+ * @param {FirebaseFirestore.DocumentSnapshot} [knownKey] The key doc, if
+ * the caller already read it.
  * @return {Promise<Record<string, unknown>[]>} Questions with answerIndex.
  */
 async function keyedQuestions(
   matchRef: FirebaseFirestore.DocumentReference,
   data: FirebaseFirestore.DocumentData,
-  tx?: FirebaseFirestore.Transaction
+  tx?: FirebaseFirestore.Transaction,
+  // The key doc, when the caller already read it along with the rest: an
+  // answer is judged on every tap, and reading the key on its own made
+  // each one wait for a second round of reads.
+  knownKey?: FirebaseFirestore.DocumentSnapshot
 ): Promise<Record<string, unknown>[]> {
   const questions = data.questions;
   const inline = Array.isArray(questions) && questions.some(
@@ -383,7 +389,8 @@ async function keyedQuestions(
   if (inline) return mergeAnswerKey(questions, undefined);
 
   const keyRef = answerKeyRef(matchRef);
-  const keySnap = tx ? await tx.get(keyRef) : await keyRef.get();
+  const keySnap = knownKey ??
+    (tx ? await tx.get(keyRef) : await keyRef.get());
   return mergeAnswerKey(questions, keySnap.data()?.answerIndices);
 }
 
@@ -4258,12 +4265,14 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     .collection("achievements").doc("daily_streak_21");
 
   return db.runTransaction(async (tx) => {
-    const dailySnap = await tx.get(dailyRef);
-    const userSnap = await tx.get(userRef);
-    const dailyStreakAchievementSnap = await tx.get(dailyStreakAchievementRef);
-    const dailyStreak21AchievementSnap =
-      await tx.get(dailyStreak21AchievementRef);
-    const weeklyParticipationSnap = await tx.get(weeklyParticipationRef);
+    // Together rather than one after another — see submitSoloLevelResult.
+    const [
+      dailySnap, userSnap, dailyStreakAchievementSnap,
+      dailyStreak21AchievementSnap, weeklyParticipationSnap,
+    ] = await tx.getAll(
+      dailyRef, userRef, dailyStreakAchievementRef,
+      dailyStreak21AchievementRef, weeklyParticipationRef
+    );
 
     const alreadyPlayed = dailySnap.data()?.played === true;
 
@@ -5014,7 +5023,9 @@ export const answerDailyQuestion = onCall(async (request) => {
     .collection("daily_challenges").doc(dateId);
 
   return db.runTransaction(async (tx) => {
-    const snap = await tx.get(dailyRef);
+    const [snap, keySnap] = await tx.getAll(
+      dailyRef, answerKeyRef(dailyRef)
+    );
     const data = snap.data();
     // The reasons let the app close the run and save it instead of
     // showing a generic error the player can do nothing about.
@@ -5023,7 +5034,7 @@ export const answerDailyQuestion = onCall(async (request) => {
         reason: "daily_closed",
       });
     }
-    const keyed = await keyedQuestions(dailyRef, data, tx);
+    const keyed = await keyedQuestions(dailyRef, data, tx, keySnap);
     if (questionIndex >= keyed.length) {
       throw new HttpsError("invalid-argument", "Question out of range.");
     }
@@ -5864,14 +5875,17 @@ export const submitSoloLevelResult = onCall(async (request) => {
   }
 
   return db.runTransaction(async (tx) => {
-    const progressSnap = await tx.get(progressRef);
-    const userSnap = await tx.get(userRef);
-    const soloLevelsAchievementSnap = await tx.get(soloLevelsAchievementRef);
-    const soloLevels25AchievementSnap =
-      await tx.get(soloLevels25AchievementRef);
-    const categoriesExploredAchievementSnap =
-      await tx.get(categoriesExploredAchievementRef);
-    const sessionSnap = await tx.get(sessionRef);
+    // Together: read one after another, these were six round trips on
+    // the screen where the player waits to see their result.
+    const [
+      progressSnap, userSnap, soloLevelsAchievementSnap,
+      soloLevels25AchievementSnap, categoriesExploredAchievementSnap,
+      sessionSnap,
+    ] = await tx.getAll(
+      progressRef, userRef, soloLevelsAchievementRef,
+      soloLevels25AchievementRef, categoriesExploredAchievementRef,
+      sessionRef
+    );
 
     const sessionData = sessionSnap.data();
     const sessionQuestions = sessionData?.questions;
@@ -6461,14 +6475,14 @@ export const answerSoloQuestion = onCall(async (request) => {
     userRef.collection("progress_fixed").doc(categoryId);
 
   return db.runTransaction(async (tx) => {
-    const [sessionSnap, userSnap, progressSnap] = await tx.getAll(
-      sessionRef, userRef, progressRef
+    const [sessionSnap, userSnap, progressSnap, keySnap] = await tx.getAll(
+      sessionRef, userRef, progressRef, answerKeyRef(sessionRef)
     );
     const session = sessionSnap.data();
     if (!session) {
       throw new HttpsError("failed-precondition", "No open session.");
     }
-    const keyed = await keyedQuestions(sessionRef, session, tx);
+    const keyed = await keyedQuestions(sessionRef, session, tx, keySnap);
     if (questionIndex >= keyed.length) {
       throw new HttpsError("invalid-argument", "Question out of range.");
     }
@@ -10712,12 +10726,14 @@ export const answerWeeklyQuestion = onCall(async (request) => {
   const roundRef = weeklyRoundRef(uid);
 
   return db.runTransaction(async (tx) => {
-    const [roundSnap, userSnap] = await tx.getAll(roundRef, userRef);
+    const [roundSnap, userSnap, keySnap] = await tx.getAll(
+      roundRef, userRef, answerKeyRef(roundRef)
+    );
     const round = roundSnap.data();
     if (!round) {
       throw new HttpsError("failed-precondition", "No open round.");
     }
-    const keyed = await keyedQuestions(roundRef, round, tx);
+    const keyed = await keyedQuestions(roundRef, round, tx, keySnap);
     if (questionIndex >= keyed.length) {
       throw new HttpsError("invalid-argument", "Question out of range.");
     }

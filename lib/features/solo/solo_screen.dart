@@ -4,12 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../services/economy_service.dart';
-import '../../services/life_service.dart';
 import '../daily/daily_challenge_screen.dart';
 import '../versus/pvp_screen.dart';
 import 'level_select_screen.dart';
-import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../services/locale_controller.dart';
 import '../../l10n/localized_content.dart';
@@ -17,7 +14,6 @@ import '../../l10n/user_facing_error.dart';
 import '../../services/solo_progress.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/category_illustration.dart';
-import '../../l10n/lives_format.dart';
 
 class SoloScreen extends StatefulWidget {
   const SoloScreen({super.key});
@@ -29,12 +25,9 @@ class SoloScreen extends StatefulWidget {
 class _SoloScreenState extends State<SoloScreen> {
   bool _loading = true;
   bool _isNavigating = false;
-  bool _buyingLife = false;
   String? _error;
 
   List<_SoloCategoryItem> _categories = [];
-
-  static const int _buyLifeCost = EconomyService.buyFullLifeCost;
 
   late final String uid;
 
@@ -138,7 +131,7 @@ class _SoloScreenState extends State<SoloScreen> {
   }
 
   Future<void> _safeNavigate(Future<void> Function() action) async {
-    if (_isNavigating || _buyingLife) return;
+    if (_isNavigating) return;
 
     setState(() => _isNavigating = true);
 
@@ -151,111 +144,11 @@ class _SoloScreenState extends State<SoloScreen> {
     }
   }
 
-  String _formatCountdown(int? totalSeconds) {
-    if (totalSeconds == null) return '--:--';
-
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _buyLifeFromDialog(BuildContext dialogContext) async {
-    if (_buyingLife) return;
-
-    Navigator.pop(dialogContext);
-
-    setState(() => _buyingLife = true);
-
-    try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: uid,
-        cost: _buyLifeCost,
-      );
-
-      if (!mounted) return;
-
-      final l10n = AppLocalizations.of(context);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success ? l10n.soloLifeRecovered : l10n.soloNotEnoughCoins,
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _buyingLife = false);
-      }
-    }
-  }
-
-  Future<void> _showNoLivesDialog({
-    required int lifeUnits,
-    required int maxLifeUnits,
-    required int? secondsToNextHalfLife,
-  }) async {
-    final currentLivesText =
-        '${AppLocalizations.of(context).lives(lifeUnits)} / ${AppLocalizations.of(context).lives(maxLifeUnits)}';
-
-    final nextHalfLifeText = secondsToNextHalfLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToNextHalfLife);
-
-    final needOneMoreHalf = lifeUnits == 1;
-    final secondsToFullLife = secondsToNextHalfLife == null
-        ? null
-        : needOneMoreHalf
-            ? secondsToNextHalfLife
-            : secondsToNextHalfLife + 150;
-
-    final nextFullLifeText = secondsToFullLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToFullLife);
-
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) => NoLivesDialog(
-        currentLivesText: currentLivesText,
-        nextHalfLifeText: nextHalfLifeText,
-        nextFullLifeText: nextFullLifeText,
-        cost: _buyLifeCost,
-        onBuyLife: _buyingLife ? null : () => _buyLifeFromDialog(dialogContext),
-      ),
-    );
-  }
-
-  Future<bool> _ensureHasLives() async {
-    await LifeService.instance.ensureUserLifeDoc(uid);
-    final lifeState = await LifeService.instance.refreshLives(uid);
-
-    final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
-    final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
-    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
-
-    if (lifeUnits < 2) {
-      if (!mounted) return false;
-
-      await _showNoLivesDialog(
-        lifeUnits: lifeUnits,
-        maxLifeUnits: maxLifeUnits,
-        secondsToNextHalfLife: secondsToNextHalfLife,
-      );
-
-      return false;
-    }
-
-    return true;
-  }
-
+  // No life check here: opening a category only shows its levels. The
+  // level itself checks, on the server, where it also knows which levels
+  // are free replays — this used to add a server call to every tap and
+  // turned players away from levels they could replay for nothing.
   Future<void> _openLevelSelect(_SoloCategoryItem item) async {
-    final canPlay = await _ensureHasLives();
-    if (!canPlay) return;
-
-    if (!mounted) return;
-
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -287,7 +180,7 @@ class _SoloScreenState extends State<SoloScreen> {
             onRefresh: () => _loadCategoriesAndProgress(showLoading: false),
             child: _buildContent(l10n),
           ),
-          if (_isNavigating || _buyingLife)
+          if (_isNavigating)
             Container(
               color: Theme.of(context)
                   .colorScheme
@@ -358,7 +251,7 @@ class _SoloScreenState extends State<SoloScreen> {
     final allCompleted = _categories.isNotEmpty &&
         _categories.every((c) => c.status == _SoloCategoryStatus.completed);
 
-    final busy = _isNavigating || _buyingLife;
+    final busy = _isNavigating;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),

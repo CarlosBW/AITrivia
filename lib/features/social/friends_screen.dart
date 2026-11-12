@@ -102,15 +102,19 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final db = FirebaseFirestore.instance;
     final userRef = db.collection('users').doc(_service.uid);
 
-    final friendsSnap = await userRef.collection('friends').get();
-    final sentSnap = await userRef
-        .collection('sent_friend_requests')
-        .where('status', isEqualTo: 'pending')
-        .get();
-    final incomingSnap = await userRef
-        .collection('friend_requests')
-        .where('status', isEqualTo: 'pending')
-        .get();
+    // Together: none depends on another, and one after another they were
+    // three round trips before a search showed anything.
+    final [friendsSnap, sentSnap, incomingSnap] = await Future.wait([
+      userRef.collection('friends').get(),
+      userRef
+          .collection('sent_friend_requests')
+          .where('status', isEqualTo: 'pending')
+          .get(),
+      userRef
+          .collection('friend_requests')
+          .where('status', isEqualTo: 'pending')
+          .get(),
+    ]);
 
     final friendIds = friendsSnap.docs
         .map((d) => (d.data()['uid'] ?? d.id).toString())
@@ -156,15 +160,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
     });
 
     try {
-      final snap = await _service.searchUsersByUsername(query: query);
       // Best-effort: a block list that can't be read filters nothing out.
-      var blocked = const <String>{};
-      try {
-        blocked = await PlayerSafetyService.instance
-            .watchBlocked()
-            .first
-            .timeout(const Duration(seconds: 5));
-      } catch (_) {}
+      // Asked for alongside the search rather than after it.
+      final blockedFuture = PlayerSafetyService.instance
+          .watchBlocked()
+          .first
+          .timeout(const Duration(seconds: 5))
+          .then((ids) => ids, onError: (_) => const <String>{});
+      final snap = await _service.searchUsersByUsername(query: query);
+      final blocked = await blockedFuture;
       final results = snap.docs
           .where((doc) => doc.id != _service.uid && !blocked.contains(doc.id))
           .toList();

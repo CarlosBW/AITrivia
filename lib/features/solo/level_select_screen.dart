@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
-import '../../services/life_service.dart';
 import 'level_play_screen.dart';
-import '../../widgets/no_lives_dialog.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
@@ -16,7 +14,6 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/category_illustration.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/profile_avatar_button.dart';
-import '../../l10n/lives_format.dart';
 
 class LevelSelectScreen extends StatefulWidget {
   final String categoryId;
@@ -40,7 +37,6 @@ class LevelSelectScreen extends StatefulWidget {
 class _LevelSelectScreenState extends State<LevelSelectScreen>
     with WidgetsBindingObserver {
   bool _isNavigating = false;
-  bool _buyingLife = false;
   bool _expanding = false;
 
   /// Held from the tap until the expansion settles, dialog included: a
@@ -179,121 +175,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     }
   }
 
-  String _formatCountdown(int? totalSeconds) {
-    if (totalSeconds == null) return '--:--';
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _buyLifeFromDialog({
-    required BuildContext dialogContext,
-    required String uid,
-  }) async {
-    if (_buyingLife) return;
-
-    Navigator.pop(dialogContext);
-
-    setState(() => _buyingLife = true);
-
-    try {
-      final success = await LifeService.instance.buyFullLife(
-        uid: uid,
-        cost: 10,
-      );
-
-      if (!mounted) return;
-
-      final l10n = AppLocalizations.of(context);
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.soloLifeRecovered)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.soloNotEnoughCoins),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _buyingLife = false);
-      }
-    }
-  }
-
-  Future<void> _showNoLivesDialog({
-    required BuildContext context,
-    required String uid,
-    required int lifeUnits,
-    required int maxLifeUnits,
-    required int? secondsToNextHalfLife,
-  }) async {
-    final currentLivesText =
-        '${AppLocalizations.of(context).lives(lifeUnits)} / ${AppLocalizations.of(context).lives(maxLifeUnits)}';
-
-    final nextHalfLifeText = secondsToNextHalfLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToNextHalfLife);
-
-    final needOneMoreHalf = lifeUnits == 1;
-    final secondsToFullLife = secondsToNextHalfLife == null
-        ? null
-        : needOneMoreHalf
-            ? secondsToNextHalfLife
-            : secondsToNextHalfLife + 150;
-
-    final nextFullLifeText = secondsToFullLife == null
-        ? '--:--'
-        : _formatCountdown(secondsToFullLife);
-
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) => NoLivesDialog(
-        currentLivesText: currentLivesText,
-        nextHalfLifeText: nextHalfLifeText,
-        nextFullLifeText: nextFullLifeText,
-        cost: 10,
-        onBuyLife: _buyingLife
-            ? null
-            : () => _buyLifeFromDialog(
-                  dialogContext: dialogContext,
-                  uid: uid,
-                ),
-      ),
-    );
-  }
-
-  Future<bool> _ensureHasLives(BuildContext context, String uid) async {
-    await LifeService.instance.ensureUserLifeDoc(uid);
-    final lifeState = await LifeService.instance.refreshLives(uid);
-
-    final lifeUnits = (lifeState['lifeUnits'] ?? 0) as int;
-    final maxLifeUnits = (lifeState['maxLifeUnits'] ?? 10) as int;
-    final secondsToNextHalfLife = lifeState['secondsToNextHalfLife'] as int?;
-
-    if (lifeUnits < 2) {
-      if (!context.mounted) return false;
-
-      await _showNoLivesDialog(
-        context: context,
-        uid: uid,
-        lifeUnits: lifeUnits,
-        maxLifeUnits: maxLifeUnits,
-        secondsToNextHalfLife: secondsToNextHalfLife,
-      );
-
-      return false;
-    }
-
-    return true;
-  }
-
   Future<void> _safeNavigate(Future<void> Function() action) async {
-    if (_isNavigating || _buyingLife) return;
+    if (_isNavigating) return;
 
     setState(() => _isNavigating = true);
 
@@ -311,12 +194,10 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
     required String uid,
     required int level,
   }) async {
+    // No life check here: the level screen asks the server, which also
+    // knows when a level is a free replay. Checking here as well cost a
+    // second server call per level and blocked those replays.
     await _safeNavigate(() async {
-      final canPlay = await _ensureHasLives(context, uid);
-      if (!canPlay) return;
-
-      if (!context.mounted) return;
-
       await Navigator.push(
         context,
         MaterialPageRoute(
@@ -340,9 +221,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   /// the topic list's menu — which is where it used to be the only way in.
   Future<void> _expandTopic(BuildContext context, String uid) async {
     final topicId = widget.aiTopicId;
-    if (topicId == null || _expandInFlight || _isNavigating || _buyingLife) {
-      return;
-    }
+    if (topicId == null || _expandInFlight || _isNavigating) return;
     _expandInFlight = true;
     try {
       await _confirmAndExpand(context, uid, topicId);
@@ -444,7 +323,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
             )
           else
             _buildContent(context: context, uid: uid, l10n: l10n),
-          if (_isNavigating || _buyingLife || _expanding)
+          if (_isNavigating || _expanding)
             Container(
               color: Theme.of(context)
                   .colorScheme
@@ -557,7 +436,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
           ),
     );
 
-    final busy = _isNavigating || _buyingLife || _expanding;
+    final busy = _isNavigating || _expanding;
     final canExpand = widget.isAiTopic &&
         widget.aiTopicId != null &&
         _categoryData['status'] == 'ready';

@@ -236,6 +236,43 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     _lifeUiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _refreshLivesUi();
     });
+    _startLoadingTogether();
+  }
+
+  /// Starts the three things the level needs before its first question —
+  /// the category, the life check and the session lookup — at once.
+  ///
+  /// `build` asks for each only when the one before has answered, so they
+  /// ran one after another: three round trips in a row before the session
+  /// was even requested. They don't depend on each other. Each is memoized
+  /// or guarded, so `build` finds them under way (or done) and starts
+  /// nothing twice.
+  void _startLoadingTogether() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final db = FirebaseFirestore.instance;
+    final userRef = db.collection('users').doc(uid);
+
+    _categoryDoc(
+      widget.isAiTopic
+          ? userRef.collection('ai_topics').doc(widget.aiTopicId)
+          : db.collection('fixed_categories').doc(widget.categoryId),
+    ).ignore();
+    _sessionDoc(
+      userRef
+          .collection(widget.isAiTopic ? 'sessions_ai' : 'sessions_fixed')
+          .doc(
+            widget.isAiTopic
+                ? '${widget.aiTopicId}_${widget.levelNumber}'
+                : '${widget.categoryId}_${widget.levelNumber}',
+          ),
+    ).ignore();
+
+    // After the first frame: the check reads the localizations.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkAndConsumeLife(uid);
+    });
   }
 
   @override

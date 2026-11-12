@@ -21,19 +21,24 @@ String _todayDateId([DateTime? now]) {
 /// reserved by another account.
 class UsernameTakenException implements Exception {}
 
-/// Whether the Firestore user doc for [uid] already exists — used by
-/// `AuthGate` to decide whether this is a brand-new account that still
-/// needs to go through the username picker.
-Future<bool> userDocExists(String uid) async {
-  final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-  return snap.exists;
+/// The Firestore user doc for [uid] — `AuthGate` reads it to decide
+/// whether this is a brand-new account that still needs to go through the
+/// username picker, and hands it on to [bootstrapUserDoc].
+Future<DocumentSnapshot<Map<String, dynamic>>> readUserDoc(String uid) {
+  return FirebaseFirestore.instance.collection('users').doc(uid).get();
 }
 
-Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
+/// [known] is the user doc if the caller has just read it: every launch
+/// used to read it once to see whether it existed and again here.
+Future<bool> bootstrapUserDoc(
+  String uid, {
+  String? requestedUsername,
+  DocumentSnapshot<Map<String, dynamic>>? known,
+}) async {
   final db = FirebaseFirestore.instance;
   final ref = db.collection('users').doc(uid);
 
-  final snap = await ref.get();
+  final snap = known ?? await ref.get();
 
   final defaultUsername = 'Player${uid.substring(0, 8)}';
   final chosenUsername = requestedUsername ?? defaultUsername;
@@ -217,30 +222,34 @@ Future<bool> bootstrapUserDoc(String uid, {String? requestedUsername}) async {
     SetOptions(merge: true),
   ).catchError((_) {}));
 
-  if (loginStreakIncreased) {
-    try {
-      final response = await FirebaseFunctions.instance
-          .httpsCallable(
-            'claimLoginStreakBonus',
-            options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
-          )
-          .call({'todayDateId': today});
-
-      final result = Map<String, dynamic>.from(response.data as Map);
-      final newLoginStreak = ((result['streak'] ?? 0) as num).toInt();
-      final loginCelebrationCoins =
-          ((result['coinsEarned'] ?? 0) as num).toInt();
-
-      await AnalyticsService.instance.logLoginStreak(
-        streak: newLoginStreak,
-        coinsEarned: loginCelebrationCoins,
-      );
-    } catch (_) {
-      // No bloquear el bootstrap si falla el bono de racha o su analítica.
-    }
-  }
+  // Not awaited either: it is a server call on the first launch of each
+  // day, and Home shows the bonus from the user doc once it lands.
+  if (loginStreakIncreased) unawaited(_claimLoginStreak(today));
 
   return hasSeenOnboarding == true;
+}
+
+Future<void> _claimLoginStreak(String today) async {
+  try {
+    final response = await FirebaseFunctions.instance
+        .httpsCallable(
+          'claimLoginStreakBonus',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call({'todayDateId': today});
+
+    final result = Map<String, dynamic>.from(response.data as Map);
+    final newLoginStreak = ((result['streak'] ?? 0) as num).toInt();
+    final loginCelebrationCoins =
+        ((result['coinsEarned'] ?? 0) as num).toInt();
+
+    await AnalyticsService.instance.logLoginStreak(
+      streak: newLoginStreak,
+      coinsEarned: loginCelebrationCoins,
+    );
+  } catch (_) {
+    // No bloquear el bootstrap si falla el bono de racha o su analítica.
+  }
 }
 
 Future<void> markOnboardingSeen(String uid) async {

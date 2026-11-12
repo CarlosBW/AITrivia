@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -49,11 +50,11 @@ class _AuthGateState extends State<AuthGate> {
 
       final uid = auth.currentUser!.uid;
 
-      final exists = await _runWithFirestoreRetry(() => userDocExists(uid));
+      final userDoc = await _runWithFirestoreRetry(() => readUserDoc(uid));
 
       if (!mounted) return;
 
-      if (!exists) {
+      if (!userDoc.exists) {
         // Brand-new account — gate on picking a permanent, unique
         // username before creating the Firestore user doc at all.
         setState(() {
@@ -64,7 +65,7 @@ class _AuthGateState extends State<AuthGate> {
         return;
       }
 
-      await _finishBootstrap(uid);
+      await _finishBootstrap(uid, known: userDoc);
     } catch (e) {
       if (!mounted) return;
 
@@ -75,9 +76,13 @@ class _AuthGateState extends State<AuthGate> {
     }
   }
 
-  Future<void> _finishBootstrap(String uid, {String? username}) async {
+  Future<void> _finishBootstrap(
+    String uid, {
+    String? username,
+    DocumentSnapshot<Map<String, dynamic>>? known,
+  }) async {
     final hasSeenOnboarding = await _runWithFirestoreRetry(
-      () => bootstrapUserDoc(uid, requestedUsername: username),
+      () => bootstrapUserDoc(uid, requestedUsername: username, known: known),
     );
 
     PresenceService.instance.markReady();

@@ -13,9 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned to the version the app is built with (locally and in
+      # codemagic.yaml). Following the latest stable broke CI on its own:
+      # a newer Flutter deprecated package:flutter/material.dart, and
+      # `flutter analyze` fails on those infos. Bump all three together.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.44.8
           cache: true
 
       # Retried because this is the one step that depends on reaching

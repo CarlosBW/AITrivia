@@ -203,8 +203,14 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
 
           final userData = userSnap.data?.data() ?? {};
 
-          final leagueScore =
-              ((userData['leagueScore'] ?? 0) as num).toInt();
+          final weekId = _weeklyService.currentWeekId();
+
+          // As it stands this week, not as it was when they last played.
+          final leagueScore = LeagueService.decayedLeagueScore(
+            ((userData['leagueScore'] ?? 0) as num).toInt(),
+            userData['leagueScoreWeekId']?.toString(),
+            weekId,
+          );
 
           final scoreLeague =
               LeagueService.instance.getLeagueFromScore(leagueScore);
@@ -212,8 +218,6 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
             (l) => l.id == _weekLeagueId,
             orElse: () => scoreLeague,
           );
-
-          final weekId = _weeklyService.currentWeekId();
 
           return Column(
             children: [
@@ -496,6 +500,12 @@ class _LeagueHeader extends StatelessWidget {
           Text(
             l10n.weeklyLeagueResetIn(resetText),
             style: const TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.weeklyLeagueDecayNote,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
           ),
         ],
       ),

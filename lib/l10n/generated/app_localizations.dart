@@ -3796,6 +3796,12 @@ abstract class AppLocalizations {
   /// **'Puntaje semanal: {score}'**
   String weeklyLeagueScoreLabel(int score);
 
+  /// No description provided for @weeklyLeagueDecayNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu puntaje baja un 25% cada semana. Juega 3 Retos Diarios por semana para cobrar la recompensa completa de tu liga.'**
+  String get weeklyLeagueDecayNote;
+
   /// No description provided for @weeklyLeagueResetIn.
   ///
   /// In es, this message translates to:

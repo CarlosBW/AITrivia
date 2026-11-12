@@ -2228,6 +2228,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get weeklyLeagueDecayNote =>
+      'Your score drops 25% each week. Play 3 Daily Challenges a week to earn your league\'s full reward.';
+
+  @override
   String weeklyLeagueResetIn(String time) {
     return 'Weekly reset in $time';
   }

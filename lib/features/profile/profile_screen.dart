@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../app/app.dart';
 
 import '../../services/player_level_service.dart';
+import '../../services/league_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../services/pvp_league_service.dart';
 import '../../services/frame_service.dart';
@@ -774,7 +775,11 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     final levelInfo = PlayerLevelService.instance.getLevelInfo(xp);
     final level = levelInfo.level;
-    final leagueScore = ((data['leagueScore'] ?? 0) as num).toInt();
+    final leagueScore = LeagueService.decayedLeagueScore(
+      ((data['leagueScore'] ?? 0) as num).toInt(),
+      data['leagueScoreWeekId']?.toString(),
+      WeeklyLeagueService.instance.currentWeekId(),
+    );
 
     final levelXp = levelInfo.currentLevelXp;
     final xpRequired = levelInfo.xpRequired;

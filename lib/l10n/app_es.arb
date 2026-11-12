@@ -1234,6 +1234,7 @@
       "score": {"type": "int"}
     }
   },
+  "weeklyLeagueDecayNote": "Tu puntaje baja un 25% cada semana. Juega 3 Retos Diarios por semana para cobrar la recompensa completa de tu liga.",
   "weeklyLeagueResetIn": "Reinicio semanal en {time}",
   "@weeklyLeagueResetIn": {
     "placeholders": {

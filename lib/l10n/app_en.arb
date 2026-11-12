@@ -1206,6 +1206,7 @@
       "score": {"type": "int"}
     }
   },
+  "weeklyLeagueDecayNote": "Your score drops 25% each week. Play 3 Daily Challenges a week to earn your league's full reward.",
   "weeklyLeagueResetIn": "Weekly reset in {time}",
   "@weeklyLeagueResetIn": {
     "placeholders": {

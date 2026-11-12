@@ -2251,6 +2251,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get weeklyLeagueDecayNote =>
+      'Tu puntaje baja un 25% cada semana. Juega 3 Retos Diarios por semana para cobrar la recompensa completa de tu liga.';
+
+  @override
   String weeklyLeagueResetIn(String time) {
     return 'Reinicio semanal en $time';
   }

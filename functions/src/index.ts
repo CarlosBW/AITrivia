@@ -121,6 +121,11 @@ import {
   splitAnswerKey,
 } from "./pvp_answer_key";
 import {
+  decayedLeagueScore,
+  laterWeekId,
+  rewardLeagueFor,
+} from "./weekly_league";
+import {
   liveMatchIsOverdue,
   liveSearchIsAbandoned,
   overdueLiveMatchOutcome,
@@ -4441,7 +4446,13 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     const totalCoinsToAdd = coinsEarned + streakBonusCoins + levelUpBonusCoins;
 
     const score = calculateDailyScore(correct, totalAnswered, newStreak);
-    const totalLeagueScore = safeInt(userData.leagueScore, 0) + score;
+    // Worn down for the weeks gone by before today's score is added — see
+    // weekly_league.ts. Before the week's league is read below, so a week
+    // is played in the league the score is really in.
+    const leagueScoreWeekId = String(userData.leagueScoreWeekId || "");
+    const totalLeagueScore = decayedLeagueScore(
+      safeInt(userData.leagueScore, 0), leagueScoreWeekId, weekId
+    ) + score;
     const league = getLeagueFromScore(totalLeagueScore);
 
     // A week is played in one league: the one the player was in when the
@@ -4496,6 +4507,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       level: newLevel,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       leagueScore: totalLeagueScore,
+      leagueScoreWeekId: laterWeekId(leagueScoreWeekId, weekId),
       leagueId: league.id,
       leagueName: league.name,
     };
@@ -4561,6 +4573,8 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       leagueId: weekLeague.id,
       leagueName: weekLeague.name,
       weeklyScore: admin.firestore.FieldValue.increment(score),
+      // What the week's reward is paid on — see rewardLeagueFor.
+      dailiesPlayed: admin.firestore.FieldValue.increment(1),
       lastDailyScore: score,
       level: newLevel,
       streak: newStreak,
@@ -5328,7 +5342,18 @@ export const claimWeeklySeasonRewards = onCall(async (request) => {
       .count().get();
     const rank = (betterPlayersSnap.data().count || 0) + 1;
 
-    const reward = weeklySeasonRewardForLeague(leagueId, rank, languageCode);
+    const rewardLeagueId = rewardLeagueFor(leagueId, data.dailiesPlayed);
+    const reward = weeklySeasonRewardForLeague(
+      rewardLeagueId, rank, languageCode
+    );
+    if (rewardLeagueId !== leagueId) {
+      reward.message = pickText(
+        languageCode,
+        "Juega 3 Retos Diarios por semana para la recompensa completa " +
+          "de tu liga.",
+        "Play 3 Daily Challenges a week for your league's full reward."
+      );
+    }
 
     pending.push({
       seasonId,

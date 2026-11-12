@@ -150,6 +150,15 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  // La semana hasta la que se desgastó el puntaje de liga: puesta en el
+  // futuro, el puntaje dejaría de bajar para siempre.
+  await t.test("no puede traer fechada su liga semanal", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({leagueScoreWeekId: "2099-01-05"}))
+    );
+  });
+
   await t.test("no puede fabricarse un rating alto", async () => {
     await assertFails(
       setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({pvpRating: 2400}))

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 class LeagueInfo {
   final String id;
   final String name;
@@ -22,6 +24,33 @@ class LeagueInfo {
 
 class LeagueService {
   LeagueService._();
+
+  /// Share of the league score lost at each week's turn. Mirrors
+  /// `WEEKLY_LEAGUE_DECAY` in functions/src/weekly_league.ts.
+  static const double weeklyDecay = 0.25;
+
+  /// A stored league score as it stands in [currentWeekId].
+  ///
+  /// The server wears the score down when the player next plays, so the
+  /// stored number is from the last week they did. This shows what it is
+  /// worth now — the number the server will start from — instead of a
+  /// score that drops by surprise on the next Daily Challenge. Mirrors
+  /// `decayedLeagueScore` in functions/src/weekly_league.ts.
+  static int decayedLeagueScore(
+    int score,
+    String? scoreWeekId,
+    String currentWeekId,
+  ) {
+    final held = score < 0 ? 0 : score;
+    final from = DateTime.tryParse('${scoreWeekId ?? ''}T00:00:00Z');
+    final to = DateTime.tryParse('${currentWeekId}T00:00:00Z');
+    if (from == null || to == null) return held;
+
+    final weeks = (to.difference(from).inDays / 7).round().clamp(0, 52);
+    if (weeks == 0) return held;
+
+    return (held * math.pow(1 - weeklyDecay, weeks)).floor();
+  }
 
   static final instance = LeagueService._();
 

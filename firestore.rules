@@ -102,7 +102,7 @@ service cloud.firestore {
         'lastClaimedPvpSeasonId', 'lastPvpSeasonRewardCoins',
         'lastPvpSeasonRewardCount', 'lastPvpSeasonRewardClaimedAt',
         'dailyStreak', 'maxDailyStreak', 'lastDailyPlayed', 'bestDailyScore',
-        'leagueScore', 'leagueId', 'leagueName',
+        'leagueScore', 'leagueScoreWeekId', 'leagueId', 'leagueName',
         'gamesPlayed', 'correctAnswers', 'wrongAnswers',
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
@@ -274,6 +274,7 @@ service cloud.firestore {
         && !('lastPvpSeasonRewardCount' in request.resource.data)
         && !('lastPvpSeasonRewardClaimedAt' in request.resource.data)
         && !('leagueScore' in request.resource.data)
+        && !('leagueScoreWeekId' in request.resource.data)
         && !('leagueId' in request.resource.data)
         && !('leagueName' in request.resource.data)
         && !('lastDailyPlayed' in request.resource.data)

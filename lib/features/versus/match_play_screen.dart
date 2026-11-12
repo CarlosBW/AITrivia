@@ -15,6 +15,7 @@ import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/circular_timer.dart';
+import '../../widgets/question_answer_card.dart';
 import '../../widgets/segmented_progress.dart';
 import '../../widgets/stat_chip.dart';
 import '../../widgets/app_bar_title.dart';
@@ -787,179 +788,22 @@ class _MatchPlayScreenState extends State<MatchPlayScreen> {
               fullWidth: true,
             ),
             const SizedBox(height: 22),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(context.radii.md),
-                border: context.surfaces.borderOr(null),
-                boxShadow: context.surfaces.shadowsOr(null),
-              ),
-              child: Text(
-                qText,
-                style: TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ...List.generate(options.length, (i) {
-              final isSelected = _selected == i;
+            // The same card as a level, the Daily Challenge and the Weekly
+            // Topic. This screen used to carry its own copy of the answer
+            // tiles, with the question in a plain box.
+            QuestionAnswerCard(
+              qText: qText,
+              options: options,
               // Known only once the server has judged the answer: the key
               // is no longer in the match doc.
-              final revealed = _revealCorrect != null;
-              final isCorrect = revealed && i == _revealCorrect;
-              final letter = String.fromCharCode(65 + i);
-
-              // Opaque, like QuestionAnswerCard's: a see-through tint
-              // showed a theme's solid shadow through the option.
-              Color? fillColor;
-
-              if (revealed && !_timedOut) {
-                if (isCorrect) {
-                  fillColor = Color.alphaBlend(
-                    context.appColors.success.withValues(alpha: 0.16),
-                    colorScheme.surface,
-                  );
-                }
-
-                if (isSelected && !isCorrect) {
-                  fillColor = Color.alphaBlend(
-                    context.appColors.danger.withValues(alpha: 0.16),
-                    colorScheme.surface,
-                  );
-                }
-              } else if (!revealed && isSelected) {
-                fillColor = colorScheme.surfaceContainerHighest;
-              }
-
-              Color borderColor = colorScheme.outline;
-              double borderWidth = 1;
-
-              if (_timedOut && _timeoutAnswerIndex != null) {
-                if (i == _timeoutAnswerIndex) {
-                  borderColor = context.appColors.reward;
-                  borderWidth = 3;
-                }
-              } else if (revealed) {
-                if (isCorrect) {
-                  borderColor = context.appColors.success;
-                  borderWidth = 2;
-                }
-
-                if (isSelected && !isCorrect) {
-                  borderColor = context.appColors.danger;
-                  borderWidth = 2;
-                }
-              } else if (isSelected) {
-                borderColor = colorScheme.primary;
-                borderWidth = 2;
-              }
-
-              final badgeColor = (revealed && isCorrect)
-                  ? context.appColors.success
-                  : (revealed && isSelected && !isCorrect)
-                      ? context.appColors.danger
-                      : (!revealed && isSelected)
-                          ? colorScheme.primary
-                          : colorScheme.surfaceContainerHighest;
-
-              final badgeTextColor =
-                  badgeColor == colorScheme.surfaceContainerHighest
-                      ? colorScheme.onSurfaceVariant
-                      : context.appColors.onAccent;
-
-              IconData? trailingIcon;
-              Color? trailingIconColor;
-              if (revealed && !_timedOut) {
-                if (isCorrect) {
-                  trailingIcon = Icons.check_circle;
-                  trailingIconColor = context.appColors.success;
-                } else if (isSelected) {
-                  trailingIcon = Icons.cancel;
-                  trailingIconColor = context.appColors.danger;
-                }
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(context.radii.md),
-                  onTap: () => _onTapAnswer(tappedIndex: i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: fillColor ?? colorScheme.surface,
-                      borderRadius: BorderRadius.circular(context.radii.md),
-                      border: Border.all(
-                        color: borderColor,
-                        width: borderWidth,
-                      ),
-                      // El borde de arriba codifica la seleccion; solo la
-                      // sombra pasa por el tema.
-                      boxShadow: context.surfaces.shadowsOr(
-                        isSelected
-                            ? [
-                                BoxShadow(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .shadow
-                                      .withValues(alpha: 0.08),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : [],
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: badgeColor,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            letter,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: badgeTextColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            options[i],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if (trailingIcon != null) ...[
-                          const SizedBox(width: 8),
-                          Icon(trailingIcon, color: trailingIconColor),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
+              answerIndex: _revealCorrect ?? -1,
+              selectedIndex: _selected,
+              locked: _revealCorrect != null,
+              timedOut: _timedOut,
+              timeoutAnswerIndex: _timeoutAnswerIndex,
+              pending: _answerSubmitting,
+              onTapAnswer: (i) => _onTapAnswer(tappedIndex: i),
+            ),
             SizedBox(
               height: 22,
               child: _statusMsg == null

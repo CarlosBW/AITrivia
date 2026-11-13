@@ -18,6 +18,7 @@ import '../../widgets/profile_avatar_button.dart';
 import '../../widgets/question_answer_card.dart';
 import '../../widgets/segmented_progress.dart';
 import '../review/question_review_screen.dart';
+import 'weekly_round_result_dialog.dart';
 import '../../l10n/lives_format.dart';
 
 /// A single round (fixed-size, freshly drawn from the category's pools —
@@ -254,7 +255,6 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
       if (!mounted) return;
 
-      final l10n = AppLocalizations.of(context);
       final correct = (result['correct'] ?? 0) as int;
       final total = _answers.length;
 
@@ -281,25 +281,18 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(l10n.weeklyTopicRoundResultTitle),
-          content: Text(l10n.weeklyTopicRoundResultBody(correct, total)),
-          actions: [
-            if (review.isNotEmpty)
-              TextButton(
-                onPressed: () => Navigator.push(
-                  dialogContext,
-                  MaterialPageRoute(
-                    builder: (_) => QuestionReviewScreen(questions: review),
+        builder: (dialogContext) => WeeklyRoundResultDialog(
+          correct: correct,
+          total: total,
+          onContinue: () => Navigator.pop(dialogContext),
+          onReview: review.isEmpty
+              ? null
+              : () => Navigator.push(
+                    dialogContext,
+                    MaterialPageRoute(
+                      builder: (_) => QuestionReviewScreen(questions: review),
+                    ),
                   ),
-                ),
-                child: Text(l10n.questionReviewButton),
-              ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l10n.weeklyTopicRoundResultButton),
-            ),
-          ],
         ),
       );
 

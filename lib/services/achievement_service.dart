@@ -188,3 +188,36 @@ class AchievementService {
     }
   }
 }
+
+/// Where an achievement goes in the list: a reward waiting to be claimed
+/// first, then the ones still in progress, then the ones already claimed.
+int achievementDisplayRank({required bool completed, required bool claimed}) {
+  if (completed && !claimed) return 0;
+  return completed ? 2 : 1;
+}
+
+/// [achievements] in the order the screen shows them.
+///
+/// The list used to keep its fixed order, so a reward ready to be claimed
+/// could sit below a screenful of achievements the player hadn't touched.
+/// Within each group the original order is kept. [progress] is each
+/// achievement's stored doc, by id.
+List<AchievementInfo> achievementsInDisplayOrder(
+  List<AchievementInfo> achievements,
+  Map<String, Map<String, dynamic>> progress,
+) {
+  int rank(AchievementInfo a) => achievementDisplayRank(
+        completed: progress[a.id]?['completed'] == true,
+        claimed: progress[a.id]?['claimed'] == true,
+      );
+
+  final indexed = [
+    for (var i = 0; i < achievements.length; i++) (i, achievements[i]),
+  ];
+  // The index breaks ties: List.sort is not stable.
+  indexed.sort((a, b) {
+    final byRank = rank(a.$2).compareTo(rank(b.$2));
+    return byRank != 0 ? byRank : a.$1.compareTo(b.$1);
+  });
+  return [for (final entry in indexed) entry.$2];
+}

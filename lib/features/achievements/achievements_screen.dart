@@ -114,6 +114,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             for (final d in docs) d.id: d.data(),
           };
 
+          // Rewards waiting to be claimed go first.
+          final ordered = achievementsInDisplayOrder(achievements, progressMap);
+
           final completedCount = achievements.where((a) {
             final data = progressMap[a.id];
             return data?['completed'] == true;
@@ -162,9 +165,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     horizontal: 16,
                     vertical: 6,
                   ),
-                  itemCount: achievements.length,
+                  itemCount: ordered.length,
                   itemBuilder: (context, i) {
-                    final achievement = achievements[i];
+                    final achievement = ordered[i];
 
                     final data =
                         progressMap[achievement.id] ?? {};

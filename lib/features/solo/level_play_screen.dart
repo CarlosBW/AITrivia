@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/life_check_retry.dart';
@@ -2456,14 +2457,19 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 2200),
     )..forward();
 
+    // Starts once the third star has filled in — see LevelResultHero.
+    SfxService.instance.playReward();
+    HapticFeedback.mediumImpact();
+
     final rnd = math.Random(42);
-    _particles = List.generate(22, (i) {
-      final angle = (-math.pi / 2) + ((rnd.nextDouble() - 0.5) * 1.8);
-      final distance = 50 + rnd.nextDouble() * 110;
-      final size = 6 + rnd.nextDouble() * 10;
+    _particles = List.generate(40, (i) {
+      // All the way round, not just upward: a burst from behind the stars.
+      final angle = rnd.nextDouble() * math.pi * 2;
+      final distance = 70 + rnd.nextDouble() * 150;
+      final size = 8 + rnd.nextDouble() * 14;
       final dx = math.cos(angle) * distance;
       final dy = math.sin(angle) * distance;
       return _SparkleParticle(
@@ -2486,7 +2492,9 @@ class _ThreeStarsCelebrationState extends State<_ThreeStarsCelebration>
       animation: _controller,
       builder: (context, _) {
         final t = Curves.easeOut.transform(_controller.value);
-        final fade = (1 - _controller.value).clamp(0.0, 1.0);
+        // Full for the first half, then fading: it used to start fading at
+        // once and was gone before it had been seen.
+        final fade = (2 * (1 - _controller.value)).clamp(0.0, 1.0);
 
         return Stack(
           alignment: Alignment.topCenter,

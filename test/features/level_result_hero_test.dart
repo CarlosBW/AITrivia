@@ -123,4 +123,87 @@ void main() {
       expect(tester.takeException(), isNull, reason: spec.id);
     }
   });
+
+  // Las estrellas aparecían ya llenas. Ahora se cuentan una por una.
+  group('las estrellas se llenan una por una', () {
+    Future<void> open(WidgetTester tester, LevelResultHero widget) async {
+      tester.view.physicalSize = const Size(360 * 3, 760 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: testTheme(AppThemes.byId(AppThemes.defaultId)),
+        home: Scaffold(body: SingleChildScrollView(child: widget)),
+      ));
+    }
+
+    int filled(WidgetTester tester) =>
+        tester.widgetList(find.byIcon(Icons.star_rounded)).length;
+
+    testWidgets('al abrir, las tres están vacías', (tester) async {
+      await open(tester, hero(correct: 10, stars: 3));
+
+      expect(filled(tester), 0);
+      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(3));
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('se van llenando en orden, con una pausa entre cada una',
+        (tester) async {
+      await open(tester, hero(correct: 10, stars: 3));
+
+      await tester.pump(Duration(milliseconds: starFillStartMs(0) + 20));
+      expect(filled(tester), 1);
+
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(filled(tester), 2);
+
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(filled(tester), 3);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('solo se llenan las que se ganaron', (tester) async {
+      await open(tester, hero(correct: 5, stars: 1));
+      await tester.pumpAndSettle();
+
+      expect(filled(tester), 1);
+      expect(find.byIcon(Icons.star_border_rounded), findsNWidgets(2));
+    });
+
+    testWidgets('la celebración espera a la tercera estrella', (tester) async {
+      await open(
+        tester,
+        const LevelResultHero(
+          title: '¡Nivel aprobado!',
+          stars: 3,
+          correct: 10,
+          total: 10,
+          rankLabel: 'Experto',
+          celebration: Text('PERFECTO'),
+        ),
+      );
+
+      await tester.pump(Duration(milliseconds: starFillStartMs(1) + 20));
+      expect(find.text('PERFECTO'), findsNothing);
+
+      await tester.pumpAndSettle();
+      expect(find.text('PERFECTO'), findsOneWidget);
+    });
+  });
+
+  test('cada estrella empieza después de la anterior', () {
+    expect(starsFilledAt(0, 3), 0);
+    expect(starsFilledAt(starFillStartMs(0), 3), 1);
+    expect(starsFilledAt(starFillStartMs(1) - 1, 3), 1);
+    expect(starsFilledAt(starFillStartMs(2), 3), 3);
+    // Nunca más de las ganadas, por mucho que pase el tiempo.
+    expect(starsFilledAt(60000, 2), 2);
+    expect(starsFilledAt(60000, 0), 0);
+  });
 }

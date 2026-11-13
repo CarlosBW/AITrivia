@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "Todas las pantallas de preguntas se ven igual: el tema de la semana, el PvP en vivo y los retos por turnos usan ahora el mismo diseño que los niveles.\n\nIncluye la revisión general de la 1.0.16: preguntas nuevas al repetir un nivel, apertura más rápida, compras de monedas y arreglos de PvP.\n\nPara probar: jugar una ronda del tema de la semana, una partida PvP en vivo y un reto por turnos."
+    "text": "El tema de la semana ahora está arriba en Inicio, con los días que quedan y tu progreso hacia la recompensa.\n\nAl terminar un nivel las estrellas se llenan una por una, con celebración si logras las tres. Los logros con recompensa por reclamar aparecen primero, y el resultado del tema de la semana tiene nuevo diseño.\n\nPara probar: terminar un nivel con 3 estrellas, jugar una ronda del tema de la semana y revisar tus logros."
   },
   {
     "language": "en-US",
-    "text": "Every question screen now looks the same: the weekly topic, live PvP and turn-based challenges use the same design as levels.\n\nIncludes the 1.0.16 pre-launch pass: new questions when replaying a level, faster opening, coin purchases and PvP fixes.\n\nTo test: play a weekly topic round, a live PvP match and a turn-based challenge."
+    "text": "The weekly topic now sits near the top of Home, with the days left and your progress towards the reward.\n\nWhen you finish a level the stars fill in one by one, with a celebration for all three. Achievements with a reward to claim come first, and the weekly topic result has a new design.\n\nTo test: finish a level with 3 stars, play a weekly topic round and check your achievements."
   }
 ]

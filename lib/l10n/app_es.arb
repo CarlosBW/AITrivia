@@ -90,6 +90,12 @@
   "homeWeeklyTopicCheckBack": "Vuelve pronto para un nuevo reto destacado.",
   "homeWeeklyTopicLoading": "Cargando el tema de la semana...",
   "homeOpenWeeklyTopic": "Abrir tema de la semana",
+  "homeWeeklyTopicDaysLeft": "{days, plural, =0{Último día} =1{Queda 1 día} other{Quedan {days} días}}",
+  "@homeWeeklyTopicDaysLeft": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
   "homeWeeklyTopicRewardCoins": "+{coins} monedas",
   "@homeWeeklyTopicRewardCoins": {
     "placeholders": {

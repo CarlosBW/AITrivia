@@ -223,3 +223,18 @@ class WeeklyRoundProgress {
     );
   }
 }
+
+/// The reward a player is working towards in the Weekly Topic, given the
+/// right answers they have this week: the coins first, then the exclusive
+/// reward, which stays the goal once reached.
+int weeklyTopicNextTarget(int correctAnswers) {
+  return correctAnswers < WeeklyTopicService.coinRewardThreshold
+      ? WeeklyTopicService.coinRewardThreshold
+      : WeeklyTopicService.completionRewardThreshold;
+}
+
+/// How full the progress bar towards [weeklyTopicNextTarget] is, 0 to 1.
+double weeklyTopicProgress(int correctAnswers) {
+  final target = weeklyTopicNextTarget(correctAnswers);
+  return (correctAnswers / target).clamp(0.0, 1.0).toDouble();
+}

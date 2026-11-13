@@ -658,6 +658,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
+                        // Second on the screen. It sat at the bottom, under
+                        // "more ways to play", where most players never
+                        // scrolled to: a week-long event nobody noticed.
+                        _WeeklyTopicCard(
+                          isBusy: busy,
+                          onOpen: (topicData) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const WeeklyTopicScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 14),
                         HeroCard(
                           gradientStart: context.appColors.brandGradientStart,
                           gradientEnd: context.appColors.brandGradientEnd,
@@ -694,18 +709,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 22),
                 SectionLabel(l10n.homeMoreWaysToPlay),
-                const SizedBox(height: 10),
-                _WeeklyTopicCard(
-                  isBusy: _isNavigating || _buyingLife,
-                  onOpen: (topicData) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const WeeklyTopicScreen(),
-                      ),
-                    );
-                  },
-                ),
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
@@ -1091,6 +1094,24 @@ class _WeeklyTopicCard extends StatefulWidget {
 class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
   late final _weeklyTopic = WeeklyTopicService.instance.watchCurrentTopic();
 
+  // The player's progress this week, memoized by week so a rebuild doesn't
+  // re-subscribe it.
+  String? _participationWeekId;
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? _participation;
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _participationFor(
+    String weekId,
+  ) {
+    if (_participationWeekId != weekId) {
+      _participationWeekId = weekId;
+      _participation = WeeklyTopicService.instance.watchMyParticipation(
+        uid: FirebaseAuth.instance.currentUser!.uid,
+        weekId: weekId,
+      );
+    }
+    return _participation!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1157,98 +1178,159 @@ class _WeeklyTopicCardState extends State<_WeeklyTopicCard> {
                 l10n.homeWeeklyTopicDefaultDescription)
             .toString();
         final rewardCoins = ((data['rewardCoins'] ?? 0) as num).toInt();
-        // White text on the light end of the gradient was barely legible;
-        // darkened until it reads against the lightest color.
-        final ink = readableInk(
-          context.appColors.onAccent,
-          const Color(0xFFFFC94D),
-        );
+        final weekId = (data['weekId'] ?? '').toString();
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
-            ),
-            borderRadius: BorderRadius.circular(context.radii.md),
-            border: context.surfaces.borderOr(null),
-            boxShadow: context.surfaces.shadowsOr(null),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        // Nested rather than joined: the participation doc only exists
+        // once the player has finished a round this week.
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: weekId.isEmpty ? null : _participationFor(weekId),
+          builder: (context, participationSnap) {
+            final correct = ((participationSnap.data?.data()?['correctAnswers'] ??
+                    0) as num)
+                .toInt();
+
+            return _buildCard(
+              context,
+              data: data,
+              title: title,
+              description: description,
+              rewardCoins: rewardCoins,
+              correct: correct,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCard(
+    BuildContext context, {
+    required Map<String, dynamic> data,
+    required String title,
+    required String description,
+    required int rewardCoins,
+    required int correct,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    // White text on the light end of the gradient was barely legible;
+    // darkened until it reads against the lightest color.
+    final ink = readableInk(
+      context.appColors.onAccent,
+      const Color(0xFFFFC94D),
+    );
+    final veil = context.appColors.onAccent.withValues(alpha: 0.22);
+    final target = weeklyTopicNextTarget(correct);
+    final daysLeft = WeeklyLeagueService.instance.timeUntilReset().inDays;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFC94D), Color(0xFFF2994A)],
+        ),
+        borderRadius: BorderRadius.circular(context.radii.lg),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: context.appColors.onAccent.withValues(alpha: 0.22),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.star_rounded,
-                      color: ink,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: context.heading(16, color: ink),
-                    ),
-                  ),
-                  if (rewardCoins > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.appColors.onAccent.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(context.radii.pill),
-                      ),
-                      child: Text(
-                        l10n.homeWeeklyTopicRewardCoins(rewardCoins),
-                        style: TextStyle(
-                          color: ink,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: veil,
+                  borderRadius: BorderRadius.circular(context.radii.pill),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star_rounded, color: ink, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.weeklyTopicScreenTitle,
+                      style: TextStyle(
+                        color: ink,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: TextStyle(
-                  color: ink,
-                  fontSize: 12,
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.appColors.onAccent,
-                    foregroundColor: const Color(0xFFB35C1E),
-                  ),
-                  onPressed:
-                      widget.isBusy ? null : () => widget.onOpen(data),
-                  icon: const Icon(Icons.play_arrow, size: 18),
-                  label: Text(l10n.homeOpenWeeklyTopic),
+              const Spacer(),
+              Icon(Icons.schedule_rounded, color: ink, size: 15),
+              const SizedBox(width: 4),
+              Text(
+                l10n.homeWeeklyTopicDaysLeft(daysLeft),
+                style: TextStyle(
+                  color: ink,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          Text(title, style: context.heading(22, color: ink)),
+          const SizedBox(height: 4),
+          Text(description, style: TextStyle(color: ink, fontSize: 13)),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(context.radii.pill),
+            child: LinearProgressIndicator(
+              value: weeklyTopicProgress(correct),
+              minHeight: 8,
+              backgroundColor: veil,
+              valueColor: AlwaysStoppedAnimation<Color>(ink),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.weeklyTopicCorrectAnswersProgress(correct, target),
+                  style: TextStyle(
+                    color: ink,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              if (rewardCoins > 0)
+                Text(
+                  l10n.homeWeeklyTopicRewardCoins(rewardCoins),
+                  style: TextStyle(
+                    color: ink,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: context.appColors.onAccent,
+                foregroundColor: const Color(0xFFB35C1E),
+              ),
+              onPressed: widget.isBusy ? null : () => widget.onOpen(data),
+              icon: const Icon(Icons.play_arrow, size: 18),
+              label: Text(l10n.homeOpenWeeklyTopic),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

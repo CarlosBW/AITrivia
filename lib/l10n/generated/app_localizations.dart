@@ -356,6 +356,12 @@ abstract class AppLocalizations {
   /// **'Abrir tema de la semana'**
   String get homeOpenWeeklyTopic;
 
+  /// No description provided for @homeWeeklyTopicDaysLeft.
+  ///
+  /// In es, this message translates to:
+  /// **'{days, plural, =0{Último día} =1{Queda 1 día} other{Quedan {days} días}}'**
+  String homeWeeklyTopicDaysLeft(int days);
+
   /// No description provided for @homeWeeklyTopicRewardCoins.
   ///
   /// In es, this message translates to:

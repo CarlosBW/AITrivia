@@ -173,6 +173,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenWeeklyTopic => 'Open Weekly Topic';
 
   @override
+  String homeWeeklyTopicDaysLeft(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days left',
+      one: '1 day left',
+      zero: 'Last day',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String homeWeeklyTopicRewardCoins(int coins) {
     return '+$coins coins';
   }

@@ -67,6 +67,12 @@
   "homeWeeklyTopicCheckBack": "Check back soon for a featured challenge.",
   "homeWeeklyTopicLoading": "Loading Weekly Topic...",
   "homeOpenWeeklyTopic": "Open Weekly Topic",
+  "homeWeeklyTopicDaysLeft": "{days, plural, =0{Last day} =1{1 day left} other{{days} days left}}",
+  "@homeWeeklyTopicDaysLeft": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
   "homeWeeklyTopicRewardCoins": "+{coins} coins",
   "@homeWeeklyTopicRewardCoins": {
     "placeholders": {

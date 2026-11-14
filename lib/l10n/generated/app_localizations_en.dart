@@ -173,6 +173,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeOpenWeeklyTopic => 'Open Weekly Topic';
 
   @override
+  String get aiTopicPromoTitle => 'Create your own topic';
+
+  @override
+  String get aiTopicPromoBody =>
+      'Type anything — your show, your team, your field — and AI builds levels of questions just for you.';
+
+  @override
+  String get aiTopicPromoWhere => 'It\'s on Home, in the “Custom topic” card.';
+
+  @override
+  String get aiTopicPromoCta => 'Create a topic';
+
+  @override
+  String get aiTopicPromoLater => 'Not now';
+
+  @override
   String homeWeeklyTopicDaysLeft(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,

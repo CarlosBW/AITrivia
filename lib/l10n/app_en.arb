@@ -67,6 +67,11 @@
   "homeWeeklyTopicCheckBack": "Check back soon for a featured challenge.",
   "homeWeeklyTopicLoading": "Loading Weekly Topic...",
   "homeOpenWeeklyTopic": "Open Weekly Topic",
+  "aiTopicPromoTitle": "Create your own topic",
+  "aiTopicPromoBody": "Type anything — your show, your team, your field — and AI builds levels of questions just for you.",
+  "aiTopicPromoWhere": "It's on Home, in the “Custom topic” card.",
+  "aiTopicPromoCta": "Create a topic",
+  "aiTopicPromoLater": "Not now",
   "homeWeeklyTopicDaysLeft": "{days, plural, =0{Last day} =1{1 day left} other{{days} days left}}",
   "@homeWeeklyTopicDaysLeft": {
     "placeholders": {

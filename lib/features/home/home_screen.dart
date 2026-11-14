@@ -16,7 +16,9 @@ import '../../services/season_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/avatar_service.dart';
 import '../../services/sfx_service.dart';
+import '../ai_topics/ai_topic_promo_dialog.dart';
 import '../ai_topics/ai_topics_screen.dart';
+import '../../services/ai_topic_promo.dart';
 import '../shop/coin_shop_screen.dart';
 import '../solo/level_play_screen.dart';
 import '../../services/solo_progress_service.dart';
@@ -105,6 +107,32 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkPendingSeasonRewards();
     _startLifeTimer();
     SoloProgressService.instance.revision.addListener(_reloadRecentCategory);
+    _maybeShowAiTopicPromo();
+  }
+
+  // Free topics the player has, as last seen on the user doc.
+  int _freeTopicPasses = 0;
+
+  /// Every few days, reminds the player that they can create their own
+  /// topics and where — see [takeAiTopicPromoTurn]. After a pause, so Home
+  /// has loaded and its own popups (the login streak) have had their turn.
+  Future<void> _maybeShowAiTopicPromo() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
+    if (!mounted || _showStreakPopup) return;
+    if (ModalRoute.isCurrentOf(context) != true) return;
+    if (!await takeAiTopicPromoTurn()) return;
+    if (!mounted || ModalRoute.isCurrentOf(context) != true) return;
+
+    final create = await showAiTopicPromo(
+      context,
+      freePasses: _freeTopicPasses,
+    );
+    if (create != true || !mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AiTopicsScreen()),
+    );
   }
 
   void _reloadRecentCategory() {
@@ -529,6 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final loaded = snap.hasData;
                     final coins = data['coins'] ?? 0;
                     final passes = ((data['freeTopicPasses'] ?? 0) as num).toInt();
+                    _freeTopicPasses = passes;
                     final xp = data['xp'] ?? 0;
                     final streak = ((data['dailyStreak'] ?? 0) as num).toInt();
 

@@ -90,6 +90,11 @@
   "homeWeeklyTopicCheckBack": "Vuelve pronto para un nuevo reto destacado.",
   "homeWeeklyTopicLoading": "Cargando el tema de la semana...",
   "homeOpenWeeklyTopic": "Abrir tema de la semana",
+  "aiTopicPromoTitle": "Crea tu propio tema",
+  "aiTopicPromoBody": "Escribe lo que quieras —tu serie, tu equipo, tu carrera— y la IA arma niveles de preguntas solo para ti.",
+  "aiTopicPromoWhere": "Está en Inicio, en la tarjeta «Tema personalizado».",
+  "aiTopicPromoCta": "Crear un tema",
+  "aiTopicPromoLater": "Ahora no",
   "homeWeeklyTopicDaysLeft": "{days, plural, =0{Último día} =1{Queda 1 día} other{Quedan {days} días}}",
   "@homeWeeklyTopicDaysLeft": {
     "placeholders": {

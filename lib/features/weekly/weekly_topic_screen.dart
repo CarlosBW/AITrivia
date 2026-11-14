@@ -12,6 +12,9 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/category_illustration.dart';
+import '../../widgets/result_hero_banner.dart';
+import 'weekly_reward_tile.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../l10n/lives_format.dart';
 
@@ -243,6 +246,7 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
           }
 
           final weekId = (topicData['weekId'] ?? '').toString();
+          final categoryId = (topicData['categoryId'] ?? '').toString();
           // The rotation writes per-language fields; the bare ones are what
           // older docs carried. Reading only `description` left this empty.
           final languageCode = Localizations.localeOf(context).languageCode;
@@ -289,42 +293,51 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                   ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: context.appColors.rewardBg,
-                          borderRadius: BorderRadius.circular(context.radii.md),
-                          boxShadow: context.surfaces.shadowsOr(null),
-                          border: context.surfaces.borderOr(Border.all(
-                            color: context.appColors.reward.withValues(alpha: 0.5),
-                          )),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      // The topic on the theme's hero banner, with the
+                      // category's own illustration: the screen opened on
+                      // a flat tinted box with a star icon.
+                      ResultHeroBanner(
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.star_border, color: context.appColors.reward),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.weeklyTopicFeaturedBadge,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                            CategoryIllustration(
+                              categoryId: categoryId,
+                              name: title,
+                              size: 88,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  HeroBadge(
+                                    label: l10n.weeklyTopicFeaturedBadge,
+                                    icon: Icons.star_rounded,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    title,
+                                    style: context.heading(
+                                      24,
+                                      color: context.appColors.onAccent,
+                                    ),
+                                  ),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      description,
+                                      style: TextStyle(
+                                        color: context.appColors.onAccent,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              title,
-                              style: context.heading(22),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(description),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -341,105 +354,116 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                               style: context.heading(18),
                             ),
                             const SizedBox(height: 12),
-                            LinearProgressIndicator(value: progress),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                context.radii.pill,
+                              ),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 10,
+                              ),
+                            ),
                             const SizedBox(height: 10),
                             Text(
                               l10n.weeklyTopicCorrectAnswersProgress(
                                 correctAnswers,
                                 WeeklyTopicService.completionRewardThreshold,
                               ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: context.appColors.success.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(context.radii.md),
-                          border: context.surfaces.borderOr(null),
-                          boxShadow: context.surfaces.shadowsOr(null),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.emoji_events_rounded,
+                            color: context.readableOnOwnTint(
+                              context.appColors.reward,
+                              wash: 0,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.weeklyTopicRewardsTitle,
+                            style: context.heading(20),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      WeeklyRewardTile(
+                        emblem: Icon(
+                          Icons.monetization_on_rounded,
+                          size: 30,
+                          color: context.readableOnOwnTint(
+                            context.appColors.reward,
+                            wash: 0,
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.weeklyTopicRewardsTitle,
-                              style: context.heading(18),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              l10n.weeklyTopicCoinRewardDescription(
-                                WeeklyTopicService.coinRewardThreshold,
-                                rewardCoins,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: canClaimCoins && !_claimingCoins
-                                    ? () => _claimCoinReward(
-                                          weekId: weekId,
-                                          rewardCoins: rewardCoins,
-                                        )
-                                    : null,
-                                icon: const Icon(Icons.monetization_on_outlined),
-                                label: Text(
-                                  coinRewardClaimed
-                                      ? l10n.weeklyTopicCoinRewardClaimed
-                                      : l10n.weeklyTopicClaimCoinReward,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            const Divider(),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.weeklyTopicCompletionRewardDescription(
-                                WeeklyTopicService.completionRewardThreshold,
-                                rewardAvatar.emoji,
-                                rewardAvatar.name,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              completionRewardClaimed
-                                  ? l10n.weeklyTopicExclusiveClaimed
-                                  : correctAnswers >=
-                                          WeeklyTopicService
-                                              .completionRewardThreshold
-                                      ? l10n.weeklyTopicExclusiveReady
-                                      : l10n.weeklyTopicExclusiveLockedRounds(
-                                          WeeklyTopicService
-                                              .completionRewardThreshold,
-                                        ),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: canClaimCompletion &&
-                                        !_claimingCompletion
-                                    ? () => _claimCompletionReward(
-                                          weekId: weekId,
-                                          rewardAvatarId: rewardAvatarId,
-                                        )
-                                    : null,
-                                icon: const Icon(Icons.card_giftcard_outlined),
-                                label: Text(
-                                  completionRewardClaimed
-                                      ? l10n.weeklyTopicExclusiveClaimedButton
-                                      : l10n.weeklyTopicClaimCompletionReward,
-                                ),
-                              ),
-                            ),
-                          ],
+                        title: l10n.weeklyTopicCoinRewardDescription(
+                          WeeklyTopicService.coinRewardThreshold,
+                          rewardCoins,
                         ),
+                        progress: correctAnswers /
+                            WeeklyTopicService.coinRewardThreshold,
+                        progressLabel: l10n.weeklyTopicCorrectAnswersProgress(
+                          correctAnswers.clamp(
+                            0,
+                            WeeklyTopicService.coinRewardThreshold,
+                          ),
+                          WeeklyTopicService.coinRewardThreshold,
+                        ),
+                        state: weeklyRewardState(
+                          correctAnswers: correctAnswers,
+                          threshold: WeeklyTopicService.coinRewardThreshold,
+                          claimed: coinRewardClaimed,
+                        ),
+                        claimLabel: l10n.weeklyTopicClaimCoinReward,
+                        claimedLabel: l10n.weeklyTopicCoinRewardClaimed,
+                        onClaim: canClaimCoins && !_claimingCoins
+                            ? () => _claimCoinReward(
+                                  weekId: weekId,
+                                  rewardCoins: rewardCoins,
+                                )
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      WeeklyRewardTile(
+                        emblem: Text(
+                          rewardAvatar.emoji,
+                          style: const TextStyle(fontSize: 26),
+                        ),
+                        title: l10n.weeklyTopicCompletionRewardDescription(
+                          WeeklyTopicService.completionRewardThreshold,
+                          rewardAvatar.emoji,
+                          rewardAvatar.name,
+                        ),
+                        progress: correctAnswers /
+                            WeeklyTopicService.completionRewardThreshold,
+                        progressLabel: l10n.weeklyTopicCorrectAnswersProgress(
+                          correctAnswers.clamp(
+                            0,
+                            WeeklyTopicService.completionRewardThreshold,
+                          ),
+                          WeeklyTopicService.completionRewardThreshold,
+                        ),
+                        state: weeklyRewardState(
+                          correctAnswers: correctAnswers,
+                          threshold:
+                              WeeklyTopicService.completionRewardThreshold,
+                          claimed: completionRewardClaimed,
+                        ),
+                        claimLabel: l10n.weeklyTopicClaimCompletionReward,
+                        claimedLabel: l10n.weeklyTopicExclusiveClaimed,
+                        onClaim: canClaimCompletion && !_claimingCompletion
+                            ? () => _claimCompletionReward(
+                                  weekId: weekId,
+                                  rewardAvatarId: rewardAvatarId,
+                                )
+                            : null,
                       ),
                       const SizedBox(height: 24),
                       SpotlightHint(
@@ -450,10 +474,6 @@ class _WeeklyTopicScreenState extends State<WeeklyTopicScreen> {
                           onPressed: _isNavigating
                               ? null
                               : () {
-                                  final categoryId =
-                                      (topicData['categoryId'] ?? '')
-                                          .toString();
-
                                   if (categoryId.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

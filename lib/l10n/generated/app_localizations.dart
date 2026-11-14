@@ -356,6 +356,36 @@ abstract class AppLocalizations {
   /// **'Abrir tema de la semana'**
   String get homeOpenWeeklyTopic;
 
+  /// No description provided for @aiTopicPromoTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea tu propio tema'**
+  String get aiTopicPromoTitle;
+
+  /// No description provided for @aiTopicPromoBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe lo que quieras —tu serie, tu equipo, tu carrera— y la IA arma niveles de preguntas solo para ti.'**
+  String get aiTopicPromoBody;
+
+  /// No description provided for @aiTopicPromoWhere.
+  ///
+  /// In es, this message translates to:
+  /// **'Está en Inicio, en la tarjeta «Tema personalizado».'**
+  String get aiTopicPromoWhere;
+
+  /// No description provided for @aiTopicPromoCta.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear un tema'**
+  String get aiTopicPromoCta;
+
+  /// No description provided for @aiTopicPromoLater.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora no'**
+  String get aiTopicPromoLater;
+
   /// No description provided for @homeWeeklyTopicDaysLeft.
   ///
   /// In es, this message translates to:

@@ -173,6 +173,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeOpenWeeklyTopic => 'Abrir tema de la semana';
 
   @override
+  String get aiTopicPromoTitle => 'Crea tu propio tema';
+
+  @override
+  String get aiTopicPromoBody =>
+      'Escribe lo que quieras —tu serie, tu equipo, tu carrera— y la IA arma niveles de preguntas solo para ti.';
+
+  @override
+  String get aiTopicPromoWhere =>
+      'Está en Inicio, en la tarjeta «Tema personalizado».';
+
+  @override
+  String get aiTopicPromoCta => 'Crear un tema';
+
+  @override
+  String get aiTopicPromoLater => 'Ahora no';
+
+  @override
   String homeWeeklyTopicDaysLeft(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,

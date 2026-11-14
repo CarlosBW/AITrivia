@@ -847,13 +847,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     return Scaffold(
       appBar: AppBar(
         leading: const CloseButton(),
+        // A custom topic's title is just the level: "Tema personalizado -
+        // Nivel 3" didn't fit, and the topic's own name is right below.
         title: AppBarTitle(
-          l10n.levelPlayAppBarTitle(
-            widget.isAiTopic
-                ? l10n.levelPlayAiTopicLabel
-                : (widget.categoryName ?? widget.categoryId),
-            widget.levelNumber,
-          ),
+          widget.isAiTopic
+              ? l10n.levelSelectLevelNumber(widget.levelNumber)
+              : l10n.levelPlayAppBarTitle(
+                  widget.categoryName ?? widget.categoryId,
+                  widget.levelNumber,
+                ),
         ),
         actions: [_buildLivesChip(), const SizedBox(width: 12)],
       ),

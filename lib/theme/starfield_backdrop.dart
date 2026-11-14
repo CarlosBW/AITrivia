@@ -51,7 +51,10 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
     Widget child,
   ) {
     // Whichever backdrop the theme sells; the routing is the same for all.
-    final page = themeBackdrop(context.decor.backdrop, child);
+    final page = themeBackdrop(
+      context.decor.backdrop,
+      aboveSystemBar(context, child, isFirstRoute: route.isFirst),
+    );
 
     return _platformDefaults.buildTransitions<T>(
       route,
@@ -61,6 +64,34 @@ class _BackdropPageTransitionsBuilder extends PageTransitionsBuilder {
       page,
     );
   }
+}
+
+/// [child] kept clear of the system's bar at the bottom of the screen —
+/// Android's back/home/recents buttons or gesture handle, the iPhone's home
+/// indicator.
+///
+/// The app draws edge to edge, so that bar sits on top of whatever reaches
+/// the bottom: on a long screen the last card or button ended up under it.
+/// Almost no screen allowed for it (a scroll view given its own padding
+/// ignores the inset), so it is done here, once, for every pushed route.
+/// The page's background still runs to the edge: the backdrop is painted
+/// outside this, and a theme without one gets its page colour instead.
+///
+/// The first route is left alone. It is the tab shell, whose bottom bar
+/// already extends under the system's in its own colour, and the first-run
+/// screens before it, which handle the inset themselves.
+Widget aboveSystemBar(
+  BuildContext context,
+  Widget child, {
+  required bool isFirstRoute,
+}) {
+  if (isFirstRoute) return child;
+
+  final inset = SafeArea(top: false, left: false, right: false, child: child);
+  final pageColor = Theme.of(context).scaffoldBackgroundColor;
+  // Transparent under a backdrop, which paints the strip itself.
+  if (pageColor.a == 0) return inset;
+  return ColoredBox(color: pageColor, child: inset);
 }
 
 /// [child] drawn over [backdrop]. Each backdrop reads its page colour from

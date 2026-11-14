@@ -977,8 +977,10 @@ ThemeData buildAppTheme([AppThemeSpec? spec]) {
     // see `backdropPageTransitionsTheme`. A solid scaffold would cover it.
     scaffoldBackgroundColor:
         hasBackdrop ? Colors.transparent : theme.scaffoldBackground,
-    pageTransitionsTheme:
-        hasBackdrop ? backdropPageTransitionsTheme : base.pageTransitionsTheme,
+    // For every theme, not only those with a backdrop: it is also what
+    // keeps each pushed screen clear of the system's bar at the bottom —
+    // see `aboveSystemBar`. Without a backdrop it adds nothing else.
+    pageTransitionsTheme: backdropPageTransitionsTheme,
     // Resolved once here so the family lives on the theme instead of at 98
     // call sites. Built at w800 on purpose — see [AppTypography].
     extensions: <ThemeExtension<dynamic>>[

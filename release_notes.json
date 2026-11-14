@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "La barra de navegación del teléfono ya no tapa el contenido: en las pantallas largas, el último botón o tarjeta queda completo por encima de ella.\n\nIncluye lo de la 1.0.19: nuevo diseño del tema de la semana y el recordatorio de temas personalizados.\n\nPara probar: abrir una pantalla larga (liga semanal, tema de la semana, perfil), bajar hasta el final y comprobar que todo se puede tocar."
+    "text": "Tema de la semana: el resultado de cada ronda ahora muestra las respuestas que acertaste de verdad. Antes podía mostrar menos (por ejemplo 5 de 10 habiendo acertado 9) y también se sumaban menos aciertos hacia las recompensas.\n\nPara probar: jugar varias rondas del tema de la semana y comprobar que el resultado coincide con lo que acertaste y que el progreso hacia las recompensas sube en la misma cantidad."
   },
   {
     "language": "en-US",
-    "text": "The phone's navigation bar no longer covers content: on long screens, the last button or card sits fully above it.\n\nIncludes the 1.0.19 changes: the new weekly topic design and the custom topics reminder.\n\nTo test: open a long screen (weekly league, weekly topic, profile), scroll to the end and check that everything can be tapped."
+    "text": "Weekly topic: each round's result now shows the answers you actually got right. It could show fewer before (for example 5 of 10 after getting 9 right), and fewer were counted towards the rewards too.\n\nTo test: play several weekly topic rounds and check that the result matches what you got right and that progress towards the rewards goes up by the same amount."
   }
 ]

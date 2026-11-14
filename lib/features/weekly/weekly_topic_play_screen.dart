@@ -255,7 +255,12 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
 
       if (!mounted) return;
 
-      final correct = (result['correct'] ?? 0) as int;
+      // What was answered right in this round. `correct` is only the part
+      // that is new this week, and showing that told a player with nine
+      // right answers that they had five. A server from before it sent
+      // `roundCorrect` falls back to this screen's own count.
+      final correct =
+          ((result['roundCorrect'] ?? _correct) as num).toInt();
       final total = _answers.length;
 
       // Answers go in question order, so each one's position is its index.

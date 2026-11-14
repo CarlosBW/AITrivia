@@ -65,7 +65,10 @@ import {
   maxAnswersForElapsed,
   mergeRecordedAnswers,
   openWeeklyRound,
+  parseWeeklyQuestionKey,
   scoreNewAnswers,
+  weeklyKeysForScoring,
+  weeklyQuestionKey,
 } from "./quiz_answers";
 import {
   decideCoinCredit,
@@ -10669,12 +10672,16 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
   const order = seededShuffleIndices(
     entries.length, crypto.randomBytes(4).readUInt32LE(0)
   );
-  // usedQuestionIds keep only the id, not the tier, so each counts as used
-  // in every tier of this category — the same as before keys carried both.
+  // Each used question is one tier's — see weeklyQuestionKey. An entry
+  // recorded before the tier was kept is a bare id: which question it was
+  // can't be told, so it still sends that id to the back in every tier.
   const usedKeys = new Map<string, number>();
-  for (const id of used) {
-    for (const d of [1, 2, 3]) {
-      usedKeys.set(dailyEntryKey(categoryId, d, id), 0);
+  for (const entry of used) {
+    const key = parseWeeklyQuestionKey(entry);
+    for (const d of key ? [key.difficulty] : [1, 2, 3]) {
+      usedKeys.set(
+        dailyEntryKey(categoryId, d, key ? key.questionId : entry), 0
+      );
     }
   }
   const picked = selectDailyEntries(
@@ -10912,12 +10919,20 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
     const results = (roundData.results &&
       typeof roundData.results === "object") ?
       roundData.results as Record<string, {correct?: unknown}> : {};
-    const judged = Object.entries(results).map(([index, verdict]) => ({
-      questionId: String(
-        roundQuestions[safeInt(index, -1)]?.sourceQuestionId || ""
-      ),
-      correct: verdict?.correct === true,
-    })).filter((entry) => entry.questionId);
+    // By tier and id: the id alone names a different question in each
+    // tier — see weeklyQuestionKey.
+    const judged = Object.entries(results).map(([index, verdict]) => {
+      const question = roundQuestions[safeInt(index, -1)];
+      return {
+        questionId: weeklyQuestionKey(
+          question?.sourceDifficulty, question?.sourceQuestionId
+        ),
+        correct: verdict?.correct === true,
+      };
+    }).filter((entry) => entry.questionId);
+    // What the player got right in this round, whatever part of it is new
+    // this week: the result screen shows this.
+    const roundCorrect = judged.filter((entry) => entry.correct).length;
     tx.delete(answerKeyRef(roundRef));
     tx.delete(roundRef);
 
@@ -10925,7 +10940,9 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
       ((data.usedQuestionIds as unknown[]) || []).map((e) => String(e))
     );
     // Each question counts once per week — see scoreNewAnswers.
-    const round = scoreNewAnswers(judged, usedQuestionIds);
+    const round = scoreNewAnswers(
+      judged, weeklyKeysForScoring(usedQuestionIds)
+    );
     const correct = round.correct;
     const totalAnswered = round.answered;
 
@@ -10949,7 +10966,12 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
       {merge: true}
     );
 
-    return {correct, totalAnswered, correctAnswers: newCorrectAnswers};
+    return {
+      correct,
+      roundCorrect,
+      totalAnswered,
+      correctAnswers: newCorrectAnswers,
+    };
   });
 });
 

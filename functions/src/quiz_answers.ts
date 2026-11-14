@@ -242,3 +242,63 @@ export function isCorrectAnswer(
 ): boolean {
   return correctIndex >= 0 && selected === correctIndex;
 }
+
+/**
+ * What identifies a Weekly Topic question within its category: its tier
+ * and its id in that tier's pool.
+ *
+ * The id alone doesn't. Each difficulty numbers its own questions from
+ * `q1`, so `q17` is three different questions — and the week's record of
+ * used questions kept only the id. An easy `q17` answered on Monday made
+ * the medium and hard `q17` count as repeats: they were held back from the
+ * draw, and when they did come up a right answer to them scored nothing.
+ * A round of nine right answers was reported, and credited, as five.
+ * @param {unknown} difficulty The question's tier (`sourceDifficulty`).
+ * @param {unknown} questionId Its id in that tier (`sourceQuestionId`).
+ * @return {string} The key, or "" when either part is missing.
+ */
+export function weeklyQuestionKey(
+  difficulty: unknown,
+  questionId: unknown
+): string {
+  const tier = Number(difficulty);
+  const id = typeof questionId === "string" ? questionId : "";
+  if (!Number.isInteger(tier) || tier < 1 || id === "") return "";
+  return `${tier}/${id}`;
+}
+
+/**
+ * A stored used-question entry as tier and id, or null for one recorded
+ * before the tier was kept (a bare id).
+ * @param {string} entry An entry of `usedQuestionIds`.
+ * @return {{difficulty: number, questionId: string} | null} Its parts.
+ */
+export function parseWeeklyQuestionKey(
+  entry: string
+): {difficulty: number; questionId: string} | null {
+  const slash = entry.indexOf("/");
+  if (slash <= 0) return null;
+  const difficulty = Number(entry.slice(0, slash));
+  const questionId = entry.slice(slash + 1);
+  if (!Number.isInteger(difficulty) || questionId === "") return null;
+  return {difficulty, questionId};
+}
+
+/**
+ * The used-question entries a round is scored against: only the ones that
+ * say which question they are.
+ *
+ * A bare id from before the tier was kept can't tell an already-answered
+ * question from another tier's namesake, which is the mistake this
+ * replaces; they stop counting against the player and are gone with the
+ * week's record.
+ * @param {Iterable<string>} used The week's `usedQuestionIds`.
+ * @return {Set<string>} The entries that are full keys.
+ */
+export function weeklyKeysForScoring(used: Iterable<string>): Set<string> {
+  const keys = new Set<string>();
+  for (const entry of used) {
+    if (parseWeeklyQuestionKey(entry) !== null) keys.add(entry);
+  }
+  return keys;
+}

@@ -7,9 +7,12 @@ import {
   resumeIndexFromBanked,
   isCorrectAnswer,
   openWeeklyRound,
+  parseWeeklyQuestionKey,
   isSoloRunSubmittable,
   maxAnswersForElapsed,
   scoreNewAnswers,
+  weeklyKeysForScoring,
+  weeklyQuestionKey,
 } from "./quiz_answers";
 
 describe("mergeRecordedAnswers", () => {
@@ -256,5 +259,74 @@ describe("isCorrectAnswer", () => {
   // banked as, so the two matched and the timeout scored.
   test("a timeout on a question with no key is not a point", () => {
     assert.equal(isCorrectAnswer(TIMED_OUT_ANSWER, -1), false);
+  });
+});
+
+describe("weeklyQuestionKey", () => {
+  test("the same id in two tiers is two questions", () => {
+    assert.notEqual(weeklyQuestionKey(1, "q17"), weeklyQuestionKey(2, "q17"));
+  });
+
+  test("round-trips through its stored form", () => {
+    assert.deepEqual(
+      parseWeeklyQuestionKey(weeklyQuestionKey(3, "q17")),
+      {difficulty: 3, questionId: "q17"}
+    );
+  });
+
+  test("a question missing its tier or id has no key", () => {
+    assert.equal(weeklyQuestionKey(undefined, "q17"), "");
+    assert.equal(weeklyQuestionKey(2, ""), "");
+    assert.equal(weeklyQuestionKey(2, undefined), "");
+  });
+
+  test("a bare id from the old record is not a key", () => {
+    assert.equal(parseWeeklyQuestionKey("q17"), null);
+  });
+});
+
+describe("a weekly round scored by tier and id", () => {
+  /**
+   * A round's judged answers, keyed the way the server keys them.
+   * @param {Array<[number, string, boolean]>} answers Tier, id, verdict.
+   * @return {Array<{questionId: string, correct: boolean}>} For scoring.
+   */
+  const judged = (answers: [number, string, boolean][]) =>
+    answers.map(([d, id, correct]) => ({
+      questionId: weeklyQuestionKey(d, id), correct,
+    }));
+
+  // Regression: nine right answers were reported, and credited, as five.
+  // Four of them were to questions whose id had been used in another tier.
+  test("a namesake from another tier is not a repeat", () => {
+    const used = new Set([
+      weeklyQuestionKey(1, "q1"), weeklyQuestionKey(1, "q2"),
+      weeklyQuestionKey(1, "q3"), weeklyQuestionKey(1, "q4"),
+    ]);
+    const round = judged([
+      [2, "q1", true], [2, "q2", true], [2, "q3", true], [2, "q4", true],
+      [2, "q5", true], [2, "q6", true], [2, "q7", true], [2, "q8", true],
+      [2, "q9", true], [2, "q10", false],
+    ]);
+
+    assert.equal(scoreNewAnswers(round, used).correct, 9);
+  });
+
+  test("the very same question still counts only once a week", () => {
+    const used = new Set([weeklyQuestionKey(2, "q1")]);
+    const round = judged([[2, "q1", true], [2, "q2", true]]);
+
+    assert.deepEqual(scoreNewAnswers(round, used), {
+      correct: 1, answered: 1, questionIds: [weeklyQuestionKey(2, "q2")],
+    });
+  });
+
+  // What the week's record held before: ids with no tier.
+  test("bare ids from the old record stop counting against the player", () => {
+    const stored = ["q1", "q2", weeklyQuestionKey(2, "q9")];
+    const used = weeklyKeysForScoring(stored);
+    const round = judged([[2, "q1", true], [3, "q2", true], [2, "q9", true]]);
+
+    assert.equal(scoreNewAnswers(round, used).correct, 2);
   });
 });

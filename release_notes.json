@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "La pantalla del tema de la semana tiene nuevo diseño: la ilustración del tema arriba y cada recompensa en su propia tarjeta, con su progreso y su estado.\n\nCada pocos días verás un recordatorio de que puedes crear tus propios temas y dónde hacerlo. En los temas personalizados el título del nivel ya no se corta.\n\nPara probar: abrir el tema de la semana, reclamar una recompensa y jugar un nivel de un tema personalizado."
+    "text": "La barra de navegación del teléfono ya no tapa el contenido: en las pantallas largas, el último botón o tarjeta queda completo por encima de ella.\n\nIncluye lo de la 1.0.19: nuevo diseño del tema de la semana y el recordatorio de temas personalizados.\n\nPara probar: abrir una pantalla larga (liga semanal, tema de la semana, perfil), bajar hasta el final y comprobar que todo se puede tocar."
   },
   {
     "language": "en-US",
-    "text": "The weekly topic screen has a new design: the topic's illustration on top and each reward on its own card, with its progress and status.\n\nEvery few days you'll see a reminder that you can create your own topics, and where. In custom topics the level title no longer gets cut off.\n\nTo test: open the weekly topic, claim a reward and play a level of a custom topic."
+    "text": "The phone's navigation bar no longer covers content: on long screens, the last button or card sits fully above it.\n\nIncludes the 1.0.19 changes: the new weekly topic design and the custom topics reminder.\n\nTo test: open a long screen (weekly league, weekly topic, profile), scroll to the end and check that everything can be tapped."
   }
 ]

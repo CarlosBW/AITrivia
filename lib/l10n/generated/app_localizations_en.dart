@@ -2715,6 +2715,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeShopBuyOne => '+1 life';
 
   @override
+  String get starterPackTitle => 'Starter pack';
+
+  @override
+  String get starterPackOnce => 'ONE-TIME OFFER';
+
+  @override
+  String starterPackContents(int coins, int freezes) {
+    return '$coins coins + $freezes streak protectors';
+  }
+
+  @override
+  String starterPackBuy(String price) {
+    return 'Buy for $price';
+  }
+
+  @override
+  String starterPackPurchaseSuccess(int coins, int freezes) {
+    return 'Starter pack! +$coins coins and +$freezes streak protectors';
+  }
+
+  @override
   String get shareResult => 'Share result';
 
   @override

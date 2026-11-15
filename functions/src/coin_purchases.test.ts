@@ -5,7 +5,11 @@ import {
   decideCoinCredit,
   judgePlayProductPurchase,
   playProductPurchaseUrl,
+  purchaseGrant,
   purchaseLedgerId,
+  STARTER_PACK_COINS,
+  STARTER_PACK_ID,
+  STARTER_PACK_STREAK_FREEZES,
 } from "./coin_purchases";
 
 // A Play ProductPurchase as purchases.products.get returns it for a
@@ -176,5 +180,43 @@ describe("playProductPurchaseUrl", () => {
         "applications/pe.massivedynamics.triviaia/purchases/products/" +
         "coins_pack_small/tokens/a%2Fb%2Bc"
     );
+  });
+});
+
+describe("purchaseGrant", () => {
+  const packs = {"coins_pack_small": 100, "coins_pack_large": 4000};
+
+  test("a coin pack grants its coins and nothing else", () => {
+    assert.deepEqual(purchaseGrant("coins_pack_small", packs), {
+      coins: 100,
+      streakFreezes: 0,
+      starterPack: false,
+    });
+  });
+
+  test("the starter pack grants coins and streak protectors", () => {
+    assert.deepEqual(purchaseGrant(STARTER_PACK_ID, packs), {
+      coins: STARTER_PACK_COINS,
+      streakFreezes: STARTER_PACK_STREAK_FREEZES,
+      starterPack: true,
+    });
+  });
+
+  // 500 coins for 1.99 next to 100 for 0.99: the offer has to be worth
+  // more than the pack it sits above, or it isn't one.
+  test("the starter pack is worth more than the smallest pack", () => {
+    assert.ok(STARTER_PACK_COINS > packs["coins_pack_small"]);
+    assert.ok(STARTER_PACK_STREAK_FREEZES > 0);
+  });
+
+  test("an unknown product grants nothing", () => {
+    assert.equal(purchaseGrant("coins_pack_huge", packs), null);
+    assert.equal(purchaseGrant("", packs), null);
+  });
+
+  // A plain object answers to "constructor" and "toString" too.
+  test("a name every object has is not a product", () => {
+    assert.equal(purchaseGrant("constructor", packs), null);
+    assert.equal(purchaseGrant("toString", packs), null);
   });
 });

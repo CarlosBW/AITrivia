@@ -57,6 +57,13 @@ void main() {
     expect(find.textContaining('Ya tienes el máximo'), findsOneWidget);
   });
 
+  testWidgets('por encima del máximo no dice "4 de 2"', (tester) async {
+    await pump(tester, held: 4);
+
+    expect(find.text('Tienes 4 de 4'), findsOneWidget);
+    expect(buyButton(), findsNothing);
+  });
+
   testWidgets('sin monedas suficientes el botón sigue ahí, para avisarlo',
       (tester) async {
     await pump(tester, held: 0, coins: 3);

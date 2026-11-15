@@ -175,6 +175,14 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  await t.test("no puede empezar con el paquete de inicio comprado",
+    async () => {
+      await assertFails(
+        setDoc(doc(comoJugador(), "users", UID),
+          nuevoUsuario({starterPackBought: true}))
+      );
+    });
+
   await t.test("no puede fabricarse un rating alto", async () => {
     await assertFails(
       setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({pvpRating: 2400}))
@@ -228,6 +236,7 @@ test("la economía es solo del servidor", async (t) => {
     dailyStreak: 50,
     leagueScore: 9999,
     streakFreezes: 2,
+    starterPackBought: true,
   };
 
   for (const [campo, valor] of Object.entries(noPuedeEscribir)) {

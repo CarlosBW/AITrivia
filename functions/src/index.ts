@@ -79,6 +79,7 @@ import {
   decideCoinCredit,
   judgePlayProductPurchase,
   playProductPurchaseUrl,
+  purchaseGrant,
   purchaseLedgerId,
 } from "./coin_purchases";
 import {
@@ -7727,10 +7728,11 @@ export const verifyCoinPurchase = onCall(async (request) => {
   const source = String(request.data?.source || "");
   const verificationData = String(request.data?.verificationData || "");
 
-  const coins = COIN_PACKS[productId];
-  if (!coins) {
+  const grant = purchaseGrant(productId, COIN_PACKS);
+  if (!grant) {
     throw new HttpsError("invalid-argument", "Unknown coin pack.");
   }
+  const coins = grant.coins;
   if (!source || !verificationData) {
     throw new HttpsError("invalid-argument", "Missing verification data.");
   }
@@ -7822,6 +7824,8 @@ export const verifyCoinPurchase = onCall(async (request) => {
       uid,
       productId,
       coins,
+      ...(grant.streakFreezes > 0 ?
+        {streakFreezes: grant.streakFreezes} : {}),
       source,
       orderId: verdict.orderId,
       purchaseTimeMillis: verdict.purchaseTimeMillis,
@@ -7832,6 +7836,13 @@ export const verifyCoinPurchase = onCall(async (request) => {
       userRef,
       {
         coins: newCoins,
+        // Paid for, so added whole even past what buyStreakFreeze lets a
+        // player hold.
+        ...(grant.starterPack ? {
+          streakFreezes: safeInt(userSnap.data()?.streakFreezes, 0) +
+            grant.streakFreezes,
+          starterPackBought: true,
+        } : {}),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       {merge: true}
@@ -7858,6 +7869,7 @@ export const verifyCoinPurchase = onCall(async (request) => {
   // finishes the purchase with the store only when it hears success.
   return {
     grantedCoins: coins,
+    grantedStreakFreezes: grant.streakFreezes,
     coins: outcome.coins,
     alreadyCredited: outcome.decision === "already-credited",
   };

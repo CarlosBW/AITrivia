@@ -112,6 +112,18 @@ class EconomyService {
     CoinPack(id: 'coins_pack_large', coins: 4000, usd: 19.99),
   ];
 
+  // ============================================================
+  // STARTER PACK
+  // ============================================================
+  //
+  // One product, sold once per account. Mirrors STARTER_PACK_* in
+  // functions/src/coin_purchases.ts, which is what actually grants it;
+  // the id must match the product in both stores.
+
+  static const String starterPackId = 'starter_pack';
+  static const int starterPackCoins = 500;
+  static const int starterPackStreakFreezes = 2;
+
   String formatCoins(int coins) {
     return '$coins coins';
   }

@@ -4540,6 +4540,36 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @starterPackTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Paquete de inicio'**
+  String get starterPackTitle;
+
+  /// No description provided for @starterPackOnce.
+  ///
+  /// In es, this message translates to:
+  /// **'OFERTA ÚNICA'**
+  String get starterPackOnce;
+
+  /// No description provided for @starterPackContents.
+  ///
+  /// In es, this message translates to:
+  /// **'{coins} monedas + {freezes} protectores de racha'**
+  String starterPackContents(int coins, int freezes);
+
+  /// No description provided for @starterPackBuy.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprar por {price}'**
+  String starterPackBuy(String price);
+
+  /// No description provided for @starterPackPurchaseSuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Paquete de inicio! +{coins} monedas y +{freezes} protectores de racha'**
+  String starterPackPurchaseSuccess(int coins, int freezes);
+
   /// No description provided for @shareResult.
   ///
   /// In es, this message translates to:

@@ -102,7 +102,10 @@ class PurchaseService {
   }
 
   Future<List<ProductDetails>> queryCoinPackProducts() async {
-    final ids = EconomyService.coinPacks.map((p) => p.id).toSet();
+    final ids = {
+      ...EconomyService.coinPacks.map((p) => p.id),
+      EconomyService.starterPackId,
+    };
     final response = await _iap.queryProductDetails(ids);
     return response.productDetails;
   }
@@ -221,6 +224,8 @@ class PurchaseService {
           productId: purchase.productID,
           success: true,
           grantedCoins: grantedCoins,
+          grantedStreakFreezes:
+              (data['grantedStreakFreezes'] as num?)?.toInt() ?? 0,
         ),
       );
 
@@ -257,6 +262,9 @@ class PurchaseResult {
   final bool success;
   final int grantedCoins;
 
+  /// Only the starter pack grants these.
+  final int grantedStreakFreezes;
+
   /// The player backed out of the store's own sheet — not a failure.
   final bool canceled;
 
@@ -271,6 +279,7 @@ class PurchaseResult {
     required this.productId,
     required this.success,
     this.grantedCoins = 0,
+    this.grantedStreakFreezes = 0,
     this.canceled = false,
     this.pending = false,
     this.message,

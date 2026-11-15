@@ -1526,6 +1526,28 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "starterPackTitle": "Paquete de inicio",
+  "starterPackOnce": "OFERTA ÚNICA",
+  "starterPackContents": "{coins} monedas + {freezes} protectores de racha",
+  "@starterPackContents": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "freezes": {"type": "int"}
+    }
+  },
+  "starterPackBuy": "Comprar por {price}",
+  "@starterPackBuy": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "starterPackPurchaseSuccess": "¡Paquete de inicio! +{coins} monedas y +{freezes} protectores de racha",
+  "@starterPackPurchaseSuccess": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "freezes": {"type": "int"}
+    }
+  },
   "shareResult": "Compartir resultado",
   "shareLevelMessage": "Acerté {correct} de {total} en {topic} jugando TriviaIA 🧠 ¿Me superas?",
   "@shareLevelMessage": {

@@ -74,6 +74,24 @@ void main() {
     });
   });
 
+  group('paquete de inicio', () {
+    test('trae lo mismo que la tienda anuncia', () {
+      expect(serverConstant('STARTER_PACK_COINS'),
+          EconomyService.starterPackCoins);
+      expect(serverConstant('STARTER_PACK_STREAK_FREEZES'),
+          EconomyService.starterPackStreakFreezes);
+    });
+
+    test('se vende con el mismo id de producto', () {
+      final match = RegExp(
+        '^export const STARTER_PACK_ID = "([^"]+)";',
+        multiLine: true,
+      ).firstMatch(serverSource);
+      expect(match, isNotNull);
+      expect(match!.group(1), EconomyService.starterPackId);
+    });
+  });
+
   group('recompensas en monedas', () {
     test('nivel perfecto', () {
       expect(serverConstant('SOLO_PERFECT_LEVEL_COINS'),

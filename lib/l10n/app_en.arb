@@ -1498,6 +1498,28 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "starterPackTitle": "Starter pack",
+  "starterPackOnce": "ONE-TIME OFFER",
+  "starterPackContents": "{coins} coins + {freezes} streak protectors",
+  "@starterPackContents": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "freezes": {"type": "int"}
+    }
+  },
+  "starterPackBuy": "Buy for {price}",
+  "@starterPackBuy": {
+    "placeholders": {
+      "price": {"type": "String"}
+    }
+  },
+  "starterPackPurchaseSuccess": "Starter pack! +{coins} coins and +{freezes} streak protectors",
+  "@starterPackPurchaseSuccess": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "freezes": {"type": "int"}
+    }
+  },
   "shareResult": "Share result",
   "shareLevelMessage": "I got {correct} of {total} right on {topic} in TriviaIA 🧠 Can you beat me?",
   "@shareLevelMessage": {

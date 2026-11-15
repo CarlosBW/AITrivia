@@ -111,6 +111,8 @@ service cloud.firestore {
         'adRewardsDate', 'adLivesToday', 'adCoinsToday',
         // Bought with coins (buyStreakFreeze) and spent by a missed day.
         'streakFreezes',
+        // Set by verifyCoinPurchase when the one-time starter pack is paid.
+        'starterPackBought',
         'unlockedAvatars', 'dynamicAvatars', 'ownedThemes',
         'categoriesExploredCount', 'weeklyTopicsCompletedCount',
         'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt',
@@ -289,6 +291,7 @@ service cloud.firestore {
         && !('adLivesToday' in request.resource.data)
         && !('adCoinsToday' in request.resource.data)
         && !('streakFreezes' in request.resource.data)
+        && !('starterPackBought' in request.resource.data)
         && !('dynamicAvatars' in request.resource.data)
         && !('categoriesExploredCount' in request.resource.data)
         && !('weeklyTopicsCompletedCount' in request.resource.data)

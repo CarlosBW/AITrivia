@@ -70,9 +70,13 @@ class StreakFreezeShopSection extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
+                      // The starter pack can put a player past the
+                      // most that coins buy.
                       l10n.streakFreezeHeld(
                         held,
-                        EconomyService.maxStreakFreezes,
+                        held > EconomyService.maxStreakFreezes
+                            ? held
+                            : EconomyService.maxStreakFreezes,
                       ),
                       style: context.heading(16),
                     ),

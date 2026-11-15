@@ -14,6 +14,7 @@ import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import 'life_shop_section.dart';
+import 'starter_pack_card.dart';
 import 'streak_freeze_shop_section.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
@@ -100,7 +101,12 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
       SnackBar(
         content: Text(
           result.success
-              ? l10n.coinShopPurchaseSuccess(result.grantedCoins)
+              ? result.grantedStreakFreezes > 0
+                  ? l10n.starterPackPurchaseSuccess(
+                      result.grantedCoins,
+                      result.grantedStreakFreezes,
+                    )
+                  : l10n.coinShopPurchaseSuccess(result.grantedCoins)
               : result.canceled
                   ? l10n.coinShopPurchaseCanceled
                   : result.pending
@@ -111,11 +117,11 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
     );
   }
 
-  Future<void> _buy(CoinPack pack) async {
-    final product = _products[pack.id];
+  Future<void> _buy(String productId) async {
+    final product = _products[productId];
     if (product == null || _purchasingProductId != null) return;
 
-    setState(() => _purchasingProductId = pack.id);
+    setState(() => _purchasingProductId = productId);
 
     try {
       await PurchaseService.instance.buy(product);
@@ -177,6 +183,27 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // Above everything else while it lasts: it is the best
+                // price in the store and each account gets it once.
+                if (_products[EconomyService.starterPackId]
+                    case final starter?)
+                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream: _me,
+                    builder: (context, snap) {
+                      final data = snap.data?.data();
+                      if (data == null || !starterPackOffered(data)) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: StarterPackCard(
+                          price: starter.price,
+                          buying: _purchasingProductId == starter.id,
+                          onBuy: () => _buy(starter.id),
+                        ),
+                      );
+                    },
+                  ),
                 // Free, so it shows whether or not the store is reachable.
                 if (AdRewardService.instance.supported)
                   StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -308,7 +335,7 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                 ),
               ),
               FilledButton(
-                onPressed: isPurchasing ? null : () => _buy(pack),
+                onPressed: isPurchasing ? null : () => _buy(pack.id),
                 child: isPurchasing
                     ? const SizedBox(
                         width: 16,

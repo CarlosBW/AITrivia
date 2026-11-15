@@ -144,3 +144,48 @@ export function playProductPurchaseUrl(
     `${encodeURIComponent(productId)}/tokens/` +
     `${encodeURIComponent(purchaseToken)}`;
 }
+
+/**
+ * The starter pack: sold once per account, and the only purchase that
+ * grants more than coins. Mirrored by `EconomyService.starterPack*` in the
+ * app, which is what the store card advertises.
+ */
+export const STARTER_PACK_ID = "starter_pack";
+export const STARTER_PACK_COINS = 500;
+export const STARTER_PACK_STREAK_FREEZES = 2;
+
+/** What one store product puts in the buyer's account. */
+export type PurchaseGrant = {
+  coins: number;
+  streakFreezes: number;
+  /** Marks the account as having had its one starter pack. */
+  starterPack: boolean;
+};
+
+/**
+ * What a product id is worth, or null when it isn't one of ours.
+ *
+ * "Once per account" is not decided here, on purpose: by the time this is
+ * asked the store has already taken the money, so a second starter pack
+ * that somehow got bought is delivered like the first. The app stops
+ * offering it once the account is marked.
+ * @param {string} productId Store product id.
+ * @param {Record<string, number>} coinPacks Coins by coin pack id.
+ * @return {PurchaseGrant | null} The grant, or null for an unknown id.
+ */
+export function purchaseGrant(
+  productId: string,
+  coinPacks: Record<string, number>
+): PurchaseGrant | null {
+  if (productId === STARTER_PACK_ID) {
+    return {
+      coins: STARTER_PACK_COINS,
+      streakFreezes: STARTER_PACK_STREAK_FREEZES,
+      starterPack: true,
+    };
+  }
+  if (!Object.prototype.hasOwnProperty.call(coinPacks, productId)) {
+    return null;
+  }
+  return {coins: coinPacks[productId], streakFreezes: 0, starterPack: false};
+}

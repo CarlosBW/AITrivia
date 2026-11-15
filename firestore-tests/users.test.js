@@ -159,6 +159,15 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  // Lo que lleva la cuenta de anuncios vistos hoy: fechado en el futuro,
+  // el tope diario no volvería a empezar nunca… ni a aplicarse.
+  await t.test("no puede traer hecha su cuenta de anuncios", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({adRewardsDate: "2099-01-05"}))
+    );
+  });
+
   await t.test("no puede fabricarse un rating alto", async () => {
     await assertFails(
       setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({pvpRating: 2400}))
@@ -225,6 +234,30 @@ test("la economía es solo del servidor", async (t) => {
       );
     });
   }
+
+  // El tope diario de recompensas por ver anuncios vive en estos campos:
+  // un cliente que los reiniciara no tendría tope.
+  for (const campo of ["adRewardsDate", "adLivesToday", "adCoinsToday"]) {
+    await t.test(`no puede reiniciar ${campo}`, async () => {
+      await sembrar(nuevoUsuario());
+      await assertFails(
+        setDoc(
+          doc(comoJugador(), "users", UID),
+          {[campo]: campo === "adRewardsDate" ? "2000-01-01" : 0},
+          {merge: true}
+        )
+      );
+    });
+  }
+
+  // Cada recompensa pagada deja un registro; es lo que impide pagarla dos
+  // veces, así que el jugador no puede ni borrarlo ni inventarlo.
+  await t.test("no puede tocar el registro de anuncios pagados", async () => {
+    await sembrar(nuevoUsuario());
+    const registro = doc(comoJugador(), "users", UID, "ad_rewards", "tx1");
+    await assertFails(setDoc(registro, {kind: "coins"}));
+    await assertFails(getDoc(registro));
+  });
 
   // Los pases gratis de tema IA se gastan en una generación real de Claude.
   // Antes no estaban protegidos: un cliente se ponía 9999.

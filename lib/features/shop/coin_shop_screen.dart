@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
+import '../../services/ad_reward_service.dart';
+import '../../services/ad_rewards.dart';
 import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
 import '../../services/my_profile_service.dart';
@@ -15,6 +17,7 @@ import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
+import '../../widgets/watch_ad_button.dart';
 
 /// Coin pack storefront. Until the packs are configured in the Google Play
 /// Console / App Store Connect, `queryCoinPackProducts` returns nothing, so
@@ -172,6 +175,16 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                // Free, so it shows whether or not the store is reachable.
+                if (AdRewardService.instance.supported)
+                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream: _me,
+                    builder: (context, snap) {
+                      final data = snap.data?.data();
+                      if (data == null) return const SizedBox.shrink();
+                      return _FreeCoinsTile(userData: data);
+                    },
+                  ),
                 if (_storeAvailable)
                   _buildShop(context)
                 else
@@ -303,6 +316,74 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
   }
 }
 
+/// A few coins for watching an ad, as many times a day as the server
+/// allows. Gone once today's are spent, rather than left as a button that
+/// pays nothing.
+class _FreeCoinsTile extends StatelessWidget {
+  const _FreeCoinsTile({required this.userData});
+
+  final Map<String, dynamic> userData;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final left = adRewardsLeftToday(
+      userData,
+      AdRewardKind.coins,
+      now: DateTime.now(),
+    );
+    if (left <= 0) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(null),
+        boxShadow: context.surfaces.shadowsOr(null),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: context.appColors.rewardBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.card_giftcard_rounded,
+              color: context.appColors.reward,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.adFreeCoinsTitle, style: context.heading(16)),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.adFreeCoinsSubtitle(AdRewards.coinsPerAd, left),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          WatchAdButton(
+            kind: AdRewardKind.coins,
+            label: l10n.adWatchShort,
+            leftToday: left,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// [LifeShopSection] with what it needs: the lives worked out from the user
 /// doc, a countdown that ticks, and the purchase itself.
 class _LivesForCoins extends StatefulWidget {
@@ -382,6 +463,16 @@ class _LivesForCoinsState extends State<_LivesForCoins> {
       countdownText: countdown,
       buying: _buying,
       onBuy: () => _buy(coins),
+      adOffer: WatchAdButton(
+        kind: AdRewardKind.lives,
+        label: AppLocalizations.of(context)
+            .adWatchForLives(AdRewards.livesPerAd),
+        leftToday: adRewardsLeftToday(
+          widget.userData,
+          AdRewardKind.lives,
+          now: DateTime.now(),
+        ),
+      ),
     );
   }
 }

@@ -106,6 +106,9 @@ service cloud.firestore {
         'gamesPlayed', 'correctAnswers', 'wrongAnswers',
         'loginStreak', 'lastLoginDate',
         'pvpCoinsToday', 'pvpCoinsDate',
+        // Counted by admobRewardCallback: a client that could reset them
+        // had no daily limit on rewards for watching ads.
+        'adRewardsDate', 'adLivesToday', 'adCoinsToday',
         'unlockedAvatars', 'dynamicAvatars', 'ownedThemes',
         'categoriesExploredCount', 'weeklyTopicsCompletedCount',
         'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt',
@@ -280,6 +283,9 @@ service cloud.firestore {
         && !('lastDailyPlayed' in request.resource.data)
         && !('pvpCoinsToday' in request.resource.data)
         && !('pvpCoinsDate' in request.resource.data)
+        && !('adRewardsDate' in request.resource.data)
+        && !('adLivesToday' in request.resource.data)
+        && !('adCoinsToday' in request.resource.data)
         && !('dynamicAvatars' in request.resource.data)
         && !('categoriesExploredCount' in request.resource.data)
         && !('weeklyTopicsCompletedCount' in request.resource.data)

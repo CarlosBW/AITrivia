@@ -2715,6 +2715,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeShopBuyOne => '+1 life';
 
   @override
+  String adWatchForLives(int lives) {
+    return 'Watch an ad: +$lives lives';
+  }
+
+  @override
+  String get adFreeCoinsTitle => 'Free coins';
+
+  @override
+  String adFreeCoinsSubtitle(int coins, int left) {
+    return '+$coins coins per ad · $left left today';
+  }
+
+  @override
+  String get adWatchShort => 'Watch ad';
+
+  @override
+  String get adRewardOnItsWay =>
+      '🎁 Done! Your reward arrives in a few seconds.';
+
+  @override
+  String get adUnavailable => 'No ads available right now. Try again later.';
+
+  @override
+  String get adCapReached =>
+      'You\'ve used today\'s ads. They\'re back tomorrow.';
+
+  @override
   String get themeShopSectionTitle => 'Themes';
 
   @override

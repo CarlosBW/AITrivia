@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../services/ad_rewards.dart';
 import '../../services/life_check_retry.dart';
 import 'level_result_hero.dart';
 import '../../services/life_service.dart';
@@ -30,6 +31,7 @@ import '../../widgets/category_illustration.dart';
 import '../../widgets/circular_timer.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/segmented_progress.dart';
+import '../../widgets/watch_ad_button.dart';
 import '../../l10n/lives_format.dart';
 
 /// What the result screen's primary button does.
@@ -430,15 +432,64 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         ),
       );
 
-      setState(() {
-        _lifeChecked = false;
-        _lifeGateError = null;
-        _endedByNoLives = false;
-      });
+      _retryEntryWithLives();
     } finally {
       if (mounted) {
         setState(() => _buyingLife = false);
       }
+    }
+  }
+
+  /// Lives are back before the level opened: check the entry again.
+  void _retryEntryWithLives() {
+    setState(() {
+      _lifeChecked = false;
+      _lifeGateError = null;
+      _endedByNoLives = false;
+    });
+  }
+
+  /// Lives are back in the middle of a level. The answer that emptied the
+  /// bar was judged and banked, so play goes on from the next question; a
+  /// question that was never answered is played again.
+  void _resumeMidLevelWithLives() {
+    final answeredCurrent = _answers.any((a) => a['questionIndex'] == _index);
+    setState(() {
+      _endedByNoLives = false;
+      if (answeredCurrent) _index++;
+      _timerForIndex = -1;
+      _timer = null;
+      _resetPerQuestion();
+    });
+  }
+
+  /// An ad was watched for lives. They come from the server once AdMob
+  /// reports it, a few seconds later, so this waits for them to show up
+  /// and then carries on exactly as a life bought with coins does. If they
+  /// take longer the card stays, and the player's lives catch up on their
+  /// own.
+  Future<void> _resumeWhenAdLivesArrive({required bool midLevel}) async {
+    if (_buyingLife) return;
+    final before = _lifeUnits;
+
+    setState(() => _buyingLife = true);
+    try {
+      for (var attempt = 0; attempt < adLivesPollAttempts; attempt++) {
+        await Future<void>.delayed(adLivesPollInterval);
+        if (!mounted) return;
+        try {
+          await _syncLivesUiFromFirestore();
+        } catch (_) {
+          // A failed check is only a missed look; the next one may land.
+        }
+        if (!mounted) return;
+        if (_lifeUnits > before) {
+          midLevel ? _resumeMidLevelWithLives() : _retryEntryWithLives();
+          return;
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _buyingLife = false);
     }
   }
 
@@ -485,17 +536,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         ),
       );
 
-      // The answer that emptied the bar was judged and banked, so play goes
-      // on from the next question; a question that was never answered is
-      // played again.
-      final answeredCurrent = _answers.any((a) => a['questionIndex'] == _index);
-      setState(() {
-        _endedByNoLives = false;
-        if (answeredCurrent) _index++;
-        _timerForIndex = -1;
-        _timer = null;
-        _resetPerQuestion();
-      });
+      _resumeMidLevelWithLives();
     } finally {
       if (mounted) {
         setState(() => _buyingLife = false);
@@ -1225,6 +1266,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
       buyLabel: l10n.livesRecoverButton(_buyLifeCost),
       onBuyLife: _buyingLife ? null : () => _buyLifeAndRetryEntry(uid),
+      adOffer: _adForLives(l10n, midLevel: false),
       onBack: _isNavigating || _buyingLife
           ? null
           : () {
@@ -1232,6 +1274,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                 Navigator.pop(context);
               });
             },
+    );
+  }
+
+  Widget _adForLives(AppLocalizations l10n, {required bool midLevel}) {
+    return WatchAdButton(
+      kind: AdRewardKind.lives,
+      label: l10n.adWatchForLives(AdRewards.livesPerAd),
+      enabled: !_buyingLife,
+      onEarned: () => _resumeWhenAdLivesArrive(midLevel: midLevel),
     );
   }
 
@@ -1256,6 +1307,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       nextFullLifeText: _formatSeconds(nextFullLifeSeconds),
       buyLabel: l10n.livesRecoverButton(_buyLifeCost),
       onBuyLife: _buyingLife ? null : () => _buyLifeMidLevel(uid),
+      adOffer: _adForLives(l10n, midLevel: true),
       onBack: _isNavigating || _buyingLife
           ? null
           : () {
@@ -1839,6 +1891,10 @@ class _NoLivesCard extends StatelessWidget {
   final VoidCallback? onBuyLife;
   final VoidCallback? onBack;
 
+  /// The "watch an ad for lives" button; draws nothing where there are no
+  /// ads to offer.
+  final Widget adOffer;
+
   const _NoLivesCard({
     required this.title,
     required this.message,
@@ -1848,6 +1904,7 @@ class _NoLivesCard extends StatelessWidget {
     required this.buyLabel,
     required this.onBuyLife,
     required this.onBack,
+    required this.adOffer,
   });
 
   @override
@@ -1927,6 +1984,7 @@ class _NoLivesCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
+              SizedBox(width: double.infinity, child: adOffer),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(

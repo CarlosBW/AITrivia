@@ -2741,6 +2741,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lifeShopBuyOne => '+1 vida';
 
   @override
+  String adWatchForLives(int lives) {
+    return 'Ver anuncio: +$lives vidas';
+  }
+
+  @override
+  String get adFreeCoinsTitle => 'Monedas gratis';
+
+  @override
+  String adFreeCoinsSubtitle(int coins, int left) {
+    return '+$coins monedas por anuncio · quedan $left hoy';
+  }
+
+  @override
+  String get adWatchShort => 'Ver anuncio';
+
+  @override
+  String get adRewardOnItsWay =>
+      '🎁 ¡Listo! Tu recompensa llega en unos segundos.';
+
+  @override
+  String get adUnavailable =>
+      'No hay anuncios disponibles ahora. Inténtalo más tarde.';
+
+  @override
+  String get adCapReached => 'Ya usaste los anuncios de hoy. Vuelven mañana.';
+
+  @override
   String get themeShopSectionTitle => 'Temas';
 
   @override

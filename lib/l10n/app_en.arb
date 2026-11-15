@@ -1498,6 +1498,24 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "adWatchForLives": "Watch an ad: +{lives} lives",
+  "@adWatchForLives": {
+    "placeholders": {
+      "lives": {"type": "int"}
+    }
+  },
+  "adFreeCoinsTitle": "Free coins",
+  "adFreeCoinsSubtitle": "+{coins} coins per ad · {left} left today",
+  "@adFreeCoinsSubtitle": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "left": {"type": "int"}
+    }
+  },
+  "adWatchShort": "Watch ad",
+  "adRewardOnItsWay": "🎁 Done! Your reward arrives in a few seconds.",
+  "adUnavailable": "No ads available right now. Try again later.",
+  "adCapReached": "You've used today's ads. They're back tomorrow.",
 
   "themeShopSectionTitle": "Themes",
   "themeShopSectionSubtitle": "Change how the whole game looks.",

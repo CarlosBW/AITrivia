@@ -1526,6 +1526,24 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "adWatchForLives": "Ver anuncio: +{lives} vidas",
+  "@adWatchForLives": {
+    "placeholders": {
+      "lives": {"type": "int"}
+    }
+  },
+  "adFreeCoinsTitle": "Monedas gratis",
+  "adFreeCoinsSubtitle": "+{coins} monedas por anuncio · quedan {left} hoy",
+  "@adFreeCoinsSubtitle": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "left": {"type": "int"}
+    }
+  },
+  "adWatchShort": "Ver anuncio",
+  "adRewardOnItsWay": "🎁 ¡Listo! Tu recompensa llega en unos segundos.",
+  "adUnavailable": "No hay anuncios disponibles ahora. Inténtalo más tarde.",
+  "adCapReached": "Ya usaste los anuncios de hoy. Vuelven mañana.",
 
   "themeShopSectionTitle": "Temas",
   "themeShopSectionSubtitle": "Cambia el aspecto de todo el juego.",

@@ -20,6 +20,7 @@ class LifeShopSection extends StatelessWidget {
     required this.countdownText,
     required this.buying,
     required this.onBuy,
+    this.adOffer,
   });
 
   final int lifeUnits;
@@ -31,6 +32,9 @@ class LifeShopSection extends StatelessWidget {
   /// Called on a tap even without enough coins: the store says so then,
   /// which tells the player more than a button that does nothing.
   final VoidCallback onBuy;
+
+  /// The "watch an ad for lives" button, when there is one to offer.
+  final Widget? adOffer;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +82,11 @@ class LifeShopSection extends StatelessWidget {
                   ],
                 ],
               ),
+              if (!isFull && adOffer != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: adOffer,
+                ),
             ],
           ),
         ),

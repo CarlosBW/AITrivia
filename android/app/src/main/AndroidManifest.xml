@@ -10,17 +10,22 @@
     <!-- 🔔 Reprogramar el recordatorio diario tras reiniciar el teléfono -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
-    <!-- La app no muestra anuncios. Firebase Analytics trae estos permisos
-         por su cuenta; con ellos Play exige declarar el uso del ID de
-         publicidad y no los admite en apps que incluyen a menores. -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove"/>
-    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove"/>
+    <!-- La app muestra anuncios con recompensa (AdMob). Los permisos del ID
+         de publicidad los trae el SDK y aquí ya no se quitan: sin ellos los
+         anuncios pagan menos. Play exige declarar su uso, y no los admite
+         en apps cuya audiencia incluye a menores de 13. -->
 
     <application
         android:label="TriviaIA"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- AdMob: id de la app (los bloques de anuncios están en AdRewards,
+             lib/services/ad_rewards.dart). Sin esta entrada el SDK de
+             anuncios cierra la app al arrancar. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-8705386398614418~1585693106" />
 
         <!-- 🔔 Firebase Messaging default channel -->
         <meta-data

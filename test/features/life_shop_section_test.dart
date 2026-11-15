@@ -14,6 +14,7 @@ void main() {
     required int lifeUnits,
     int coins = 100,
     bool buying = false,
+    Widget? adOffer,
   }) {
     bought = 0;
     return tester.pumpWidget(
@@ -30,6 +31,7 @@ void main() {
               countdownText: '01:30',
               buying: buying,
               onBuy: () => bought++,
+              adOffer: adOffer,
             ),
           ),
         ),
@@ -51,6 +53,20 @@ void main() {
 
     await tester.tap(buyButton());
     expect(bought, 1);
+  });
+
+  testWidgets('con vidas por llenar muestra la oferta de ver un anuncio',
+      (tester) async {
+    await pump(tester, lifeUnits: 6, adOffer: const Text('ver anuncio'));
+
+    expect(find.text('ver anuncio'), findsOneWidget);
+  });
+
+  // Con la barra llena un anuncio no daría nada.
+  testWidgets('con las vidas al máximo no ofrece el anuncio', (tester) async {
+    await pump(tester, lifeUnits: 20, adOffer: const Text('ver anuncio'));
+
+    expect(find.text('ver anuncio'), findsNothing);
   });
 
   testWidgets('con las vidas al máximo no deja comprar', (tester) async {

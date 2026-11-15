@@ -4540,6 +4540,48 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @adWatchForLives.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver anuncio: +{lives} vidas'**
+  String adWatchForLives(int lives);
+
+  /// No description provided for @adFreeCoinsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Monedas gratis'**
+  String get adFreeCoinsTitle;
+
+  /// No description provided for @adFreeCoinsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'+{coins} monedas por anuncio · quedan {left} hoy'**
+  String adFreeCoinsSubtitle(int coins, int left);
+
+  /// No description provided for @adWatchShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver anuncio'**
+  String get adWatchShort;
+
+  /// No description provided for @adRewardOnItsWay.
+  ///
+  /// In es, this message translates to:
+  /// **'🎁 ¡Listo! Tu recompensa llega en unos segundos.'**
+  String get adRewardOnItsWay;
+
+  /// No description provided for @adUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay anuncios disponibles ahora. Inténtalo más tarde.'**
+  String get adUnavailable;
+
+  /// No description provided for @adCapReached.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya usaste los anuncios de hoy. Vuelven mañana.'**
+  String get adCapReached;
+
   /// No description provided for @themeShopSectionTitle.
   ///
   /// In es, this message translates to:

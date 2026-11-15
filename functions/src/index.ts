@@ -5,7 +5,7 @@ import {
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {onCall, HttpsError, FunctionsErrorCode} from
+import {onCall, onRequest, HttpsError, FunctionsErrorCode} from
   "firebase-functions/v2/https";
 import {defineSecret, defineString} from "firebase-functions/params";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -90,6 +90,16 @@ import {
   lastBankedAnswerWrong,
   tickAfterLifeGain,
 } from "./life_costs";
+import {
+  AD_REWARDS,
+  adRewardCounts,
+  adRewardKind,
+  adUnitIsOurs,
+  callbackSignedByAdMob,
+  countAdReward,
+  parseRewardCallback,
+  parseVerifierKeys,
+} from "./ad_rewards";
 import {
   MAX_QUESTION_REPORTS_PER_DAY,
   QUESTION_REPORT_REASONS,
@@ -7089,6 +7099,157 @@ export const buyFullLife = onCall(async (request) => {
 
     return {lifeUnits: newLifeUnits, coins: newCoins};
   });
+});
+
+// ============================================================
+// REWARDED ADS
+//
+// A player watches an ad for lives or a few coins. The app never says so
+// itself: AdMob's servers call `admobRewardCallback` with a signed query
+// string, and that call is what pays. The rules of it — the signature,
+// whose ad unit it was, the day's allowance — are in ad_rewards.ts.
+// ============================================================
+
+/**
+ * This app's rewarded ad units, comma-separated, kept in
+ * `functions/.env.<project>`. Empty until the AdMob account exists, and
+ * while it is empty no callback pays anything.
+ */
+const admobRewardedAdUnits = defineString("ADMOB_REWARDED_AD_UNITS", {
+  default: "",
+  description: "Ad units de anuncios con recompensa de esta app en " +
+    "AdMob, separados por coma",
+});
+
+const ADMOB_VERIFIER_KEYS_URL =
+  "https://www.gstatic.com/admob/reward/verifier-keys.json";
+// AdMob asks for its keys not to be cached for more than a day.
+const ADMOB_KEYS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+let admobKeys: {keys: Record<string, string>; fetchedAtMs: number} | null =
+  null;
+
+/**
+ * AdMob's verification keys, fetched at most once a day per instance —
+ * and again at once for a key id not among the ones held, which is what a
+ * rotation looks like from here.
+ * @param {string} keyId The key a callback says signed it.
+ * @return {Promise<Record<string, string>>} Key id to PEM public key.
+ */
+async function admobVerifierKeys(
+  keyId: string
+): Promise<Record<string, string>> {
+  const fresh = admobKeys !== null &&
+    Date.now() - admobKeys.fetchedAtMs < ADMOB_KEYS_MAX_AGE_MS;
+  if (admobKeys !== null && fresh && admobKeys.keys[keyId]) {
+    return admobKeys.keys;
+  }
+
+  const response = await fetch(ADMOB_VERIFIER_KEYS_URL);
+  if (!response.ok) {
+    throw new Error(`AdMob verifier keys: HTTP ${response.status}`);
+  }
+  admobKeys = {
+    keys: parseVerifierKeys(await response.json()),
+    fetchedAtMs: Date.now(),
+  };
+  return admobKeys.keys;
+}
+
+export const admobRewardCallback = onRequest(async (req, res) => {
+  const queryAt = req.originalUrl.indexOf("?");
+  const callback = queryAt < 0 ?
+    null : parseRewardCallback(req.originalUrl.slice(queryAt + 1));
+
+  // AdMob's "verify URL" check in its console sends a request with no
+  // reward in it and expects a 200.
+  if (!callback) {
+    res.status(200).send("ok");
+    return;
+  }
+
+  let keys: Record<string, string>;
+  try {
+    keys = await admobVerifierKeys(callback.keyId);
+  } catch (error) {
+    // Not a refusal: AdMob retries a callback that gets an error.
+    console.error("admobRewardCallback: keys unavailable", error);
+    res.status(503).send("keys unavailable");
+    return;
+  }
+
+  if (!callbackSignedByAdMob(callback, keys)) {
+    res.status(403).send("bad signature");
+    return;
+  }
+
+  const kind = adRewardKind(callback.customData);
+  const uid = cleanDocId(callback.userId);
+  const transactionId = cleanDocId(callback.transactionId);
+  if (!adUnitIsOurs(callback.adUnit, admobRewardedAdUnits.value()) ||
+      !kind || !uid || !transactionId) {
+    // Signed by AdMob, but not a reward of ours. Answered with a 200 so
+    // it isn't retried; nothing is paid.
+    console.warn("admobRewardCallback: ignored", {
+      adUnit: callback.adUnit, customData: callback.customData,
+    });
+    res.status(200).send("ignored");
+    return;
+  }
+
+  const userRef = db.collection("users").doc(uid);
+  // One doc per reward AdMob reports: it sends the same callback again
+  // when it doesn't hear back, and that must not pay twice.
+  const rewardRef = userRef.collection("ad_rewards").doc(transactionId);
+
+  const outcome = await db.runTransaction(async (tx) => {
+    const [userSnap, rewardSnap] = await tx.getAll(userRef, rewardRef);
+    if (!userSnap.exists) return "no-user";
+    if (rewardSnap.exists) return "duplicate";
+
+    const data = userSnap.data() || {};
+    const counts = countAdReward(
+      adRewardCounts(data, serverDateId()), kind
+    );
+    if (!counts) return "over-cap";
+
+    const patch: Record<string, unknown> = {
+      adRewardsDate: counts.date,
+      adLivesToday: counts.lives,
+      adCoinsToday: counts.coins,
+    };
+
+    if (kind === "coins") {
+      patch.coins =
+        admin.firestore.FieldValue.increment(AD_REWARDS.coins.coins);
+    } else {
+      const nowMs = Date.now();
+      const state = computeLifeState(data, nowMs);
+      const newLifeUnits = Math.min(
+        state.lifeUnits + AD_REWARDS.lives.lifeUnits, state.maxLifeUnits
+      );
+      patch.lifeUnits = newLifeUnits;
+      patch.maxLifeUnits = state.maxLifeUnits;
+      patch.lastLifeTickAt = admin.firestore.Timestamp.fromMillis(
+        tickAfterLifeGain({
+          lastTickMs: state.lastTickMs,
+          newUnits: newLifeUnits,
+          maxUnits: state.maxLifeUnits,
+          nowMs,
+        })
+      );
+    }
+
+    tx.set(userRef, patch, {merge: true});
+    tx.set(rewardRef, {
+      kind,
+      adUnit: callback.adUnit,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return "paid";
+  });
+
+  res.status(200).send(outcome);
 });
 
 // ============================================================

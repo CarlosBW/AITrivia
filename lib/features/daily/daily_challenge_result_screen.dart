@@ -106,6 +106,15 @@ class DailyChallengeResultScreen extends StatelessWidget {
                 ),
               ),
 
+              if (result.streakFreezesUsed > 0) ...[
+                const SizedBox(height: 16),
+                Text(
+                  l10n.streakFreezeUsed(result.streakFreezesUsed),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+
               if (result.alreadyPlayed) ...[
                 const SizedBox(height: 16),
                 Text(

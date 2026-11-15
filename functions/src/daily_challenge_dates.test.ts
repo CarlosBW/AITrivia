@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   MAX_CLIENT_DATE_SKEW_DAYS,
+  MAX_STREAK_FREEZES,
+  canHoldAnotherFreeze,
+  dailyStreakStep,
   dateIdInTimeZone,
   isPlausibleDateId,
   isWeekClaimable,
@@ -299,5 +302,88 @@ describe("dailySubmissionCheck", () => {
     );
     assert.equal(check.ok, true);
     assert.deepEqual(check.recentMs, [now]);
+  });
+});
+
+describe("dailyStreakStep", () => {
+  test("playing the day after extends the streak", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-13", "2026-11-14", 6, 0),
+      {streak: 7, freezesUsed: 0}
+    );
+  });
+
+  test("a first daily starts the streak at one", () => {
+    assert.deepEqual(
+      dailyStreakStep(null, "2026-11-14", 0, 2),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+
+  test("a missed day without a protector starts over", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-12", "2026-11-14", 6, 0),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+
+  test("a protector covers one missed day and is spent", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-12", "2026-11-14", 6, 1),
+      {streak: 7, freezesUsed: 1}
+    );
+  });
+
+  test("two protectors cover two missed days", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-11", "2026-11-14", 6, 2),
+      {streak: 7, freezesUsed: 2}
+    );
+  });
+
+  // Half a gap saved is a protector paid for and a streak lost anyway.
+  test("too few protectors for the gap are kept, not wasted", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-11", "2026-11-14", 6, 1),
+      {streak: 1, freezesUsed: 0}
+    );
+    assert.deepEqual(
+      dailyStreakStep("2026-11-01", "2026-11-14", 6, 2),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+
+  test("more protectors than can be held count as the most allowed", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-10", "2026-11-14", 6, 99),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+
+  test("a streak of zero has nothing to protect", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-12", "2026-11-14", 0, 2),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+
+  test("the same day again, or a malformed date, starts at one", () => {
+    assert.deepEqual(
+      dailyStreakStep("2026-11-14", "2026-11-14", 6, 2),
+      {streak: 1, freezesUsed: 0}
+    );
+    assert.deepEqual(
+      dailyStreakStep("nope", "2026-11-14", 6, 2),
+      {streak: 1, freezesUsed: 0}
+    );
+  });
+});
+
+describe("canHoldAnotherFreeze", () => {
+  test("up to the most that can be held", () => {
+    assert.equal(canHoldAnotherFreeze(0), true);
+    assert.equal(canHoldAnotherFreeze(MAX_STREAK_FREEZES - 1), true);
+    assert.equal(canHoldAnotherFreeze(MAX_STREAK_FREEZES), false);
+    assert.equal(canHoldAnotherFreeze(MAX_STREAK_FREEZES + 5), false);
   });
 });

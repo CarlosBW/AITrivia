@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../../services/weekly_topic_service.dart';
 import '../daily/daily_challenge_screen.dart';
+import 'daily_missions_card.dart';
 import '../daily/daily_challenge_result_screen.dart';
 import '../leagues/weekly_league_screen.dart';
 import '../../services/daily_challenge_service.dart';
@@ -687,6 +688,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
+                        // Under the Daily Challenge: three small goals are
+                        // a reason to open the app today, and they point at
+                        // the modes around them.
+                        const DailyMissionsSection(),
                         // Second on the screen. It sat at the bottom, under
                         // "more ways to play", where most players never
                         // scrolled to: a week-long event nobody noticed.

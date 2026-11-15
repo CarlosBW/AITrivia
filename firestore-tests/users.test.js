@@ -168,6 +168,13 @@ test("creación de la cuenta", async (t) => {
     );
   });
 
+  await t.test("no puede empezar con protectores de racha", async () => {
+    await assertFails(
+      setDoc(doc(comoJugador(), "users", UID),
+        nuevoUsuario({streakFreezes: 2}))
+    );
+  });
+
   await t.test("no puede fabricarse un rating alto", async () => {
     await assertFails(
       setDoc(doc(comoJugador(), "users", UID), nuevoUsuario({pvpRating: 2400}))
@@ -220,6 +227,7 @@ test("la economía es solo del servidor", async (t) => {
     ownedThemes: ["playful"],
     dailyStreak: 50,
     leagueScore: 9999,
+    streakFreezes: 2,
   };
 
   for (const [campo, valor] of Object.entries(noPuedeEscribir)) {
@@ -257,6 +265,16 @@ test("la economía es solo del servidor", async (t) => {
     const registro = doc(comoJugador(), "users", UID, "ad_rewards", "tx1");
     await assertFails(setDoc(registro, {kind: "coins"}));
     await assertFails(getDoc(registro));
+  });
+
+  // Las misiones del día las cuenta el servidor; el cofre se paga contra
+  // esa cuenta.
+  await t.test("lee sus misiones del día pero no las escribe", async () => {
+    await sembrar(nuevoUsuario());
+    const hoy = doc(comoJugador(), "users", UID, "daily_missions", "2026-11-14");
+    await assertSucceeds(getDoc(hoy));
+    await assertFails(setDoc(hoy, {stats: {correct: 99}}));
+    await assertFails(setDoc(hoy, {chestClaimed: false}, {merge: true}));
   });
 
   // Los pases gratis de tema IA se gastan en una generación real de Claude.

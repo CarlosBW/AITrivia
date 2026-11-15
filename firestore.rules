@@ -109,6 +109,8 @@ service cloud.firestore {
         // Counted by admobRewardCallback: a client that could reset them
         // had no daily limit on rewards for watching ads.
         'adRewardsDate', 'adLivesToday', 'adCoinsToday',
+        // Bought with coins (buyStreakFreeze) and spent by a missed day.
+        'streakFreezes',
         'unlockedAvatars', 'dynamicAvatars', 'ownedThemes',
         'categoriesExploredCount', 'weeklyTopicsCompletedCount',
         'lifeUnits', 'maxLifeUnits', 'lifeRegenSeconds', 'lastLifeTickAt',
@@ -286,6 +288,7 @@ service cloud.firestore {
         && !('adRewardsDate' in request.resource.data)
         && !('adLivesToday' in request.resource.data)
         && !('adCoinsToday' in request.resource.data)
+        && !('streakFreezes' in request.resource.data)
         && !('dynamicAvatars' in request.resource.data)
         && !('categoriesExploredCount' in request.resource.data)
         && !('weeklyTopicsCompletedCount' in request.resource.data)
@@ -456,6 +459,16 @@ service cloud.firestore {
       // (Cloud Function, Admin SDK) may write it now, so a client can no
       // longer forge its own weekly ranking to claim a bigger reward.
       match /weekly_participation/{weekId} {
+        allow read: if request.auth != null
+          && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      // What the player did each day towards their daily missions, and
+      // whether that day's chest was opened. Counted by the endpoints that
+      // judge each play and paid by claimDailyMissionsChest: a client that
+      // could write it would open the chest without playing.
+      match /daily_missions/{dateId} {
         allow read: if request.auth != null
           && request.auth.uid == userId;
         allow write: if false;

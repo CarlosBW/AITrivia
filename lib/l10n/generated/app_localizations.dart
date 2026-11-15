@@ -4540,6 +4540,108 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @streakFreezeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Protector de racha'**
+  String get streakFreezeTitle;
+
+  /// No description provided for @streakFreezeHeld.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes {held} de {max}'**
+  String streakFreezeHeld(int held, int max);
+
+  /// No description provided for @streakFreezeHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Si un día no juegas el reto diario, un protector se gasta solo y tu racha sigue.'**
+  String get streakFreezeHint;
+
+  /// No description provided for @streakFreezeFull.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tienes el máximo. Se gastan solos el día que no juegues el reto diario.'**
+  String get streakFreezeFull;
+
+  /// No description provided for @streakFreezeBought.
+  ///
+  /// In es, this message translates to:
+  /// **'🛡️ Protector de racha comprado'**
+  String get streakFreezeBought;
+
+  /// No description provided for @streakFreezeUsed.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{🛡️ Un protector salvó tu racha} other{🛡️ {count} protectores salvaron tu racha}}'**
+  String streakFreezeUsed(int count);
+
+  /// No description provided for @missionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Misiones de hoy'**
+  String get missionsTitle;
+
+  /// No description provided for @missionCorrect.
+  ///
+  /// In es, this message translates to:
+  /// **'Acierta {count} preguntas'**
+  String missionCorrect(int count);
+
+  /// No description provided for @missionSoloLevels.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa {count} niveles'**
+  String missionSoloLevels(int count);
+
+  /// No description provided for @missionPlayDaily.
+  ///
+  /// In es, this message translates to:
+  /// **'Juega el reto diario'**
+  String get missionPlayDaily;
+
+  /// No description provided for @missionWeeklyRound.
+  ///
+  /// In es, this message translates to:
+  /// **'Juega una ronda del tema de la semana'**
+  String get missionWeeklyRound;
+
+  /// No description provided for @missionStreakLevel.
+  ///
+  /// In es, this message translates to:
+  /// **'Encadena {count} aciertos seguidos en un nivel'**
+  String missionStreakLevel(int count);
+
+  /// No description provided for @missionGreatLevel.
+  ///
+  /// In es, this message translates to:
+  /// **'Termina un nivel con {percent}% o más de aciertos'**
+  String missionGreatLevel(int percent);
+
+  /// No description provided for @missionsOpenChest.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir el cofre'**
+  String get missionsOpenChest;
+
+  /// No description provided for @missionsChestHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa las tres y abre el cofre: +{coins} monedas y +{xp} XP.'**
+  String missionsChestHint(int coins, int xp);
+
+  /// No description provided for @missionsChestOpened.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Cofre abierto! Mañana hay misiones nuevas.'**
+  String get missionsChestOpened;
+
+  /// No description provided for @missionsChestReward.
+  ///
+  /// In es, this message translates to:
+  /// **'🎁 Cofre abierto: +{coins} monedas y +{xp} XP'**
+  String missionsChestReward(int coins, int xp);
+
   /// No description provided for @answerStreakMilestone.
   ///
   /// In es, this message translates to:

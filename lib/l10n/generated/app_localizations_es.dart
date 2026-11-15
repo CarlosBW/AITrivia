@@ -2741,6 +2741,82 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lifeShopBuyOne => '+1 vida';
 
   @override
+  String get streakFreezeTitle => 'Protector de racha';
+
+  @override
+  String streakFreezeHeld(int held, int max) {
+    return 'Tienes $held de $max';
+  }
+
+  @override
+  String get streakFreezeHint =>
+      'Si un día no juegas el reto diario, un protector se gasta solo y tu racha sigue.';
+
+  @override
+  String get streakFreezeFull =>
+      'Ya tienes el máximo. Se gastan solos el día que no juegues el reto diario.';
+
+  @override
+  String get streakFreezeBought => '🛡️ Protector de racha comprado';
+
+  @override
+  String streakFreezeUsed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '🛡️ $count protectores salvaron tu racha',
+      one: '🛡️ Un protector salvó tu racha',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get missionsTitle => 'Misiones de hoy';
+
+  @override
+  String missionCorrect(int count) {
+    return 'Acierta $count preguntas';
+  }
+
+  @override
+  String missionSoloLevels(int count) {
+    return 'Completa $count niveles';
+  }
+
+  @override
+  String get missionPlayDaily => 'Juega el reto diario';
+
+  @override
+  String get missionWeeklyRound => 'Juega una ronda del tema de la semana';
+
+  @override
+  String missionStreakLevel(int count) {
+    return 'Encadena $count aciertos seguidos en un nivel';
+  }
+
+  @override
+  String missionGreatLevel(int percent) {
+    return 'Termina un nivel con $percent% o más de aciertos';
+  }
+
+  @override
+  String get missionsOpenChest => 'Abrir el cofre';
+
+  @override
+  String missionsChestHint(int coins, int xp) {
+    return 'Completa las tres y abre el cofre: +$coins monedas y +$xp XP.';
+  }
+
+  @override
+  String get missionsChestOpened =>
+      '¡Cofre abierto! Mañana hay misiones nuevas.';
+
+  @override
+  String missionsChestReward(int coins, int xp) {
+    return '🎁 Cofre abierto: +$coins monedas y +$xp XP';
+  }
+
+  @override
   String answerStreakMilestone(int streak) {
     return '🔥 ¡Racha de $streak!';
   }

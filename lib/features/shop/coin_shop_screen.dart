@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../services/ad_reward_service.dart';
 import '../../services/ad_rewards.dart';
+import '../../services/daily_challenge_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
 import '../../services/my_profile_service.dart';
@@ -13,6 +14,7 @@ import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import 'life_shop_section.dart';
+import 'streak_freeze_shop_section.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
@@ -199,7 +201,14 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
                     if (data == null) return const SizedBox.shrink();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 28),
-                      child: _LivesForCoins(userData: data),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _LivesForCoins(userData: data),
+                          const SizedBox(height: 28),
+                          _StreakFreezeForCoins(userData: data),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -473,6 +482,62 @@ class _LivesForCoinsState extends State<_LivesForCoins> {
           now: DateTime.now(),
         ),
       ),
+    );
+  }
+}
+
+/// [StreakFreezeShopSection] with the purchase itself.
+class _StreakFreezeForCoins extends StatefulWidget {
+  const _StreakFreezeForCoins({required this.userData});
+
+  final Map<String, dynamic> userData;
+
+  @override
+  State<_StreakFreezeForCoins> createState() => _StreakFreezeForCoinsState();
+}
+
+class _StreakFreezeForCoinsState extends State<_StreakFreezeForCoins> {
+  bool _buying = false;
+
+  Future<void> _buy(int coins) async {
+    if (_buying) return;
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (coins < EconomyService.streakFreezeCost) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.soloNotEnoughCoins)));
+      return;
+    }
+
+    setState(() => _buying = true);
+    try {
+      await DailyChallengeService.instance.buyStreakFreeze();
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.streakFreezeBought)),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            userFacingError(l10n, e, fallback: l10n.coinShopPurchaseFailed),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _buying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final coins = ((widget.userData['coins'] ?? 0) as num).toInt();
+    final held = widget.userData['streakFreezes'];
+
+    return StreakFreezeShopSection(
+      held: held is num ? held.toInt() : 0,
+      coins: coins,
+      buying: _buying,
+      onBuy: () => _buy(coins),
     );
   }
 }

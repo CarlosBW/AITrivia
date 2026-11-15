@@ -217,3 +217,59 @@ export function dailySubmissionCheck(
   }
   return {ok: true, recentMs: [...recent, nowMs]};
 }
+
+/** Streak protectors a player can hold at once. */
+export const MAX_STREAK_FREEZES = 2;
+
+/** What playing a Daily Challenge does to the player's streak. */
+export interface DailyStreakStep {
+  /** The streak after this play. */
+  streak: number;
+  /** Streak protectors this play spent to keep it going. */
+  freezesUsed: number;
+}
+
+/**
+ * The daily streak after a Daily Challenge played for [dateId].
+ *
+ * A day played right after the last one extends the streak; a gap starts
+ * it again at one — unless the player holds a streak protector for each
+ * day missed, in which case those are spent and the streak carries on as
+ * if the days had been played. Protectors are spent only when they save
+ * the whole gap: half of one would be paid for and lost.
+ * @param {string|null} lastDailyPlayed The last date played, if any.
+ * @param {string} dateId The date being played.
+ * @param {number} previousStreak The streak as stored.
+ * @param {number} freezes Streak protectors the player holds.
+ * @return {DailyStreakStep} The new streak and what it cost.
+ */
+export function dailyStreakStep(
+  lastDailyPlayed: string | null,
+  dateId: string,
+  previousStreak: number,
+  freezes: number
+): DailyStreakStep {
+  const last = lastDailyPlayed ? parseDateId(lastDailyPlayed) : NaN;
+  const today = parseDateId(dateId);
+  if (Number.isNaN(last) || Number.isNaN(today)) {
+    return {streak: 1, freezesUsed: 0};
+  }
+
+  const missed = Math.round((today - last) / 86400000) - 1;
+  if (missed === 0) return {streak: previousStreak + 1, freezesUsed: 0};
+
+  const held = Math.max(0, Math.min(Math.floor(freezes), MAX_STREAK_FREEZES));
+  if (missed > 0 && missed <= held && previousStreak > 0) {
+    return {streak: previousStreak + 1, freezesUsed: missed};
+  }
+  return {streak: 1, freezesUsed: 0};
+}
+
+/**
+ * Whether a player holding [freezes] protectors may buy another.
+ * @param {number} freezes Protectors held.
+ * @return {boolean} True below the most that can be held.
+ */
+export function canHoldAnotherFreeze(freezes: number): boolean {
+  return Math.max(0, Math.floor(freezes)) < MAX_STREAK_FREEZES;
+}

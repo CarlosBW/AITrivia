@@ -46,6 +46,13 @@ void main() {
           EconomyService.buyFullLifeCost);
     });
 
+    test('comprar un protector de racha', () {
+      expect(serverConstant('STREAK_FREEZE_COST'),
+          EconomyService.streakFreezeCost);
+      expect(serverConstant('MAX_STREAK_FREEZES'),
+          EconomyService.maxStreakFreezes);
+    });
+
     test('crear un tema IA desde cero', () {
       expect(serverConstant('CREATE_AI_TOPIC_COST'),
           EconomyService.createAiTopicCost);

@@ -18,6 +18,15 @@ class EconomyService {
   static const int buyFullLifeCost = 10;
 
   // ============================================================
+  // STREAK PROTECTORS
+  // ============================================================
+
+  // Mirror STREAK_FREEZE_COST (index.ts) and MAX_STREAK_FREEZES
+  // (daily_challenge_dates.ts), which are what charge and what cap.
+  static const int streakFreezeCost = 30;
+  static const int maxStreakFreezes = 2;
+
+  // ============================================================
   // AI TOPICS - future economy
   // ============================================================
 

@@ -1526,6 +1526,66 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "streakFreezeTitle": "Protector de racha",
+  "streakFreezeHeld": "Tienes {held} de {max}",
+  "@streakFreezeHeld": {
+    "placeholders": {
+      "held": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "streakFreezeHint": "Si un día no juegas el reto diario, un protector se gasta solo y tu racha sigue.",
+  "streakFreezeFull": "Ya tienes el máximo. Se gastan solos el día que no juegues el reto diario.",
+  "streakFreezeBought": "🛡️ Protector de racha comprado",
+  "streakFreezeUsed": "{count, plural, =1{🛡️ Un protector salvó tu racha} other{🛡️ {count} protectores salvaron tu racha}}",
+  "@streakFreezeUsed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionsTitle": "Misiones de hoy",
+  "missionCorrect": "Acierta {count} preguntas",
+  "@missionCorrect": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionSoloLevels": "Completa {count} niveles",
+  "@missionSoloLevels": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionPlayDaily": "Juega el reto diario",
+  "missionWeeklyRound": "Juega una ronda del tema de la semana",
+  "missionStreakLevel": "Encadena {count} aciertos seguidos en un nivel",
+  "@missionStreakLevel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionGreatLevel": "Termina un nivel con {percent}% o más de aciertos",
+  "@missionGreatLevel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "missionsOpenChest": "Abrir el cofre",
+  "missionsChestHint": "Completa las tres y abre el cofre: +{coins} monedas y +{xp} XP.",
+  "@missionsChestHint": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
+  "missionsChestOpened": "¡Cofre abierto! Mañana hay misiones nuevas.",
+  "missionsChestReward": "🎁 Cofre abierto: +{coins} monedas y +{xp} XP",
+  "@missionsChestReward": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
   "answerStreakMilestone": "🔥 ¡Racha de {streak}!",
   "@answerStreakMilestone": {
     "placeholders": {

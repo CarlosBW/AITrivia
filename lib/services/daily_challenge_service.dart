@@ -111,6 +111,10 @@ class DailyChallengeSaveResult {
   final int newLevel;
   final int xpEarned;
 
+  /// Streak protectors this play spent to keep the streak through the
+  /// days missed before it.
+  final int streakFreezesUsed;
+
   const DailyChallengeSaveResult({
     required this.saved,
     required this.alreadyPlayed,
@@ -125,6 +129,7 @@ class DailyChallengeSaveResult {
     required this.oldLevel,
     required this.newLevel,
     required this.xpEarned,
+    this.streakFreezesUsed = 0,
   });
 
   int get totalCoinsEarned =>
@@ -133,6 +138,17 @@ class DailyChallengeSaveResult {
 
 class DailyChallengeService {
   DailyChallengeService._();
+
+  /// Buys one streak protector with coins. Throws with the server's reason
+  /// when it can't: the most allowed are already held, or the coins short.
+  Future<void> buyStreakFreeze() async {
+    await FirebaseFunctions.instance
+        .httpsCallable(
+          'buyStreakFreeze',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
+        .call();
+  }
   static final instance = DailyChallengeService._();
 
   static const int defaultDurationSeconds = 120;
@@ -324,6 +340,8 @@ class DailyChallengeService {
       oldLevel: ((data['oldLevel'] ?? 1) as num).toInt(),
       newLevel: ((data['newLevel'] ?? 1) as num).toInt(),
       xpEarned: ((data['xpEarned'] ?? 0) as num).toInt(),
+      streakFreezesUsed:
+          ((data['streakFreezesUsed'] ?? 0) as num).toInt(),
     );
 
     try {

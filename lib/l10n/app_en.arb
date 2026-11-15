@@ -1498,6 +1498,66 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "streakFreezeTitle": "Streak protector",
+  "streakFreezeHeld": "You have {held} of {max}",
+  "@streakFreezeHeld": {
+    "placeholders": {
+      "held": {"type": "int"},
+      "max": {"type": "int"}
+    }
+  },
+  "streakFreezeHint": "If you miss a day of the Daily Challenge, a protector is spent on its own and your streak carries on.",
+  "streakFreezeFull": "You hold the most allowed. They are spent on their own on a day you miss the Daily Challenge.",
+  "streakFreezeBought": "🛡️ Streak protector bought",
+  "streakFreezeUsed": "{count, plural, =1{🛡️ A protector saved your streak} other{🛡️ {count} protectors saved your streak}}",
+  "@streakFreezeUsed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionsTitle": "Today's missions",
+  "missionCorrect": "Get {count} answers right",
+  "@missionCorrect": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionSoloLevels": "Complete {count} levels",
+  "@missionSoloLevels": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionPlayDaily": "Play the Daily Challenge",
+  "missionWeeklyRound": "Play a Weekly Topic round",
+  "missionStreakLevel": "Get {count} answers right in a row in a level",
+  "@missionStreakLevel": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "missionGreatLevel": "Finish a level with {percent}% or more right",
+  "@missionGreatLevel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "missionsOpenChest": "Open the chest",
+  "missionsChestHint": "Complete all three and open the chest: +{coins} coins and +{xp} XP.",
+  "@missionsChestHint": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
+  "missionsChestOpened": "Chest opened! New missions tomorrow.",
+  "missionsChestReward": "🎁 Chest opened: +{coins} coins and +{xp} XP",
+  "@missionsChestReward": {
+    "placeholders": {
+      "coins": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
   "answerStreakMilestone": "🔥 {streak} in a row!",
   "@answerStreakMilestone": {
     "placeholders": {

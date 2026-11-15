@@ -38,6 +38,8 @@ import {
 } from "./rewards";
 import {
   dailySubmissionCheck,
+  canHoldAnotherFreeze,
+  dailyStreakStep,
   dateIdInTimeZone,
   isPlausibleDateId,
   isStreakAtRisk,
@@ -92,6 +94,14 @@ import {
   lastBankedAnswerWrong,
   tickAfterLifeGain,
 } from "./life_costs";
+import {
+  DAILY_MISSIONS_CHEST,
+  MISSIONS_TIME_ZONE,
+  MissionStats,
+  allMissionsComplete,
+  missionStats,
+  soloLevelMissionStats,
+} from "./daily_missions";
 import {
   AD_REWARDS,
   adRewardCounts,
@@ -4230,22 +4240,6 @@ function getLeagueFromScore(score: number): LeagueInfo {
 }
 
 
-/**
- * Checks whether `dateId` (yyyy-MM-dd) is exactly one day before `today`.
- * @param {string} dateId Previous play date.
- * @param {string} today Today's date id.
- * @return {boolean} True if dateId is yesterday relative to today.
- */
-function isYesterday(dateId: string, today: string): boolean {
-  const last = new Date(`${dateId}T00:00:00Z`);
-  const todayDate = new Date(`${today}T00:00:00Z`);
-  if (isNaN(last.getTime()) || isNaN(todayDate.getTime())) return false;
-  const diffDays = Math.round(
-    (todayDate.getTime() - last.getTime()) / (24 * 60 * 60 * 1000)
-  );
-  return diffDays === 1;
-}
-
 type QuestionAnswer = { questionIndex: number; selectedIndex: number };
 
 /**
@@ -4440,8 +4434,14 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     const levelUpBonusCoins = leveledUp ?
       (newLevel - oldLevel) * DAILY_LEVEL_UP_COINS : 0;
 
-    const newStreak = lastDailyPlayed && isYesterday(lastDailyPlayed, dateId) ?
-      previousStreak + 1 : 1;
+    // A missed day ends the streak unless a protector covers it — see
+    // dailyStreakStep.
+    const heldFreezes = safeInt(userData.streakFreezes, 0);
+    const streakStep = dailyStreakStep(
+      lastDailyPlayed, dateId, previousStreak, heldFreezes
+    );
+    const newStreak = streakStep.streak;
+    const streakFreezesUsed = streakStep.freezesUsed;
 
     // Progress for this achievement is written here (rather than by a
     // client-side follow-up call) since completed/progress/claimed are
@@ -4515,6 +4515,8 @@ export const submitDailyChallengeResult = onCall(async (request) => {
         safeInt(userData.maxDailyStreak, 0), previousStreak, newStreak
       ),
       lastDailyPlayed: dateId,
+      ...(streakFreezesUsed > 0 ?
+        {streakFreezes: Math.max(0, heldFreezes - streakFreezesUsed)} : {}),
       gamesPlayed: admin.firestore.FieldValue.increment(1),
       correctAnswers: admin.firestore.FieldValue.increment(correct),
       wrongAnswers: admin.firestore.FieldValue.increment(wrongAnswers),
@@ -4544,6 +4546,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
     );
 
     tx.set(userRef, userPatch, {merge: true});
+    addMissionStats(tx, uid, {dailyPlayed: 1, correct});
 
     tx.set(leaderboardRef, {
       uid,
@@ -4604,6 +4607,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
       totalQuestionsAnswered,
       coinsEarned,
       streak: newStreak,
+      streakFreezesUsed,
       streakBonusCoins,
       levelUpBonusCoins,
       score,
@@ -5782,6 +5786,108 @@ export const notifyStreakAtRisk = onSchedule(
 // ============================================================
 
 const LOGIN_STREAK_3_DAYS_COINS = 3;
+
+// ============================================================
+// DAILY MISSIONS
+//
+// Three goals a day and a chest for doing all three. Only the day's
+// counts are stored (`users/{uid}/daily_missions/{dateId}.stats`), added
+// to by the endpoints that already judge each thing; which missions the
+// day has and whether the chest is due are worked out from them in
+// daily_missions.ts.
+// ============================================================
+
+/**
+ * The missions day right now — see MISSIONS_TIME_ZONE.
+ * @return {string} Its date id.
+ */
+function missionsDateId(): string {
+  return dateIdInTimeZone(Date.now(), MISSIONS_TIME_ZONE);
+}
+
+/**
+ * Adds to a player's counts for today's missions, as part of [tx].
+ *
+ * Increments only, so it needs no read and can go last in a transaction
+ * that has already written.
+ * @param {admin.firestore.Transaction} tx The transaction judging the
+ *   play these counts come from.
+ * @param {string} uid The player.
+ * @param {Partial<MissionStats>} gained What to add.
+ */
+function addMissionStats(
+  tx: admin.firestore.Transaction,
+  uid: string,
+  gained: Partial<MissionStats>
+): void {
+  const stats: Record<string, admin.firestore.FieldValue> = {};
+  for (const [stat, amount] of Object.entries(gained)) {
+    if (amount && amount > 0) {
+      stats[stat] = admin.firestore.FieldValue.increment(amount);
+    }
+  }
+  if (Object.keys(stats).length === 0) return;
+
+  const dateId = missionsDateId();
+  tx.set(
+    db.collection("users").doc(uid).collection("daily_missions").doc(dateId),
+    {
+      dateId,
+      stats,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    {merge: true}
+  );
+}
+
+export const claimDailyMissionsChest = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  // Today's only: yesterday's chest is gone with the day.
+  const dateId = missionsDateId();
+  const userRef = db.collection("users").doc(uid);
+  const missionsRef = userRef.collection("daily_missions").doc(dateId);
+
+  return db.runTransaction(async (tx) => {
+    const [userSnap, missionsSnap] = await tx.getAll(userRef, missionsRef);
+    const userData = userSnap.data() || {};
+    const day = missionsSnap.data() || {};
+
+    if (day.chestClaimed === true) {
+      throw localizedError(
+        userData.languageCode, "failed-precondition",
+        "Ya abriste el cofre de hoy.",
+        "You've already opened today's chest."
+      );
+    }
+    if (!allMissionsComplete(dateId, missionStats(day.stats))) {
+      throw localizedError(
+        userData.languageCode, "failed-precondition",
+        "Aún te faltan misiones por completar.",
+        "You still have missions to complete."
+      );
+    }
+
+    const {coins: chestCoins, xp} = DAILY_MISSIONS_CHEST;
+    const coins = chestCoins + levelUpBonus(
+      safeInt(userData.xp, 0), xp, DAILY_LEVEL_UP_COINS
+    );
+
+    tx.set(missionsRef, {
+      chestClaimed: true,
+      chestClaimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+    tx.set(userRef, {
+      coins: admin.firestore.FieldValue.increment(coins),
+      xp: admin.firestore.FieldValue.increment(xp),
+    }, {merge: true});
+
+    return {coins, xp};
+  });
+});
 const LOGIN_STREAK_7_DAYS_COINS = 8;
 const LOGIN_STREAK_14_DAYS_COINS = 15;
 
@@ -6188,6 +6294,9 @@ export const submitSoloLevelResult = onCall(async (request) => {
     }
 
     tx.set(progressRef, progressPatch, {merge: true});
+    addMissionStats(
+      tx, uid, soloLevelMissionStats(correct, total, longestStreak)
+    );
 
     // Levels re-roll on replay: dropping the finished session makes the
     // next `ensureSoloLevelSession` draw a fresh slate — from the level's
@@ -6856,6 +6965,10 @@ export const claimAchievementReward = onCall(async (request) => {
 // ============================================================
 
 const BUY_FULL_LIFE_COST = 10;
+// A streak protector: keeps the daily streak through one missed day. Priced
+// well above a life — it is bought ahead, for a streak worth keeping.
+// Mirrors EconomyService.streakFreezeCost.
+const STREAK_FREEZE_COST = 30;
 // 20 units = 10 lives at UNITS_PER_LIFE. Must stay in step with
 // life_service.dart's `defaultMaxLifeUnits`.
 const DEFAULT_MAX_LIFE_UNITS = 20;
@@ -7119,6 +7232,44 @@ export const buyFullLife = onCall(async (request) => {
     );
 
     return {lifeUnits: newLifeUnits, coins: newCoins};
+  });
+});
+
+export const buyStreakFreeze = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const userRef = db.collection("users").doc(uid);
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.data() || {};
+
+    const coins = safeInt(data.coins, 0);
+    const held = safeInt(data.streakFreezes, 0);
+
+    if (!canHoldAnotherFreeze(held)) {
+      throw localizedError(
+        data.languageCode, "failed-precondition",
+        "Ya tienes el máximo de protectores de racha.",
+        "You already hold the most streak protectors allowed."
+      );
+    }
+    if (coins < STREAK_FREEZE_COST) {
+      throw localizedError(
+        data.languageCode, "failed-precondition",
+        "No tienes suficientes monedas.",
+        "Not enough coins."
+      );
+    }
+
+    const streakFreezes = held + 1;
+    const newCoins = coins - STREAK_FREEZE_COST;
+    tx.set(userRef, {coins: newCoins, streakFreezes}, {merge: true});
+
+    return {streakFreezes, coins: newCoins};
   });
 });
 
@@ -11147,6 +11298,7 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
       },
       {merge: true}
     );
+    addMissionStats(tx, uid, {weeklyRounds: 1, correct: roundCorrect});
 
     return {
       correct,

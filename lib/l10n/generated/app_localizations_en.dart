@@ -2715,6 +2715,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeShopBuyOne => '+1 life';
 
   @override
+  String get coinPackBestValue => 'BEST VALUE';
+
+  @override
+  String coinPackBonus(int percent) {
+    return '+$percent%';
+  }
+
+  @override
+  String coinPackAiTopics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Enough for $count AI topics',
+      one: 'Enough for 1 AI topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get starterPackTitle => 'Starter pack';
 
   @override

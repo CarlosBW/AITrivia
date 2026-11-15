@@ -1526,6 +1526,19 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "coinPackBestValue": "MEJOR VALOR",
+  "coinPackBonus": "+{percent}%",
+  "@coinPackBonus": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "coinPackAiTopics": "{count, plural, =1{Alcanza para 1 tema con IA} other{Alcanza para {count} temas con IA}}",
+  "@coinPackAiTopics": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "starterPackTitle": "Paquete de inicio",
   "starterPackOnce": "OFERTA ÚNICA",
   "starterPackContents": "{coins} monedas + {freezes} protectores de racha",

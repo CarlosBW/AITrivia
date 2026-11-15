@@ -13,6 +13,7 @@ import '../../services/my_profile_service.dart';
 import '../../services/purchase_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
+import 'coin_pack_card.dart';
 import 'life_shop_section.dart';
 import 'starter_pack_card.dart';
 import 'streak_freeze_shop_section.dart';
@@ -277,77 +278,60 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
     );
   }
 
+  /// What a pack costs, as a number: the store's own price when it has
+  /// the product, so the "+N%" badges follow what the player really pays.
+  double _priceOf(CoinPack pack) => _products[pack.id]?.rawPrice ?? pack.usd;
+
   Widget _buildShop(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    const packs = EconomyService.coinPacks;
+    final base = packs.first;
 
-    // Nested inside the screen's own ListView now, so it must size to its
-    // children and leave the scrolling to the parent.
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      itemCount: EconomyService.coinPacks.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final pack = EconomyService.coinPacks[index];
-        final product = _products[pack.id];
-        final isPurchasing = _purchasingProductId == pack.id;
+    final bonuses = [
+      for (final pack in packs)
+        coinPackBonusPercent(
+          coins: pack.coins,
+          price: _priceOf(pack),
+          baseCoins: base.coins,
+          basePrice: _priceOf(base),
+        ),
+    ];
+    final best = bonuses.fold(0, (a, b) => a > b ? a : b);
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(context.radii.md),
-            border: context.surfaces.borderOr(null),
-            boxShadow: context.surfaces.shadowsOr(null),
+    Widget card(int index) {
+      final pack = packs[index];
+      return CoinPackCard(
+        illustration: coinPackIllustration(pack.id),
+        coins: pack.coins,
+        price: _products[pack.id]?.price ?? '\$${pack.usd.toStringAsFixed(2)}',
+        bonusPercent: bonuses[index],
+        bestValue: best > 0 && bonuses[index] == best,
+        aiTopics: pack.coins ~/ EconomyService.createAiTopicCost,
+        buying: _purchasingProductId == pack.id,
+        onBuy: () => _buy(pack.id),
+      );
+    }
+
+    // Two to a row, each row as tall as its taller card.
+    return Column(
+      children: [
+        for (var i = 0; i < packs.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: 12),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: card(i)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: i + 1 < packs.length
+                      ? card(i + 1)
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: context.appColors.rewardBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.monetization_on_outlined,
-                  color: context.appColors.reward,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.coinShopCoinsAmount(pack.coins),
-                      style: context.heading(16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      product?.price ?? '\$${pack.usd.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              FilledButton(
-                onPressed: isPurchasing ? null : () => _buy(pack.id),
-                child: isPurchasing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.coinShopBuyButton),
-              ),
-            ],
-          ),
-        );
-      },
+        ],
+      ],
     );
   }
 }

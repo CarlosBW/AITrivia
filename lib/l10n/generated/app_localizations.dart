@@ -4540,6 +4540,24 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @coinPackBestValue.
+  ///
+  /// In es, this message translates to:
+  /// **'MEJOR VALOR'**
+  String get coinPackBestValue;
+
+  /// No description provided for @coinPackBonus.
+  ///
+  /// In es, this message translates to:
+  /// **'+{percent}%'**
+  String coinPackBonus(int percent);
+
+  /// No description provided for @coinPackAiTopics.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{Alcanza para 1 tema con IA} other{Alcanza para {count} temas con IA}}'**
+  String coinPackAiTopics(int count);
+
   /// No description provided for @starterPackTitle.
   ///
   /// In es, this message translates to:

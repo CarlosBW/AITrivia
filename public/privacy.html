@@ -40,10 +40,10 @@
 <div class="lang-switch"><a href="#en">Read this in English ↓</a></div>
 
 <h1>TriviaIA — Política de Privacidad</h1>
-<p class="updated">Última actualización: 27 de octubre de 2026</p>
+<p class="updated">Última actualización: 15 de noviembre de 2026</p>
 
 <div class="card">
-  <strong>Resumen rápido:</strong> TriviaIA no te pide correo ni contraseña para jugar: empiezas con una cuenta anónima. Si quieres poder recuperar tu partida en otro teléfono, puedes vincularla a tu cuenta de Google o Apple; es opcional. Guardamos tu progreso de juego (monedas, nivel, estadísticas, amigos) para que puedas jugar, competir y volver donde lo dejaste. No vendemos tus datos ni mostramos anuncios de terceros.
+  <strong>Resumen rápido:</strong> TriviaIA no te pide correo ni contraseña para jugar: empiezas con una cuenta anónima. Si quieres poder recuperar tu partida en otro teléfono, puedes vincularla a tu cuenta de Google, Apple o Facebook; es opcional. Guardamos tu progreso de juego (monedas, nivel, estadísticas, amigos) para que puedas jugar, competir y volver donde lo dejaste. No vendemos tus datos. La app muestra anuncios opcionales: solo los ves si eliges verlos a cambio de vidas o monedas.
 </div>
 
 <h2>1. Quiénes somos</h2>
@@ -53,7 +53,7 @@
 <h2>2. Qué información recolectamos</h2>
 <ul>
   <li><strong>Identificador de cuenta:</strong> al abrir la app por primera vez, creamos una cuenta anónima (Firebase Authentication) identificada por un ID único. No pedimos tu teléfono ni una contraseña.</li>
-  <li><strong>Inicio de sesión opcional:</strong> si eliges guardar tu progreso con Google o Apple, recibimos de ese proveedor un identificador de tu cuenta y, si lo comparte, tu correo electrónico. Los usamos únicamente para que puedas recuperar tu partida al reinstalar la app o cambiar de dispositivo. No recibimos ni almacenamos tu contraseña, no leemos tus contactos y no usamos tu correo para enviarte publicidad. Si no vinculas ninguna cuenta, no recolectamos nada de esto.</li>
+  <li><strong>Inicio de sesión opcional:</strong> si eliges guardar tu progreso con Google, Apple o Facebook, recibimos de ese proveedor un identificador de tu cuenta y, si lo comparte, tu correo electrónico. Los usamos únicamente para que puedas recuperar tu partida al reinstalar la app o cambiar de dispositivo. No recibimos ni almacenamos tu contraseña, no leemos tus contactos y no usamos tu correo para enviarte publicidad. Si no vinculas ninguna cuenta, no recolectamos nada de esto.</li>
   <li><strong>Perfil de juego:</strong> el nombre de usuario y avatar que elijas dentro de la app.</li>
   <li><strong>Datos de progreso:</strong> monedas, experiencia, nivel, rachas, resultados de partidas, ligas, logros y estadísticas de juego.</li>
   <li><strong>Relaciones sociales:</strong> tu lista de amigos y solicitudes de amistad dentro del juego (vinculadas a los IDs anónimos de otros jugadores, no a información personal real), y los jugadores que bloqueas.</li>
@@ -61,6 +61,9 @@
   <li><strong>Contenido que generas:</strong> si usas la función de "Temas con IA", el título que escribes se envía a un proveedor de inteligencia artificial (ver sección 4) para generar las preguntas de trivia de ese tema.</li>
   <li><strong>Token de notificaciones:</strong> un identificador técnico (Firebase Cloud Messaging) para poder enviarte notificaciones push, si las permites.</li>
   <li><strong>Datos de uso:</strong> eventos de analítica agregados (ej. qué modos de juego usas, si completaste un desafío diario) para entender cómo se usa la app y mejorarla.</li>
+  <li><strong>Diagnóstico de fallos:</strong> si la app falla, se envía un informe técnico (Firebase Crashlytics) con el modelo del dispositivo, la versión del sistema y el punto del fallo, para poder corregirlo.</li>
+  <li><strong>Compras:</strong> si compras monedas o paquetes, guardamos el registro de la compra (producto, fecha e identificador del pedido de la tienda). No recibimos ni guardamos los datos de tu tarjeta.</li>
+  <li><strong>Datos para anuncios:</strong> cuando eliges ver un anuncio, el servicio de anuncios de Google (AdMob) recibe el identificador de publicidad de tu dispositivo, tu dirección IP (de la que se deduce una ubicación aproximada, como la ciudad o el país), datos del dispositivo y tu interacción con el anuncio.</li>
 </ul>
 <p>No recolectamos tu ubicación precisa, contactos, fotos, ni datos biométricos.</p>
 
@@ -72,6 +75,7 @@
   <li>Para enviarte notificaciones sobre tu racha diaria, resultados de partidas o recompensas, si las autorizas.</li>
   <li>Para generar contenido de trivia personalizado cuando usas "Temas con IA".</li>
   <li>Para entender el uso agregado de la app y mejorar la experiencia.</li>
+  <li>Para mostrarte anuncios cuando eliges verlos, entregarte la recompensa y evitar el fraude.</li>
 </ul>
 
 <h2>4. Con quién compartimos información</h2>
@@ -79,9 +83,11 @@
 <ul>
   <li><strong>Google Firebase / Google Cloud:</strong> infraestructura de autenticación, base de datos, funciones en la nube, mensajería y analítica. Sujeto a la <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">política de privacidad de Google</a>.</li>
   <li><strong>Anthropic (Claude API):</strong> cuando creas un "Tema con IA", el título que escribes se envía a Anthropic para generar las preguntas. Anthropic procesa esta solicitud según su propia <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">política de privacidad</a>. No enviamos tu nombre de usuario, identificadores personales ni datos de otros jugadores en esta solicitud — solo el texto del tema.</li>
-  <li>Si en el futuro habilitamos compras dentro de la app, el procesamiento de pago lo maneja Apple App Store o Google Play directamente — nosotros no almacenamos datos de tarjetas de pago.</li>
+  <li><strong>Google AdMob:</strong> muestra los anuncios que eliges ver. Para hacerlo recibe los datos descritos en "Datos para anuncios" (sección 2) y puede usarlos para mostrar anuncios personalizados, medir su rendimiento y prevenir el fraude, según <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">cómo usa Google la información de las apps que utilizan sus servicios</a>. Donde la ley lo exige, la app te pide tu consentimiento antes de mostrar anuncios personalizados. Puedes restablecer o eliminar tu identificador de publicidad en los ajustes de tu dispositivo.</li>
+  <li><strong>Meta (Facebook):</strong> solo si eliges guardar tu progreso con Facebook, para confirmar tu identidad.</li>
+  <li><strong>Apple App Store y Google Play:</strong> procesan el pago de las compras dentro de la app. Nosotros no almacenamos datos de tarjetas de pago.</li>
 </ul>
-<p>No compartimos datos con redes publicitarias ni corredores de datos.</p>
+<p>No vendemos tus datos ni los compartimos con corredores de datos.</p>
 
 <h2>5. Cuánto tiempo guardamos tu información</h2>
 <p>Guardamos tu información mientras tu cuenta esté activa. Si eliminas tu cuenta desde la app (Perfil → Eliminar cuenta), borramos tu perfil, progreso y datos asociados de nuestros sistemas, incluido lo que compartías con otros jugadores: amistades, solicitudes, invitaciones, notificaciones y puestos en las clasificaciones. Las partidas que otros jugaron contra ti se quedan en su historial con su resultado, pero tu nombre se reemplaza por «Jugador eliminado». Si hiciste compras dentro de la app, conservamos su registro el tiempo que exigen las obligaciones contables y tributarias. Más detalle en <a href="delete-account.html">Eliminar tu cuenta</a>.</p>
@@ -104,10 +110,10 @@
 <hr style="margin: 48px 0;">
 
 <h1 id="en">TriviaIA — Privacy Policy</h1>
-<p class="updated">Last updated: October 27, 2026</p>
+<p class="updated">Last updated: November 15, 2026</p>
 
 <div class="card">
-  <strong>Quick summary:</strong> TriviaIA doesn't ask for an email or password to play: you start with an anonymous account. If you want to be able to recover your game on another phone, you can link it to your Google or Apple account; it's optional. We store your game progress (coins, level, stats, friends) so you can play, compete, and pick up where you left off. We don't sell your data or show third-party ads.
+  <strong>Quick summary:</strong> TriviaIA doesn't ask for an email or password to play: you start with an anonymous account. If you want to be able to recover your game on another phone, you can link it to your Google, Apple or Facebook account; it's optional. We store your game progress (coins, level, stats, friends) so you can play, compete, and pick up where you left off. We don't sell your data. The app shows optional ads: you only see them if you choose to watch one in exchange for lives or coins.
 </div>
 
 <h2>1. Who we are</h2>
@@ -117,7 +123,7 @@
 <h2>2. Information we collect</h2>
 <ul>
   <li><strong>Account identifier:</strong> when you first open the app, we create an anonymous account (Firebase Authentication) identified by a unique ID. We don't ask for your phone number or a password.</li>
-  <li><strong>Optional sign-in:</strong> if you choose to save your progress with Google or Apple, we receive from that provider an identifier for your account and, if it shares one, your email address. We use them only so you can recover your game after reinstalling the app or switching devices. We never receive or store your password, we don't read your contacts, and we don't use your email for advertising. If you never link an account, we collect none of this.</li>
+  <li><strong>Optional sign-in:</strong> if you choose to save your progress with Google, Apple or Facebook, we receive from that provider an identifier for your account and, if it shares one, your email address. We use them only so you can recover your game after reinstalling the app or switching devices. We never receive or store your password, we don't read your contacts, and we don't use your email for advertising. If you never link an account, we collect none of this.</li>
   <li><strong>Game profile:</strong> the username and avatar you choose within the app.</li>
   <li><strong>Progress data:</strong> coins, XP, level, streaks, match results, leagues, achievements, and gameplay statistics.</li>
   <li><strong>Social relationships:</strong> your friends list and friend requests within the game (linked to other players' anonymous IDs, not real personal information), and the players you block.</li>
@@ -125,6 +131,9 @@
   <li><strong>Content you create:</strong> if you use the "AI Topics" feature, the title you type is sent to an AI provider (see section 4) to generate that topic's trivia questions.</li>
   <li><strong>Notification token:</strong> a technical identifier (Firebase Cloud Messaging) used to send you push notifications, if you allow them.</li>
   <li><strong>Usage data:</strong> aggregated analytics events (e.g., which game modes you use, whether you completed a daily challenge) to understand how the app is used and improve it.</li>
+  <li><strong>Crash diagnostics:</strong> if the app crashes, a technical report is sent (Firebase Crashlytics) with the device model, the system version and where it crashed, so we can fix it.</li>
+  <li><strong>Purchases:</strong> if you buy coins or packs, we keep a record of the purchase (product, date and the store's order identifier). We never receive or store your card details.</li>
+  <li><strong>Data for ads:</strong> when you choose to watch an ad, Google's ad service (AdMob) receives your device's advertising identifier, your IP address (from which an approximate location such as city or country is derived), device data and your interaction with the ad.</li>
 </ul>
 <p>We do not collect your precise location, contacts, photos, or biometric data.</p>
 
@@ -136,6 +145,7 @@
   <li>To send you notifications about your daily streak, match results, or rewards, if you enable them.</li>
   <li>To generate personalized trivia content when you use "AI Topics."</li>
   <li>To understand aggregate app usage and improve the experience.</li>
+  <li>To show you ads when you choose to watch them, give you the reward and prevent fraud.</li>
 </ul>
 
 <h2>4. Who we share information with</h2>
@@ -143,9 +153,11 @@
 <ul>
   <li><strong>Google Firebase / Google Cloud:</strong> authentication, database, cloud functions, messaging, and analytics infrastructure. Subject to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's privacy policy</a>.</li>
   <li><strong>Anthropic (Claude API):</strong> when you create an "AI Topic," the title you type is sent to Anthropic to generate the questions. Anthropic processes this request under its own <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">privacy policy</a>. We do not send your username, personal identifiers, or other players' data in this request — only the topic text.</li>
-  <li>If we enable in-app purchases in the future, payment processing is handled directly by the Apple App Store or Google Play — we don't store payment card data.</li>
+  <li><strong>Google AdMob:</strong> shows the ads you choose to watch. To do so it receives the data described under "Data for ads" (section 2) and may use it to show personalized ads, measure their performance and prevent fraud, as described in <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">how Google uses information from apps that use its services</a>. Where the law requires it, the app asks for your consent before showing personalized ads. You can reset or delete your advertising identifier in your device settings.</li>
+  <li><strong>Meta (Facebook):</strong> only if you choose to save your progress with Facebook, to confirm your identity.</li>
+  <li><strong>Apple App Store and Google Play:</strong> process payment for in-app purchases. We don't store payment card data.</li>
 </ul>
-<p>We do not share data with ad networks or data brokers.</p>
+<p>We do not sell your data or share it with data brokers.</p>
 
 <h2>5. How long we keep your information</h2>
 <p>We keep your information while your account is active. If you delete your account from the app (Profile → Delete account), we erase your profile, progress, and associated data from our systems, including what you shared with other players: friendships, requests, invites, notifications, and ranking places. Matches other players played against you stay in their history with their result, but your name is replaced with "Deleted player". If you made in-app purchases, we keep their record for as long as accounting and tax obligations require. More details in <a href="delete-account.html#en">Delete your account</a>.</p>

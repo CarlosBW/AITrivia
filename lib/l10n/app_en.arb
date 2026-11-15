@@ -1498,6 +1498,38 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "shareResult": "Share result",
+  "shareLevelMessage": "I got {correct} of {total} right on {topic} in TriviaIA 🧠 Can you beat me?",
+  "@shareLevelMessage": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"},
+      "topic": {"type": "String"}
+    }
+  },
+  "shareLevelMessageNoTopic": "I got {correct} of {total} right in TriviaIA 🧠 Can you beat me?",
+  "@shareLevelMessageNoTopic": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "leagueGoalPass": "{points, plural, =1{1 point to pass {name}} other{{points} points to pass {name}}}",
+  "@leagueGoalPass": {
+    "placeholders": {
+      "points": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "leagueGoalFirstLead": "{points, plural, =1{You're first, 1 point ahead} other{You're first, {points} points ahead}}",
+  "@leagueGoalFirstLead": {
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "leagueGoalFirstTied": "You're first, but tied. One more challenge pulls you clear.",
+  "leagueGoalFirstAlone": "You're first. Keep scoring so nobody catches you.",
+  "notificationsViewLeague": "View the league",
   "streakFreezeTitle": "Streak protector",
   "streakFreezeHeld": "You have {held} of {max}",
   "@streakFreezeHeld": {

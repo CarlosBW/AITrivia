@@ -8,6 +8,7 @@ import '../versus/async_match_play_screen.dart';
 import '../versus/realtime_invites_screen.dart';
 import '../versus/match_lobby_screen.dart';
 import '../leagues/season_rewards_screen.dart';
+import '../leagues/weekly_league_screen.dart';
 import '../achievements/achievements_screen.dart';
 import '../versus/match_play_screen.dart';
 import '../daily/daily_challenge_screen.dart';
@@ -58,6 +59,8 @@ String? notificationCta(
       return l10n.notificationsView;
     case 'streak_at_risk':
       return l10n.navPlayNow;
+    case 'league_overtaken':
+      return l10n.notificationsViewLeague;
     case 'realtime_invite':
       return l10n.realtimeInvitesAccept;
     case 'realtime_invite_accepted':
@@ -120,6 +123,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.replay;
       case 'streak_at_risk':
         return Icons.local_fire_department_outlined;
+      case 'league_overtaken':
+        return Icons.trending_down_rounded;
       case 'realtime_invite':
         return Icons.bolt_outlined;
       case 'realtime_invite_accepted':
@@ -155,6 +160,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Theme.of(context).colorScheme.primary;
       case 'streak_at_risk':
         return context.appColors.danger;
+      case 'league_overtaken':
+        return context.appColors.reward;
       default:
         return Theme.of(context).colorScheme.primary;
     }
@@ -431,6 +438,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               uid: FirebaseAuth.instance.currentUser!.uid,
             ),
           ),
+        );
+        return;
+
+      case 'league_overtaken':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const WeeklyLeagueScreen()),
         );
         return;
 

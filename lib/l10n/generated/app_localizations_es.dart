@@ -2741,6 +2741,52 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lifeShopBuyOne => '+1 vida';
 
   @override
+  String get shareResult => 'Compartir resultado';
+
+  @override
+  String shareLevelMessage(int correct, int total, String topic) {
+    return 'Acerté $correct de $total en $topic jugando TriviaIA 🧠 ¿Me superas?';
+  }
+
+  @override
+  String shareLevelMessageNoTopic(int correct, int total) {
+    return 'Acerté $correct de $total jugando TriviaIA 🧠 ¿Me superas?';
+  }
+
+  @override
+  String leagueGoalPass(int points, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: 'Te faltan $points puntos para pasar a $name',
+      one: 'Te falta 1 punto para pasar a $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String leagueGoalFirstLead(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: 'Vas primero, con $points puntos de ventaja',
+      one: 'Vas primero, con 1 punto de ventaja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get leagueGoalFirstTied =>
+      'Vas primero, pero empatado. Un reto más te despega.';
+
+  @override
+  String get leagueGoalFirstAlone =>
+      'Vas primero. Sigue sumando para que nadie te alcance.';
+
+  @override
+  String get notificationsViewLeague => 'Ver la liga';
+
+  @override
   String get streakFreezeTitle => 'Protector de racha';
 
   @override

@@ -1526,6 +1526,38 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "shareResult": "Compartir resultado",
+  "shareLevelMessage": "Acerté {correct} de {total} en {topic} jugando TriviaIA 🧠 ¿Me superas?",
+  "@shareLevelMessage": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"},
+      "topic": {"type": "String"}
+    }
+  },
+  "shareLevelMessageNoTopic": "Acerté {correct} de {total} jugando TriviaIA 🧠 ¿Me superas?",
+  "@shareLevelMessageNoTopic": {
+    "placeholders": {
+      "correct": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "leagueGoalPass": "{points, plural, =1{Te falta 1 punto para pasar a {name}} other{Te faltan {points} puntos para pasar a {name}}}",
+  "@leagueGoalPass": {
+    "placeholders": {
+      "points": {"type": "int"},
+      "name": {"type": "String"}
+    }
+  },
+  "leagueGoalFirstLead": "{points, plural, =1{Vas primero, con 1 punto de ventaja} other{Vas primero, con {points} puntos de ventaja}}",
+  "@leagueGoalFirstLead": {
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "leagueGoalFirstTied": "Vas primero, pero empatado. Un reto más te despega.",
+  "leagueGoalFirstAlone": "Vas primero. Sigue sumando para que nadie te alcance.",
+  "notificationsViewLeague": "Ver la liga",
   "streakFreezeTitle": "Protector de racha",
   "streakFreezeHeld": "Tienes {held} de {max}",
   "@streakFreezeHeld": {

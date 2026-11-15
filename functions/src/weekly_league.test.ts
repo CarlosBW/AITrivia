@@ -7,6 +7,10 @@ import {
   laterWeekId,
   rewardLeagueFor,
   weeksBetween,
+  MAX_OVERTAKEN_NOTIFIED,
+  leagueOvertakenNotificationId,
+  overtakenPlayers,
+  overtakenScoreRange,
 } from "./weekly_league";
 
 // Mondays.
@@ -104,5 +108,59 @@ describe("rewardLeagueFor", () => {
 
   test("a week from before the count is paid in full", () => {
     assert.equal(rewardLeagueFor("master", undefined), "master");
+  });
+});
+
+describe("overtakenScoreRange", () => {
+  test("a score that went up passed everyone it left behind", () => {
+    assert.deepEqual(overtakenScoreRange(120, 300), {from: 120, below: 300});
+  });
+
+  test("a first game of the week starts from zero", () => {
+    assert.deepEqual(overtakenScoreRange(0, 180), {from: 0, below: 180});
+    assert.deepEqual(overtakenScoreRange(NaN, 180), {from: 0, below: 180});
+  });
+
+  test("a score that didn't go up passed nobody", () => {
+    assert.equal(overtakenScoreRange(300, 300), null);
+    assert.equal(overtakenScoreRange(300, 120), null);
+    assert.equal(overtakenScoreRange(300, NaN), null);
+  });
+});
+
+describe("overtakenPlayers", () => {
+  const rows = [
+    {uid: "a", weeklyScore: 150},
+    {uid: "me", weeklyScore: 120},
+    {uid: "b", weeklyScore: 290},
+    {uid: "c", weeklyScore: 200},
+    {uid: "d", weeklyScore: 130},
+  ];
+
+  test("the highest-placed few, best first", () => {
+    assert.deepEqual(overtakenPlayers(rows, "me"), ["b", "c", "a"]);
+    assert.equal(
+      overtakenPlayers(rows, "me").length, MAX_OVERTAKEN_NOTIFIED
+    );
+  });
+
+  test("never the player who did the passing", () => {
+    assert.equal(overtakenPlayers(rows, "me").includes("me"), false);
+    assert.deepEqual(
+      overtakenPlayers([{uid: "me", weeklyScore: 120}], "me"), []
+    );
+  });
+});
+
+describe("leagueOvertakenNotificationId", () => {
+  test("one a day: the same day gives the same id", () => {
+    assert.equal(
+      leagueOvertakenNotificationId("2026-11-14"),
+      leagueOvertakenNotificationId("2026-11-14")
+    );
+    assert.notEqual(
+      leagueOvertakenNotificationId("2026-11-14"),
+      leagueOvertakenNotificationId("2026-11-15")
+    );
   });
 });

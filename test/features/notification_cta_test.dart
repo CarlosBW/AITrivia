@@ -16,6 +16,13 @@ void main() {
     expect(notificationCta(l10n, 'algo_nuevo'), l10n.notificationsOpen);
   });
 
+  test('el aviso de que te superaron lleva a la liga', () {
+    expect(
+      notificationCta(l10n, 'league_overtaken'),
+      l10n.notificationsViewLeague,
+    );
+  });
+
   group('solicitud de amistad', () {
     test('pendiente: los botones son la accion, no hay texto', () {
       expect(notificationCta(l10n, 'friend_request'), isNull);

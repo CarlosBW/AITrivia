@@ -96,3 +96,51 @@ export function rewardLeagueFor(
   if (typeof dailiesPlayed !== "number") return leagueId;
   return dailiesPlayed >= MIN_DAILIES_FOR_LEAGUE_REWARD ? leagueId : "bronze";
 }
+
+/** At most this many players hear about one rival passing them. */
+export const MAX_OVERTAKEN_NOTIFIED = 3;
+
+/**
+ * The scores a player's weekly score moved past when it went from
+ * [before] to [after]: everyone holding a score in `[from, below)` was
+ * level with or ahead of them, and no longer is.
+ * @param {number} before Their weekly score before this play.
+ * @param {number} after Their weekly score after it.
+ * @return {{from: number, below: number} | null} The range, or null when
+ *   the score didn't go up.
+ */
+export function overtakenScoreRange(
+  before: number, after: number
+): {from: number; below: number} | null {
+  const from = Number.isFinite(before) ? Math.max(0, before) : 0;
+  if (!Number.isFinite(after) || after <= from) return null;
+  return {from, below: after};
+}
+
+/**
+ * Who to tell they were passed, from the league rows found in the range:
+ * the highest-placed few, never the player who did the passing.
+ * @param {Array<{uid: string, weeklyScore: number}>} rows Rows in range.
+ * @param {string} overtakerUid The player whose score went up.
+ * @return {string[]} The uids to notify, highest score first.
+ */
+export function overtakenPlayers(
+  rows: {uid: string; weeklyScore: number}[],
+  overtakerUid: string
+): string[] {
+  return rows
+    .filter((row) => row.uid && row.uid !== overtakerUid)
+    .sort((a, b) => b.weeklyScore - a.weeklyScore)
+    .slice(0, MAX_OVERTAKEN_NOTIFIED)
+    .map((row) => row.uid);
+}
+
+/**
+ * The id of a player's "you were passed" notification for a day. One per
+ * day: a busy league would otherwise send one for every rival who plays.
+ * @param {string} dateId The day, `YYYY-MM-DD`.
+ * @return {string} The notification's document id.
+ */
+export function leagueOvertakenNotificationId(dateId: string): string {
+  return `league_overtaken__${dateId}`;
+}

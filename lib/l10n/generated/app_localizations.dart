@@ -4540,6 +4540,54 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @shareResult.
+  ///
+  /// In es, this message translates to:
+  /// **'Compartir resultado'**
+  String get shareResult;
+
+  /// No description provided for @shareLevelMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Acerté {correct} de {total} en {topic} jugando TriviaIA 🧠 ¿Me superas?'**
+  String shareLevelMessage(int correct, int total, String topic);
+
+  /// No description provided for @shareLevelMessageNoTopic.
+  ///
+  /// In es, this message translates to:
+  /// **'Acerté {correct} de {total} jugando TriviaIA 🧠 ¿Me superas?'**
+  String shareLevelMessageNoTopic(int correct, int total);
+
+  /// No description provided for @leagueGoalPass.
+  ///
+  /// In es, this message translates to:
+  /// **'{points, plural, =1{Te falta 1 punto para pasar a {name}} other{Te faltan {points} puntos para pasar a {name}}}'**
+  String leagueGoalPass(int points, String name);
+
+  /// No description provided for @leagueGoalFirstLead.
+  ///
+  /// In es, this message translates to:
+  /// **'{points, plural, =1{Vas primero, con 1 punto de ventaja} other{Vas primero, con {points} puntos de ventaja}}'**
+  String leagueGoalFirstLead(int points);
+
+  /// No description provided for @leagueGoalFirstTied.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas primero, pero empatado. Un reto más te despega.'**
+  String get leagueGoalFirstTied;
+
+  /// No description provided for @leagueGoalFirstAlone.
+  ///
+  /// In es, this message translates to:
+  /// **'Vas primero. Sigue sumando para que nadie te alcance.'**
+  String get leagueGoalFirstAlone;
+
+  /// No description provided for @notificationsViewLeague.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver la liga'**
+  String get notificationsViewLeague;
+
   /// No description provided for @streakFreezeTitle.
   ///
   /// In es, this message translates to:

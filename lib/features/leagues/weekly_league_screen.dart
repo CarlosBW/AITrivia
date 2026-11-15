@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../services/league_goal.dart';
 import '../../services/league_service.dart';
 import '../../services/season_service.dart';
 import '../../services/weekly_league_service.dart';
@@ -14,6 +15,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../l10n/league_names.dart';
 import '../../theme/app_theme.dart';
+import 'league_goal_banner.dart';
 import 'season_rewards_screen.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
@@ -285,6 +287,29 @@ class _WeeklyLeagueScreenState extends State<WeeklyLeagueScreen>
                             ),
 
                             const SizedBox(height: 14),
+
+                            // The next step up, before the list it is
+                            // read from.
+                            if (leagueGoal(
+                              [
+                                for (final doc in docs)
+                                  (
+                                    uid: doc.id,
+                                    name: (doc.data()['username'] ??
+                                            doc.data()['displayName'] ??
+                                            l10n.commonPlayerFallback)
+                                        .toString(),
+                                    score: ((doc.data()['weeklyScore'] ?? 0)
+                                            as num)
+                                        .toInt(),
+                                  ),
+                              ],
+                              uid,
+                            )
+                                case final goal?) ...[
+                              LeagueGoalBanner(goal: goal),
+                              const SizedBox(height: 14),
+                            ],
 
                             ...List.generate(docs.length, (index) {
                               final doc = docs[index];

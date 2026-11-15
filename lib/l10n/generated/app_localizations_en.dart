@@ -2715,6 +2715,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeShopBuyOne => '+1 life';
 
   @override
+  String get shareResult => 'Share result';
+
+  @override
+  String shareLevelMessage(int correct, int total, String topic) {
+    return 'I got $correct of $total right on $topic in TriviaIA 🧠 Can you beat me?';
+  }
+
+  @override
+  String shareLevelMessageNoTopic(int correct, int total) {
+    return 'I got $correct of $total right in TriviaIA 🧠 Can you beat me?';
+  }
+
+  @override
+  String leagueGoalPass(int points, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '$points points to pass $name',
+      one: '1 point to pass $name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String leagueGoalFirstLead(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: 'You\'re first, $points points ahead',
+      one: 'You\'re first, 1 point ahead',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get leagueGoalFirstTied =>
+      'You\'re first, but tied. One more challenge pulls you clear.';
+
+  @override
+  String get leagueGoalFirstAlone =>
+      'You\'re first. Keep scoring so nobody catches you.';
+
+  @override
+  String get notificationsViewLeague => 'View the league';
+
+  @override
   String get streakFreezeTitle => 'Streak protector';
 
   @override

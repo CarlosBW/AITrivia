@@ -3,6 +3,7 @@ import {setGlobalOptions} from "firebase-functions/v2";
 import {
   onDocumentCreated,
   onDocumentUpdated,
+  onDocumentWritten,
 } from "firebase-functions/v2/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, onRequest, HttpsError, FunctionsErrorCode} from
@@ -148,7 +149,11 @@ import {
 import {
   decayedLeagueScore,
   laterWeekId,
+  leagueOvertakenNotificationId,
+  overtakenPlayers,
+  overtakenScoreRange,
   rewardLeagueFor,
+  MAX_OVERTAKEN_NOTIFIED,
 } from "./weekly_league";
 import {
   liveMatchIsOverdue,
@@ -5786,6 +5791,81 @@ export const notifyStreakAtRisk = onSchedule(
 // ============================================================
 
 const LOGIN_STREAK_3_DAYS_COINS = 3;
+
+// ============================================================
+// WEEKLY LEAGUE: "YOU WERE PASSED"
+//
+// When a player's weekly score goes up, the few rivals it carried them
+// past are told, at most once a day each. Done from a trigger on the
+// league row rather than inside submitDailyChallengeResult, so the player
+// who just finished their Daily doesn't wait on other people's
+// notifications.
+// ============================================================
+
+export const notifyLeagueOvertaken = onDocumentWritten(
+  "weekly_leagues/{weekId}/{leagueId}/{playerId}",
+  async (event) => {
+    const after = event.data?.after.data();
+    if (!after) return;
+
+    const range = overtakenScoreRange(
+      safeInt(event.data?.before.data()?.weeklyScore, 0),
+      safeInt(after.weeklyScore, 0)
+    );
+    if (!range) return;
+
+    const {weekId, leagueId, playerId} = event.params;
+    const passed = await db.collection("weekly_leagues").doc(weekId)
+      .collection(leagueId)
+      .where("weeklyScore", ">=", range.from)
+      .where("weeklyScore", "<", range.below)
+      .orderBy("weeklyScore", "desc")
+      // One more than are told, in case the player's own row is among
+      // them: the query can still see their score from before.
+      .limit(MAX_OVERTAKEN_NOTIFIED + 1)
+      .get();
+
+    const uids = overtakenPlayers(
+      passed.docs.map((doc) => ({
+        uid: doc.id, weeklyScore: safeInt(doc.data().weeklyScore, 0),
+      })),
+      playerId
+    );
+    if (uids.length === 0) return;
+
+    const name = String(after.username || after.displayName || "?")
+      .slice(0, 20);
+    const id = leagueOvertakenNotificationId(missionsDateId());
+
+    await Promise.all(uids.map(async (uid) => {
+      const userRef = db.collection("users").doc(uid);
+      const user = await userRef.get();
+      if (!user.exists) return;
+      const lang = user.data()?.languageCode;
+      try {
+        await userRef.collection("notifications").doc(id).create({
+          type: "league_overtaken",
+          title: pickText(
+            lang, "Te superaron en la liga", "You were passed in the league"
+          ),
+          body: pickText(
+            lang,
+            `${name} te pasó en la liga semanal. Juega el reto diario ` +
+              "para recuperar tu puesto.",
+            `${name} passed you in the weekly league. Play the Daily ` +
+              "Challenge to take your place back."
+          ),
+          data: {fromUid: playerId, weekId, leagueId},
+          read: false,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (error) {
+        // Already told today (ALREADY_EXISTS): one a day is the point.
+        if ((error as {code?: number}).code !== 6) throw error;
+      }
+    }));
+  }
+);
 
 // ============================================================
 // DAILY MISSIONS

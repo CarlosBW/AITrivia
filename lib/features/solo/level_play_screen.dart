@@ -33,6 +33,7 @@ import '../../widgets/category_illustration.dart';
 import '../../widgets/circular_timer.dart';
 import '../../widgets/count_pill.dart';
 import '../../widgets/segmented_progress.dart';
+import '../../widgets/share_result_button.dart';
 import '../../widgets/watch_ad_button.dart';
 import '../../l10n/lives_format.dart';
 
@@ -124,6 +125,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
   int _sessionRetries = 0;
 
   bool _bufferKicked = false;
+
+  /// Around the result card, so "share result" can take its picture.
+  final GlobalKey _resultCardKey = GlobalKey();
 
   int _earnedXp = 0;
 
@@ -1696,16 +1700,19 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            LevelResultHero(
-              title: pct >= 0.4
-                  ? l10n.levelPlayLevelPassed
-                  : l10n.levelPlayLevelFinished,
-              stars: starCount,
-              correct: _correct,
-              total: total,
-              rankLabel: label,
-              celebration:
-                  starCount == 3 ? const _ThreeStarsCelebration() : null,
+            RepaintBoundary(
+              key: _resultCardKey,
+              child: LevelResultHero(
+                title: pct >= 0.4
+                    ? l10n.levelPlayLevelPassed
+                    : l10n.levelPlayLevelFinished,
+                stars: starCount,
+                correct: _correct,
+                total: total,
+                rankLabel: label,
+                celebration:
+                    starCount == 3 ? const _ThreeStarsCelebration() : null,
+              ),
             ),
             const SizedBox(height: 16),
             Container(
@@ -1815,6 +1822,20 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
             if (_saved && _saveError == null && !_saving) ...[
               const SizedBox(height: 18),
               ProgressSavedChip(label: l10n.levelPlayProgressSaved),
+            ],
+            // A level passed is worth showing off; one failed isn't.
+            if (pct >= 0.4) ...[
+              const SizedBox(height: 8),
+              ShareResultButton(
+                cardKey: _resultCardKey,
+                message: (widget.categoryName ?? '').isEmpty
+                    ? l10n.shareLevelMessageNoTopic(_correct, total)
+                    : l10n.shareLevelMessage(
+                        _correct,
+                        total,
+                        widget.categoryName!,
+                      ),
+              ),
             ],
             const SizedBox(height: 24),
             Row(

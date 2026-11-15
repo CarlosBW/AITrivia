@@ -15,6 +15,7 @@ import '../../services/life_service.dart';
 import '../../services/player_level_service.dart';
 import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
+import '../../services/function_warmer.dart';
 import '../../services/ai_topic_service.dart';
 import '../../services/answer_service.dart';
 import '../../services/question_report_service.dart';
@@ -247,6 +248,10 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    FunctionWarmer.instance.warm(const [
+      'answerSoloQuestion',
+      'submitSoloLevelResult',
+    ]);
     _lifeUiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _refreshLivesUi();
     });

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../services/answer_service.dart';
+import '../../services/function_warmer.dart';
 import '../../services/life_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
@@ -70,6 +71,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
   @override
   void initState() {
     super.initState();
+    FunctionWarmer.instance.warm(const [
+      'answerWeeklyQuestion',
+      'submitWeeklyTopicRound',
+    ]);
     _init();
   }
 

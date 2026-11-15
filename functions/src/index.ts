@@ -50,6 +50,7 @@ import {
   weekIdForDateId,
 } from "./daily_challenge_dates";
 import {dailyAnswerTooLate, dailyRemainingMs} from "./daily_clock";
+import {isWarmUpRequest} from "./warm_up";
 import {
   AI_QUESTIONS_PER_SESSION,
   avoidListCapacity,
@@ -213,6 +214,23 @@ setGlobalOptions({maxInstances: 10});
 admin.initializeApp();
 
 const db = admin.firestore();
+
+/**
+ * Answers a warm-up call (see warm_up.ts).
+ *
+ * The one read is the point: a new instance opens its Firestore
+ * connection on the first operation, and that is a good part of what the
+ * player's real call would otherwise wait for.
+ * @param {unknown} data The callable's `request.data`.
+ * @param {string} uid The signed-in caller.
+ * @return {Promise<boolean>} True when the caller only wanted the function
+ *   warm and it should return without doing its work.
+ */
+async function warmedUp(data: unknown, uid: string): Promise<boolean> {
+  if (!isWarmUpRequest(data)) return false;
+  await db.collection("users").doc(uid).get();
+  return true;
+}
 
 // Set via `firebase functions:secrets:set ANTHROPIC_API_KEY`. Only bound to
 // the callables that actually call Claude (see their `secrets:` option).
@@ -4302,6 +4320,7 @@ export const submitDailyChallengeResult = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   // `correct`/`totalAnswered` are only used for a fast request-shape
   // check here — the real, reward-determining values are recomputed
@@ -5102,6 +5121,7 @@ export const answerDailyQuestion = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const dateId = String(request.data?.dateId || "");
   const questionIndex = safeInt(request.data?.questionIndex, -1);
@@ -5188,6 +5208,7 @@ export const ensureDailyChallengeSession = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const dateId = String(request.data?.dateId || "");
   // Bounded to a real date near now: a session is what makes a
@@ -6101,6 +6122,7 @@ export const submitSoloLevelResult = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const isAiTopic = request.data?.isAiTopic === true;
   const categoryId = cleanDocId(request.data?.categoryId);
@@ -6467,6 +6489,7 @@ export const ensureSoloLevelSession = onCall({
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const isAiTopic = request.data?.isAiTopic === true;
   const categoryId = cleanDocId(request.data?.categoryId);
@@ -6764,6 +6787,7 @@ export const answerSoloQuestion = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const isAiTopic = request.data?.isAiTopic === true;
   const categoryId = cleanDocId(request.data?.categoryId);
@@ -11029,6 +11053,7 @@ export const drawWeeklyTopicRound = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const weekId = cleanDocId(request.data?.weekId);
   const categoryId = cleanDocId(request.data?.categoryId);
@@ -11220,6 +11245,7 @@ export const answerWeeklyQuestion = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const questionIndex = safeInt(request.data?.questionIndex, -1);
   const selectedIndex = safeInt(
@@ -11302,6 +11328,7 @@ export const submitWeeklyTopicRound = onCall(async (request) => {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Sign-in required.");
   }
+  if (await warmedUp(request.data, uid)) return {warm: true};
 
   const weekId = cleanDocId(request.data?.weekId);
   const categoryId = cleanDocId(request.data?.categoryId);

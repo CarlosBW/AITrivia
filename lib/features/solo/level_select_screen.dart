@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/ai_topic_service.dart';
 import '../../services/economy_service.dart';
+import '../../services/function_warmer.dart';
 import 'level_play_screen.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
@@ -92,6 +93,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Whichever level gets picked, these open it and judge its answers.
+    FunctionWarmer.instance.warm(const [
+      'ensureSoloLevelSession',
+      'answerSoloQuestion',
+    ]);
     _loadScreenData();
     _watchProgress();
   }

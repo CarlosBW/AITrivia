@@ -12,6 +12,7 @@ import '../daily/daily_challenge_result_screen.dart';
 import '../leagues/weekly_league_screen.dart';
 import '../../services/daily_challenge_service.dart';
 import '../../services/weekly_league_service.dart';
+import '../../services/function_warmer.dart';
 import '../../services/life_service.dart';
 import '../../services/season_service.dart';
 import '../../services/achievement_service.dart';
@@ -104,6 +105,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     uid = FirebaseAuth.instance.currentUser!.uid;
+    // The Daily Challenge is one tap from here and runs against a clock.
+    FunctionWarmer.instance.warm(const [
+      'ensureDailyChallengeSession',
+      'answerDailyQuestion',
+    ]);
     _initLives();
     _checkPendingSeasonRewards();
     _startLifeTimer();

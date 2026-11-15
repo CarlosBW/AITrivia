@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../services/answer_service.dart';
 import '../../services/daily_clock.dart';
 import '../../services/daily_challenge_service.dart';
+import '../../services/function_warmer.dart';
 import '../../services/question_report_service.dart';
 import '../../services/sfx_service.dart';
 import '../../theme/app_theme.dart';
@@ -136,6 +137,10 @@ class _DailyChallengeScreenState extends State<DailyChallengeScreen> {
   @override
   void initState() {
     super.initState();
+    FunctionWarmer.instance.warm(const [
+      'answerDailyQuestion',
+      'submitDailyChallengeResult',
+    ]);
     _init();
   }
 

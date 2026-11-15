@@ -1526,6 +1526,19 @@
   "coinShopCoinsSectionTitle": "Monedas",
   "lifeShopHint": "Se recuperan solas con el tiempo, o recarga una al instante.",
   "lifeShopBuyOne": "+1 vida",
+  "answerStreakMilestone": "🔥 ¡Racha de {streak}!",
+  "@answerStreakMilestone": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "answerStreakBonusNote": "🔥 Racha de {streak} aciertos: +{xp} XP incluidos",
+  "@answerStreakBonusNote": {
+    "placeholders": {
+      "streak": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
   "adWatchForLives": "Ver anuncio: +{lives} vidas",
   "@adWatchForLives": {
     "placeholders": {

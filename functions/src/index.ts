@@ -33,6 +33,8 @@ import {
   calculateDailyScore,
   calculateDailyStreakBonusCoins,
   levelUpBonus,
+  answerStreakBonusXp,
+  longestCorrectStreak,
 } from "./rewards";
 import {
   dailySubmissionCheck,
@@ -6022,6 +6024,18 @@ export const submitSoloLevelResult = onCall(async (request) => {
     const {xp: levelXp, coins: levelCoins} =
       calculateLevelRewards(correct, total);
 
+    // Each question's verdict in the order asked, for the longest run of
+    // right answers. A question with no banked answer is a miss.
+    const verdicts: boolean[] = new Array(total).fill(false);
+    for (const answer of scoredAnswers) {
+      const question = keyed[answer.questionIndex];
+      if (!question || answer.questionIndex >= total) continue;
+      verdicts[answer.questionIndex] = isCorrectAnswer(
+        answer.selectedIndex, safeInt(question.answerIndex, -1)
+      );
+    }
+    const longestStreak = longestCorrectStreak(verdicts);
+
     const prev = progressSnap.data();
     const userData = userSnap.data() || {};
     const prevUserXp = safeInt(userData.xp, 0);
@@ -6078,8 +6092,12 @@ export const submitSoloLevelResult = onCall(async (request) => {
     // cap and no coin equivalent (see player_level_service.dart), so this
     // gives completionist players something to keep working toward without
     // reopening the coin-farming exploit the one-time gate exists to block.
+    // The streak bonus is for the level's first play, like its coins: on
+    // a replay the questions are no longer new.
+    const streakBonusXp = wasAlreadyPlayed ?
+      0 : answerStreakBonusXp(longestStreak);
     const grantedXp = wasAlreadyPlayed ?
-      Math.max(1, Math.floor(levelXp * 0.2)) : levelXp;
+      Math.max(1, Math.floor(levelXp * 0.2)) : levelXp + streakBonusXp;
     let grantedCoins = newlyPassed ? levelCoins : 0;
     const shouldEnsureAiBuffer = isAiTopic && newlyPassed;
 
@@ -6217,6 +6235,9 @@ export const submitSoloLevelResult = onCall(async (request) => {
       grantedXp,
       grantedCoins,
       levelUpBonusCoins,
+      // Part of grantedXp, told apart so the result can say what for.
+      streakBonusXp,
+      longestStreak,
       passed: passedLevel,
       newlyPassed,
       userTotalXp: prevUserXp + grantedXp,

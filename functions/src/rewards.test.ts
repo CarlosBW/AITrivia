@@ -16,6 +16,9 @@ import {
   calculateDailyXpEarned,
   calculateDailyScore,
   calculateDailyStreakBonusCoins,
+  ANSWER_STREAK_BONUSES,
+  answerStreakBonusXp,
+  longestCorrectStreak,
 } from "./rewards";
 
 /**
@@ -228,4 +231,43 @@ test("bono de nivel: uno por cada nivel ganado de una vez", () => {
 test("bono de nivel: sin XP no hay bono", () => {
   assert.equal(levelUpBonus(500, 0, 15), 0);
   assert.equal(levelUpBonus(500, -20, 15), 0);
+});
+
+test("la racha más larga es la de aciertos seguidos", () => {
+  const T = true;
+  const F = false;
+
+  assert.equal(longestCorrectStreak([]), 0);
+  assert.equal(longestCorrectStreak([F, F, F]), 0);
+  assert.equal(longestCorrectStreak([T, T, T, T]), 4);
+  // Un fallo la corta: cuenta la más larga, no la suma.
+  assert.equal(longestCorrectStreak([T, T, F, T, T, T, F, T]), 3);
+});
+
+test("la racha paga solo el escalón más alto que alcanzó", () => {
+  assert.equal(answerStreakBonusXp(0), 0);
+  assert.equal(answerStreakBonusXp(2), 0);
+  assert.equal(answerStreakBonusXp(3), 5);
+  assert.equal(answerStreakBonusXp(4), 5);
+  assert.equal(answerStreakBonusXp(5), 10);
+  assert.equal(answerStreakBonusXp(9), 20);
+  assert.equal(answerStreakBonusXp(10), 30);
+  // Más allá del último escalón no hay más.
+  assert.equal(answerStreakBonusXp(50), 30);
+});
+
+test("los escalones de racha van de menor a mayor", () => {
+  for (let i = 1; i < ANSWER_STREAK_BONUSES.length; i++) {
+    assert.ok(
+      ANSWER_STREAK_BONUSES[i].streak > ANSWER_STREAK_BONUSES[i - 1].streak
+    );
+    assert.ok(ANSWER_STREAK_BONUSES[i].xp > ANSWER_STREAK_BONUSES[i - 1].xp);
+  }
+});
+
+// Un nivel perfecto de diez vale 100 XP; la racha no debe valer más que
+// jugar bien.
+test("el bono de racha es menor que el XP del propio nivel", () => {
+  const perfect = calculateLevelRewards(10, 10).xp;
+  assert.ok(answerStreakBonusXp(10) < perfect / 2);
 });

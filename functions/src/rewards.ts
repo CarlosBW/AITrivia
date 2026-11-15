@@ -104,6 +104,51 @@ export function calculateLevelRewards(
 }
 
 /**
+ * Extra XP for a run of right answers in a row within a level: the
+ * longest run decides, and only the highest step it reached pays.
+ *
+ * Kept small next to the ten XP a right answer is worth: it is there to
+ * make a run feel like something, not to become the way to level up.
+ * Mirrored by `AnswerStreak.bonuses` in lib/services/answer_streak.dart,
+ * which announces it during play.
+ */
+export const ANSWER_STREAK_BONUSES = [
+  {streak: 3, xp: 5},
+  {streak: 5, xp: 10},
+  {streak: 7, xp: 20},
+  {streak: 10, xp: 30},
+] as const;
+
+/**
+ * The longest run of right answers in a row.
+ * @param {boolean[]} verdicts Each question's verdict, in the order the
+ *   questions were asked; a question never answered is a miss.
+ * @return {number} The length of the longest run.
+ */
+export function longestCorrectStreak(verdicts: readonly boolean[]): number {
+  let longest = 0;
+  let current = 0;
+  for (const correct of verdicts) {
+    current = correct ? current + 1 : 0;
+    if (current > longest) longest = current;
+  }
+  return longest;
+}
+
+/**
+ * The XP bonus a longest run of [longestStreak] earns.
+ * @param {number} longestStreak See longestCorrectStreak.
+ * @return {number} The bonus of the highest step reached, or 0.
+ */
+export function answerStreakBonusXp(longestStreak: number): number {
+  let xp = 0;
+  for (const step of ANSWER_STREAK_BONUSES) {
+    if (longestStreak >= step.streak) xp = step.xp;
+  }
+  return xp;
+}
+
+/**
  * Mirrors DailyChallengeService's `calculateCoinsEarned`.
  * @param {number} correct Correct answers.
  * @return {number} Coins earned.

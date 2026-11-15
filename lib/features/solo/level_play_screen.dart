@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/ad_rewards.dart';
+import '../../services/answer_streak.dart';
 import '../../services/life_check_retry.dart';
 import 'level_result_hero.dart';
 import '../../services/life_service.dart';
@@ -25,6 +26,7 @@ import '../../l10n/localized_content.dart';
 import '../../l10n/user_facing_error.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/question_answer_card.dart';
+import '../../widgets/answer_streak_badge.dart';
 import '../../widgets/app_bar_title.dart';
 import '../../widgets/load_error_view.dart';
 import '../../widgets/category_illustration.dart';
@@ -124,6 +126,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
   bool _bufferKicked = false;
 
   int _earnedXp = 0;
+
+  /// The part of [_earnedXp] paid for the longest run of right answers,
+  /// and how long that run was; zero when the server paid none.
+  int _streakBonusXp = 0;
+  int _longestStreak = 0;
   int _earnedCoins = 0;
   bool _rewardGrantedForLevel = false;
   int _userTotalXp = 0;
@@ -656,6 +663,21 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         SfxService.instance.playWrong();
       }
 
+      // The run this answer leaves the player on. A step that pays is
+      // felt as well as seen.
+      final streak = verdict.correct
+          ? currentAnswerStreak(
+              _questionResults(questionIndex + 1),
+            )
+          : 0;
+      final streakMilestone = AnswerStreak.isMilestone(streak);
+      if (streakMilestone) {
+        HapticFeedback.heavyImpact();
+        SfxService.instance.playReward();
+      } else if (streak >= AnswerStreak.shownFrom) {
+        HapticFeedback.lightImpact();
+      }
+
       if (verdict.lifeState != null) {
         await _refreshLivesAndStopIfEmpty(
           knownState: verdict.lifeState,
@@ -673,7 +695,9 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                     ? l10n.levelPlayTimeUpLostHalfLife
                     : l10n.levelPlayTimeUpNoLifeLoss)
             : verdict.correct
-                ? null
+                ? (streakMilestone
+                    ? l10n.answerStreakMilestone(streak)
+                    : null)
                 : (_endedByNoLives
                     ? l10n.levelPlayWrongNoLives
                     : verdict.lifeLost
@@ -1476,10 +1500,21 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
               ),
               const SizedBox(height: 12),
               Center(
-                child: CountPill(
-                  icon: Icons.check_circle_rounded,
-                  label: l10n.levelPlayCorrectFooter(_correct),
-                  color: context.appColors.success,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    CountPill(
+                      icon: Icons.check_circle_rounded,
+                      label: l10n.levelPlayCorrectFooter(_correct),
+                      color: context.appColors.success,
+                    ),
+                    AnswerStreakBadge(
+                      streak: currentAnswerStreak(_questionResults(total)),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1586,6 +1621,8 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       if (mounted) {
         setState(() {
           _earnedXp = grantedXp;
+          _streakBonusXp = ((data['streakBonusXp'] ?? 0) as num).toInt();
+          _longestStreak = ((data['longestStreak'] ?? 0) as num).toInt();
           _earnedCoins = grantedCoins;
           _rewardGrantedForLevel = grantedXp > 0 || grantedCoins > 0;
           _userTotalXp = ((data['userTotalXp'] ?? 0) as num).toInt();
@@ -1722,6 +1759,15 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
                       ),
                     ],
                   ),
+                  if (_streakBonusXp > 0) ...[
+                    const SizedBox(height: 12),
+                    ResultNote(
+                      text: l10n.answerStreakBonusNote(
+                        _longestStreak,
+                        _streakBonusXp,
+                      ),
+                    ),
+                  ],
                   if (!_saving &&
                       (_saved || _saveError != null) &&
                       !_rewardGrantedForLevel) ...[

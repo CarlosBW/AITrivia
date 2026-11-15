@@ -1498,6 +1498,19 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "answerStreakMilestone": "🔥 {streak} in a row!",
+  "@answerStreakMilestone": {
+    "placeholders": {
+      "streak": {"type": "int"}
+    }
+  },
+  "answerStreakBonusNote": "🔥 {streak} right in a row: +{xp} XP included",
+  "@answerStreakBonusNote": {
+    "placeholders": {
+      "streak": {"type": "int"},
+      "xp": {"type": "int"}
+    }
+  },
   "adWatchForLives": "Watch an ad: +{lives} lives",
   "@adWatchForLives": {
     "placeholders": {

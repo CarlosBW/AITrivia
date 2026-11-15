@@ -4540,6 +4540,18 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @answerStreakMilestone.
+  ///
+  /// In es, this message translates to:
+  /// **'🔥 ¡Racha de {streak}!'**
+  String answerStreakMilestone(int streak);
+
+  /// No description provided for @answerStreakBonusNote.
+  ///
+  /// In es, this message translates to:
+  /// **'🔥 Racha de {streak} aciertos: +{xp} XP incluidos'**
+  String answerStreakBonusNote(int streak, int xp);
+
   /// No description provided for @adWatchForLives.
   ///
   /// In es, this message translates to:

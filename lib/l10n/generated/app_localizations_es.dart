@@ -2741,6 +2741,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lifeShopBuyOne => '+1 vida';
 
   @override
+  String answerStreakMilestone(int streak) {
+    return '🔥 ¡Racha de $streak!';
+  }
+
+  @override
+  String answerStreakBonusNote(int streak, int xp) {
+    return '🔥 Racha de $streak aciertos: +$xp XP incluidos';
+  }
+
+  @override
   String adWatchForLives(int lives) {
     return 'Ver anuncio: +$lives vidas';
   }

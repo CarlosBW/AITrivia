@@ -100,8 +100,11 @@ class CoinPackCard extends StatelessWidget {
       ),
       child: Container(
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: scheme.surface,
+        decoration: BoxDecoration(color: scheme.surface, borderRadius: radius),
+        // Drawn over the card's contents, not under them: the picture's
+        // square box reaches into the rounded corners and would paint over
+        // a border that sat beneath it.
+        foregroundDecoration: BoxDecoration(
           borderRadius: radius,
           border: bestValue
               ? Border.all(color: colors.reward, width: 2)

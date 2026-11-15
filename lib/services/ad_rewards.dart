@@ -20,7 +20,7 @@ class AdRewards {
   static const int livesPerAd = 3;
   static const int livesDailyCap = 5;
 
-  static const int coinsPerAd = 5;
+  static const int coinsPerAd = 15;
   static const int coinsDailyCap = 5;
 
   /// This app's rewarded ad units in AdMob. Left empty, a release build
@@ -97,10 +97,33 @@ int adRewardsLeftToday(
   required DateTime now,
 }) {
   final cap = AdRewards.dailyCap(kind);
-  if (userData['adRewardsDate'] != adRewardsDateId(now)) return cap;
+  return (cap - adRewardsPaidToday(userData, kind, now: now)).clamp(0, cap);
+}
+
+/// How many ads of [kind] the server has paid today, from the same counts.
+/// Zero when the counts are another day's.
+int adRewardsPaidToday(
+  Map<String, dynamic> userData,
+  AdRewardKind kind, {
+  required DateTime now,
+}) {
+  if (userData['adRewardsDate'] != adRewardsDateId(now)) return 0;
 
   final raw = userData[
       kind == AdRewardKind.lives ? 'adLivesToday' : 'adCoinsToday'];
-  final used = raw is num ? raw.toInt() : 0;
-  return (cap - used).clamp(0, cap);
+  return raw is num && raw > 0 ? raw.toInt() : 0;
+}
+
+/// How many ads of [kind] were paid between two readings of the user doc:
+/// what a screen watching the doc has just seen land. Zero when nothing
+/// new was paid.
+int adRewardsJustPaid(
+  Map<String, dynamic> before,
+  Map<String, dynamic> after,
+  AdRewardKind kind, {
+  required DateTime now,
+}) {
+  final paid = adRewardsPaidToday(after, kind, now: now) -
+      adRewardsPaidToday(before, kind, now: now);
+  return paid > 0 ? paid : 0;
 }

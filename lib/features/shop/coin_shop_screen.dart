@@ -11,6 +11,7 @@ import '../../services/economy_service.dart';
 import '../../services/life_service.dart';
 import '../../services/my_profile_service.dart';
 import '../../services/purchase_service.dart';
+import '../../services/sfx_service.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
 import 'coin_pack_card.dart';
@@ -20,6 +21,7 @@ import 'streak_freeze_shop_section.dart';
 import 'theme_shop_section.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_title.dart';
+import '../../widgets/coins_earned_celebration.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../widgets/watch_ad_button.dart';
 
@@ -339,17 +341,43 @@ class _CoinShopScreenState extends State<CoinShopScreen> {
 /// A few coins for watching an ad, as many times a day as the server
 /// allows. Gone once today's are spent, rather than left as a button that
 /// pays nothing.
-class _FreeCoinsTile extends StatelessWidget {
+class _FreeCoinsTile extends StatefulWidget {
   const _FreeCoinsTile({required this.userData});
 
   final Map<String, dynamic> userData;
+
+  @override
+  State<_FreeCoinsTile> createState() => _FreeCoinsTileState();
+}
+
+class _FreeCoinsTileState extends State<_FreeCoinsTile> {
+  /// The coins come from the server a few seconds after the ad, as a
+  /// change to the user doc. That change is the moment to celebrate: it
+  /// says the coins are really there, which the end of the ad doesn't.
+  @override
+  void didUpdateWidget(_FreeCoinsTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final paid = adRewardsJustPaid(
+      oldWidget.userData,
+      widget.userData,
+      AdRewardKind.coins,
+      now: DateTime.now(),
+    );
+    if (paid <= 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      SfxService.instance.playReward();
+      showCoinsEarned(context, paid * AdRewards.coinsPerAd);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final left = adRewardsLeftToday(
-      userData,
+      widget.userData,
       AdRewardKind.coins,
       now: DateTime.now(),
     );
@@ -436,6 +464,32 @@ class _LivesForCoinsState extends State<_LivesForCoins> {
   void dispose() {
     _ticker.cancel();
     super.dispose();
+  }
+
+  /// Celebrates an ad's lives when the server credits them, as the coins
+  /// tile does: the user doc changing is what says they are really there.
+  @override
+  void didUpdateWidget(_LivesForCoins oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final paid = adRewardsJustPaid(
+      oldWidget.userData,
+      widget.userData,
+      AdRewardKind.lives,
+      now: DateTime.now(),
+    );
+    if (paid <= 0) return;
+
+    // What was really gained: an ad's lives stop at the maximum.
+    int units(Map<String, dynamic> data) =>
+        LifeService.instance.calculateLocalLifeState(data)['lifeUnits'] as int;
+    final gained = units(widget.userData) - units(oldWidget.userData);
+    if (gained <= 0) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      SfxService.instance.playReward();
+      showLivesEarned(context, gained);
+    });
   }
 
   Future<void> _buy(int coins) async {

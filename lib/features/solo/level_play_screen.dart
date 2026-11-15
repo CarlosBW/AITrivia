@@ -33,6 +33,7 @@ import '../../widgets/load_error_view.dart';
 import '../../widgets/category_illustration.dart';
 import '../../widgets/circular_timer.dart';
 import '../../widgets/count_pill.dart';
+import '../../widgets/coins_earned_celebration.dart';
 import '../../widgets/segmented_progress.dart';
 import '../../widgets/share_result_button.dart';
 import '../../widgets/watch_ad_button.dart';
@@ -500,6 +501,11 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
         }
         if (!mounted) return;
         if (_lifeUnits > before) {
+          // Shown before the level goes on, so it never covers a question
+          // whose clock is running.
+          SfxService.instance.playReward();
+          await showLivesEarned(context, _lifeUnits - before);
+          if (!mounted) return;
           midLevel ? _resumeMidLevelWithLives() : _retryEntryWithLives();
           return;
         }

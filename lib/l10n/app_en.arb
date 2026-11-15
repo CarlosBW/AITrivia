@@ -1498,6 +1498,7 @@
   "coinShopCoinsSectionTitle": "Coins",
   "lifeShopHint": "They refill on their own over time, or top one up right now.",
   "lifeShopBuyOne": "+1 life",
+  "coinsEarnedTitle": "You earned",
   "coinPackBestValue": "BEST VALUE",
   "coinPackBonus": "+{percent}%",
   "@coinPackBonus": {

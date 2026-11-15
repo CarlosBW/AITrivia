@@ -2715,6 +2715,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lifeShopBuyOne => '+1 life';
 
   @override
+  String get coinsEarnedTitle => 'You earned';
+
+  @override
   String get coinPackBestValue => 'BEST VALUE';
 
   @override

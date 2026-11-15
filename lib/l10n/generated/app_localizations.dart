@@ -4540,6 +4540,12 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @coinsEarnedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Ganaste!'**
+  String get coinsEarnedTitle;
+
   /// No description provided for @coinPackBestValue.
   ///
   /// In es, this message translates to:

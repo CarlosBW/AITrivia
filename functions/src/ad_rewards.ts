@@ -29,7 +29,7 @@ export type AdRewardKind = "lives" | "coins";
  */
 export const AD_REWARDS = {
   lives: {dailyCap: 5, lifeUnits: 6},
-  coins: {dailyCap: 5, coins: 5},
+  coins: {dailyCap: 5, coins: 15},
 } as const;
 
 /**

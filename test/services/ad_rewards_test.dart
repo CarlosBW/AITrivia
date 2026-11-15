@@ -108,4 +108,88 @@ void main() {
       expect(adRewardsLeftToday(user, AdRewardKind.lives, now: now), 0);
     });
   });
+
+  // La tienda celebra las monedas de un anuncio cuando el servidor las
+  // acredita, y lo sabe porque el contador del día sube en el documento.
+  group('adRewardsJustPaid', () {
+    final now = DateTime.utc(2026, 11, 15, 18);
+    final today = adRewardsDateId(now);
+
+    Map<String, dynamic> doc(String date, {int coins = 0, int lives = 0}) =>
+        {'adRewardsDate': date, 'adCoinsToday': coins, 'adLivesToday': lives};
+
+    test('el contador sube en uno: se pagó un anuncio', () {
+      expect(
+        adRewardsJustPaid(
+          doc(today, coins: 1),
+          doc(today, coins: 2),
+          AdRewardKind.coins,
+          now: now,
+        ),
+        1,
+      );
+    });
+
+    test('el primero del día: antes no había contador de hoy', () {
+      expect(
+        adRewardsJustPaid({}, doc(today, coins: 1), AdRewardKind.coins,
+            now: now),
+        1,
+      );
+      expect(
+        adRewardsJustPaid(
+          doc('2026-11-14', coins: 5),
+          doc(today, coins: 1),
+          AdRewardKind.coins,
+          now: now,
+        ),
+        1,
+      );
+    });
+
+    test('el documento cambia por otra cosa: no hay nada que celebrar', () {
+      expect(
+        adRewardsJustPaid(
+          doc(today, coins: 2),
+          {...doc(today, coins: 2), 'coins': 999},
+          AdRewardKind.coins,
+          now: now,
+        ),
+        0,
+      );
+    });
+
+    test('un anuncio de vidas no cuenta como monedas', () {
+      expect(
+        adRewardsJustPaid(
+          doc(today, coins: 2, lives: 0),
+          doc(today, coins: 2, lives: 1),
+          AdRewardKind.coins,
+          now: now,
+        ),
+        0,
+      );
+    });
+
+    test('un contador que baja o viene roto no celebra', () {
+      expect(
+        adRewardsJustPaid(
+          doc(today, coins: 3),
+          doc(today, coins: 1),
+          AdRewardKind.coins,
+          now: now,
+        ),
+        0,
+      );
+      expect(
+        adRewardsJustPaid(
+          doc(today, coins: 1),
+          {'adRewardsDate': today, 'adCoinsToday': 'muchas'},
+          AdRewardKind.coins,
+          now: now,
+        ),
+        0,
+      );
+    });
+  });
 }

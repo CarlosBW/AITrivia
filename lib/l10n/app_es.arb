@@ -173,8 +173,11 @@
   "profileAchievements": "Logros",
   "saveProgressTitle": "Guarda tu progreso",
   "saveProgressBody": "Hoy tu partida solo existe en este dispositivo. Vincúlala a tu cuenta para recuperarla si cambias de teléfono o reinstalas la app.",
-  "saveProgressRecoverTitle": "Recupera tu partida",
-  "saveProgressRecoverBody": "Inicia sesión con la cuenta donde guardaste tu progreso.",
+  "saveProgressRecoverTitle": "Inicia sesión",
+  "saveProgressRecoverBody": "Entra con tu cuenta para recuperar tu partida. Si todavía no tienes una guardada, la que empieces ahora quedará guardada en ella.",
+  "saveProgressSignIn": "Iniciar sesión",
+  "saveProgressGuestLine": "Juegas como invitado",
+  "levelPlayBackToLevels": "Volver a los niveles",
   "saveProgressWithGoogle": "Continuar con Google",
   "saveProgressWithApple": "Continuar con Apple",
   "saveProgressWithFacebook": "Continuar con Facebook",
@@ -194,7 +197,9 @@
   "profileAccountSavedGoogle": "Progreso guardado con Google",
   "profileAccountSavedApple": "Progreso guardado con Apple",
   "profileAccountSavedFacebook": "Progreso guardado con Facebook",
-  "usernamePickerHaveAccount": "Ya tengo una cuenta",
+  "usernamePickerHaveAccount": "Iniciar sesión",
+  "usernamePickerRecoverPrompt": "¿Ya tienes una cuenta?",
+  "usernamePickerTakenRecover": "Ese nombre de usuario ya existe. Si es el tuyo, toca «Iniciar sesión» aquí abajo.",
   "profileLegalSectionTitle": "Información legal",
   "profilePrivacyPolicy": "Política de privacidad",
   "profileTermsOfService": "Términos del servicio",
@@ -873,6 +878,16 @@
   "pvpSeasonTabSeason": "Temporada",
   "pvpSeasonTabLeaderboard": "Clasificación",
   "pvpSeasonTabRewards": "Recompensas",
+  "pvpSeasonToNextLeague": "Faltan {points} MMR para {league}",
+  "@pvpSeasonToNextLeague": {
+    "placeholders": {
+      "points": {"type": "int"},
+      "league": {"type": "String"}
+    }
+  },
+  "pvpSeasonTopLeague": "Estás en la liga más alta",
+  "pvpSeasonEndsLabel": "Termina en",
+  "pvpSeasonRewardLabel": "Recompensa",
   "pvpSeasonLabel": "Temporada: {id}",
   "@pvpSeasonLabel": {
     "placeholders": {

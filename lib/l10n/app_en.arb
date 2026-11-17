@@ -150,8 +150,11 @@
   "profileAchievements": "Achievements",
   "saveProgressTitle": "Save your progress",
   "saveProgressBody": "Right now your game only exists on this device. Link it to your account to get it back if you switch phones or reinstall the app.",
-  "saveProgressRecoverTitle": "Recover your game",
-  "saveProgressRecoverBody": "Sign in with the account your progress is saved under.",
+  "saveProgressRecoverTitle": "Sign in",
+  "saveProgressRecoverBody": "Sign in to recover your game. If you don't have one saved yet, the one you start now will be saved under that account.",
+  "saveProgressSignIn": "Sign in",
+  "saveProgressGuestLine": "You're playing as a guest",
+  "levelPlayBackToLevels": "Back to levels",
   "saveProgressWithGoogle": "Continue with Google",
   "saveProgressWithApple": "Continue with Apple",
   "saveProgressWithFacebook": "Continue with Facebook",
@@ -171,7 +174,9 @@
   "profileAccountSavedGoogle": "Progress saved with Google",
   "profileAccountSavedApple": "Progress saved with Apple",
   "profileAccountSavedFacebook": "Progress saved with Facebook",
-  "usernamePickerHaveAccount": "I already have an account",
+  "usernamePickerHaveAccount": "Sign in",
+  "usernamePickerRecoverPrompt": "Already have an account?",
+  "usernamePickerTakenRecover": "That username already exists. If it's yours, tap \"Sign in\" below.",
   "profileLegalSectionTitle": "Legal",
   "profilePrivacyPolicy": "Privacy Policy",
   "profileTermsOfService": "Terms of Service",
@@ -850,6 +855,16 @@
   "pvpSeasonTabSeason": "Season",
   "pvpSeasonTabLeaderboard": "Leaderboard",
   "pvpSeasonTabRewards": "Rewards",
+  "pvpSeasonToNextLeague": "{points} MMR to {league}",
+  "@pvpSeasonToNextLeague": {
+    "placeholders": {
+      "points": {"type": "int"},
+      "league": {"type": "String"}
+    }
+  },
+  "pvpSeasonTopLeague": "You're in the top league",
+  "pvpSeasonEndsLabel": "Ends in",
+  "pvpSeasonRewardLabel": "Reward",
   "pvpSeasonLabel": "Season: {id}",
   "@pvpSeasonLabel": {
     "placeholders": {

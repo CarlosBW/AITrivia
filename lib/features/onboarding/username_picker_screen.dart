@@ -87,8 +87,10 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
       if (!mounted) return;
 
       setState(() {
+        // A name that exists may well be this player's own, from another
+        // phone: say where to go instead of leaving them to try others.
         _errorText = e is UsernameTakenException
-            ? l10n.profileUsernameTaken
+            ? l10n.usernamePickerTakenRecover
             : l10n.authGateConnectionError;
       });
     } finally {
@@ -119,14 +121,14 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
     return Scaffold(
       body: SafeArea(
         // Scrolls instead of overflowing: with the keyboard up there is
-        // little room left, and the field is focused from the start.
+        // little room left.
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             child: Column(
               children: [
-                const Text('🧠', style: TextStyle(fontSize: 64)),
-                const SizedBox(height: 16),
+                const Text('🧠', style: TextStyle(fontSize: 48)),
+                const SizedBox(height: 8),
                 Text(
                   l10n.usernamePickerTitle,
                   textAlign: TextAlign.center,
@@ -138,10 +140,12 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 15),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
                 TextField(
                   controller: _controller,
-                  autofocus: true,
+                  // Not focused from the start: the keyboard covered the
+                  // way back into a saved game, the one thing on this
+                  // screen a returning player is looking for.
                   maxLength: 20,
                   textAlign: TextAlign.center,
                   enabled: !_saving,
@@ -149,6 +153,7 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
                     hintText: l10n.usernamePickerHint,
                     helperText: l10n.profileUsernameHelper,
                     errorText: _errorText,
+                    errorMaxLines: 3,
                     border: const OutlineInputBorder(),
                   ),
                   onSubmitted: (_) => _submit(),
@@ -167,10 +172,22 @@ class _UsernamePickerScreenState extends State<UsernamePickerScreen> {
                         : Text(l10n.usernamePickerContinue),
                   ),
                 ),
+                const SizedBox(height: 20),
+                Text(
+                  l10n.usernamePickerRecoverPrompt,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                TextButton(
-                  onPressed: _saving ? null : _recoverAccount,
-                  child: Text(l10n.usernamePickerHaveAccount),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _saving ? null : _recoverAccount,
+                    icon: const Icon(Icons.login_rounded, size: 20),
+                    label: Text(l10n.usernamePickerHaveAccount),
+                  ),
                 ),
               ],
             ),

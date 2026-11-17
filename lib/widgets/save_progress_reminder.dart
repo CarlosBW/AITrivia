@@ -7,9 +7,62 @@ import '../services/my_profile_service.dart';
 import '../theme/app_theme.dart';
 import 'save_progress_sheet.dart';
 
-/// A dismissible nudge for guests to save their game, shown once they have
-/// progress worth losing. Renders nothing otherwise — see
-/// [shouldRemindToSaveProgress] for when.
+/// The quiet version of the reminder: one line saying the player is a
+/// guest, with the sign-in next to it.
+class GuestSignInLine extends StatelessWidget {
+  const GuestSignInLine({
+    super.key,
+    required this.label,
+    required this.action,
+    required this.onSignIn,
+  });
+
+  final String label;
+  final String action;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.only(left: 14, right: 4),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(context.radii.md),
+        border: context.surfaces.borderOr(
+          Border.all(color: scheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.person_outline_rounded,
+            size: 20,
+            color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          TextButton(onPressed: onSignIn, child: Text(action)),
+        ],
+      ),
+    );
+  }
+}
+
+/// For guests on Home: a dismissible card to save their game once they
+/// have progress worth losing, and until then (or while that card is
+/// snoozed) the one-line [GuestSignInLine]. Nothing for a saved game — see
+/// [saveProgressPrompt].
 class SaveProgressReminder extends StatefulWidget {
   const SaveProgressReminder({super.key});
 
@@ -70,15 +123,23 @@ class _SaveProgressReminderState extends State<SaveProgressReminder> {
       builder: (context, snap) {
         final xp = ((snap.data?.data()?['xp'] ?? 0) as num).toInt();
 
-        final remind = shouldRemindToSaveProgress(
+        final prompt = saveProgressPrompt(
           isGuest: AccountLinkService.instance.isGuest,
           xp: xp,
           dismissedAt: _dismissedAt,
           now: DateTime.now(),
         );
-        if (!remind) return const SizedBox.shrink();
+        if (prompt == SaveProgressPrompt.none) return const SizedBox.shrink();
 
         final l10n = AppLocalizations.of(context);
+
+        if (prompt == SaveProgressPrompt.line) {
+          return GuestSignInLine(
+            label: l10n.saveProgressGuestLine,
+            action: l10n.saveProgressSignIn,
+            onSignIn: _save,
+          );
+        }
 
         return Container(
           margin: const EdgeInsets.only(bottom: 18),

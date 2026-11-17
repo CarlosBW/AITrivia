@@ -1849,64 +1849,64 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
               ),
             ],
             const SizedBox(height: 24),
-            Row(
-              children: [
-                if (action != SoloResultAction.next)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isNavigating
-                          ? null
-                          : () {
-                              _safeNavigate(() async {
-                                _timer?.cancel();
-                                _shuffledCache.clear();
-                                Navigator.pop(context);
-                              });
-                            },
-                      child: Text(l10n.livesGoBack),
-                    ),
-                  ),
-                if (action != SoloResultAction.back) ...[
-                  if (action == SoloResultAction.retry)
-                    const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      // Not while the result is still being saved: until
-                      // then the server has neither recorded the pass that
-                      // unlocks the next level nor cleared this session.
-                      onPressed: _isNavigating || _saving
-                          ? null
-                          : () {
-                              _safeNavigate(() async {
-                                _timer?.cancel();
-                                if (!context.mounted) return;
+            // The way on first, the way back to the level list under it
+            // and always there: after a pass it used to be only the X in
+            // the corner.
+            if (action != SoloResultAction.back) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  // Not while the result is still being saved: until
+                  // then the server has neither recorded the pass that
+                  // unlocks the next level nor cleared this session.
+                  onPressed: _isNavigating || _saving
+                      ? null
+                      : () {
+                          _safeNavigate(() async {
+                            _timer?.cancel();
+                            if (!context.mounted) return;
 
-                                await Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => LevelPlayScreen(
-                                      categoryId: widget.categoryId,
-                                      categoryName: widget.categoryName,
-                                      levelNumber:
-                                          action == SoloResultAction.next
-                                              ? nextLevel
-                                              : widget.levelNumber,
-                                      isAiTopic: widget.isAiTopic,
-                                      aiTopicId: widget.aiTopicId,
-                                    ),
-                                  ),
-                                );
-                              });
-                            },
-                      child: Text(
-                        action == SoloResultAction.next
-                            ? l10n.levelPlayContinueNextLevel(nextLevel)
-                            : l10n.commonRetry,
-                      ),
-                    ),
+                            await Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LevelPlayScreen(
+                                  categoryId: widget.categoryId,
+                                  categoryName: widget.categoryName,
+                                  levelNumber:
+                                      action == SoloResultAction.next
+                                          ? nextLevel
+                                          : widget.levelNumber,
+                                  isAiTopic: widget.isAiTopic,
+                                  aiTopicId: widget.aiTopicId,
+                                ),
+                              ),
+                            );
+                          });
+                        },
+                  child: Text(
+                    action == SoloResultAction.next
+                        ? l10n.levelPlayContinueNextLevel(nextLevel)
+                        : l10n.commonRetry,
                   ),
-                ],
-              ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isNavigating
+                    ? null
+                    : () {
+                        _safeNavigate(() async {
+                          _timer?.cancel();
+                          _shuffledCache.clear();
+                          Navigator.pop(context);
+                        });
+                      },
+                icon: const Icon(Icons.grid_view_rounded, size: 18),
+                label: Text(l10n.levelPlayBackToLevels),
+              ),
             ),
             const SizedBox(height: 8),
             TextButton.icon(

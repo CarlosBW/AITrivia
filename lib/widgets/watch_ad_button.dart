@@ -4,6 +4,13 @@ import '../l10n/generated/app_localizations.dart';
 import '../services/ad_reward_service.dart';
 import '../services/ad_rewards.dart';
 
+/// The "no ads right now" message with the reason's code after it, when
+/// there is one: what a player can read back to support.
+String adUnavailableMessage(String message, String? failureCode) {
+  if (failureCode == null || failureCode.isEmpty) return message;
+  return '$message ($failureCode)';
+}
+
 /// "Watch an ad" for a reward: shows the ad and tells the player how it
 /// went.
 ///
@@ -71,7 +78,10 @@ class _WatchAdButtonState extends State<WatchAdButton> {
 
     final message = switch (result) {
       AdWatchResult.earned => l10n.adRewardOnItsWay,
-      AdWatchResult.unavailable => l10n.adUnavailable,
+      AdWatchResult.unavailable => adUnavailableMessage(
+          l10n.adUnavailable,
+          AdRewardService.instance.lastFailure,
+        ),
       AdWatchResult.capReached => l10n.adCapReached,
       // Closed early by choice: nothing to explain.
       AdWatchResult.dismissed => null,

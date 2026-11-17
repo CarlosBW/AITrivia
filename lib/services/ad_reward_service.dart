@@ -37,6 +37,17 @@ class AdRewardService {
 
   Future<bool>? _ready;
   RewardedAd? _loaded;
+
+  /// Why the last attempt to get an ad failed, as a short code for the
+  /// "no ads right now" message: without it a player's report says only
+  /// that there was no ad, and nothing tells no fill from no consent from
+  /// a wrong ad unit. Null once an ad loads.
+  ///
+  /// `C` consent not given or not resolved, `I` the SDK didn't start, `T`
+  /// no answer in time, `S<n>` it loaded but wouldn't show, and a bare
+  /// number is AdMob's own load error code.
+  String? get lastFailure => _lastFailure;
+  String? _lastFailure;
   Future<RewardedAd?>? _loading;
 
   String? get _adUnitId => rewardedAdUnitId(
@@ -80,8 +91,10 @@ class AdRewardService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (_) =>
           finish(earned ? AdWatchResult.earned : AdWatchResult.dismissed),
-      onAdFailedToShowFullScreenContent: (_, __) =>
-          finish(AdWatchResult.unavailable),
+      onAdFailedToShowFullScreenContent: (_, error) {
+        _lastFailure = 'S${error.code}';
+        finish(AdWatchResult.unavailable);
+      },
     );
 
     try {
@@ -131,6 +144,7 @@ class AdRewardService {
 
       if (!await ConsentInformation.instance.canRequestAds()) {
         _ready = null;
+        _lastFailure = 'C';
         return false;
       }
 
@@ -138,6 +152,7 @@ class AdRewardService {
       return true;
     } catch (_) {
       _ready = null;
+      _lastFailure = 'I';
       return false;
     }
   }
@@ -163,7 +178,8 @@ class AdRewardService {
               loaded.complete(ad);
             }
           },
-          onAdFailedToLoad: (_) {
+          onAdFailedToLoad: (error) {
+            _lastFailure = '${error.code}';
             if (!loaded.isCompleted) loaded.complete(null);
           },
         ),
@@ -172,8 +188,12 @@ class AdRewardService {
       if (!loaded.isCompleted) loaded.complete(null);
     }
 
-    final ad = await loaded.future.timeout(_loadTimeout, onTimeout: () => null);
+    final ad = await loaded.future.timeout(_loadTimeout, onTimeout: () {
+      _lastFailure = 'T';
+      return null;
+    });
     if (ad == null && !loaded.isCompleted) loaded.complete(null);
+    if (ad != null) _lastFailure = null;
     return _loaded = ad;
   }
 }

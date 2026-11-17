@@ -189,4 +189,50 @@ void main() {
       );
     });
   });
+
+  // Iniciar sesión estaba solo dentro del perfil. En Inicio el invitado
+  // ahora lo tiene siempre a la vista: una línea discreta, o la tarjeta
+  // cuando ya hay progreso que perder.
+  group('saveProgressPrompt', () {
+    final now = DateTime(2026, 11, 17, 12);
+
+    test('una cuenta guardada no ve nada', () {
+      expect(
+        saveProgressPrompt(
+            isGuest: false, xp: 5000, dismissedAt: null, now: now),
+        SaveProgressPrompt.none,
+      );
+    });
+
+    test('un invitado recién llegado ve la línea, no la tarjeta', () {
+      expect(
+        saveProgressPrompt(isGuest: true, xp: 0, dismissedAt: null, now: now),
+        SaveProgressPrompt.line,
+      );
+    });
+
+    test('con progreso que perder, la tarjeta', () {
+      expect(
+        saveProgressPrompt(
+          isGuest: true,
+          xp: kSaveProgressReminderMinXp,
+          dismissedAt: null,
+          now: now,
+        ),
+        SaveProgressPrompt.card,
+      );
+    });
+
+    test('descartar la tarjeta deja la línea, no la nada', () {
+      expect(
+        saveProgressPrompt(
+          isGuest: true,
+          xp: 5000,
+          dismissedAt: now.subtract(const Duration(hours: 1)),
+          now: now,
+        ),
+        SaveProgressPrompt.line,
+      );
+    });
+  });
 }

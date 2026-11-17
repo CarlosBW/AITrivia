@@ -123,6 +123,37 @@ bool shouldRemindToSaveProgress({
   return now.difference(dismissedAt) >= kSaveProgressReminderSnooze;
 }
 
+/// How loudly Home offers a guest the sign-in.
+enum SaveProgressPrompt {
+  /// Not a guest: the game is already saved.
+  none,
+
+  /// One quiet line that is always there, so signing in never has to be
+  /// looked for in the profile.
+  line,
+
+  /// The full reminder card — see [shouldRemindToSaveProgress].
+  card,
+}
+
+/// What Home shows a player about saving their game.
+SaveProgressPrompt saveProgressPrompt({
+  required bool isGuest,
+  required int xp,
+  required DateTime? dismissedAt,
+  required DateTime now,
+}) {
+  if (!isGuest) return SaveProgressPrompt.none;
+  return shouldRemindToSaveProgress(
+    isGuest: isGuest,
+    xp: xp,
+    dismissedAt: dismissedAt,
+    now: now,
+  )
+      ? SaveProgressPrompt.card
+      : SaveProgressPrompt.line;
+}
+
 /// How an attempt to save the current game under a sign-in ended.
 sealed class LinkOutcome {
   const LinkOutcome();

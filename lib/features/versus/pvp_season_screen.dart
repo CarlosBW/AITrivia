@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../services/pvp_league_service.dart';
 import '../../services/pvp_season_service.dart';
-import '../../widgets/tier_badge.dart';
 import '../../widgets/add_friend_button.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
@@ -14,6 +13,7 @@ import '../../widgets/app_bar_title.dart';
 import '../../widgets/profile_avatar_button.dart';
 import '../../l10n/season_labels.dart';
 import '../../widgets/player_actions_sheet.dart';
+import 'pvp_season_widgets.dart';
 
 class PvpSeasonScreen extends StatefulWidget {
   const PvpSeasonScreen({super.key});
@@ -145,109 +145,79 @@ class _SeasonOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final color = Color(league.colorValue);
-    final deltaText = ratingDelta == 0
-        ? null
-        : PvpLeagueService.instance.formatDelta(ratingDelta);
+    const leagues = PvpLeagueService.leagues;
+    final index = leagues.indexWhere((l) => l.id == league.id);
+    final next =
+        index >= 0 && index + 1 < leagues.length ? leagues[index + 1] : null;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(context.radii.lg),
-            boxShadow: context.surfaces.shadowsOr(null),
-            border: context.surfaces.borderOr(Border.all(color: color.withValues(alpha: 0.35))),
+        SeasonHeroCard(
+          seasonLabel: l10n.pvpSeasonLabel(l10n.pvpSeasonName(season.id)),
+          leagueEmoji: league.emoji,
+          leagueTitle: l10n.liveMenuLeagueTitle(
+            l10n.leagueName(
+              PvpLeagueService.instance.displayNameForRating(rating),
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TierBadge(
-                emoji: league.emoji,
-                name: l10n.liveMenuLeagueTitle(
-                  l10n.leagueName(
-                    PvpLeagueService.instance.displayNameForRating(rating),
-                  ),
+          leagueColor: Color(league.colorValue),
+          rating: rating,
+          deltaText: ratingDelta == 0
+              ? null
+              : PvpLeagueService.instance.formatDelta(ratingDelta),
+          deltaPositive: ratingDelta > 0,
+          progress: league.progressFor(rating),
+          progressLabel: pointsToNextLeague(rating, next) == null
+              ? l10n.pvpSeasonTopLeague
+              : l10n.pvpSeasonToNextLeague(
+                  pointsToNextLeague(rating, next)!,
+                  l10n.leagueName(next!.id),
                 ),
-                colorValue: league.colorValue,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: SeasonFactTile(
+                icon: Icons.timer_outlined,
+                label: l10n.pvpSeasonEndsLabel,
+                value: seasonService.formatTimeLeft(season.timeLeft),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Text(
-                    '$rating MMR',
-                    style: context.heading(18),
-                  ),
-                  if (deltaText != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '($deltaText)',
-                      style: TextStyle(
-                        color:
-                            ratingDelta > 0 ? context.appColors.success : context.appColors.danger,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SeasonFactTile(
+                illustration: 'assets/illustrations/coins.png',
+                label: l10n.pvpSeasonRewardLabel,
+                value: '+${reward.coins}',
               ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(context.radii.pill),
-                child: LinearProgressIndicator(
-                  value: league.progressFor(rating),
-                  minHeight: 10,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(l10n.pvpSeasonLabel(l10n.pvpSeasonName(season.id))),
-              Text(l10n.pvpSeasonEndsIn(seasonService.formatTimeLeft(season.timeLeft))),
-              const SizedBox(height: 12),
-              Text(
-                l10n.pvpSeasonProjectedReward(reward.coins),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.pvpSeasonRankedHint,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(context.radii.md),
-            border: context.surfaces.borderOr(null),
-            boxShadow: context.surfaces.shadowsOr(null),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.pvpSeasonHowItWorksTitle,
-                style: context.heading(18),
-              ),
-              const SizedBox(height: 8),
-              Text(l10n.pvpSeasonHowItWorksBullet1),
-              Text(l10n.pvpSeasonHowItWorksBullet2),
-              Text(l10n.pvpSeasonHowItWorksBullet3),
-              Text(l10n.pvpSeasonHowItWorksBullet4),
-            ],
-          ),
+        SeasonStepsCard(
+          title: l10n.pvpSeasonHowItWorksTitle,
+          steps: [
+            (Icons.sports_esports_rounded, l10n.pvpSeasonHowItWorksBullet1),
+            (Icons.shield_rounded, l10n.pvpSeasonHowItWorksBullet2),
+            (Icons.leaderboard_rounded, l10n.pvpSeasonHowItWorksBullet3),
+            (Icons.card_giftcard_rounded, l10n.pvpSeasonHowItWorksBullet4),
+          ],
+          footnote: l10n.pvpSeasonRankedHint,
         ),
       ],
     );
   }
+}
+
+/// How many rating points separate [rating] from [next], the league above
+/// the player's; null when there is none above, or the player is already
+/// in it.
+int? pointsToNextLeague(int rating, PvpLeagueInfo? next) {
+  if (next == null) return null;
+  final points = next.minRating - rating;
+  return points > 0 ? points : null;
 }
 
 class _LeaderboardTab extends StatelessWidget {
@@ -269,10 +239,16 @@ class _LeaderboardTab extends StatelessWidget {
       length: 2,
       child: Column(
         children: [
-          TabBar(
+          SeasonPillTabBar(
             tabs: [
-              Tab(icon: const Icon(Icons.group), text: l10n.pvpSeasonFriendsTab),
-              Tab(icon: const Icon(Icons.public), text: l10n.pvpSeasonGlobalTab),
+              SeasonPillTab(
+                icon: Icons.group_rounded,
+                label: l10n.pvpSeasonFriendsTab,
+              ),
+              SeasonPillTab(
+                icon: Icons.public_rounded,
+                label: l10n.pvpSeasonGlobalTab,
+              ),
             ],
           ),
           Expanded(
@@ -315,15 +291,14 @@ class _GlobalLeaderboardTab extends StatelessWidget {
       length: PvpLeagueService.leagues.length + 1,
       child: Column(
         children: [
-          TabBar(
-            isScrollable: true,
-            // Without it a scrollable bar starts 52px in, out of line with
-            // the rest of the page.
-            tabAlignment: TabAlignment.start,
+          SeasonPillTabBar(
+            scrollable: true,
             tabs: [
-              Tab(text: l10n.pvpSeasonAllTab),
+              SeasonPillTab(label: l10n.pvpSeasonAllTab),
               ...PvpLeagueService.leagues.map(
-                (league) => Tab(text: '${league.emoji} ${l10n.leagueName(league.id)}'),
+                (league) => SeasonPillTab(
+                  label: '${league.emoji} ${l10n.leagueName(league.id)}',
+                ),
               ),
             ],
           ),
@@ -533,79 +508,36 @@ class _FriendsLeaderboardListState extends State<_FriendsLeaderboardList> {
               final league = PvpLeagueService.instance.leagueForRating(
                 player.rating,
               );
-              final color = Color(league.colorValue);
 
-              return GestureDetector(
+              return SeasonRankRow(
+                position: i + 1,
+                avatar: widget.avatarBuilder(player.avatarId),
+                name: isMe
+                    ? l10n.pvpSeasonYouSuffix(
+                        player.username.isEmpty
+                            ? l10n.asyncMatchPlayYouFallback
+                            : player.username,
+                      )
+                    : (player.username.isEmpty
+                        ? l10n.commonPlayerFallback
+                        : player.username),
+                leagueLine:
+                    '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(player.matches)}',
+                recordLine: l10n.pvpSeasonWinLossDraw(
+                  player.wins,
+                  player.losses,
+                  player.draws,
+                ),
+                rating: player.rating,
+                leagueColor: Color(league.colorValue),
+                isMe: isMe,
                 // Report or block a player from the friends ranking.
                 onTap: () => showPlayerActions(
                   context,
                   uid: player.uid,
                   name: player.username,
                 ),
-                child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isMe
-                      ? color.withValues(alpha: 0.14)
-                      : Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(context.radii.md),
-                  boxShadow: context.surfaces.shadowsOr(null),
-                  border: context.surfaces.borderOr(Border.all(
-                    color: isMe ? color : Colors.transparent,
-                    width: 2,
-                  )),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 38,
-                      child: Text(
-                        '#${i + 1}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-                      child: Text(widget.avatarBuilder(player.avatarId)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isMe
-                                ? l10n.pvpSeasonYouSuffix(
-                                    player.username.isEmpty
-                                        ? l10n.asyncMatchPlayYouFallback
-                                        : player.username,
-                                  )
-                                : (player.username.isEmpty
-                                    ? l10n.commonPlayerFallback
-                                    : player.username),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(player.matches)}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          Text(
-                            l10n.pvpSeasonWinLossDraw(player.wins, player.losses, player.draws),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${player.rating} MMR',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ));
+              );
             },
           ),
         );
@@ -689,72 +621,25 @@ class _LeaderboardListState extends State<_LeaderboardList> {
             final losses = ((data['losses1v1'] ?? 0) as num).toInt();
             final draws = ((data['draws1v1'] ?? 0) as num).toInt();
             final matches = wins + losses + draws;
-            final color = Color(league.colorValue);
 
-            return GestureDetector(
+            return SeasonRankRow(
+              position: i + 1,
+              avatar: widget.avatarBuilder(avatarId),
+              name: username,
+              leagueLine:
+                  '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(matches)}',
+              recordLine: l10n.pvpSeasonWinLossDraw(wins, losses, draws),
+              rating: rating,
+              leagueColor: Color(league.colorValue),
+              isMe: isMe,
+              trailing: isMe ? null : AddFriendButton(targetUid: doc.id),
               // Report or block a player from the ranking.
               onTap: () => showPlayerActions(
                 context,
                 uid: doc.id,
                 name: username,
               ),
-              child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? color.withValues(alpha: 0.14)
-                    : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(context.radii.md),
-                boxShadow: context.surfaces.shadowsOr(null),
-                border: context.surfaces.borderOr(Border.all(
-                  color: isMe ? color : Colors.transparent,
-                  width: 2,
-                )),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 38,
-                    child: Text(
-                      '#${i + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7),
-                    child: Text(widget.avatarBuilder(avatarId)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          username,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${league.emoji} ${l10n.leagueName(league.id)} • ${l10n.pvpSeasonMatchesCount(matches)}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        Text(
-                          l10n.pvpSeasonWinLossDraw(wins, losses, draws),
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '$rating MMR',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  if (!isMe) AddFriendButton(targetUid: doc.id),
-                ],
-              ),
-            ));
+            );
           },
         );
       },
@@ -906,59 +791,19 @@ class _RewardsTabState extends State<_RewardsTab> {
                     )
                   : league.id,
             );
-            final color = Color(league.colorValue);
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isCurrent
-                    ? color.withValues(alpha: 0.14)
-                    : Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(context.radii.md),
-                boxShadow: context.surfaces.shadowsOr(null),
-                border: context.surfaces.borderOr(Border.all(
-                  color: isCurrent ? color : Colors.transparent,
-                  width: isCurrent ? 2 : 1,
-                )),
-              ),
-              child: Row(
-                children: [
-                  Text(league.emoji, style: const TextStyle(fontSize: 30)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.liveMenuLeagueTitle(displayName),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          // The top league has no real ceiling: its stored
-                          // maximum (5000) read as a cap nobody reaches.
-                          league == PvpLeagueService.leagues.last
-                              ? l10n.pvpLeagueRatingFrom(league.minRating)
-                              : '${league.minRating}-${league.maxRating} MMR',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                        if (isCurrent)
-                          Text(
-                            l10n.pvpSeasonCurrentProjectedReward,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    l10n.pvpSeasonPendingCoins(reward.coins),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
+            return SeasonLeagueRewardRow(
+              emoji: league.emoji,
+              title: l10n.liveMenuLeagueTitle(displayName),
+              // The top league has no real ceiling: its stored maximum
+              // (5000) read as a cap nobody reaches.
+              range: league == PvpLeagueService.leagues.last
+                  ? l10n.pvpLeagueRatingFrom(league.minRating)
+                  : '${league.minRating}-${league.maxRating} MMR',
+              coinsText: l10n.pvpSeasonPendingCoins(reward.coins),
+              leagueColor: Color(league.colorValue),
+              currentLabel:
+                  isCurrent ? l10n.pvpSeasonCurrentProjectedReward : null,
             );
           }),
         ],
@@ -983,59 +828,19 @@ class _CurrentRewardSummaryCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final reward = seasonService.rewardForRating(rating);
     final season = seasonService.currentSeason();
-    final color = Color(currentLeague.colorValue);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(context.radii.md),
-        boxShadow: context.surfaces.shadowsOr(null),
-        border: context.surfaces.borderOr(Border.all(color: color.withValues(alpha: 0.45))),
+    return SeasonRewardSummaryCard(
+      label: l10n.pvpSeasonCurrentProjectedReward,
+      leagueTitle: l10n.liveMenuLeagueTitle(
+        l10n.leagueName(
+          PvpLeagueService.instance.displayNameForRating(rating),
+        ),
       ),
-      child: Row(
-        children: [
-          Text(
-            currentLeague.emoji,
-            style: const TextStyle(fontSize: 38),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.pvpSeasonCurrentProjectedReward,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.liveMenuLeagueTitle(
-                    l10n.leagueName(
-                      PvpLeagueService.instance.displayNameForRating(rating),
-                    ),
-                  ),
-                  style: context.heading(18),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  l10n.pvpSeasonEndsInLine(seasonService.formatTimeLeft(season.timeLeft)),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '+${reward.coins}',
-            style: context.heading(20),
-          ),
-        ],
+      endsLine: l10n.pvpSeasonEndsInLine(
+        seasonService.formatTimeLeft(season.timeLeft),
       ),
+      coins: reward.coins,
+      leagueColor: Color(currentLeague.colorValue),
     );
   }
 }
@@ -1113,10 +918,12 @@ class _PendingRewardsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.10),
+          color: context.appColors.dangerBg,
           borderRadius: BorderRadius.circular(context.radii.md),
           boxShadow: context.surfaces.shadowsOr(null),
-          border: context.surfaces.borderOr(Border.all(color: Colors.redAccent.withValues(alpha: 0.35))),
+          border: context.surfaces.borderOr(
+            Border.all(color: context.appColors.danger.withValues(alpha: 0.35)),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1156,15 +963,20 @@ class _PendingRewardsCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.blueGrey.withValues(alpha: 0.10),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(context.radii.md),
           boxShadow: context.surfaces.shadowsOr(null),
-          border: context.surfaces.borderOr(Border.all(color: Colors.blueGrey.withValues(alpha: 0.35))),
+          border: context.surfaces.borderOr(
+            Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.lock_clock, color: Colors.blueGrey),
+            Icon(
+              Icons.lock_clock,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1197,17 +1009,26 @@ class _PendingRewardsCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: 0.12),
+        color: context.appColors.rewardBg,
         borderRadius: BorderRadius.circular(context.radii.md),
         boxShadow: context.surfaces.shadowsOr(null),
-        border: context.surfaces.borderOr(Border.all(color: Colors.amber.withValues(alpha: 0.55))),
+        border: context.surfaces.borderOr(
+          Border.all(color: context.appColors.reward.withValues(alpha: 0.7)),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.card_giftcard, color: context.appColors.reward),
+              Image.asset(
+                'assets/illustrations/chest.png',
+                width: 44,
+                height: 44,
+                cacheWidth:
+                    (44 * MediaQuery.devicePixelRatioOf(context)).round(),
+                filterQuality: FilterQuality.medium,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(

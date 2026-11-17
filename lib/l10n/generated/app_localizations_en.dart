@@ -309,11 +309,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Right now your game only exists on this device. Link it to your account to get it back if you switch phones or reinstall the app.';
 
   @override
-  String get saveProgressRecoverTitle => 'Recover your game';
+  String get saveProgressRecoverTitle => 'Sign in';
 
   @override
   String get saveProgressRecoverBody =>
-      'Sign in with the account your progress is saved under.';
+      'Sign in to recover your game. If you don\'t have one saved yet, the one you start now will be saved under that account.';
+
+  @override
+  String get saveProgressSignIn => 'Sign in';
+
+  @override
+  String get saveProgressGuestLine => 'You\'re playing as a guest';
+
+  @override
+  String get levelPlayBackToLevels => 'Back to levels';
 
   @override
   String get saveProgressWithGoogle => 'Continue with Google';
@@ -378,7 +387,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAccountSavedFacebook => 'Progress saved with Facebook';
 
   @override
-  String get usernamePickerHaveAccount => 'I already have an account';
+  String get usernamePickerHaveAccount => 'Sign in';
+
+  @override
+  String get usernamePickerRecoverPrompt => 'Already have an account?';
+
+  @override
+  String get usernamePickerTakenRecover =>
+      'That username already exists. If it\'s yours, tap \"Sign in\" below.';
 
   @override
   String get profileLegalSectionTitle => 'Legal';
@@ -1759,6 +1775,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pvpSeasonTabRewards => 'Rewards';
+
+  @override
+  String pvpSeasonToNextLeague(int points, String league) {
+    return '$points MMR to $league';
+  }
+
+  @override
+  String get pvpSeasonTopLeague => 'You\'re in the top league';
+
+  @override
+  String get pvpSeasonEndsLabel => 'Ends in';
+
+  @override
+  String get pvpSeasonRewardLabel => 'Reward';
 
   @override
   String pvpSeasonLabel(String id) {

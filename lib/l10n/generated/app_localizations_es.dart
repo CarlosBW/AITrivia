@@ -310,11 +310,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Hoy tu partida solo existe en este dispositivo. Vincúlala a tu cuenta para recuperarla si cambias de teléfono o reinstalas la app.';
 
   @override
-  String get saveProgressRecoverTitle => 'Recupera tu partida';
+  String get saveProgressRecoverTitle => 'Inicia sesión';
 
   @override
   String get saveProgressRecoverBody =>
-      'Inicia sesión con la cuenta donde guardaste tu progreso.';
+      'Entra con tu cuenta para recuperar tu partida. Si todavía no tienes una guardada, la que empieces ahora quedará guardada en ella.';
+
+  @override
+  String get saveProgressSignIn => 'Iniciar sesión';
+
+  @override
+  String get saveProgressGuestLine => 'Juegas como invitado';
+
+  @override
+  String get levelPlayBackToLevels => 'Volver a los niveles';
 
   @override
   String get saveProgressWithGoogle => 'Continuar con Google';
@@ -379,7 +388,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileAccountSavedFacebook => 'Progreso guardado con Facebook';
 
   @override
-  String get usernamePickerHaveAccount => 'Ya tengo una cuenta';
+  String get usernamePickerHaveAccount => 'Iniciar sesión';
+
+  @override
+  String get usernamePickerRecoverPrompt => '¿Ya tienes una cuenta?';
+
+  @override
+  String get usernamePickerTakenRecover =>
+      'Ese nombre de usuario ya existe. Si es el tuyo, toca «Iniciar sesión» aquí abajo.';
 
   @override
   String get profileLegalSectionTitle => 'Información legal';
@@ -1773,6 +1789,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get pvpSeasonTabRewards => 'Recompensas';
+
+  @override
+  String pvpSeasonToNextLeague(int points, String league) {
+    return 'Faltan $points MMR para $league';
+  }
+
+  @override
+  String get pvpSeasonTopLeague => 'Estás en la liga más alta';
+
+  @override
+  String get pvpSeasonEndsLabel => 'Termina en';
+
+  @override
+  String get pvpSeasonRewardLabel => 'Recompensa';
 
   @override
   String pvpSeasonLabel(String id) {

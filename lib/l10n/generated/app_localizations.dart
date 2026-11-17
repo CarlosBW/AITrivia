@@ -557,14 +557,32 @@ abstract class AppLocalizations {
   /// No description provided for @saveProgressRecoverTitle.
   ///
   /// In es, this message translates to:
-  /// **'Recupera tu partida'**
+  /// **'Inicia sesión'**
   String get saveProgressRecoverTitle;
 
   /// No description provided for @saveProgressRecoverBody.
   ///
   /// In es, this message translates to:
-  /// **'Inicia sesión con la cuenta donde guardaste tu progreso.'**
+  /// **'Entra con tu cuenta para recuperar tu partida. Si todavía no tienes una guardada, la que empieces ahora quedará guardada en ella.'**
   String get saveProgressRecoverBody;
+
+  /// No description provided for @saveProgressSignIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get saveProgressSignIn;
+
+  /// No description provided for @saveProgressGuestLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Juegas como invitado'**
+  String get saveProgressGuestLine;
+
+  /// No description provided for @levelPlayBackToLevels.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver a los niveles'**
+  String get levelPlayBackToLevels;
 
   /// No description provided for @saveProgressWithGoogle.
   ///
@@ -683,8 +701,20 @@ abstract class AppLocalizations {
   /// No description provided for @usernamePickerHaveAccount.
   ///
   /// In es, this message translates to:
-  /// **'Ya tengo una cuenta'**
+  /// **'Iniciar sesión'**
   String get usernamePickerHaveAccount;
+
+  /// No description provided for @usernamePickerRecoverPrompt.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Ya tienes una cuenta?'**
+  String get usernamePickerRecoverPrompt;
+
+  /// No description provided for @usernamePickerTakenRecover.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese nombre de usuario ya existe. Si es el tuyo, toca «Iniciar sesión» aquí abajo.'**
+  String get usernamePickerTakenRecover;
 
   /// No description provided for @profileLegalSectionTitle.
   ///
@@ -3109,6 +3139,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Recompensas'**
   String get pvpSeasonTabRewards;
+
+  /// No description provided for @pvpSeasonToNextLeague.
+  ///
+  /// In es, this message translates to:
+  /// **'Faltan {points} MMR para {league}'**
+  String pvpSeasonToNextLeague(int points, String league);
+
+  /// No description provided for @pvpSeasonTopLeague.
+  ///
+  /// In es, this message translates to:
+  /// **'Estás en la liga más alta'**
+  String get pvpSeasonTopLeague;
+
+  /// No description provided for @pvpSeasonEndsLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Termina en'**
+  String get pvpSeasonEndsLabel;
+
+  /// No description provided for @pvpSeasonRewardLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Recompensa'**
+  String get pvpSeasonRewardLabel;
 
   /// No description provided for @pvpSeasonLabel.
   ///

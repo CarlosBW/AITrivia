@@ -1,10 +1,10 @@
 [
   {
     "language": "es-MX",
-    "text": "Temporada PvP rediseñada: tu liga, tu MMR y cuánto falta para la siguiente, clasificación con medallas y escalera de recompensas.\n\nIniciar sesión ahora se ofrece desde la primera pantalla y desde Inicio, para recuperar tu partida o dejarla guardada. Al terminar un nivel hay un botón para volver a la lista de niveles.\n\nSi no hay anuncios disponibles, el mensaje ahora incluye un código entre paréntesis: avísanos cuál te sale."
+    "text": "Nuevo: rondas de práctica sin conexión. Si te quedas sin internet, TriviaIA te avisa y te deja practicar hasta que vuelvas a conectarte (no gastan vidas ni dan recompensas).\n\nCuando fallas una pregunta, la respuesta correcta se queda un momento más en pantalla para que alcances a verla.\n\nLa pantalla de licencias de código abierto tiene nuevo diseño."
   },
   {
     "language": "en-US",
-    "text": "Redesigned PvP season: your league, your MMR and how far the next one is, a ranking with medals and a rewards ladder.\n\nSigning in is now offered on the first screen and on Home, to recover your game or keep it saved. A finished level has a button back to the level list.\n\nIf no ads are available, the message now includes a code in brackets: let us know which one you get."
+    "text": "New: offline practice rounds. If you lose your connection, TriviaIA tells you and lets you practise until you're back online (no lives spent, no rewards).\n\nWhen you miss a question, the right answer stays on screen a moment longer so you can read it.\n\nThe open-source licenses screen has a new design."
   }
 ]

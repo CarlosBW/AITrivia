@@ -21,6 +21,7 @@ import '../../widgets/stat_chip.dart';
 import '../../widgets/spotlight_hint.dart';
 import '../../widgets/save_progress_sheet.dart';
 import 'blocked_players_screen.dart';
+import 'licenses_screen.dart';
 import '../../widgets/player_actions_sheet.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../l10n/user_facing_error.dart';
@@ -1257,9 +1258,11 @@ class _ProfileScreenState extends State<ProfileScreen>
               _LegalLinkTile(
                 icon: Icons.article_outlined,
                 label: l10n.profileLicenses,
-                onTap: () => showLicensePage(
-                  context: context,
-                  applicationName: 'TriviaIA',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LicensesScreen(),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

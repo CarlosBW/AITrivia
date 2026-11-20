@@ -52,6 +52,11 @@ import {
 import {dailyAnswerTooLate, dailyRemainingMs} from "./daily_clock";
 import {isWarmUpRequest} from "./warm_up";
 import {
+  practicePackDue,
+  practiceQuestion,
+  selectPracticeEntries,
+} from "./practice_pack";
+import {
   AI_QUESTIONS_PER_SESSION,
   avoidListCapacity,
   bankHeadroom,
@@ -11037,6 +11042,56 @@ export const rotateWeeklyTopic = onSchedule(
     });
   }
 );
+
+/**
+ * Hands the caller a pack of questions to practise with offline.
+ *
+ * The only callable that sends answers to the phone: with no connection
+ * there is nobody to judge them. So it gives a small random draw, at most
+ * one every few hours (see practice_pack.ts), and nothing played from it
+ * is ever reported back or paid for. `questions` comes back empty when the
+ * player's last pack is too recent; the app keeps the one it has.
+ */
+export const downloadPracticePack = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Sign-in required.");
+  }
+
+  const stampRef = db.collection("users").doc(uid)
+    .collection("practice_pack").doc("last");
+  const stamp = (await stampRef.get()).data()?.downloadedAt as
+    admin.firestore.Timestamp | undefined;
+  const nowMs = Date.now();
+
+  if (!practicePackDue(stamp ? stamp.toMillis() : null, nowMs)) {
+    return {questions: []};
+  }
+
+  const index = await loadDailyQuestionIndex();
+  const picked = selectPracticeEntries(
+    index.entries, fnv1a32(`${uid}|practice|${nowMs}`)
+  );
+  if (picked.length === 0) return {questions: []};
+
+  const docs = await db.getAll(...picked.map((entry) =>
+    db.collection("fixed_pools").doc(entry.c)
+      .collection(`difficulty_${entry.d}`).doc("pool")
+      .collection("questions").doc(entry.q)
+  ));
+
+  const questions = docs
+    .map((doc, i) => practiceQuestion(doc.data(), picked[i].c))
+    .filter((question) => question !== null);
+
+  if (questions.length > 0) {
+    await stampRef.set({
+      downloadedAt: admin.firestore.Timestamp.fromMillis(nowMs),
+    });
+  }
+
+  return {questions};
+});
 
 /**
  * Draws one Weekly Topic round for the caller.

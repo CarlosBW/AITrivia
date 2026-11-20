@@ -8,6 +8,7 @@ import 'user_bootstrap.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../onboarding/username_picker_screen.dart';
 import '../navigation/main_navigation_screen.dart';
+import '../../services/connectivity_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/match_service.dart';
 import '../../services/purchase_service.dart';
@@ -32,7 +33,25 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
+    ConnectivityService.instance.offline.addListener(_retryWhenBackOnline);
     _start();
+  }
+
+  @override
+  void dispose() {
+    ConnectivityService.instance.offline.removeListener(_retryWhenBackOnline);
+    super.dispose();
+  }
+
+  /// A launch that failed with no connection tries again by itself when
+  /// there is one, instead of waiting behind the offline screen for a tap
+  /// on Retry.
+  void _retryWhenBackOnline() {
+    if (!ConnectivityService.instance.offline.value &&
+        _error != null &&
+        !_loading) {
+      _start();
+    }
   }
 
   Future<void> _start() async {

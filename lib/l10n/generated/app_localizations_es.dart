@@ -2771,6 +2771,69 @@ class AppLocalizationsEs extends AppLocalizations {
   String get lifeShopBuyOne => '+1 vida';
 
   @override
+  String get offlineTitle => 'Sin conexión';
+
+  @override
+  String get offlineBody =>
+      'Hasta que vuelvas a conectarte solo puedes jugar rondas de práctica. No gastan vidas y no dan monedas, experiencia ni avance en los niveles.';
+
+  @override
+  String get offlineAutoReturn =>
+      'Cuando vuelva la conexión, el juego sigue donde lo dejaste.';
+
+  @override
+  String get offlinePractise => 'Jugar una ronda de práctica';
+
+  @override
+  String get offlineNoPack =>
+      'Todavía no hay preguntas de práctica en este teléfono. Se descargan solas la próxima vez que abras TriviaIA con conexión.';
+
+  @override
+  String get practiceTitle => 'Práctica';
+
+  @override
+  String get practiceBadge => 'RONDA DE PRÁCTICA';
+
+  @override
+  String get practiceResultTitle => 'Ronda terminada';
+
+  @override
+  String practiceResultScore(int correct, int total) {
+    return '$correct de $total correctas';
+  }
+
+  @override
+  String get practiceResultNote =>
+      'La práctica no da monedas, experiencia ni avance.';
+
+  @override
+  String get practiceAgain => 'Otra ronda';
+
+  @override
+  String get practiceExit => 'Salir';
+
+  @override
+  String get practiceBackOnline => 'Ya tienes conexión.';
+
+  @override
+  String get practiceBackToGame => 'Volver al juego';
+
+  @override
+  String get licensesIntro =>
+      'TriviaIA está hecha con software y tipografías de código abierto. Gracias a quienes los crean y los mantienen.';
+
+  @override
+  String licensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count licencias',
+      one: '1 licencia',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get coinsEarnedTitle => '¡Ganaste!';
 
   @override

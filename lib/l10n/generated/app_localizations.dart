@@ -4594,6 +4594,102 @@ abstract class AppLocalizations {
   /// **'+1 vida'**
   String get lifeShopBuyOne;
 
+  /// No description provided for @offlineTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión'**
+  String get offlineTitle;
+
+  /// No description provided for @offlineBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Hasta que vuelvas a conectarte solo puedes jugar rondas de práctica. No gastan vidas y no dan monedas, experiencia ni avance en los niveles.'**
+  String get offlineBody;
+
+  /// No description provided for @offlineAutoReturn.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuando vuelva la conexión, el juego sigue donde lo dejaste.'**
+  String get offlineAutoReturn;
+
+  /// No description provided for @offlinePractise.
+  ///
+  /// In es, this message translates to:
+  /// **'Jugar una ronda de práctica'**
+  String get offlinePractise;
+
+  /// No description provided for @offlineNoPack.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay preguntas de práctica en este teléfono. Se descargan solas la próxima vez que abras TriviaIA con conexión.'**
+  String get offlineNoPack;
+
+  /// No description provided for @practiceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Práctica'**
+  String get practiceTitle;
+
+  /// No description provided for @practiceBadge.
+  ///
+  /// In es, this message translates to:
+  /// **'RONDA DE PRÁCTICA'**
+  String get practiceBadge;
+
+  /// No description provided for @practiceResultTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ronda terminada'**
+  String get practiceResultTitle;
+
+  /// No description provided for @practiceResultScore.
+  ///
+  /// In es, this message translates to:
+  /// **'{correct} de {total} correctas'**
+  String practiceResultScore(int correct, int total);
+
+  /// No description provided for @practiceResultNote.
+  ///
+  /// In es, this message translates to:
+  /// **'La práctica no da monedas, experiencia ni avance.'**
+  String get practiceResultNote;
+
+  /// No description provided for @practiceAgain.
+  ///
+  /// In es, this message translates to:
+  /// **'Otra ronda'**
+  String get practiceAgain;
+
+  /// No description provided for @practiceExit.
+  ///
+  /// In es, this message translates to:
+  /// **'Salir'**
+  String get practiceExit;
+
+  /// No description provided for @practiceBackOnline.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya tienes conexión.'**
+  String get practiceBackOnline;
+
+  /// No description provided for @practiceBackToGame.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver al juego'**
+  String get practiceBackToGame;
+
+  /// No description provided for @licensesIntro.
+  ///
+  /// In es, this message translates to:
+  /// **'TriviaIA está hecha con software y tipografías de código abierto. Gracias a quienes los crean y los mantienen.'**
+  String get licensesIntro;
+
+  /// No description provided for @licensesCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, =1{1 licencia} other{{count} licencias}}'**
+  String licensesCount(int count);
+
   /// No description provided for @coinsEarnedTitle.
   ///
   /// In es, this message translates to:

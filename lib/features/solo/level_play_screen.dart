@@ -17,6 +17,7 @@ import '../../services/sfx_service.dart';
 import '../../services/economy_service.dart';
 import '../../services/function_warmer.dart';
 import '../../services/ai_topic_service.dart';
+import '../../services/answer_reveal.dart';
 import '../../services/answer_service.dart';
 import '../../services/question_report_service.dart';
 import '../../services/solo_progress_service.dart';
@@ -721,7 +722,7 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
       });
 
       if (_endedByNoLives) return;
-      _scheduleNextQuestion(questionIndex);
+      _scheduleNextQuestion(questionIndex, correct: verdict.correct);
     } on NoLivesException {
       if (!mounted) return;
       _timer?.cancel();
@@ -758,10 +759,14 @@ class _LevelPlayScreenState extends State<LevelPlayScreen>
     }
   }
 
-  void _scheduleNextQuestion(int questionIndex) {
+  /// [correct] false holds a wrong answer (or a timeout) a little longer,
+  /// so the right option can be read. Left true when there was no verdict
+  /// and so nothing to read.
+  void _scheduleNextQuestion(int questionIndex, {bool correct = true}) {
     if (_autoNextScheduled) return;
     _autoNextScheduled = true;
-    Future.delayed(_revealDelay, () {
+    final pause = answerRevealPause(correct: correct, base: _revealDelay);
+    Future.delayed(pause, () {
       if (!mounted) return;
       if (_index == questionIndex) _goNextQuestion();
     });

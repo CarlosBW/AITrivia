@@ -34,12 +34,15 @@ class CountPill extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: ink),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: ink,
+          // Wraps rather than overflows on a narrow phone with large text.
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: ink,
+              ),
             ),
           ),
         ],

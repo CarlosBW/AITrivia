@@ -16,6 +16,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'firebase_options.dart';
 import 'app/app.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'services/connectivity_service.dart';
 import 'services/sfx_service.dart';
 import 'services/presence_service.dart';
 import 'services/locale_controller.dart';
@@ -343,6 +344,9 @@ Future<void> main() async {
   }
 
   unawaited(presenceObserver.start());
+
+  // Not awaited: the app opens as online and is told otherwise.
+  unawaited(ConnectivityService.instance.start());
 
   runApp(const TriviaIAApp());
 }

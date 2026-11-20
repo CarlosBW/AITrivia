@@ -14,6 +14,7 @@ import '../../services/daily_challenge_service.dart';
 import '../../services/weekly_league_service.dart';
 import '../../services/function_warmer.dart';
 import '../../services/life_service.dart';
+import '../../services/practice_pack_service.dart';
 import '../../services/season_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/avatar_service.dart';
@@ -110,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'ensureDailyChallengeSession',
       'answerDailyQuestion',
     ]);
+    // For the day there is no connection (see OfflineGate).
+    unawaited(PracticePackService.instance.refreshIfDue());
     _initLives();
     _checkPendingSeasonRewards();
     _startLifeTimer();

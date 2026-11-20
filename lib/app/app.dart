@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/auth/auth_gate.dart';
 import '../features/onboarding/language_picker_screen.dart';
+import '../features/practice/offline_gate.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../services/connectivity_service.dart';
 import '../services/locale_controller.dart';
 import '../services/theme_service.dart';
 import '../theme/app_theme.dart';
@@ -53,6 +55,11 @@ class TriviaIAApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Above the navigator, so it covers whatever screen is open.
+      builder: (context, child) => OfflineGate(
+        offline: ConnectivityService.instance.offline,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const LanguageGate(),
     );
   }

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/answer_reveal.dart';
 import '../../services/answer_service.dart';
 import '../../services/function_warmer.dart';
 import '../../services/life_service.dart';
@@ -230,7 +231,10 @@ class _WeeklyTopicPlayScreenState extends State<WeeklyTopicPlayScreen> {
       });
     });
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(answerRevealPause(
+      correct: isCorrect,
+      base: const Duration(milliseconds: 700),
+    ));
     if (!mounted) return;
 
     if (_endedByNoLives || _index + 1 >= _questions.length) {
